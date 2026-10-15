@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #FCF9F5;
+  --surface: #FFFFFF;
+  --primary: #275DAD;
+  --primary-hover: #1e4b8f;
+  --primary-subtle: #EBF2FA;
+  --neutral: #70798C;
+  --neutral-light: #F4F5F7;
+  --neutral-border: #E5E7EB;
+  --ink: #000004;
+  --alert: #F0544F;
+  --alert-subtle: #FEECEB;
+  --success: #10B981;
+  --success-subtle: #ECFDF5;
+  
+  --font-display: "Reckless", "Newsreader", Georgia, serif;
+  --font-body: "Roobert", "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 4, 0.04);
+  --shadow-card: 0 1px 3px rgba(0, 0, 4, 0.04), 0 6px 16px rgba(0, 0, 4, 0.06);
+  --shadow-elevated: 0 10px 30px -5px rgba(0, 0, 4, 0.1), 0 4px 10px -2px rgba(0, 0, 4, 0.05);
+}
+
+@theme {
+  --color-canvas: #FCF9F5;
+  --color-surface: #FFFFFF;
+  --color-primary: #275DAD;
+  --color-primary-hover: #1e4b8f;
+  --color-primary-subtle: #EBF2FA;
+  --color-neutral: #70798C;
+  --color-neutral-light: #F4F5F7;
+  --color-neutral-border: #E5E7EB;
+  --color-ink: #000004;
+  --color-alert: #F0544F;
+  --color-alert-subtle: #FEECEB;
+  --color-success: #10B981;
+  --color-success-subtle: #ECFDF5;
+
+  --font-display: "Reckless", "Newsreader", Georgia, serif;
+  --font-body: "Roobert", "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  --radius-btn: 8px;
+  --radius-card: 16px;
+  --radius-full: 9999px;
+
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 4, 0.04);
+  --shadow-card: 0 1px 3px rgba(0, 0, 4, 0.04), 0 6px 16px rgba(0, 0, 4, 0.06);
+  --shadow-elevated: 0 10px 30px -5px rgba(0, 0, 4, 0.1), 0 4px 10px -2px rgba(0, 0, 4, 0.05);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Utility Classes */
+.font-display {
+  font-family: var(--font-display) !important;
+}
+
+.font-body {
+  font-family: var(--font-body) !important;
+}
+
+/* Smooth snap scrolling & hide scrollbar utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Mobile-first snap container */
+.feed-snap-container {
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.feed-snap-item {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+/* Custom animations */
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.03); }
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2.5s infinite ease-in-out;
+}
+
+@keyframes slideUpModal {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slideUpModal 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
