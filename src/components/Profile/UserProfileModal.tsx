@@ -189,8 +189,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <div className="flex gap-2.5">
                   <span className="w-5 h-5 rounded-full bg-[#275DAD] text-white font-bold text-[10px] flex items-center justify-center shrink-0">3</span>
                   <div>
-                    <h5 className="font-bold text-[#000004]">Paystack Inspection Lock</h5>
-                    <p className="text-[11px] text-[#70798C] mt-0.5">Commitment fees lock the inspection pass and reveal agent coordinates & phone.</p>
+                    <h5 className="font-bold text-[#000004]">Free Inspection Access</h5>
+                    <p className="text-[11px] text-[#70798C] mt-0.5">Booking is 100% free with zero fees. Paystack payment checkout is dedicated solely for advert sponsorships.</p>
                   </div>
                 </div>
               </div>

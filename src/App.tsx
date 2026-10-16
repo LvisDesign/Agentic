@@ -25,7 +25,7 @@ const INITIAL_BOOKINGS: BookingRecord[] = [
     applicantPhone: '0803 891 0293',
     applicantEmail: 'chinedu.okafor@gmail.com',
     status: 'REQUEST_SUBMITTED',
-    inspectionFeeAmount: 2500,
+    inspectionFeeAmount: 0,
     createdAt: new Date().toISOString(),
   },
   {
@@ -39,7 +39,7 @@ const INITIAL_BOOKINGS: BookingRecord[] = [
     applicantEmail: 'tariere.ebi@outlook.com',
     status: 'QUEUED',
     queuePosition: 1, // Standby queue position #1
-    inspectionFeeAmount: 3000,
+    inspectionFeeAmount: 0,
     createdAt: new Date().toISOString(),
   }
 ];
@@ -123,14 +123,15 @@ export function App() {
     );
   };
 
-  // Handler: Agent accepts a booking
+  // Handler: Agent accepts a booking -> Immediately confirmed with zero booking fee!
   const handleAcceptBooking = (bookingId: string) => {
     setBookings((prev) =>
       prev.map((b) => {
         if (b.id === bookingId) {
           return {
             ...b,
-            status: 'ACCEPTED_PENDING_PAYMENT',
+            status: 'CONFIRMED_UNLOCKED',
+            confirmedAt: new Date().toISOString(),
           };
         }
         return b;
@@ -152,13 +153,14 @@ export function App() {
     );
 
     if (queuedApplicant) {
-      // Auto-advance queued applicant to ACCEPTED_PENDING_PAYMENT!
+      // Auto-advance queued applicant directly to CONFIRMED_UNLOCKED (zero booking fee)!
       const updatedQueued = remainingBookings.map((b) => {
         if (b.id === queuedApplicant.id) {
           return {
             ...b,
-            status: 'ACCEPTED_PENDING_PAYMENT' as const,
+            status: 'CONFIRMED_UNLOCKED' as const,
             queuePosition: undefined,
+            confirmedAt: new Date().toISOString(),
           };
         }
         // Shift up other queued people
@@ -231,8 +233,8 @@ export function App() {
               activeStoryId={selectedStoryAd?.id}
             />
 
-            {/* Main Property Snap Feed */}
-            <div className="w-full max-w-xl xl:max-w-2xl h-full overflow-hidden flex-1 flex flex-col justify-center">
+            {/* Main Property Rental Continuous Feed */}
+            <div className="w-full max-w-xl xl:max-w-2xl h-full overflow-hidden flex-1 flex flex-col justify-start">
               <PropertyFeed
                 listings={filteredListings}
                 bookings={bookings}

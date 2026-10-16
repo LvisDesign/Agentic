@@ -13,6 +13,7 @@ import { DELTA_CITIES, ALL_NIGERIAN_STATES, PROPERTY_TYPES } from '../../data/mo
 import { formatNaira } from '../../utils/formatters';
 import { AdvertStory } from '../../data/mockAdverts';
 import { AdvertStoriesTray } from './AdvertStoriesTray';
+import { CustomDropdown } from '../UI/CustomDropdown';
 
 interface FilterBarProps {
   selectedCity: string;
@@ -78,44 +79,30 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         <div className="h-11 w-full flex items-center justify-center px-3 border-t border-[#E5E7EB]/50 lg:border-t-0">
           <div className="flex items-center gap-1.5 p-1 rounded-full bg-white border border-[#E5E7EB] shadow-xs max-w-full">
           {/* City Quick Selector */}
-        <select
-          value={selectedCity}
-          onChange={(e) => onSelectCity(e.target.value)}
-          className="bg-transparent text-xs font-semibold text-[#000004] py-1.5 pl-2.5 pr-6 rounded-full cursor-pointer focus:outline-none appearance-none hover:bg-slate-100/50"
-          style={{
-            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23275DAD' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 0.35rem center',
-            backgroundSize: '0.85em',
-          }}
-        >
-          {DELTA_CITIES.map((city) => (
-            <option key={city} value={city} className="text-black">
-              {city}
-            </option>
-          ))}
-        </select>
+          <CustomDropdown
+            options={DELTA_CITIES}
+            value={selectedCity}
+            onChange={onSelectCity}
+            headerTitle="Delta State Cities"
+            icon={<MapPin className="w-3.5 h-3.5 text-[#275DAD]" />}
+            align="left"
+            variant="pill"
+          />
 
-        <span className="w-px h-4 bg-[#E5E7EB]" />
+          <span className="w-px h-4 bg-[#E5E7EB]" />
 
-        {/* Property Type Quick Selector */}
-        <select
-          value={selectedType}
-          onChange={(e) => onSelectType(e.target.value)}
-          className="bg-transparent text-xs font-medium text-[#70798C] py-1.5 pl-2 pr-6 rounded-full cursor-pointer focus:outline-none appearance-none hover:bg-slate-100/50 hidden sm:inline-block"
-          style={{
-            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2370798C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 0.35rem center',
-            backgroundSize: '0.85em',
-          }}
-        >
-          {PROPERTY_TYPES.map((t) => (
-            <option key={t} value={t} className="text-black">
-              {t}
-            </option>
-          ))}
-        </select>
+          {/* Property Type Quick Selector */}
+          <div className="hidden sm:inline-block">
+            <CustomDropdown
+              options={PROPERTY_TYPES}
+              value={selectedType}
+              onChange={onSelectType}
+              headerTitle="Property Types"
+              icon={<Home className="w-3.5 h-3.5 text-[#70798C]" />}
+              align="center"
+              variant="pill"
+            />
+          </div>
 
         {/* More Filters Modal Trigger */}
         <button
@@ -161,17 +148,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 <label className="text-xs font-bold uppercase tracking-wider text-[#70798C] block mb-1.5">
                   Target Nigerian State
                 </label>
-                <select
+                <CustomDropdown
+                  options={ALL_NIGERIAN_STATES}
                   value={selectedState}
-                  onChange={(e) => onSelectState(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-[#E5E7EB] text-xs font-medium text-[#000004] bg-white focus:outline-none focus:border-[#275DAD]"
-                >
-                  {ALL_NIGERIAN_STATES.map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
+                  onChange={onSelectState}
+                  headerTitle="Select Nigerian State"
+                  icon={<Building className="w-3.5 h-3.5 text-[#275DAD]" />}
+                  variant="form"
+                />
                 <p className="text-[11px] text-[#275DAD] mt-1">
                   Delta State is the active launch market with live inspection queues.
                 </p>

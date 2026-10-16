@@ -57,7 +57,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
             </span>
             <div>
               <h4 className="font-bold text-[#000004] text-sm">
-                Instagram / TikTok Style Snap-Scroll Feed
+                Continuous Speed-Based Rental Feed
               </h4>
               <p className="text-[#70798C] mt-1 leading-relaxed">
                 Browse properties in Asaba, Warri, Abraka, Ughelli, and Sapele. Every listing displays high-aspect media, native house walkthrough videos and photos uploaded by verified agents, and a 100% transparent fee breakdown schedule.
@@ -105,10 +105,10 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
             </span>
             <div>
               <h4 className="font-bold text-[#000004] text-sm">
-                Paystack Micro-Payment Checkout
+                100% Free Inspection Booking
               </h4>
               <p className="text-[#70798C] mt-1 leading-relaxed">
-                Applicants pay an escrow inspection clearance fee (₦2,000–₦3,500) via Paystack (Card, Bank Transfer, USSD). Funds are held safely in escrow.
+                Applicants reserve physical property inspection slots completely free of charge with zero booking fees. Strictly 5 persons per window concurrency limit prevents crowded showings.
               </p>
             </div>
           </div>
@@ -121,10 +121,10 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
             <div>
               <h4 className="font-bold text-emerald-950 text-sm flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                Unlocked Pass & Direct Contact
+                Confirmed Passes & Paid Advert Sponsorships
               </h4>
               <p className="text-emerald-800 mt-1 leading-relaxed">
-                Settlement instantly reveals the verified phone number, 1-click WhatsApp deep link, complete physical street address, and a digital gate security pass with QR code.
+                Confirmed passes instantly reveal direct agent phone, 1-click WhatsApp link, complete physical address, and gate security code. Paystack payment checkout is dedicated exclusively for promoting sponsored adverts.
               </p>
             </div>
           </div>

@@ -60,7 +60,7 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-semibold tracking-wide uppercase flex items-center gap-1">
               <CheckCircle className="w-3 h-3 text-emerald-300" />
-              Inspection Pass
+              Confirmed by Agent
             </span>
           </div>
           <span className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-white/90">
@@ -69,10 +69,10 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
         </div>
 
         <h3 className="font-display text-xl sm:text-2xl font-bold mt-2 text-white">
-          Access Granted & Contact Unlocked
+          Booking Confirmed & Contact Revealed
         </h3>
         <p className="text-xs text-white/80 mt-1 line-clamp-1">
-          {listing.title}
+          {listing.agent.fullName} has confirmed your inspection. Contact details and physical address are unlocked below.
         </p>
       </div>
 

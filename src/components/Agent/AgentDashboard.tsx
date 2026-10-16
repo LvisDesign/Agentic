@@ -5,6 +5,7 @@ import {
   Users, 
   Wallet, 
   Calendar, 
+  CalendarCheck,
   CheckCircle, 
   XCircle, 
   Clock, 
@@ -123,13 +124,13 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
           <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Total Fees Generated</span>
-            <Wallet className="w-4 h-4 text-[#275DAD]" />
+            <span>Inspections Booked</span>
+            <CalendarCheck className="w-4 h-4 text-[#275DAD]" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
-            {formatNaira(totalRevenue)}
+            {agentProfile.completedInspections + acceptedOrPaid.length}
           </div>
-          <span className="text-[10px] text-emerald-600 font-medium">100% Escrow Secured</span>
+          <span className="text-[10px] text-emerald-600 font-medium">100% Free Seeker Passes</span>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
@@ -207,7 +208,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   Incoming Booking Approvals (Within 5-Slot Cap)
                 </h3>
                 <p className="text-xs text-[#70798C]">
-                  Accepting a booking transitions seeker to payment clearance.
+                  Accepting a booking confirms the inspection and reveals your contact details & physical address to the seeker.
                 </p>
               </div>
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-[#275DAD]">
@@ -221,7 +222,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                 <p className="text-xs text-[#70798C]">No pending booking requests right now.</p>
                 <button
                   onClick={onSwitchToSeeker}
-                  className="mt-3 text-xs text-[#275DAD] font-semibold hover:underline"
+                  className="mt-3 text-xs text-[#275DAD] font-semibold hover:underline cursor-pointer"
                 >
                   Switch to Seeker view to simulate a live inspection booking →
                 </button>
@@ -257,10 +258,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
                           onClick={() => onAcceptBooking(b.id)}
-                          className="flex-1 sm:flex-none py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors"
+                          className="flex-1 sm:flex-none py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer"
                         >
                           <CheckCircle className="w-3.5 h-3.5" />
-                          Accept Booking
+                          Confirm & Reveal Contact
                         </button>
                         <button
                           onClick={() => onRejectBooking(b.id)}
@@ -332,18 +333,18 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             )}
           </div>
 
-          {/* Section: Confirmed & Paid Inspection Passes */}
+          {/* Section: Confirmed Inspection Passes */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs">
             <h3 className="font-display text-base font-bold text-[#000004] mb-1">
-              Active Unlocked Inspection Passes
+              Active Confirmed Inspection Passes
             </h3>
             <p className="text-xs text-[#70798C] mb-4">
-              Clearance fee collected in Escrow. Physical address and contact released to applicant.
+              Free inspection reservation confirmed. Physical address and contact released to applicant.
             </p>
 
             {acceptedOrPaid.length === 0 ? (
               <div className="p-6 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB] text-xs text-[#70798C]">
-                No unlocked passes yet. Accept a request and simulate payment to unlock!
+                No unlocked passes yet. Accept a booking request to generate a confirmed inspection pass!
               </div>
             ) : (
               <div className="space-y-2.5">
@@ -356,7 +357,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-[#000004]">{b.applicantName}</span>
                         <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-emerald-600 text-white">
-                          {b.status === 'CONFIRMED_UNLOCKED' ? 'UNLOCKED & PAID' : 'PENDING SETTLEMENT'}
+                          PASS CONFIRMED
                         </span>
                       </div>
                       <div className="text-[#70798C] mt-0.5">
@@ -365,10 +366,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                     </div>
 
                     <div className="text-right">
-                      <div className="font-display text-sm font-bold text-[#000004]">
-                        {formatNaira(b.inspectionFeeAmount)}
+                      <div className="font-display text-sm font-bold text-emerald-600">
+                        FREE PASS
                       </div>
-                      <div className="text-[10px] text-emerald-700">Secured in Escrow</div>
+                      <div className="text-[10px] text-[#70798C]">Verified Seeker</div>
                     </div>
                   </div>
                 ))}

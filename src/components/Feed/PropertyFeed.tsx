@@ -22,22 +22,38 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Keyboard navigation for power users (ArrowUp / ArrowDown / PageDown / PageUp)
+  // Smooth keyboard scrolling based on user actions (ArrowUp / ArrowDown / PageDown / PageUp)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!containerRef.current) return;
-      const { scrollTop, clientHeight } = containerRef.current;
+      const activeTag = (document.activeElement?.tagName || '').toLowerCase();
+      if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
+        return;
+      }
 
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+      if (!containerRef.current) return;
+
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
-        containerRef.current.scrollTo({
-          top: scrollTop + clientHeight,
+        containerRef.current.scrollBy({
+          top: 240,
           behavior: 'smooth',
         });
-      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+      } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        containerRef.current.scrollTo({
-          top: Math.max(0, scrollTop - clientHeight),
+        containerRef.current.scrollBy({
+          top: -240,
+          behavior: 'smooth',
+        });
+      } else if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) {
+        e.preventDefault();
+        containerRef.current.scrollBy({
+          top: 480,
+          behavior: 'smooth',
+        });
+      } else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) {
+        e.preventDefault();
+        containerRef.current.scrollBy({
+          top: -480,
           behavior: 'smooth',
         });
       }
@@ -46,15 +62,6 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  const handleScrollNext = (currentIndex: number) => {
-    if (!containerRef.current) return;
-    const clientHeight = containerRef.current.clientHeight;
-    containerRef.current.scrollTo({
-      top: (currentIndex + 1) * clientHeight,
-      behavior: 'smooth',
-    });
-  };
 
   if (listings.length === 0) {
     return (
@@ -70,7 +77,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
         </p>
         <button
           onClick={onResetFilters}
-          className="mt-5 py-2.5 px-5 rounded-xl bg-[#275DAD] hover:bg-[#1e4b8f] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-colors"
+          className="mt-5 py-2.5 px-5 rounded-xl bg-[#275DAD] hover:bg-[#1e4b8f] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
         >
           <RefreshCcw className="w-3.5 h-3.5" />
           <span>Reset Rental Filters</span>
@@ -82,7 +89,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-y-scroll snap-y snap-mandatory feed-snap-container no-scrollbar relative bg-[#FCF9F5]"
+      className="h-full w-full overflow-y-auto feed-scroll-container no-scrollbar relative bg-[#FCF9F5] py-2 sm:py-4 px-1.5 sm:px-2 space-y-4 sm:space-y-6 overscroll-contain"
     >
       {listings.map((listing, index) => {
         const activeBooking = bookings.find((b) => b.propertyId === listing.id);
@@ -97,10 +104,11 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
             onSimulateAgentAccept={onSimulateAgentAccept}
             index={index}
             totalCount={listings.length}
-            onScrollNext={() => handleScrollNext(index)}
           />
         );
       })}
+      {/* Bottom spacer so user can comfortably scroll the last post into complete view */}
+      <div className="h-10 sm:h-14 w-full shrink-0" />
     </div>
   );
 };

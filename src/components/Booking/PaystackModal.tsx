@@ -20,10 +20,12 @@ interface PaystackModalProps {
   onClose: () => void;
   amount: number;
   applicantEmail: string;
-  applicantPhone: string;
-  applicantName: string;
-  propertyTitle: string;
-  agentName: string;
+  applicantPhone?: string;
+  applicantName?: string;
+  propertyTitle?: string;
+  agentName?: string;
+  merchantName?: string;
+  purposeTitle?: string;
   onSuccess: (paymentReference: string, paymentMethod: 'Card' | 'Bank Transfer' | 'USSD') => void;
 }
 
@@ -36,6 +38,8 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
   applicantName,
   propertyTitle,
   agentName,
+  merchantName,
+  purposeTitle,
   onSuccess,
 }) => {
   const [activeTab, setActiveTab] = useState<'card' | 'bank' | 'ussd'>('card');
@@ -105,7 +109,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
                 <Lock className="w-3 h-3 text-[#00C3F7]" />
               </div>
               <div className="text-[11px] text-white/50 truncate max-w-[200px]">
-                DeltaRent Escrow • {agentName}
+                {merchantName || (agentName ? `DeltaRent • ${agentName}` : 'DeltaRent Ad Sponsorship')}
               </div>
             </div>
           </div>
@@ -120,8 +124,8 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
 
         {/* User Context Strip */}
         <div className="bg-[#FCF9F5] px-4 py-2 border-b border-[#E5E7EB] flex items-center justify-between text-xs text-[#70798C]">
-          <span className="truncate max-w-[200px]">{applicantEmail || 'applicant@deltarent.ng'}</span>
-          <span className="font-medium text-[#275DAD]">Inspection Clearance</span>
+          <span className="truncate max-w-[200px]">{applicantEmail || 'partner@deltarent.ng'}</span>
+          <span className="font-medium text-[#275DAD]">{purposeTitle || 'Advert Placement Sponsorship'}</span>
         </div>
 
         {/* Payment Methods Nav */}

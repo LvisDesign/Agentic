@@ -13,6 +13,8 @@ import {
 import { AdvertStory } from '../../data/mockAdverts';
 import { DELTA_CITIES } from '../../data/mockListings';
 import { formatNaira } from '../../utils/formatters';
+import { PaystackModal } from '../Booking/PaystackModal';
+import { CustomDropdown } from '../UI/CustomDropdown';
 
 interface PostAdModalProps {
   isOpen: boolean;
@@ -35,9 +37,13 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   const [whatsapp, setWhatsapp] = useState('2348034928172');
   const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly'>('weekly');
   const [uploadedImage, setUploadedImage] = useState('/images/properties/asaba_gra_exterior.jpg');
+  const [showPaystackModal, setShowPaystackModal] = useState(false);
+  const [paymentRef, setPaymentRef] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  const advertCost = selectedPlan === 'weekly' ? 5000 : 15000;
 
   const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -46,20 +52,27 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     setUploadedImage(url);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Prompt Paystack Payment Gateway for Advert Sponsorship
+    setShowPaystackModal(true);
+  };
+
+  const handlePaymentSuccess = (ref: string, method: 'Card' | 'Bank Transfer' | 'USSD') => {
+    setShowPaystackModal(false);
+    setPaymentRef(ref);
 
     const newAd: AdvertStory = {
       id: `ad-user-${Date.now()}`,
       title: headline.slice(0, 14) || `${city} Rental`,
       advertiserName: advertiserName || 'Partner',
       category: 'Property',
-      badgeText: selectedPlan === 'monthly' ? 'TOP AD' : 'FEATURED',
+      badgeText: selectedPlan === 'monthly' ? 'TOP AD' : 'SPONSORED',
       thumbnailUrl: uploadedImage,
       mediaUrl: uploadedImage,
       mediaType: 'image',
       headline: headline || `Premium Rental in ${neighborhood || city}`,
-      description: description || `Newly listed verified property in ${neighborhood}, ${city}. Contact directly for inspection clearance.`,
+      description: description || `Newly listed property in ${neighborhood}, ${city}. Contact partner directly on WhatsApp.`,
       location: `${neighborhood ? `${neighborhood}, ` : ''}${city}`,
       price: price ? `₦${parseInt(price, 10).toLocaleString()} /yr` : undefined,
       ctaText: 'Chat on WhatsApp',
@@ -70,10 +83,6 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
 
     onAddAdvert(newAd);
     setIsSuccess(true);
-    setTimeout(() => {
-      setIsSuccess(false);
-      onClose();
-    }, 1500);
   };
 
   return (
@@ -115,14 +124,39 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               <CheckCircle className="w-8 h-8" />
             </div>
             <h4 className="font-display text-xl font-bold text-[#000004]">
-              Advert Story Live!
+              Payment Confirmed & Advert Live!
             </h4>
-            <p className="text-xs text-[#70798C] max-w-xs">
-              Your promoted rental story is now active with a verified gradient ring on the home feed.
+            <p className="text-xs text-[#70798C] max-w-xs leading-relaxed">
+              Your promoted rental advert has been funded via Paystack and is now active across Delta State feeds.
             </p>
+            <div className="p-3 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] text-left text-xs w-full max-w-xs space-y-1">
+              <div className="flex justify-between">
+                <span className="text-[#70798C]">Paystack Reference:</span>
+                <span className="font-mono font-bold text-[#000004]">{paymentRef}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#70798C]">Placement Duration:</span>
+                <span className="font-semibold text-[#275DAD]">
+                  {selectedPlan === 'weekly' ? '7 Days' : '30 Days'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#70798C]">Amount Paid:</span>
+                <span className="font-bold text-emerald-600">{formatNaira(advertCost)}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setIsSuccess(false);
+                onClose();
+              }}
+              className="mt-2 py-2.5 px-6 rounded-xl bg-[#000004] hover:bg-neutral-800 text-white text-xs font-bold transition-colors cursor-pointer"
+            >
+              View in Feed
+            </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs">
+          <form onSubmit={handleFormSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs">
             {/* Promo Tier Selection */}
             <div>
               <label className="text-xs font-bold text-[#70798C] uppercase tracking-wider block mb-2">
@@ -190,17 +224,14 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[#70798C] block mb-1">City Hub</label>
-                  <select
+                  <CustomDropdown
+                    options={DELTA_CITIES.filter((c) => c !== 'All Delta Cities')}
                     value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] bg-white focus:outline-none focus:border-[#275DAD]"
-                  >
-                    {DELTA_CITIES.filter((c) => c !== 'All Delta Cities').map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setCity}
+                    headerTitle="Select City Hub"
+                    icon={<MapPin className="w-3.5 h-3.5 text-[#275DAD]" />}
+                    variant="form"
+                  />
                 </div>
 
                 <div>
@@ -294,20 +325,37 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               </div>
             </div>
 
-            {/* Submit CTA */}
+            {/* Submit CTA with Paystack Payment */}
             <div className="pt-3 border-t border-[#E5E7EB]">
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-[#000004] hover:bg-neutral-900 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-colors"
+                className="w-full py-3.5 rounded-xl bg-[#275DAD] hover:bg-[#1e4b8f] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer"
               >
+                <CreditCard className="w-4 h-4" />
                 <span>
-                  Launch Story Advert ({selectedPlan === 'weekly' ? '₦5,000' : '₦15,000'})
+                  Proceed to Pay {formatNaira(advertCost)} via Paystack & Publish Ad
                 </span>
               </button>
+              <p className="text-[10px] text-center text-[#70798C] mt-2 flex items-center justify-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#275DAD]" />
+                <span>Paystack Gateway: Card, Bank Transfer, USSD • Instant Placement</span>
+              </p>
             </div>
           </form>
         )}
       </div>
+
+      {/* Paystack Checkout Gateway Modal for Adverts */}
+      <PaystackModal
+        isOpen={showPaystackModal}
+        onClose={() => setShowPaystackModal(false)}
+        amount={advertCost}
+        applicantEmail="partner@deltarent.ng"
+        applicantName={advertiserName}
+        merchantName="DeltaRent Advert Sponsorship"
+        purposeTitle={`${selectedPlan === 'weekly' ? '7-Day' : '30-Day'} Feed Advert Placement`}
+        onSuccess={handlePaymentSuccess}
+      />
     </div>
   );
 };

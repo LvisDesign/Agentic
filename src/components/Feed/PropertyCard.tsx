@@ -28,7 +28,6 @@ interface PropertyCardProps {
   onSimulateAgentAccept?: (bookingId: string) => void;
   index: number;
   totalCount: number;
-  onScrollNext?: () => void;
 }
 
 export const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -39,7 +38,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   onSimulateAgentAccept,
   index,
   totalCount,
-  onScrollNext,
 }) => {
   const [showFeeDrawer, setShowFeeDrawer] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -56,9 +54,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   };
 
   return (
-    <div className="w-full h-full snap-start flex flex-col items-center justify-center p-2 sm:p-4 bg-[#FCF9F5] feed-snap-item overflow-hidden">
-      {/* Centered Property Card with Half Image & Outside Descriptions */}
-      <div className="w-full max-w-xl sm:max-w-2xl h-full max-h-[820px] bg-white rounded-2xl sm:rounded-3xl border border-[#E5E7EB] shadow-card flex flex-col overflow-hidden relative">
+    <div className="w-full flex flex-col items-center justify-start py-1 sm:py-2">
+      {/* Centered Property Card with Natural Proportions & Outside Descriptions */}
+      <div className="w-full max-w-xl sm:max-w-2xl bg-white rounded-2xl sm:rounded-3xl border border-[#E5E7EB] shadow-card flex flex-col overflow-hidden relative">
         
         {/* CARD TOP HEADER: Location Tag, Live Capacity & Share (Zero Overlaps) */}
         <div className="px-3.5 sm:px-4 py-2 bg-white border-b border-[#E5E7EB] flex items-center justify-between gap-2 shrink-0">
@@ -77,7 +75,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             <button
               onClick={handleShare}
               aria-label="Share property link"
-              className="w-7 h-7 rounded-full bg-[#FCF9F5] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#000004] flex items-center justify-center border border-[#E5E7EB] transition-colors"
+              className="w-7 h-7 rounded-full bg-[#FCF9F5] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#000004] flex items-center justify-center border border-[#E5E7EB] transition-colors cursor-pointer"
               title="Share listing"
             >
               {copiedShare ? (
@@ -89,13 +87,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
         </div>
 
-        {/* TOP SECTION: Media Carousel (compact on mobile ~34%, ~40% on desktop) */}
-        <div className="relative w-full h-[34%] sm:h-[40%] shrink-0 overflow-hidden bg-slate-900">
+        {/* TOP SECTION: Media Carousel with Responsive Aspect Ratio */}
+        <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[380px] shrink-0 overflow-hidden bg-slate-900">
           <MediaCarousel media={listing.media} title={listing.title} />
         </div>
 
         {/* MIDDLE SECTION: Descriptions Outside the Image (NO vertical scrolling into image container) */}
-        <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 flex-1 flex flex-col justify-between overflow-hidden bg-white text-[#000004]">
+        <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 flex flex-col space-y-2.5 sm:space-y-3 bg-white text-[#000004]">
           <div className="space-y-1.5 sm:space-y-2">
             {/* 1. Agent Pill */}
             <div className="flex items-center justify-between flex-wrap gap-1.5">
@@ -111,7 +109,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
               <span className="text-[#70798C] text-[10px] flex items-center gap-1 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
                 <Lock className="w-2.5 h-2.5 text-[#70798C]" />
-                Contact Protected
+                Contact Protected (Reveals on Confirmation)
               </span>
             </div>
 
@@ -184,21 +182,20 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             <button
               onClick={() => setShowBookingModal(true)}
               className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] cursor-pointer ${
-                activeBooking?.status === 'CONFIRMED_UNLOCKED'
+                activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT'
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT'
-                  ? 'bg-[#00C3F7] hover:bg-[#00a8d4] text-[#0D233A]'
                   : activeBooking?.status === 'QUEUED'
                   ? 'bg-[#F0544F] hover:bg-[#d9433e] text-white'
+                  : activeBooking?.status === 'REQUEST_SUBMITTED'
+                  ? 'bg-[#275DAD] hover:bg-[#1e4b8f] text-white'
                   : 'bg-[#000004] hover:bg-[#1f2937] text-white'
               }`}
             >
               <CalendarCheck className="w-4 h-4 shrink-0" />
               <span className="truncate">
-                {activeBooking?.status === 'CONFIRMED_UNLOCKED' && 'View Inspection Pass'}
-                {activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT' && `Pay Clearance (${formatNaira(listing.inspectionFee)})`}
+                {(activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT') && 'View Inspection Pass (Contact Revealed)'}
                 {activeBooking?.status === 'QUEUED' && `Standby Queue (#${activeBooking.queuePosition})`}
-                {activeBooking?.status === 'REQUEST_SUBMITTED' && 'Awaiting Agent Acceptance'}
+                {activeBooking?.status === 'REQUEST_SUBMITTED' && 'Awaiting Agent Confirmation'}
                 {!activeBooking && 'Book Inspection (5/hr Max)'}
               </span>
             </button>

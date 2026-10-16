@@ -199,7 +199,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         serviceCharge: serviceChargeNum,
         totalMoveInPackage: totalMoveIn,
       },
-      inspectionFee: inspectionFeeNum,
+      inspectionFee: 0,
       agent: {
         id: 'agent-chief-oghene',
         fullName: 'Chief Oghenetega Macaulay',
@@ -498,17 +498,11 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">
-                  Inspection Fee (₦)
+                  Seeker Inspection Fee
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-[#70798C] font-semibold">₦</span>
-                  <input
-                    type="text"
-                    value={formatCurrencyInput(inspectionFeeInput)}
-                    onChange={(e) => setInspectionFeeInput(e.target.value)}
-                    placeholder="2,500"
-                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
-                  />
+                <div className="w-full px-3 py-2 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] text-xs font-semibold text-emerald-600 flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>100% Free Booking (₦0)</span>
                 </div>
               </div>
             </div>

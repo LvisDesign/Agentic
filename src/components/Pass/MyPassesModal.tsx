@@ -101,13 +101,13 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                       {b.status === 'REQUEST_SUBMITTED' && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#275DAD]">
                           <Clock className="w-3.5 h-3.5" />
-                          Awaiting Agent Acceptance
+                          Awaiting Agent Confirmation • Contact Details Protected
                         </span>
                       )}
                       {b.status === 'ACCEPTED_PENDING_PAYMENT' && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Accepted! Pay clearance fee ({formatNaira(b.inspectionFeeAmount)}) to unlock
+                          Booking Confirmed • Contact Details Revealed
                         </span>
                       )}
                     </div>
