@@ -229,7 +229,7 @@ export function App() {
               </div>
             </div>
           ) : (
-            <div className="w-full h-[calc(100dvh-6.5rem)] mt-[104px] overflow-hidden">
+            <div className="w-full h-[calc(100dvh-7rem)] mt-[112px] overflow-hidden">
               <PropertyFeed
                 listings={filteredListings}
                 bookings={bookings}

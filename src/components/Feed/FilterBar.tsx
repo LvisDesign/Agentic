@@ -52,7 +52,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   return (
     <>
       {/* Dedicated Filter Sub-Bar docked directly below Header */}
-      <div className="fixed top-14 left-0 right-0 z-30 h-12 bg-[#FCF9F5]/95 backdrop-blur-md border-b border-[#E5E7EB] px-3 flex items-center justify-center shadow-xs">
+      <div className="fixed top-16 left-0 right-0 z-30 h-12 bg-[#FCF9F5]/95 backdrop-blur-md border-b border-[#E5E7EB] px-3 flex items-center justify-center shadow-xs">
         <div className="flex items-center gap-1.5 p-1 rounded-full bg-white border border-[#E5E7EB] shadow-xs max-w-full">
           {/* City Quick Selector */}
         <select
