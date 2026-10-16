@@ -10,7 +10,6 @@ import {
   ShieldCheck, 
   CreditCard,
   UserCheck,
-  Sparkles,
   Info
 } from 'lucide-react';
 import { PropertyListing, InspectionSlot, BookingRecord, BookingStatus } from '../../types/marketplace';
@@ -242,7 +241,6 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
                   }}
                   className="w-full py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                   <span>[Demo] Simulate Slot Freeing & Auto-Advance</span>
                 </button>
               </div>
@@ -295,7 +293,6 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
                   }}
                   className="w-full py-2.5 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                   <span>[Demo] Simulate Agent Accepts Request</span>
                 </button>
                 <p className="text-[11px] text-[#70798C] mt-1.5">

@@ -6,7 +6,6 @@ import {
   Calendar, 
   Clock, 
   CheckCircle, 
-  ShieldCheck, 
   QrCode, 
   Share2, 
   Copy, 
@@ -61,7 +60,7 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[11px] font-semibold tracking-wide uppercase flex items-center gap-1">
               <CheckCircle className="w-3 h-3 text-emerald-300" />
-              Verified Inspection Pass
+              Inspection Pass
             </span>
           </div>
           <span className="text-xs font-mono bg-white/10 px-2 py-0.5 rounded text-white/90">
@@ -91,7 +90,6 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
                 <span className="font-bold text-sm text-[#000004]">
                   {listing.agent.fullName}
                 </span>
-                <ShieldCheck className="w-4 h-4 text-[#275DAD]" />
               </div>
               <div className="text-xs text-[#70798C]">
                 {listing.agent.agencyName} • {listing.agent.cacNumber}

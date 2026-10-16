@@ -97,7 +97,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         {/* BOTTOM SECTION: Descriptions Outside the Image (Remaining ~52% - 54% height) */}
         <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between overflow-y-auto bg-white text-[#000004]">
           <div className="space-y-2 sm:space-y-3">
-            {/* 1. Verified Agent Pill */}
+            {/* 1. Agent Pill */}
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FCF9F5] border border-[#E5E7EB] text-xs">
                 <img
@@ -106,7 +106,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                   className="w-4 h-4 rounded-full object-cover border border-[#275DAD]"
                 />
                 <span className="font-semibold text-[#000004]">{listing.agent.fullName}</span>
-                <ShieldCheck className="w-3.5 h-3.5 text-[#275DAD]" />
                 <span className="text-[#70798C] text-[11px] hidden sm:inline">• {listing.agent.cacNumber}</span>
               </div>
 

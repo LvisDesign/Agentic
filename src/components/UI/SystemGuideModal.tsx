@@ -7,7 +7,6 @@ import {
   CreditCard, 
   MapPin, 
   CheckCircle2, 
-  Sparkles,
   ArrowRight
 } from 'lucide-react';
 
@@ -31,7 +30,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
         <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#275DAD] text-white flex items-center justify-center">
-              <Sparkles className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
               <h3 className="font-display text-lg font-bold text-[#000004]">

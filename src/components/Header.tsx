@@ -3,7 +3,7 @@ import {
   Building2, 
   Hourglass, 
   ShieldCheck, 
-  Sparkles, 
+  User, 
   Compass,
 } from 'lucide-react';
 import { UserRole, BookingRecord } from '../types/marketplace';
@@ -13,7 +13,7 @@ interface HeaderProps {
   onChangeRole: (role: UserRole) => void;
   activeBookings: BookingRecord[];
   onOpenMyPasses: () => void;
-  onOpenGuide: () => void;
+  onOpenProfile: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,7 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   onChangeRole,
   activeBookings,
   onOpenMyPasses,
-  onOpenGuide,
+  onOpenProfile,
 }) => {
   const confirmedPassesCount = activeBookings.filter(
     (b) => b.status === 'CONFIRMED_UNLOCKED'
@@ -149,23 +149,23 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* TAB 4: System Architecture & Concurrency Rules Guide */}
+          {/* TAB 4: User Profile */}
           <button
-            onClick={onOpenGuide}
+            onClick={onOpenProfile}
             className="relative w-10 h-10 md:w-auto md:px-3 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group"
-            aria-label="Flow Guide"
-            title="Flow Guide"
+            aria-label="Profile"
+            title="Profile"
           >
-            <Sparkles className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-500 shrink-0" />
+            <User className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#70798C] group-hover:text-[#000004] shrink-0" />
 
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-              Flow Guide
+              Profile
             </span>
 
             {/* Mobile Tooltip */}
             <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-              Flow Guide
+              Profile
             </span>
           </button>
         </div>

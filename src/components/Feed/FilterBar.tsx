@@ -7,8 +7,7 @@ import {
   X, 
   SlidersHorizontal,
   Check,
-  Building,
-  Sparkles
+  Building
 } from 'lucide-react';
 import { DELTA_CITIES, ALL_NIGERIAN_STATES, PROPERTY_TYPES } from '../../data/mockListings';
 import { formatNaira } from '../../utils/formatters';
@@ -63,9 +62,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     <>
       {/* Sub-Header Container docked directly below Header */}
       <div className="fixed top-16 left-0 right-0 z-30 bg-[#FCF9F5]/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs flex flex-col items-center">
-        {/* Advert Stories Tray (Squared with Rounded Edges) on top of the FilterBar */}
+        {/* Advert Stories Tray (Squared with Rounded Edges) on top of the FilterBar - ONLY ON MOBILE (< lg) */}
         {adverts && onSelectAdvert && onOpenPostAd && (
-          <div className="w-full">
+          <div className="w-full lg:hidden">
             <AdvertStoriesTray
               adverts={adverts}
               onSelectAdvert={onSelectAdvert}
@@ -76,7 +75,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         )}
 
         {/* Filter Pill Row (Screenshot 2 layer) */}
-        <div className="h-11 w-full flex items-center justify-center px-3 border-t border-[#E5E7EB]/50">
+        <div className="h-11 w-full flex items-center justify-center px-3 border-t border-[#E5E7EB]/50 lg:border-t-0">
           <div className="flex items-center gap-1.5 p-1 rounded-full bg-white border border-[#E5E7EB] shadow-xs max-w-full">
           {/* City Quick Selector */}
         <select
@@ -173,8 +172,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                     </option>
                   ))}
                 </select>
-                <p className="text-[11px] text-[#275DAD] mt-1 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
+                <p className="text-[11px] text-[#275DAD] mt-1">
                   Delta State is the active launch market with live inspection queues.
                 </p>
               </div>

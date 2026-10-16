@@ -6,11 +6,12 @@ import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
 import { AgentDashboard } from './components/Agent/AgentDashboard';
 import { MyPassesModal } from './components/Pass/MyPassesModal';
-import { SystemGuideModal } from './components/UI/SystemGuideModal';
+import { UserProfileModal } from './components/Profile/UserProfileModal';
 import { InspectionBookingModal } from './components/Booking/InspectionBookingModal';
 import { MOCK_ADVERT_STORIES, AdvertStory } from './data/mockAdverts';
 import { AdvertStoryModal } from './components/Feed/AdvertStoryModal';
 import { PostAdModal } from './components/Feed/PostAdModal';
+import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 
 // Seed initial bookings for immediate testability
 const INITIAL_BOOKINGS: BookingRecord[] = [
@@ -55,7 +56,7 @@ export function App() {
   const [maxRent, setMaxRent] = useState(5000000);
 
   // Modals
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMyPassesOpen, setIsMyPassesOpen] = useState(false);
   const [activeModalListing, setActiveModalListing] = useState<PropertyListing | null>(null);
 
@@ -197,7 +198,7 @@ export function App() {
         onChangeRole={setCurrentRole}
         activeBookings={bookings}
         onOpenMyPasses={() => setIsMyPassesOpen(true)}
-        onOpenGuide={() => setIsGuideOpen(true)}
+        onOpenProfile={() => setIsProfileOpen(true)}
       />
 
       {/* 2. Main Content Area */}
@@ -220,16 +221,27 @@ export function App() {
             activeStoryId={selectedStoryAd?.id}
           />
 
-          {/* Clean Responsive Feed without vertical scrollbar (adjusted offset for adverts tray) */}
-          <div className="w-full h-[calc(100dvh-194px)] mt-[194px] overflow-hidden">
-            <PropertyFeed
-              listings={filteredListings}
-              bookings={bookings}
-              onBookSlot={handleBookSlot}
-              onUpdateBooking={handleUpdateBooking}
-              onSimulateAgentAccept={handleAcceptBooking}
-              onResetFilters={handleResetFilters}
+          {/* Responsive Layout: Desktop view features Sponsored Ads on the left side; mobile features ads on top */}
+          <div className="w-full max-w-7xl mx-auto h-[calc(100dvh-226px)] lg:h-[calc(100dvh-112px)] mt-[226px] lg:mt-[112px] flex items-center justify-center gap-6 px-2 sm:px-6 overflow-hidden">
+            {/* Desktop Left Side Sponsored Ads */}
+            <DesktopAdvertSidebar
+              adverts={adverts}
+              onSelectAdvert={(ad) => setSelectedStoryAd(ad)}
+              onOpenPostAd={() => setIsPostAdOpen(true)}
+              activeStoryId={selectedStoryAd?.id}
             />
+
+            {/* Main Property Snap Feed */}
+            <div className="w-full max-w-xl xl:max-w-2xl h-full overflow-hidden flex-1 flex flex-col justify-center">
+              <PropertyFeed
+                listings={filteredListings}
+                bookings={bookings}
+                onBookSlot={handleBookSlot}
+                onUpdateBooking={handleUpdateBooking}
+                onSimulateAgentAccept={handleAcceptBooking}
+                onResetFilters={handleResetFilters}
+              />
+            </div>
           </div>
         </main>
       ) : (
@@ -255,9 +267,13 @@ export function App() {
         onOpenBookingModal={(listing) => setActiveModalListing(listing)}
       />
 
-      <SystemGuideModal
-        isOpen={isGuideOpen}
-        onClose={() => setIsGuideOpen(false)}
+      <UserProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+        currentRole={currentRole}
+        onChangeRole={setCurrentRole}
+        activeBookings={bookings}
+        onOpenMyPasses={() => setIsMyPassesOpen(true)}
       />
 
       {activeModalListing && (

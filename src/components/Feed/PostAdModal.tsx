@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   X, 
-  Sparkles, 
   Upload, 
   CheckCircle, 
   MessageCircle, 
@@ -53,7 +52,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     const newAd: AdvertStory = {
       id: `ad-user-${Date.now()}`,
       title: headline.slice(0, 14) || `${city} Rental`,
-      advertiserName: advertiserName || 'Verified Partner',
+      advertiserName: advertiserName || 'Partner',
       category: 'Property',
       badgeText: selectedPlan === 'monthly' ? 'TOP AD' : 'FEATURED',
       thumbnailUrl: uploadedImage,
@@ -301,7 +300,6 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 type="submit"
                 className="w-full py-3 rounded-xl bg-[#000004] hover:bg-neutral-900 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-colors"
               >
-                <Sparkles className="w-4 h-4 text-[#00C3F7]" />
                 <span>
                   Launch Story Advert ({selectedPlan === 'weekly' ? '₦5,000' : '₦15,000'})
                 </span>

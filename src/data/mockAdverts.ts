@@ -43,7 +43,7 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     title: 'The Willows',
     advertiserName: 'Warri Prime Properties',
     category: 'Estate',
-    badgeText: 'VERIFIED',
+    badgeText: 'FEATURED',
     thumbnailUrl: '/images/properties/warri_estate_exterior.jpg',
     mediaUrl: '/images/properties/warri_estate_exterior.jpg',
     mediaType: 'image',

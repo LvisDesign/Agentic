@@ -3,13 +3,11 @@ import {
   X, 
   ChevronLeft, 
   ChevronRight, 
-  ShieldCheck, 
   MessageCircle, 
   Phone, 
   ExternalLink,
   MapPin,
-  Calendar,
-  Sparkles
+  Calendar
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 
@@ -136,8 +134,8 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
         {/* 2. Advertiser Header Bar */}
         <div className="absolute top-6 left-3 right-3 z-30 flex items-center justify-between text-white">
           <div className="flex items-center gap-2.5">
-            {/* Squared Thumbnail with Rounded Edges */}
-            <div className="w-9 h-9 rounded-[12px] p-[2px] bg-gradient-to-tr from-amber-500 via-[#F0544F] to-[#275DAD] shadow-xs">
+            {/* Squared Thumbnail with Rounded Edges in Brand Color */}
+            <div className="w-9 h-9 rounded-[12px] p-[2px] bg-gradient-to-tr from-[#275DAD] via-[#3B82F6] to-[#1E4B8F] shadow-xs">
               <img
                 src={activeAd.thumbnailUrl}
                 alt={activeAd.advertiserName}
@@ -146,14 +144,9 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
             </div>
 
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold text-xs text-white drop-shadow-md">
-                  {activeAd.advertiserName}
-                </span>
-                {activeAd.isVerified && (
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                )}
-              </div>
+              <span className="font-bold text-xs text-white drop-shadow-md block">
+                {activeAd.advertiserName}
+              </span>
               <div className="flex items-center gap-1 text-[10px] text-white/80">
                 <span className="px-1 py-0.2 rounded bg-[#275DAD]/80 font-semibold uppercase text-[8px] tracking-wider">
                   {activeAd.badgeText}
@@ -243,7 +236,6 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
               onClick={handleCtaClick}
               className="flex-1 py-3 px-4 rounded-xl bg-[#000004] hover:bg-neutral-900 border border-white/20 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95"
             >
-              <Sparkles className="w-4 h-4 text-[#00C3F7]" />
               <span>{activeAd.ctaText}</span>
             </button>
 

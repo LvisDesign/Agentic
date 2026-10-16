@@ -7,7 +7,6 @@ import {
   Film, 
   CheckCircle, 
   Plus, 
-  Sparkles,
   ShieldCheck,
   Calendar,
   Clock,
@@ -224,7 +223,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         waitlistCount: 0,
       })),
       inspectionDays: selectedDays,
-      tags: [city, neighborhood || 'Residential', 'Verified Agent', 'Borehole'],
+      tags: [city, neighborhood || 'Residential', 'Direct Agent', 'Borehole'],
       createdAt: new Date().toISOString(),
     };
 
@@ -242,21 +241,19 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-[#275DAD]/10 text-[#275DAD] text-xs font-semibold flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Verified Agent Portal
+              <span className="px-2 py-0.5 rounded-full bg-[#275DAD]/10 text-[#275DAD] text-xs font-semibold">
+                Agent Portal
               </span>
               <button
                 type="button"
                 onClick={handleAddSamplePreset}
-                className="text-[11px] text-[#275DAD] hover:underline font-semibold flex items-center gap-1"
+                className="text-[11px] text-[#275DAD] hover:underline font-semibold"
               >
-                <Sparkles className="w-3 h-3" />
                 Autofill Test Property
               </button>
             </div>
             <h3 className="font-display text-lg sm:text-xl font-bold text-[#000004] mt-1">
-              Publish Verified Property Listing
+              Publish Property Listing
             </h3>
           </div>
           <button

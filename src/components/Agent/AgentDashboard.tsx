@@ -9,9 +9,8 @@ import {
   XCircle, 
   Clock, 
   AlertCircle, 
-  ArrowUpRight, 
+  ArrowUpRight,
   Building,
-  Sparkles,
   Phone,
   MessageSquare
 } from 'lucide-react';
@@ -87,9 +86,8 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               <h1 className="font-display text-2xl font-bold text-[#000004]">
                 {agentProfile.fullName}
               </h1>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#275DAD] text-xs font-semibold">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Verified Partner
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 text-[#275DAD] text-xs font-semibold">
+                Partner
               </span>
             </div>
             <p className="text-xs text-[#70798C] mt-0.5">
@@ -131,7 +129,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {formatNaira(totalRevenue)}
           </div>
-          <span className="text-[10px] text-emerald-600 font-medium">100% Escrow Verified</span>
+          <span className="text-[10px] text-emerald-600 font-medium">100% Escrow Secured</span>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
@@ -326,7 +324,6 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       onClick={() => onAcceptBooking(b.id)}
                       className="w-full sm:w-auto py-2 px-4 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-200" />
                       Grant Early Acceptance
                     </button>
                   </div>
