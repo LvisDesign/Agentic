@@ -22,11 +22,38 @@ interface CreateListingModalProps {
   onListingCreated: (newListing: PropertyListing) => void;
 }
 
-const PRESET_SAMPLE_PHOTOS = [
-  'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1000&q=80',
-  'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1000&q=80',
-  'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1000&q=80',
-  'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1000&q=80'
+interface MediaItemDraft {
+  id: string;
+  type: 'image' | 'video';
+  url: string;
+  caption?: string;
+}
+
+const DEFAULT_SAMPLE_MEDIA: MediaItemDraft[] = [
+  {
+    id: 'sample-video-1',
+    type: 'video',
+    url: 'https://assets.mixkit.co/videos/preview/mixkit-modern-apartment-living-room-interior-39744-large.mp4',
+    caption: 'House Walkthrough Video',
+  },
+  {
+    id: 'sample-img-1',
+    type: 'image',
+    url: '/images/properties/warri_estate_exterior.jpg',
+    caption: 'Gated Estate Compound & Security Gatehouse',
+  },
+  {
+    id: 'sample-img-2',
+    type: 'image',
+    url: '/images/properties/asaba_vacant_living.jpg',
+    caption: 'Spacious Vacant Living Room with POP Ceiling',
+  },
+  {
+    id: 'sample-img-3',
+    type: 'image',
+    url: '/images/properties/vacant_luxury_kitchen.jpg',
+    caption: 'Fitted Kitchen with Granite Tops & Heat Extractor',
+  },
 ];
 
 export const CreateListingModal: React.FC<CreateListingModalProps> = ({
@@ -52,9 +79,11 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   const [serviceChargeInput, setServiceChargeInput] = useState('120000');
   const [inspectionFeeInput, setInspectionFeeInput] = useState('2500');
 
-  // Media
-  const [uploadedImages, setUploadedImages] = useState<string[]>([...PRESET_SAMPLE_PHOTOS]);
-  const [hasVideoReel, setHasVideoReel] = useState(true);
+  // Media (Whatever the agent uploads: house videos or images)
+  const [uploadedMedia, setUploadedMedia] = useState<MediaItemDraft[]>([...DEFAULT_SAMPLE_MEDIA]);
+  const [newMediaUrl, setNewMediaUrl] = useState('');
+  const [newMediaType, setNewMediaType] = useState<'image' | 'video'>('video');
+  const [newMediaCaption, setNewMediaCaption] = useState('');
 
   // Inspection Window Rules
   const [selectedDays, setSelectedDays] = useState<string[]>(['Mon', 'Wed', 'Fri', 'Sat']);
@@ -93,6 +122,44 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
     setServiceChargeInput('150000');
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newItems: MediaItemDraft[] = Array.from(files).map((file, idx) => {
+      const isVideo = file.type.startsWith('video/');
+      const objectUrl = URL.createObjectURL(file);
+      return {
+        id: `upload-${Date.now()}-${idx}`,
+        type: isVideo ? 'video' : 'image',
+        url: objectUrl,
+        caption: file.name.replace(/\.[^/.]+$/, ''),
+      };
+    });
+
+    setUploadedMedia((prev) => [...prev, ...newItems]);
+    e.target.value = '';
+  };
+
+  const handleAddMediaUrl = () => {
+    if (!newMediaUrl.trim()) return;
+    setUploadedMedia((prev) => [
+      ...prev,
+      {
+        id: `url-${Date.now()}`,
+        type: newMediaType,
+        url: newMediaUrl.trim(),
+        caption: newMediaCaption.trim() || (newMediaType === 'video' ? 'House Walkthrough Video' : 'House Photo'),
+      },
+    ]);
+    setNewMediaUrl('');
+    setNewMediaCaption('');
+  };
+
+  const handleRemoveMedia = (id: string) => {
+    setUploadedMedia((prev) => prev.filter((m) => m.id !== id));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -112,11 +179,19 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       electricityStatus: 'Band A (20+ hrs)',
       waterSupply: 'Borehole with Treatment',
       description: `Newly published verified listing in ${neighborhood}, ${city}. Inspected and approved under DeltaRent fair regional tenancy standards.`,
-      media: uploadedImages.map((url, i) => ({
-        type: i === 0 && hasVideoReel ? 'video' : 'image',
-        url,
-        caption: `Property view ${i + 1}`,
-      })),
+      media: uploadedMedia.length > 0
+        ? uploadedMedia.map((item, i) => ({
+            type: item.type,
+            url: item.url,
+            caption: item.caption || `Property view ${i + 1}`,
+          }))
+        : [
+            {
+              type: 'image',
+              url: '/images/properties/asaba_gra_exterior.jpg',
+              caption: 'Property exterior view',
+            },
+          ],
       fees: {
         baseRent: baseRentNum,
         rentPeriod,
@@ -457,33 +532,119 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             </div>
           </div>
 
-          {/* SECTION 4: MEDIA UPLOADER & REEL */}
+          {/* SECTION 4: PROPERTY MEDIA (VIDEOS & IMAGES) */}
           <div className="space-y-3 pt-3 border-t border-[#E5E7EB]">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C] flex items-center gap-1.5">
-                <ImageIcon className="w-3.5 h-3.5 text-[#275DAD]" />
-                4. Media Carousel & Video Reel
-              </h4>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasVideoReel}
-                  onChange={(e) => setHasVideoReel(e.target.checked)}
-                  className="accent-[#275DAD]"
-                />
-                <span className="text-[11px] font-medium text-[#000004]">
-                  Enable Vertical Video Reel
-                </span>
-              </label>
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C] flex items-center gap-1.5">
+                  <Film className="w-3.5 h-3.5 text-[#275DAD]" />
+                  4. Property Media (House Videos & Photos)
+                </h4>
+                <p className="text-[11px] text-[#70798C] mt-0.5">
+                  Upload house walkthrough videos and high-res photos. Tenants see whatever you upload directly in the feed.
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
-              {uploadedImages.map((img, i) => (
-                <div key={i} className="relative rounded-lg overflow-hidden border border-[#E5E7EB] aspect-square group">
-                  <img src={img} alt="preview" className="w-full h-full object-cover" />
-                  <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1 rounded">
-                    {i === 0 && hasVideoReel ? 'Reel' : `Photo ${i + 1}`}
+            {/* Upload Buttons & Direct URL Input */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <label 
+                htmlFor="agent-media-files"
+                className="cursor-pointer px-3 py-2 rounded-lg bg-white border border-[#000004]/20 hover:border-[#000004] text-[#000004] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+              >
+                <Upload className="w-3.5 h-3.5 text-[#275DAD]" />
+                <span>Upload Videos & Photos</span>
+                <input
+                  id="agent-media-files"
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </label>
+
+              {/* URL Quick-Add */}
+              <div className="flex-1 flex gap-1.5">
+                <select
+                  value={newMediaType}
+                  onChange={(e) => setNewMediaType(e.target.value as 'image' | 'video')}
+                  className="px-2 py-1.5 rounded-lg border border-[#E5E7EB] bg-white text-xs font-medium text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                >
+                  <option value="video">House Video</option>
+                  <option value="image">Photo</option>
+                </select>
+                <input
+                  type="url"
+                  placeholder={newMediaType === 'video' ? 'Paste MP4 / Video URL' : 'Paste Image URL'}
+                  value={newMediaUrl}
+                  onChange={(e) => setNewMediaUrl(e.target.value)}
+                  className="flex-1 px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddMediaUrl}
+                  disabled={!newMediaUrl.trim()}
+                  className="px-3 py-1.5 rounded-lg bg-[#000004] text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-40 transition-colors shrink-0"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Media Items Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              {uploadedMedia.map((item, i) => (
+                <div 
+                  key={item.id || i} 
+                  className="relative rounded-lg overflow-hidden border border-[#E5E7EB] aspect-square group bg-slate-950 flex items-center justify-center"
+                >
+                  {item.type === 'video' ? (
+                    <video
+                      src={item.url}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <img 
+                      src={item.url} 
+                      alt={item.caption || 'preview'} 
+                      className="w-full h-full object-cover" 
+                    />
+                  )}
+
+                  {/* Badge */}
+                  <span className="absolute top-1.5 left-1.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1">
+                    {item.type === 'video' ? (
+                      <>
+                        <Film className="w-2.5 h-2.5 text-blue-400" />
+                        <span>Video</span>
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-2.5 h-2.5 text-white/80" />
+                        <span>Photo</span>
+                      </>
+                    )}
                   </span>
+
+                  {/* Delete Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveMedia(item.id)}
+                    title="Remove media"
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-white hover:bg-red-600 flex items-center justify-center transition-colors shadow-xs"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+
+                  {/* Bottom Caption */}
+                  {item.caption && (
+                    <span className="absolute bottom-1 left-1 right-1 text-center bg-black/60 backdrop-blur-xs text-white text-[9px] px-1 py-0.5 rounded truncate">
+                      {item.caption}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

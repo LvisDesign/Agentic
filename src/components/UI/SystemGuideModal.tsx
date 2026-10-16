@@ -61,7 +61,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
                 Instagram / TikTok Style Snap-Scroll Feed
               </h4>
               <p className="text-[#70798C] mt-1 leading-relaxed">
-                Browse properties in Asaba, Warri, Abraka, Ughelli, and Sapele. Every listing displays high-aspect media, vertical video reels, verified agent pills, and a 100% transparent fee breakdown schedule.
+                Browse properties in Asaba, Warri, Abraka, Ughelli, and Sapele. Every listing displays high-aspect media, native house walkthrough videos and photos uploaded by verified agents, and a 100% transparent fee breakdown schedule.
               </p>
             </div>
           </div>

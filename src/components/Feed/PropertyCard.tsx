@@ -130,6 +130,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               <h2 className="font-display text-base sm:text-lg font-bold text-[#000004] mt-1 line-clamp-1">
                 {listing.title}
               </h2>
+              <p className="text-xs text-[#70798C] line-clamp-2 mt-1 leading-relaxed">
+                {listing.description}
+              </p>
             </div>
 
             {/* 3. Feature Highlights & Amenity Pills */}

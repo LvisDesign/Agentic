@@ -4,10 +4,7 @@ import {
   Hourglass, 
   ShieldCheck, 
   Sparkles, 
-  Smartphone, 
-  Monitor, 
   Compass,
-  Ticket
 } from 'lucide-react';
 import { UserRole, BookingRecord } from '../types/marketplace';
 
@@ -16,8 +13,6 @@ interface HeaderProps {
   onChangeRole: (role: UserRole) => void;
   activeBookings: BookingRecord[];
   onOpenMyPasses: () => void;
-  isMobileFrame: boolean;
-  onToggleMobileFrame: () => void;
   onOpenGuide: () => void;
 }
 
@@ -26,8 +21,6 @@ export const Header: React.FC<HeaderProps> = ({
   onChangeRole,
   activeBookings,
   onOpenMyPasses,
-  isMobileFrame,
-  onToggleMobileFrame,
   onOpenGuide,
 }) => {
   const confirmedPassesCount = activeBookings.filter(
@@ -61,27 +54,32 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center / Right: Calendly-Style Squircle Navigation Island */}
-        <div className="flex items-center gap-1.5 p-1 rounded-[22px] bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs">
+        <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-[22px] bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs">
           {/* TAB 1: Seeker Property Feed */}
           <button
             onClick={() => onChangeRole('seeker')}
-            className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-200 active:scale-95 group ${
+            className={`relative w-10 h-10 md:w-auto md:px-3.5 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group ${
               currentRole === 'seeker'
-                ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.04]'
+                ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
             }`}
-            aria-label="Seeker Property Feed"
-            title="Seeker Property Feed"
+            aria-label="Seeker Feed"
+            title="Seeker Feed"
           >
-            <Compass className={`w-4 h-4 sm:w-5 sm:h-5 ${currentRole === 'seeker' ? 'text-white' : ''}`} />
+            <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'seeker' ? 'text-white' : ''}`} />
             
+            {/* Desktop Label */}
+            <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
+              Seeker Feed
+            </span>
+
             {/* Calendly Signature Downward Teardrop Indicator when Active */}
             {currentRole === 'seeker' && (
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
             )}
 
-            {/* Hover Tooltip */}
-            <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
+            {/* Mobile Tooltip */}
+            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
               Seeker Feed
             </span>
           </button>
@@ -89,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* TAB 2: Queue & Passes (Hourglass / Ticket with Badge) */}
           <button
             onClick={onOpenMyPasses}
-            className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-200 active:scale-95 group ${
+            className={`relative w-10 h-10 md:w-auto md:px-3.5 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group ${
               totalActivePasses > 0
                 ? 'bg-white hover:bg-emerald-50/50 text-[#000004] border border-emerald-200 shadow-xs'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80'
@@ -97,17 +95,27 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Inspection Passes & Queue"
             title="Inspection Passes & Queue"
           >
-            <Hourglass className={`w-4 h-4 sm:w-5 sm:h-5 ${totalActivePasses > 0 ? 'text-emerald-700' : ''}`} />
+            <Hourglass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${totalActivePasses > 0 ? 'text-emerald-700' : ''}`} />
 
-            {/* Notification Badge Pip */}
+            {/* Desktop Label */}
+            <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
+              My Passes
+            </span>
+
+            {/* Notification Badge: Mobile Pip vs Desktop Pill */}
             {totalActivePasses > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white shadow-xs animate-pulse-subtle">
-                {totalActivePasses}
-              </span>
+              <>
+                <span className="md:hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white shadow-xs animate-pulse-subtle">
+                  {totalActivePasses}
+                </span>
+                <span className="hidden md:inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow-xs animate-pulse-subtle ml-0.5">
+                  {totalActivePasses}
+                </span>
+              </>
             )}
 
-            {/* Hover Tooltip */}
-            <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
+            {/* Mobile Tooltip */}
+            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
               {totalActivePasses > 0 ? `${totalActivePasses} in Queue/Passes` : 'My Passes'}
             </span>
           </button>
@@ -115,23 +123,28 @@ export const Header: React.FC<HeaderProps> = ({
           {/* TAB 3: Agent Management Portal */}
           <button
             onClick={() => onChangeRole('agent')}
-            className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-[16px] sm:rounded-[18px] flex items-center justify-center transition-all duration-200 active:scale-95 group ${
+            className={`relative w-10 h-10 md:w-auto md:px-3.5 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group ${
               currentRole === 'agent'
-                ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.04]'
+                ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
             }`}
             aria-label="Agent Portal"
             title="Agent Portal"
           >
-            <ShieldCheck className={`w-4 h-4 sm:w-5 sm:h-5 ${currentRole === 'agent' ? 'text-emerald-300' : ''}`} />
+            <ShieldCheck className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-emerald-300' : ''}`} />
+
+            {/* Desktop Label */}
+            <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
+              Agent Portal
+            </span>
 
             {/* Calendly Signature Downward Teardrop Indicator when Active */}
             {currentRole === 'agent' && (
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
             )}
 
-            {/* Hover Tooltip */}
-            <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
+            {/* Mobile Tooltip */}
+            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
               Agent Portal
             </span>
           </button>
@@ -139,38 +152,20 @@ export const Header: React.FC<HeaderProps> = ({
           {/* TAB 4: System Architecture & Concurrency Rules Guide */}
           <button
             onClick={onOpenGuide}
-            className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-[16px] sm:rounded-[18px] flex items-center justify-center bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group"
+            className="relative w-10 h-10 md:w-auto md:px-3 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group"
             aria-label="Flow Guide"
             title="Flow Guide"
           >
-            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
+            <Sparkles className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-amber-500 shrink-0" />
 
-            {/* Hover Tooltip */}
-            <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
+            {/* Desktop Label */}
+            <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
               Flow Guide
             </span>
-          </button>
 
-          {/* TAB 5: Desktop Mobile Frame Emulator Toggle (hidden on small screens) */}
-          <button
-            onClick={onToggleMobileFrame}
-            className={`hidden md:flex relative w-10 h-10 sm:w-11 sm:h-11 rounded-[16px] sm:rounded-[18px] items-center justify-center transition-all duration-200 active:scale-95 group ${
-              isMobileFrame
-                ? 'bg-blue-50 text-[#275DAD] border border-blue-200'
-                : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80'
-            }`}
-            aria-label={isMobileFrame ? "Switch to Fullscreen Feed" : "Switch to Mobile Device Frame"}
-            title={isMobileFrame ? "Switch to Fullscreen Feed" : "Switch to Mobile Device Frame"}
-          >
-            {isMobileFrame ? (
-              <Monitor className="w-4 h-4 text-[#275DAD]" />
-            ) : (
-              <Smartphone className="w-4 h-4 text-[#70798C] group-hover:text-[#000004]" />
-            )}
-
-            {/* Hover Tooltip */}
-            <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-              {isMobileFrame ? 'Fullscreen' : 'Phone Frame'}
+            {/* Mobile Tooltip */}
+            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
+              Flow Guide
             </span>
           </button>
         </div>

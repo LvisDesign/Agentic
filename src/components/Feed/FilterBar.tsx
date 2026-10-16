@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { DELTA_CITIES, ALL_NIGERIAN_STATES, PROPERTY_TYPES } from '../../data/mockListings';
 import { formatNaira } from '../../utils/formatters';
+import { AdvertStory } from '../../data/mockAdverts';
+import { AdvertStoriesTray } from './AdvertStoriesTray';
 
 interface FilterBarProps {
   selectedCity: string;
@@ -23,6 +25,10 @@ interface FilterBarProps {
   maxRent: number;
   onSelectMaxRent: (val: number) => void;
   totalFiltered: number;
+  adverts?: AdvertStory[];
+  onSelectAdvert?: (ad: AdvertStory) => void;
+  onOpenPostAd?: () => void;
+  activeStoryId?: string | null;
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -35,6 +41,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   maxRent,
   onSelectMaxRent,
   totalFiltered,
+  adverts,
+  onSelectAdvert,
+  onOpenPostAd,
+  activeStoryId,
 }) => {
   const [isOpenModal, setIsOpenModal] = useState(false);
 
@@ -51,9 +61,23 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
   return (
     <>
-      {/* Dedicated Filter Sub-Bar docked directly below Header */}
-      <div className="fixed top-16 left-0 right-0 z-30 h-12 bg-[#FCF9F5]/95 backdrop-blur-md border-b border-[#E5E7EB] px-3 flex items-center justify-center shadow-xs">
-        <div className="flex items-center gap-1.5 p-1 rounded-full bg-white border border-[#E5E7EB] shadow-xs max-w-full">
+      {/* Sub-Header Container docked directly below Header */}
+      <div className="fixed top-16 left-0 right-0 z-30 bg-[#FCF9F5]/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs flex flex-col items-center">
+        {/* Advert Stories Tray (Squared with Rounded Edges) on top of the FilterBar */}
+        {adverts && onSelectAdvert && onOpenPostAd && (
+          <div className="w-full">
+            <AdvertStoriesTray
+              adverts={adverts}
+              onSelectAdvert={onSelectAdvert}
+              onOpenPostAd={onOpenPostAd}
+              activeStoryId={activeStoryId}
+            />
+          </div>
+        )}
+
+        {/* Filter Pill Row (Screenshot 2 layer) */}
+        <div className="h-11 w-full flex items-center justify-center px-3 border-t border-[#E5E7EB]/50">
+          <div className="flex items-center gap-1.5 p-1 rounded-full bg-white border border-[#E5E7EB] shadow-xs max-w-full">
           {/* City Quick Selector */}
         <select
           value={selectedCity}
@@ -109,6 +133,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         </button>
         </div>
       </div>
+    </div>
 
       {/* Expanded Filter Modal */}
       {isOpenModal && (

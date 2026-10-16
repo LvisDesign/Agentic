@@ -8,6 +8,9 @@ import { AgentDashboard } from './components/Agent/AgentDashboard';
 import { MyPassesModal } from './components/Pass/MyPassesModal';
 import { SystemGuideModal } from './components/UI/SystemGuideModal';
 import { InspectionBookingModal } from './components/Booking/InspectionBookingModal';
+import { MOCK_ADVERT_STORIES, AdvertStory } from './data/mockAdverts';
+import { AdvertStoryModal } from './components/Feed/AdvertStoryModal';
+import { PostAdModal } from './components/Feed/PostAdModal';
 
 // Seed initial bookings for immediate testability
 const INITIAL_BOOKINGS: BookingRecord[] = [
@@ -51,11 +54,19 @@ export function App() {
   const [selectedState, setSelectedState] = useState('Delta State (Active Launch)');
   const [maxRent, setMaxRent] = useState(5000000);
 
-  // Modals & frame states
-  const [isMobileFrame, setIsMobileFrame] = useState(false);
+  // Modals
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isMyPassesOpen, setIsMyPassesOpen] = useState(false);
   const [activeModalListing, setActiveModalListing] = useState<PropertyListing | null>(null);
+
+  // Advert stories state
+  const [adverts, setAdverts] = useState<AdvertStory[]>(MOCK_ADVERT_STORIES);
+  const [selectedStoryAd, setSelectedStoryAd] = useState<AdvertStory | null>(null);
+  const [isPostAdOpen, setIsPostAdOpen] = useState(false);
+
+  const handleAddAdvert = (newAd: AdvertStory) => {
+    setAdverts((prev) => [newAd, ...prev]);
+  };
 
   // Filter logic
   const filteredListings = useMemo(() => {
@@ -177,22 +188,22 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#275DAD]/15 selection:text-[#275DAD]">
+    <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#275DAD]/15 selection:text-[#275DAD] ${
+      currentRole === 'seeker' ? 'h-screen h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-hidden'
+    }`}>
       {/* 1. Global Navigation Header */}
       <Header
         currentRole={currentRole}
         onChangeRole={setCurrentRole}
         activeBookings={bookings}
         onOpenMyPasses={() => setIsMyPassesOpen(true)}
-        isMobileFrame={isMobileFrame}
-        onToggleMobileFrame={() => setIsMobileFrame(!isMobileFrame)}
         onOpenGuide={() => setIsGuideOpen(true)}
       />
 
       {/* 2. Main Content Area */}
       {currentRole === 'seeker' ? (
-        <main className="flex-1 w-full flex flex-col items-center justify-center relative">
-          {/* Snap-Feed Filter Bar */}
+        <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">
+          {/* Snap-Feed Filter Bar with Squared Rounded-Edges Adverts Tray */}
           <FilterBar
             selectedCity={selectedCity}
             onSelectCity={setSelectedCity}
@@ -203,43 +214,23 @@ export function App() {
             maxRent={maxRent}
             onSelectMaxRent={setMaxRent}
             totalFiltered={filteredListings.length}
+            adverts={adverts}
+            onSelectAdvert={(ad) => setSelectedStoryAd(ad)}
+            onOpenPostAd={() => setIsPostAdOpen(true)}
+            activeStoryId={selectedStoryAd?.id}
           />
 
-          {/* Conditional Layout: Mobile Device Frame vs Fullscreen Responsive */}
-          {isMobileFrame ? (
-            <div className="pt-32 pb-12 px-4 w-full flex items-center justify-center">
-              {/* iPhone / Pixel Style Device Frame */}
-              <div className="w-[390px] h-[844px] max-w-full rounded-[48px] border-[10px] border-[#1f2937] bg-black shadow-2xl overflow-hidden relative ring-1 ring-white/20">
-                {/* Dynamic Island / Camera Notch */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-28 h-5 bg-black rounded-full z-50 flex items-center justify-end px-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#111827] ring-1 ring-white/10" />
-                </div>
-
-                {/* Snap Feed Content */}
-                <div className="w-full h-full">
-                  <PropertyFeed
-                    listings={filteredListings}
-                    bookings={bookings}
-                    onBookSlot={handleBookSlot}
-                    onUpdateBooking={handleUpdateBooking}
-                    onSimulateAgentAccept={handleAcceptBooking}
-                    onResetFilters={handleResetFilters}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="w-full h-[calc(100dvh-7rem)] mt-[112px] overflow-hidden">
-              <PropertyFeed
-                listings={filteredListings}
-                bookings={bookings}
-                onBookSlot={handleBookSlot}
-                onUpdateBooking={handleUpdateBooking}
-                onSimulateAgentAccept={handleAcceptBooking}
-                onResetFilters={handleResetFilters}
-              />
-            </div>
-          )}
+          {/* Clean Responsive Feed without vertical scrollbar (adjusted offset for adverts tray) */}
+          <div className="w-full h-[calc(100dvh-194px)] mt-[194px] overflow-hidden">
+            <PropertyFeed
+              listings={filteredListings}
+              bookings={bookings}
+              onBookSlot={handleBookSlot}
+              onUpdateBooking={handleUpdateBooking}
+              onSimulateAgentAccept={handleAcceptBooking}
+              onResetFilters={handleResetFilters}
+            />
+          </div>
         </main>
       ) : (
         /* Agent Mode Portal */
@@ -280,6 +271,29 @@ export function App() {
           onSimulateAgentAccept={handleAcceptBooking}
         />
       )}
+
+      {/* 4. Advert Stories & Submission Modals */}
+      {selectedStoryAd && (
+        <AdvertStoryModal
+          isOpen={Boolean(selectedStoryAd)}
+          onClose={() => setSelectedStoryAd(null)}
+          adverts={adverts}
+          initialAdvertId={selectedStoryAd.id}
+          onNavigateToProperty={(propertyId) => {
+            setSelectedStoryAd(null);
+            const prop = listings.find((l) => l.id === propertyId);
+            if (prop) {
+              setActiveModalListing(prop);
+            }
+          }}
+        />
+      )}
+
+      <PostAdModal
+        isOpen={isPostAdOpen}
+        onClose={() => setIsPostAdOpen(false)}
+        onAddAdvert={handleAddAdvert}
+      />
     </div>
   );
 }
