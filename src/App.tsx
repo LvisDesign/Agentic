@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { INITIAL_LISTINGS } from './data/mockListings';
 import { PropertyListing, BookingRecord, UserRole, UserProfile } from './types/marketplace';
 import { Header } from './components/Header';
-import { PWAInstallBanner } from './components/UI/PWAInstallBanner';
 import { setAppBadge, clearAppBadge } from './utils/pwa';
+import { saveRegisteredUser } from './utils/userRegistry';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
 import { AgentDashboard } from './components/Agent/AgentDashboard';
@@ -295,13 +295,15 @@ export function App() {
     phone: string;
     cities: string[];
   }) => {
-    setCurrentUser((prev) => ({
-      ...prev,
+    const updatedAgentProfile: UserProfile = {
+      ...currentUser,
       isAgent: true,
       agencyName: agentData.agencyName,
       cacNumber: agentData.cacNumber,
       phone: agentData.phone,
-    }));
+    };
+    saveRegisteredUser(updatedAgentProfile);
+    setCurrentUser(updatedAgentProfile);
     setCurrentRole('agent');
   };
 
@@ -364,6 +366,7 @@ export function App() {
 
   // Handler: Update current user from signup/login modal
   const handleUpdateUser = (updatedUser: UserProfile, role?: 'seeker' | 'agent') => {
+    saveRegisteredUser(updatedUser);
     setCurrentUser(updatedUser);
     setIsAuthenticated(true);
     localStorage.setItem('deltarent_auth', 'true');
@@ -395,7 +398,7 @@ export function App() {
 
   // Determine root container layout:
   // Seeker Feed is viewport locked for snap reels; Seeker Dashboard and Agent Dashboard are naturally scrolling pages.
-  const isFeedView = currentRole === 'seeker' && userView === 'feed';
+  const isFeedView = currentRole === 'seeker' && (userView === 'feed' || !isAuthenticated);
 
   return (
     <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#342A21]/15 selection:text-[#342A21] ${
@@ -408,8 +411,20 @@ export function App() {
         userView={userView}
         onChangeUserView={setUserView}
         activeBookings={bookings}
-        onOpenMyPasses={() => setIsMyPassesOpen(true)}
-        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenMyPasses={() => {
+          if (!isAuthenticated) {
+            handleOpenSignup();
+            return;
+          }
+          setIsMyPassesOpen(true);
+        }}
+        onOpenProfile={() => {
+          if (!isAuthenticated) {
+            handleOpenSignup();
+            return;
+          }
+          setIsProfileOpen(true);
+        }}
         currentUser={currentUser}
         onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
         onOpenSignup={handleOpenSignup}
@@ -420,8 +435,8 @@ export function App() {
 
       {/* 2. Main Content Area */}
       {currentRole === 'seeker' ? (
-        userView === 'dashboard' ? (
-          /* Seeker / User Dashboard: Tailored for user with guest awareness */
+        userView === 'dashboard' && isAuthenticated ? (
+          /* Seeker / User Dashboard: Strictly for authenticated users */
           <main className="flex-1 w-full">
             <UserDashboard
               currentUser={currentUser}
@@ -578,9 +593,6 @@ export function App() {
         onClose={() => setIsPostAdOpen(false)}
         onAddAdvert={handleAddAdvert}
       />
-
-      {/* 5. In-App PWA Install Banner & Prompt */}
-      <PWAInstallBanner />
     </div>
   );
 }

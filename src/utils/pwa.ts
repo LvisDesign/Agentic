@@ -1,5 +1,101 @@
+import { useState, useEffect, useMemo, useCallback } from 'react';
+
 // PWA (Progressive Web App) Utility Module
 // Provides Service Worker registration, Web Push subscription, App Badging, and installation helpers
+
+export interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+}
+
+let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+const promptListeners = new Set<(prompt: BeforeInstallPromptEvent | null) => void>();
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    globalDeferredPrompt = e as BeforeInstallPromptEvent;
+    promptListeners.forEach((fn) => fn(globalDeferredPrompt));
+  });
+
+  window.addEventListener('appinstalled', () => {
+    globalDeferredPrompt = null;
+    promptListeners.forEach((fn) => fn(null));
+  });
+}
+
+export function getDeferredPrompt(): BeforeInstallPromptEvent | null {
+  return globalDeferredPrompt;
+}
+
+export function subscribePrompt(fn: (prompt: BeforeInstallPromptEvent | null) => void): () => void {
+  promptListeners.add(fn);
+  fn(globalDeferredPrompt);
+  return () => {
+    promptListeners.delete(fn);
+  };
+}
+
+export async function triggerPWAInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {
+  if (!globalDeferredPrompt) {
+    return 'unavailable';
+  }
+  try {
+    await globalDeferredPrompt.prompt();
+    const choice = await globalDeferredPrompt.userChoice;
+    if (choice.outcome === 'accepted') {
+      globalDeferredPrompt = null;
+      promptListeners.forEach((fn) => fn(null));
+    }
+    return choice.outcome;
+  } catch (err) {
+    console.error('[PWA] Error launching install prompt:', err);
+    return 'unavailable';
+  }
+}
+
+/**
+ * React hook to reactively track PWA installation state and trigger install
+ */
+export function usePWA() {
+  const [standalone, setStandalone] = useState<boolean>(() => isStandalone());
+  const [hasPrompt, setHasPrompt] = useState<boolean>(() => Boolean(globalDeferredPrompt));
+  const isApple = useMemo(() => isIOS(), []);
+
+  useEffect(() => {
+    const unsub = subscribePrompt((p) => {
+      setHasPrompt(Boolean(p));
+      setStandalone(isStandalone());
+    });
+
+    const checkStandalone = () => setStandalone(isStandalone());
+    if (typeof window !== 'undefined') {
+      const mql = window.matchMedia('(display-mode: standalone)');
+      mql.addEventListener('change', checkStandalone);
+      window.addEventListener('appinstalled', checkStandalone);
+
+      return () => {
+        unsub();
+        mql.removeEventListener('change', checkStandalone);
+        window.removeEventListener('appinstalled', checkStandalone);
+      };
+    }
+
+    return () => unsub();
+  }, []);
+
+  const installApp = useCallback(async () => {
+    return await triggerPWAInstall();
+  }, []);
+
+  return {
+    isStandalone: standalone,
+    canInstall: !standalone,
+    hasPrompt,
+    isIOS: isApple,
+    installApp,
+  };
+}
 
 export interface PWAState {
   isSupported: boolean;

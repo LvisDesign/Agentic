@@ -14,11 +14,14 @@ import {
   UserCheck,
   UserPlus,
   LogOut,
-  BellRing
+  BellRing,
+  Download,
+  Share2,
+  PlusSquare
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNigerianPhone } from '../../utils/formatters';
-import { getNotificationPermission, requestNotificationPermission, setAppBadge } from '../../utils/pwa';
+import { getNotificationPermission, requestNotificationPermission, setAppBadge, usePWA } from '../../utils/pwa';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -48,6 +51,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [showArchitectureGuide, setShowArchitectureGuide] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => getNotificationPermission());
   const [testAlertSent, setTestAlertSent] = useState(false);
+
+  // Persistent Unobtrusive PWA Install State
+  const { isStandalone, isIOS, installApp } = usePWA();
+  const [showIOSInstallGuide, setShowIOSInstallGuide] = useState(false);
+  const [installSuccessNotice, setInstallSuccessNotice] = useState(false);
+
+  const handleInstallApp = async () => {
+    if (isIOS) {
+      setShowIOSInstallGuide((prev) => !prev);
+      return;
+    }
+    const outcome = await installApp();
+    if (outcome === 'accepted') {
+      setInstallSuccessNotice(true);
+      setTimeout(() => setInstallSuccessNotice(false), 3500);
+    }
+  };
 
   const handleToggleAlerts = async () => {
     const perm = await requestNotificationPermission();
@@ -298,7 +318,70 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
           </div>
 
+          {/* Persistent Unobtrusive Install Option (Hidden when running in standalone mode / installed) */}
+          {!isStandalone && (
+            <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#275DAD]/30 transition-all space-y-2.5 shadow-xs">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#275DAD]/10 text-[#275DAD] flex items-center justify-center shrink-0">
+                    <Download className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-xs text-[#000004] flex items-center gap-1.5">
+                      <span>Install DeltaRent App</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#275DAD]/10 text-[#275DAD]">
+                        PWA
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#70798C] mt-0.5">
+                      Fast mobile access, instant Lister alerts & inspection updates
+                    </p>
+                  </div>
+                </div>
 
+                <button
+                  type="button"
+                  onClick={handleInstallApp}
+                  className="py-1.5 px-3 rounded-xl bg-[#275DAD] hover:bg-[#1f4b8c] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs shrink-0 flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Install</span>
+                </button>
+              </div>
+
+              {/* Install success notification */}
+              {installSuccessNotice && (
+                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center gap-1.5 animate-fade-in">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>App successfully added to your home screen!</span>
+                </div>
+              )}
+
+              {/* iOS Guide Accordion */}
+              {showIOSInstallGuide && (
+                <div className="p-3 rounded-xl bg-[#FCF9F5] border border-[rgba(112,121,140,0.22)] text-left space-y-2 text-[11px] animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#000004]">Add to iOS Home Screen:</span>
+                    <button 
+                      type="button"
+                      onClick={() => setShowIOSInstallGuide(false)}
+                      className="text-[#70798C] hover:text-[#000004] text-[10px] font-bold cursor-pointer"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 text-[#342A21]">
+                    <span className="w-4 h-4 rounded-full bg-[#275DAD] text-white font-bold text-[9px] flex items-center justify-center shrink-0">1</span>
+                    <span>Tap <strong>Share</strong> <Share2 className="w-3 h-3 inline text-[#275DAD] mx-0.5" /> in Safari's bottom toolbar.</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[#342A21]">
+                    <span className="w-4 h-4 rounded-full bg-[#275DAD] text-white font-bold text-[9px] flex items-center justify-center shrink-0">2</span>
+                    <span>Scroll down and select <strong>Add to Home Screen</strong> <PlusSquare className="w-3 h-3 inline text-[#275DAD] mx-0.5" />.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Switch back to Tenant View (Only shown if currently in Agent Mode) */}
           {currentRole === 'agent' && (

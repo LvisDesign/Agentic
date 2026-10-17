@@ -12,11 +12,24 @@ import {
   CalendarCheck,
   LogIn,
   Check,
-  Info
+  Info,
+  Download,
+  Share2,
+  PlusSquare,
+  Sparkles,
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { DeltaCity, UserProfile } from '../../types/marketplace';
 import { StateDropdown } from '../UI/StateDropdown';
 import { CustomDropdown } from '../UI/CustomDropdown';
+import { usePWA } from '../../utils/pwa';
+import { 
+  checkUserExists, 
+  findUserByCredential, 
+  saveRegisteredUser, 
+  DuplicateCheckResult 
+} from '../../utils/userRegistry';
 
 export const NIGERIAN_STATES = [
   'Delta State',
@@ -158,11 +171,70 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState({ title: '', subtitle: '' });
 
+  // PWA & Post-Signup Onboarding State
+  const { isStandalone, isIOS, installApp } = usePWA();
+  const [pendingRegistration, setPendingRegistration] = useState<{
+    user: UserProfile;
+    role: 'seeker' | 'agent';
+  } | null>(null);
+  const [showPostSignupPrompt, setShowPostSignupPrompt] = useState(false);
+  const [installStatus, setInstallStatus] = useState<'idle' | 'installing' | 'installed' | 'ios_guide'>('idle');
+
+  // Duplicate Account Prevention State
+  const [duplicateError, setDuplicateError] = useState<DuplicateCheckResult | null>(null);
+
+  const handleFinishSignup = () => {
+    if (pendingRegistration) {
+      saveRegisteredUser(pendingRegistration.user);
+      onUpdateUser(pendingRegistration.user, pendingRegistration.role);
+    }
+    setPendingRegistration(null);
+    setShowPostSignupPrompt(false);
+    setInstallStatus('idle');
+    setDuplicateError(null);
+    onClose();
+  };
+
+  const handleSwitchToLoginWithDuplicate = (dup: DuplicateCheckResult) => {
+    setAuthMode('login');
+    const prefill = dup.field === 'email'
+      ? (activeRoleTab === 'seeker' ? seekerEmail : agentEmail)
+      : (activeRoleTab === 'seeker' ? seekerPhone : agentPhone);
+    setLoginPhoneOrEmail(prefill);
+    if (dup.matchedUser) {
+      setLoginRole(dup.matchedUser.isAgent ? 'agent' : 'seeker');
+    }
+    setDuplicateError(null);
+  };
+
+  const handleTriggerInstall = async () => {
+    if (isIOS) {
+      setInstallStatus('ios_guide');
+      return;
+    }
+
+    setInstallStatus('installing');
+    const outcome = await installApp();
+
+    if (outcome === 'accepted') {
+      setInstallStatus('installed');
+      setTimeout(() => {
+        handleFinishSignup();
+      }, 1300);
+    } else if (outcome === 'dismissed') {
+      setInstallStatus('idle');
+    } else {
+      // Unavailable (e.g. browser already handled or desktop)
+      handleFinishSignup();
+    }
+  };
+
   if (!isOpen || isAuthenticated) return null;
 
   // Handle phone changes to sync WhatsApp if checked
   const handleAgentPhoneChange = (val: string) => {
     setAgentPhone(val);
+    if (duplicateError) setDuplicateError(null);
     if (sameAsPhone) {
       setAgentWhatsapp(val);
     }
@@ -180,6 +252,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     e.preventDefault();
     if (!seekerFullName.trim() || !seekerPhone.trim()) return;
 
+    // Strict duplicate check: prevent signing up twice with same phone number or email
+    const dupCheck = checkUserExists(seekerPhone, seekerEmail);
+    if (dupCheck.exists) {
+      setDuplicateError(dupCheck);
+      return;
+    }
+    setDuplicateError(null);
+
     const updated: UserProfile = {
       ...currentUser,
       id: currentUser.id || `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -192,23 +272,39 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       isAgent: false,
     };
 
-    setSuccessMessage({
-      title: `Welcome, ${seekerFullName.trim()}!`,
-      subtitle: `Your tenant profile is active for ${seekerState}. Inspection bookings are now unlocked!`,
-    });
-    setIsSuccess(true);
+    if (isStandalone) {
+      // If already installed/standalone, save user and bypass directly
+      saveRegisteredUser(updated);
+      setSuccessMessage({
+        title: `Welcome, ${seekerFullName.trim()}!`,
+        subtitle: `Your tenant profile is active for ${seekerState}. Inspection bookings are now unlocked!`,
+      });
+      setIsSuccess(true);
 
-    setTimeout(() => {
-      onUpdateUser(updated, 'seeker');
-      setIsSuccess(false);
-      onClose();
-    }, 1100);
+      setTimeout(() => {
+        onUpdateUser(updated, 'seeker');
+        setIsSuccess(false);
+        onClose();
+      }, 1000);
+    } else {
+      // Trigger post-signup "Welcome & Add App" step!
+      setPendingRegistration({ user: updated, role: 'seeker' });
+      setShowPostSignupPrompt(true);
+    }
   };
 
   // Submission for Agent Signup
   const handleAgentSignup = (e: React.FormEvent) => {
     e.preventDefault();
     if (!agentFullName.trim() || !agencyName.trim() || !agentPhone.trim()) return;
+
+    // Strict duplicate check: prevent signing up twice with same phone number or email
+    const dupCheck = checkUserExists(agentPhone, agentEmail);
+    if (dupCheck.exists) {
+      setDuplicateError(dupCheck);
+      return;
+    }
+    setDuplicateError(null);
 
     const finalWhatsapp = sameAsPhone ? agentPhone.trim() : (agentWhatsapp.trim() || agentPhone.trim());
 
@@ -230,17 +326,25 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       isAgent: true,
     };
 
-    setSuccessMessage({
-      title: `Welcome, ${agentFullName.trim()}!`,
-      subtitle: `${agencyName.trim()} is now registered. Redirecting to your Agent Listing Portal...`,
-    });
-    setIsSuccess(true);
+    if (isStandalone) {
+      // If already installed/standalone, save user and bypass directly
+      saveRegisteredUser(updated);
+      setSuccessMessage({
+        title: `Welcome, ${agentFullName.trim()}!`,
+        subtitle: `${agencyName.trim()} is now registered. Redirecting to your Agent Listing Portal...`,
+      });
+      setIsSuccess(true);
 
-    setTimeout(() => {
-      onUpdateUser(updated, 'agent');
-      setIsSuccess(false);
-      onClose();
-    }, 1200);
+      setTimeout(() => {
+        onUpdateUser(updated, 'agent');
+        setIsSuccess(false);
+        onClose();
+      }, 1000);
+    } else {
+      // Trigger post-signup "Welcome & Add App" step!
+      setPendingRegistration({ user: updated, role: 'agent' });
+      setShowPostSignupPrompt(true);
+    }
   };
 
   // Submission for Login
@@ -249,6 +353,27 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     const query = loginPhoneOrEmail.trim();
     if (!query) return;
 
+    // Check registry for exact match first
+    const registeredMatch = findUserByCredential(query);
+    if (registeredMatch) {
+      const isAgent = registeredMatch.isAgent;
+      setSuccessMessage({
+        title: `Welcome back, ${registeredMatch.fullName}!`,
+        subtitle: isAgent
+          ? 'Signed in as Agent. Loading your listings and inspection requests...'
+          : 'Signed in as Tenant. Your saved inspections and passes are ready!',
+      });
+      setIsSuccess(true);
+
+      setTimeout(() => {
+        onUpdateUser(registeredMatch, isAgent ? 'agent' : 'seeker');
+        setIsSuccess(false);
+        onClose();
+      }, 1000);
+      return;
+    }
+
+    // Demo fallback
     const isAgentLogin =
       loginRole === 'agent' ||
       query === '0803 555 1234' ||
@@ -323,10 +448,117 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-fade-in">
-      <div 
-        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[92vh] animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
-      >
+      {showPostSignupPrompt ? (
+        /* --- POST-SIGNUP SCREEN CARD LAYOUT --- */
+        <div 
+          className="w-full max-w-md bg-[#FFFFFF] rounded-3xl p-6 sm:p-8 shadow-2xl border border-[rgba(112,121,140,0.22)] overflow-hidden flex flex-col text-center space-y-6 animate-slide-up relative"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Dismiss button */}
+          <button
+            onClick={handleFinishSignup}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] hover:text-[#000004] flex items-center justify-center cursor-pointer transition-colors"
+            title="Continue to feed"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          {/* App icon rounded badge with primary color (#275DAD) */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#275DAD] text-white flex items-center justify-center mx-auto shadow-lg shadow-[#275DAD]/25 ring-4 ring-[#275DAD]/10 transition-transform">
+            {installStatus === 'installed' ? (
+              <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-300 animate-bounce" />
+            ) : (
+              <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+            )}
+          </div>
+
+          {/* Heading & Description */}
+          <div className="space-y-2">
+            <h3 className="font-display text-2xl sm:text-[26px] font-bold text-[#000004] leading-tight">
+              {installStatus === 'installed'
+                ? 'Welcome aboard! App Added'
+                : 'Welcome aboard! Add to your home screen'}
+            </h3>
+            <p className="font-body text-xs sm:text-sm text-[#70798C] leading-relaxed max-w-sm mx-auto">
+              {installStatus === 'installed'
+                ? 'Your registration is complete. Redirecting to your DeltaRent property feed...'
+                : 'Get fast mobile access, instant Lister notifications, and inspection booking updates without downloading any APK.'}
+            </p>
+          </div>
+
+          {/* Value highlights */}
+          {installStatus !== 'installed' && installStatus !== 'ios_guide' && (
+            <div className="grid grid-cols-2 gap-2 text-left pt-1">
+              <div className="p-2.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex items-center gap-2">
+                <div className="w-5 h-5 rounded-md bg-[#275DAD]/10 text-[#275DAD] flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3" />
+                </div>
+                <span className="text-[11px] font-semibold text-[#000004]">Instant Lister alerts</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex items-center gap-2">
+                <div className="w-5 h-5 rounded-md bg-[#275DAD]/10 text-[#275DAD] flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3" />
+                </div>
+                <span className="text-[11px] font-semibold text-[#000004]">Zero APK downloads</span>
+              </div>
+            </div>
+          )}
+
+          {/* iOS Safari Guide State (if on iOS) */}
+          {installStatus === 'ios_guide' && (
+            <div className="p-4 rounded-2xl bg-[#FCF9F5] border border-[rgba(112,121,140,0.22)] text-left space-y-2.5 animate-fade-in text-xs">
+              <p className="font-bold text-[#000004] text-center">To install on iOS Safari:</p>
+              <div className="flex items-center gap-2.5 text-[#342A21]">
+                <span className="w-6 h-6 rounded-full bg-[#275DAD] text-white font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
+                <span>Tap the <strong>Share</strong> button <Share2 className="w-3.5 h-3.5 inline text-[#275DAD] mx-0.5" /> in Safari's bottom bar.</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-[#342A21]">
+                <span className="w-6 h-6 rounded-full bg-[#275DAD] text-white font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
+                <span>Scroll down and tap <strong>Add to Home Screen</strong> <PlusSquare className="w-3.5 h-3.5 inline text-[#275DAD] mx-0.5" />.</span>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="space-y-2 pt-2">
+            {installStatus !== 'installed' && installStatus !== 'ios_guide' && (
+              <button
+                type="button"
+                onClick={handleTriggerInstall}
+                disabled={installStatus === 'installing'}
+                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#275DAD] hover:bg-[#1f4b8c] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-[0.99]"
+              >
+                <Download className="w-4 h-4" />
+                <span>{installStatus === 'installing' ? 'Adding to Home Screen...' : 'Add to Home Screen'}</span>
+              </button>
+            )}
+
+            {installStatus === 'ios_guide' ? (
+              <button
+                type="button"
+                onClick={handleFinishSignup}
+                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#275DAD] hover:bg-[#1f4b8c] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+              >
+                <span>Got It, Continue to Feed</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : installStatus !== 'installed' ? (
+              <button
+                type="button"
+                onClick={handleFinishSignup}
+                className="w-full py-2.5 px-4 rounded-xl text-[#70798C] hover:text-[#000004] hover:bg-slate-100/70 text-xs sm:text-sm font-semibold transition-colors cursor-pointer"
+              >
+                Continue to Feed
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <div 
+          className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[92vh] animate-slide-up"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Notice Alert (When prompted by trying to book an inspection) */}
         {notice && (
           <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 flex items-center gap-2.5 text-amber-950">
@@ -386,7 +618,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         <div className="px-5 pt-3 pb-0 flex border-b border-[#E5E7EB] bg-white">
           <button
             type="button"
-            onClick={() => setAuthMode('login')}
+            onClick={() => {
+              setAuthMode('login');
+              setDuplicateError(null);
+            }}
             className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all cursor-pointer ${
               authMode === 'login'
                 ? 'border-[#000004] text-[#000004]'
@@ -397,7 +632,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => setAuthMode('signup')}
+            onClick={() => {
+              setAuthMode('signup');
+              setDuplicateError(null);
+            }}
             className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all cursor-pointer ${
               authMode === 'signup'
                 ? 'border-[#000004] text-[#000004]'
@@ -414,7 +652,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             <div className="grid grid-cols-2 p-1 bg-slate-200/70 rounded-2xl gap-1">
               <button
                 type="button"
-                onClick={() => setActiveRoleTab('seeker')}
+                onClick={() => {
+                  setActiveRoleTab('seeker');
+                  setDuplicateError(null);
+                }}
                 className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   activeRoleTab === 'seeker'
                     ? 'bg-white text-[#000004] shadow-xs'
@@ -427,7 +668,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
               <button
                 type="button"
-                onClick={() => setActiveRoleTab('agent')}
+                onClick={() => {
+                  setActiveRoleTab('agent');
+                  setDuplicateError(null);
+                }}
                 className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   activeRoleTab === 'agent'
                     ? 'bg-white text-[#000004] shadow-xs'
@@ -521,6 +765,33 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           ) : activeRoleTab === 'seeker' ? (
             /* --- 1. FIRST-TIME TENANT SIGNUP FORM --- */
             <form onSubmit={handleSeekerSignup} className="space-y-3.5 text-xs">
+              {/* Duplicate Account Alert Banner */}
+              {duplicateError && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-2 animate-fade-in shadow-xs">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h5 className="font-bold text-xs text-rose-900 leading-tight">Account Already Exists</h5>
+                      <p className="text-[11px] text-rose-800 leading-relaxed mt-0.5">
+                        {duplicateError.message} You cannot register twice with the same phone number or email address.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-0.5 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Sign In With This Account</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Full Name */}
               <div>
                 <label className="block text-[11px] font-bold text-[#000004] mb-1">
@@ -545,16 +816,33 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   Phone Number <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
+                  <Phone className={`w-4 h-4 absolute left-3 top-2.5 transition-colors ${
+                    duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                      ? 'text-rose-600'
+                      : 'text-[#70798C]'
+                  }`} />
                   <input
                     type="tel"
                     required
                     placeholder="0803 000 0000"
                     value={seekerPhone}
-                    onChange={(e) => setSeekerPhone(e.target.value)}
-                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                    onChange={(e) => {
+                      setSeekerPhone(e.target.value);
+                      if (duplicateError) setDuplicateError(null);
+                    }}
+                    className={`w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border text-xs text-[#000004] outline-none transition-all ${
+                      duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                        ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                        : 'border-[#E5E7EB] focus:border-[#000004]'
+                    }`}
                   />
                 </div>
+                {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                  <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Phone number already registered. Please sign in instead.</span>
+                  </p>
+                )}
               </div>
 
               {/* Email (Optional) */}
@@ -568,15 +856,32 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   </span>
                 </div>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
+                  <Mail className={`w-4 h-4 absolute left-3 top-2.5 transition-colors ${
+                    duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                      ? 'text-rose-600'
+                      : 'text-[#70798C]'
+                  }`} />
                   <input
                     type="email"
                     placeholder="name@email.com (optional)"
                     value={seekerEmail}
-                    onChange={(e) => setSeekerEmail(e.target.value)}
-                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                    onChange={(e) => {
+                      setSeekerEmail(e.target.value);
+                      if (duplicateError) setDuplicateError(null);
+                    }}
+                    className={`w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border text-xs text-[#000004] outline-none transition-all ${
+                      duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                        ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                        : 'border-[#E5E7EB] focus:border-[#000004]'
+                    }`}
                   />
                 </div>
+                {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                  <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Email address already registered. Please sign in instead.</span>
+                  </p>
+                )}
               </div>
 
               {/* Choose State looking for apartment with custom dropdown & greyed out states */}
@@ -640,6 +945,32 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           ) : (
             /* --- 2. AGENT / LANDLORD SIGNUP FORM --- */
             <form onSubmit={handleAgentSignup} className="space-y-3.5 text-xs">
+              {/* Duplicate Account Alert Banner */}
+              {duplicateError && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-2 animate-fade-in shadow-xs">
+                  <div className="flex items-start gap-2.5">
+                    <div className="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <AlertTriangle className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h5 className="font-bold text-xs text-rose-900 leading-tight">Account Already Exists</h5>
+                      <p className="text-[11px] text-rose-800 leading-relaxed mt-0.5">
+                        {duplicateError.message} You cannot register twice with the same phone number or email address.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-0.5 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Sign In With This Account</span>
+                    </button>
+                  </div>
+                </div>
+              )}
               {/* Account Type Selector */}
               <div>
                 <label className="block text-[11px] font-bold text-[#000004] mb-1">
@@ -727,16 +1058,30 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       Direct Phone Number <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
+                      <Phone className={`w-4 h-4 absolute left-3 top-2.5 transition-colors ${
+                        duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                          ? 'text-rose-600'
+                          : 'text-[#70798C]'
+                      }`} />
                       <input
                         type="tel"
                         required
                         placeholder="0803 123 4567"
                         value={agentPhone}
                         onChange={(e) => handleAgentPhoneChange(e.target.value)}
-                        className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                        className={`w-full pl-9.5 pr-3 py-2 rounded-xl border text-xs text-[#000004] outline-none transition-all ${
+                          duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                            ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                            : 'border-[#E5E7EB] focus:border-[#000004]'
+                        }`}
                       />
                     </div>
+                    {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                      <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                        <span>Phone number already registered. Please sign in instead.</span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -811,9 +1156,22 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     type="email"
                     placeholder="agency@domain.com"
                     value={agentEmail}
-                    onChange={(e) => setAgentEmail(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                    onChange={(e) => {
+                      setAgentEmail(e.target.value);
+                      if (duplicateError) setDuplicateError(null);
+                    }}
+                    className={`w-full px-3 py-2 rounded-xl border text-xs text-[#000004] outline-none transition-all ${
+                      duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                        ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                        : 'border-[#E5E7EB] focus:border-[#000004]'
+                    }`}
                   />
+                  {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                    <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>Email address already registered. Please sign in instead.</span>
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -887,6 +1245,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           </button>
         </div>
       </div>
+    )}
     </div>
   );
 };
