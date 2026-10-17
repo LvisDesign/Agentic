@@ -136,7 +136,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               </div>
               <div className="flex justify-between">
                 <span className="text-[#70798C]">Placement Duration:</span>
-                <span className="font-semibold text-[#275DAD]">
+                <span className="font-semibold text-[#342A21]">
                   {selectedPlan === 'weekly' ? '7 Days' : '30 Days'}
                 </span>
               </div>
@@ -174,7 +174,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-[#000004] text-xs">7-Day Story</span>
-                    <span className="text-[10px] font-semibold text-[#275DAD]">₦5,000</span>
+                    <span className="text-[10px] font-semibold text-[#342A21]">₦5,000</span>
                   </div>
                   <p className="text-[10px] text-[#70798C] mt-1">
                     Featured story tray spot for 1 week
@@ -216,7 +216,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                   value={headline}
                   onChange={(e) => setHeadline(e.target.value)}
                   placeholder="e.g. Last Unit: Serviced 2-Bed Flat in GRA Asaba"
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   required
                 />
               </div>
@@ -229,7 +229,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                     value={city}
                     onChange={setCity}
                     headerTitle="Select City Hub"
-                    icon={<MapPin className="w-3.5 h-3.5 text-[#275DAD]" />}
+                    icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
                     variant="form"
                   />
                 </div>
@@ -241,7 +241,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                     value={neighborhood}
                     onChange={(e) => setNeighborhood(e.target.value)}
                     placeholder="e.g. Airport Rd, GRA Phase 2"
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
               </div>
@@ -255,7 +255,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="1,500,000"
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                 />
               </div>
 
@@ -268,7 +268,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Mention 24/7 power, borehole water, security, or special discount."
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                 />
               </div>
 
@@ -282,7 +282,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                     <img src={uploadedImage} alt="preview" className="w-full h-full object-cover" />
                   </div>
                   <label className="cursor-pointer px-3 py-2 rounded-lg border border-[#E5E7EB] hover:bg-slate-50 text-xs font-semibold text-[#000004] flex items-center gap-1.5 transition-colors">
-                    <Upload className="w-3.5 h-3.5 text-[#275DAD]" />
+                    <Upload className="w-3.5 h-3.5 text-[#342A21]" />
                     <span>Upload Custom Photo</span>
                     <input
                       type="file"
@@ -308,7 +308,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                     value={whatsapp}
                     onChange={(e) => setWhatsapp(e.target.value)}
                     placeholder="2348034928172"
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                     required
                   />
                 </div>
@@ -319,7 +319,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="0803 492 8172"
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
               </div>
@@ -329,7 +329,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
             <div className="pt-3 border-t border-[#E5E7EB]">
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-[#275DAD] hover:bg-[#1e4b8f] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                className="w-full py-3.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer"
               >
                 <CreditCard className="w-4 h-4" />
                 <span>
@@ -337,7 +337,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 </span>
               </button>
               <p className="text-[10px] text-center text-[#70798C] mt-2 flex items-center justify-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#275DAD]" />
+                <ShieldCheck className="w-3.5 h-3.5 text-[#342A21]" />
                 <span>Paystack Gateway: Card, Bank Transfer, USSD • Instant Placement</span>
               </p>
             </div>

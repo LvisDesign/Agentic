@@ -3,7 +3,6 @@ import {
   MapPin, 
   ShieldCheck, 
   Receipt, 
-  CalendarCheck, 
   Share2, 
   ChevronDown, 
   CheckCircle, 
@@ -62,7 +61,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         <div className="px-3.5 sm:px-4 py-2 bg-white border-b border-[#E5E7EB] flex items-center justify-between gap-2 shrink-0">
           {/* Location tag */}
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#000004] truncate">
-            <MapPin className="w-3.5 h-3.5 text-[#275DAD] shrink-0" />
+            <MapPin className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
             <span className="truncate">{listing.neighborhood}, {listing.city}</span>
             <span className="text-[#70798C] font-normal text-[11px] shrink-0 hidden sm:inline">• Delta</span>
           </div>
@@ -101,7 +100,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 <img
                   src={listing.agent.avatarUrl}
                   alt={listing.agent.fullName}
-                  className="w-3.5 h-3.5 rounded-full object-cover border border-[#275DAD]"
+                  className="w-3.5 h-3.5 rounded-full object-cover border border-[#342A21]"
                 />
                 <span className="font-semibold text-[#000004] truncate max-w-[160px] sm:max-w-none">{listing.agent.fullName}</span>
                 <span className="text-[#70798C] text-[10px] hidden sm:inline">• {listing.agent.cacNumber}</span>
@@ -146,8 +145,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 <Zap className="w-3 h-3 text-amber-600" />
                 {listing.electricityStatus}
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-blue-50/80 border border-blue-200 text-blue-900 font-medium flex items-center gap-1">
-                <Droplet className="w-3 h-3 text-blue-600" />
+              <span className="px-2 py-0.5 rounded-md bg-[#00C3F7]/10 border border-[#00C3F7]/30 text-[#075985] font-medium flex items-center gap-1">
+                <Droplet className="w-3 h-3 text-[#0284c7]" />
                 {listing.waterSupply}
               </span>
             </div>
@@ -158,7 +157,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               className="cursor-pointer p-2 sm:p-2.5 rounded-xl bg-[#FCF9F5] hover:bg-[#F4F5F7] border border-[#E5E7EB] flex items-center justify-between text-xs transition-colors group"
             >
               <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-md bg-[#275DAD]/10 text-[#275DAD] flex items-center justify-center">
+                <div className="w-5 h-5 rounded-md bg-[#342A21]/10 text-[#342A21] flex items-center justify-center">
                   <Receipt className="w-3 h-3" />
                 </div>
                 <span className="text-[#000004] text-[11px] sm:text-xs">
@@ -168,8 +167,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                   </strong>
                 </span>
               </div>
-              <span className="text-[#275DAD] font-semibold text-[10px] sm:text-[11px] flex items-center gap-0.5 group-hover:underline">
-                View Schedule
+              <span className="text-[#342A21] font-semibold text-[10px] sm:text-[11px] flex items-center gap-0.5 group-hover:underline">
+                View Breakdown
                 <ChevronDown className="w-3 h-3" />
               </span>
             </div>
@@ -178,37 +177,25 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
         {/* 5. PINNED BOTTOM ACTION BAR: Always 100% visible on both mobile & desktop without any vertical scrolling */}
         <div className="px-3.5 py-2.5 sm:px-5 sm:py-3 bg-white border-t border-[#E5E7EB] shrink-0">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowBookingModal(true)}
-              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] cursor-pointer ${
-                activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT'
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                  : activeBooking?.status === 'QUEUED'
-                  ? 'bg-[#F0544F] hover:bg-[#d9433e] text-white'
-                  : activeBooking?.status === 'REQUEST_SUBMITTED'
-                  ? 'bg-[#275DAD] hover:bg-[#1e4b8f] text-white'
-                  : 'bg-[#000004] hover:bg-[#1f2937] text-white'
-              }`}
-            >
-              <CalendarCheck className="w-4 h-4 shrink-0" />
-              <span className="truncate">
-                {(activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT') && 'View Inspection Pass (Contact Revealed)'}
-                {activeBooking?.status === 'QUEUED' && `Standby Queue (#${activeBooking.queuePosition})`}
-                {activeBooking?.status === 'REQUEST_SUBMITTED' && 'Awaiting Agent Confirmation'}
-                {!activeBooking && 'Book Inspection (5/hr Max)'}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setShowFeeDrawer(true)}
-              className="py-2.5 sm:py-3 px-3 sm:px-3.5 rounded-xl bg-[#FCF9F5] hover:bg-[#E5E7EB] text-[#000004] font-semibold text-xs flex items-center gap-1.5 transition-colors border border-[#E5E7EB] shrink-0 cursor-pointer"
-              title="Inspect full move-in fee breakdown"
-            >
-              <Receipt className="w-4 h-4 text-[#275DAD]" />
-              <span className="hidden sm:inline">Fees</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setShowBookingModal(true)}
+            className={`w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center shadow-sm transition-all active:scale-[0.99] cursor-pointer ${
+              activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT'
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                : activeBooking?.status === 'QUEUED'
+                ? 'bg-[#F0544F] hover:bg-[#d9433e] text-white'
+                : activeBooking?.status === 'REQUEST_SUBMITTED'
+                ? 'bg-[#342A21] hover:bg-[#251E17] text-white'
+                : 'bg-[#000004] hover:bg-[#1f2937] text-white'
+            }`}
+          >
+            <span className="truncate">
+              {(activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT') && 'View Inspection Pass (Contact Revealed)'}
+              {activeBooking?.status === 'QUEUED' && `Standby Queue (#${activeBooking.queuePosition})`}
+              {activeBooking?.status === 'REQUEST_SUBMITTED' && 'Awaiting Agent Confirmation'}
+              {!activeBooking && 'Book Inspection'}
+            </span>
+          </button>
         </div>
       </div>
 

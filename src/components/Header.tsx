@@ -5,23 +5,36 @@ import {
   ShieldCheck, 
   User, 
   Compass,
+  LayoutDashboard,
+  UserCheck,
+  CalendarCheck
 } from 'lucide-react';
-import { UserRole, BookingRecord } from '../types/marketplace';
+import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 
 interface HeaderProps {
   currentRole: UserRole;
   onChangeRole: (role: UserRole) => void;
+  userView: 'dashboard' | 'feed';
+  onChangeUserView: (view: 'dashboard' | 'feed') => void;
   activeBookings: BookingRecord[];
   onOpenMyPasses: () => void;
   onOpenProfile: () => void;
+  currentUser: UserProfile;
+  onOpenBecomeAgent: () => void;
+  onOpenSignup: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentRole,
   onChangeRole,
+  userView,
+  onChangeUserView,
   activeBookings,
   onOpenMyPasses,
   onOpenProfile,
+  currentUser,
+  onOpenBecomeAgent,
+  onOpenSignup,
 }) => {
   const confirmedPassesCount = activeBookings.filter(
     (b) => b.status === 'CONFIRMED_UNLOCKED'
@@ -36,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
-        {/* Left: Brand Identity */}
+        {/* Left: Brand Identity & Active User Role indicator */}
         <div className="flex items-center gap-2 shrink-0">
           <div className="w-9 h-9 rounded-[14px] bg-[#000004] flex items-center justify-center text-white shadow-xs border border-white/20">
             <Building2 className="w-4 h-4" />
@@ -46,45 +59,89 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="font-display font-bold text-base sm:text-lg text-[#000004] tracking-tight">
                 DeltaRent
               </span>
-              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#275DAD]/10 text-[#275DAD] hidden xs:inline-block">
+              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#342A21]/10 text-[#342A21] hidden xs:inline-block">
                 Delta State
               </span>
+              {currentRole === 'seeker' ? (
+                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center gap-1">
+                  <UserCheck className="w-2.5 h-2.5" />
+                  Tenant Mode
+                </span>
+              ) : (
+                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-[#000004] text-amber-300 border border-amber-400/30 hidden sm:inline-flex items-center gap-1">
+                  <ShieldCheck className="w-2.5 h-2.5" />
+                  Agent Mode
+                </span>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Center / Right: Calendly-Style Squircle Navigation Island */}
+        {/* Center / Right: Squircle Navigation Island */}
         <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-[22px] bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs">
-          {/* TAB 1: Seeker Property Feed */}
+          {/* TAB 1: User Dashboard (only visible in seeker mode or switches to seeker dashboard) */}
           <button
-            onClick={() => onChangeRole('seeker')}
-            className={`relative w-10 h-10 md:w-auto md:px-3.5 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group ${
-              currentRole === 'seeker'
+            onClick={() => {
+              onChangeRole('seeker');
+              onChangeUserView('dashboard');
+            }}
+            className={`relative w-10 h-10 md:w-auto md:px-3 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group ${
+              currentRole === 'seeker' && userView === 'dashboard'
+                ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
+                : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
+            }`}
+            aria-label="User Dashboard"
+            title="User Dashboard"
+          >
+            <LayoutDashboard className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'seeker' && userView === 'dashboard' ? 'text-white' : ''}`} />
+            
+            {/* Desktop Label */}
+            <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
+              My Dashboard
+            </span>
+
+            {currentRole === 'seeker' && userView === 'dashboard' && (
+              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+            )}
+
+            {/* Mobile Tooltip */}
+            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
+              Dashboard
+            </span>
+          </button>
+
+          {/* TAB 2: Seeker Live Snap Feed */}
+          <button
+            onClick={() => {
+              onChangeRole('seeker');
+              onChangeUserView('feed');
+            }}
+            className={`relative w-10 h-10 md:w-auto md:px-3 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group ${
+              currentRole === 'seeker' && userView === 'feed'
                 ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
             }`}
             aria-label="Seeker Feed"
             title="Seeker Feed"
           >
-            <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'seeker' ? 'text-white' : ''}`} />
+            <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'seeker' && userView === 'feed' ? 'text-white' : ''}`} />
             
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-              Seeker Feed
+              Live Feed
             </span>
 
-            {/* Calendly Signature Downward Teardrop Indicator when Active */}
-            {currentRole === 'seeker' && (
+            {currentRole === 'seeker' && userView === 'feed' && (
               <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
             )}
 
             {/* Mobile Tooltip */}
             <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-              Seeker Feed
+              Live Feed
             </span>
           </button>
 
-          {/* TAB 2: Queue & Passes (Hourglass / Ticket with Badge) */}
+          {/* TAB 3: Inspections (CalendarCheck with Badge) */}
           <button
             onClick={onOpenMyPasses}
             className={`relative w-10 h-10 md:w-auto md:px-3.5 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group ${
@@ -92,17 +149,17 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'bg-white hover:bg-emerald-50/50 text-[#000004] border border-emerald-200 shadow-xs'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80'
             }`}
-            aria-label="Inspection Passes & Queue"
-            title="Inspection Passes & Queue"
+            aria-label="My Inspections"
+            title="My Inspections"
           >
-            <Hourglass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${totalActivePasses > 0 ? 'text-emerald-700' : ''}`} />
+            <CalendarCheck className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${totalActivePasses > 0 ? 'text-emerald-700' : ''}`} />
 
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-              My Passes
+              Inspections
             </span>
 
-            {/* Notification Badge: Mobile Pip vs Desktop Pill */}
+            {/* Notification Badge */}
             {totalActivePasses > 0 && (
               <>
                 <span className="md:hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white shadow-xs animate-pulse-subtle">
@@ -116,56 +173,50 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Mobile Tooltip */}
             <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-              {totalActivePasses > 0 ? `${totalActivePasses} in Queue/Passes` : 'My Passes'}
+              {totalActivePasses > 0 ? `${totalActivePasses} Inspections` : 'My Inspections'}
             </span>
           </button>
 
-          {/* TAB 3: Agent Management Portal */}
-          <button
-            onClick={() => onChangeRole('agent')}
-            className={`relative w-10 h-10 md:w-auto md:px-3.5 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group ${
-              currentRole === 'agent'
-                ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
-                : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
-            }`}
-            aria-label="Agent Portal"
-            title="Agent Portal"
-          >
-            <ShieldCheck className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-emerald-300' : ''}`} />
-
-            {/* Desktop Label */}
-            <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-              Agent Portal
-            </span>
-
-            {/* Calendly Signature Downward Teardrop Indicator when Active */}
-            {currentRole === 'agent' && (
+          {/* TAB 4: Agent Management Portal (Only visible when logged in as an Agent) */}
+          {currentRole === 'agent' && (
+            <button
+              onClick={() => onChangeRole('agent')}
+              className="relative w-10 h-10 md:w-auto md:px-3 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]"
+              aria-label="Agent Portal"
+              title="Agent Portal"
+            >
+              <ShieldCheck className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 text-amber-300" />
+              <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
+                Agent Portal
+              </span>
               <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
-            )}
+            </button>
+          )}
 
-            {/* Mobile Tooltip */}
-            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-              Agent Portal
-            </span>
-          </button>
-
-          {/* TAB 4: User Profile */}
+          {/* TAB 5: User Profile */}
           <button
             onClick={onOpenProfile}
-            className="relative w-10 h-10 md:w-auto md:px-3 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group"
+            className="relative w-10 h-10 md:w-auto md:px-3 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group cursor-pointer"
             aria-label="Profile"
-            title="Profile"
+            title="Profile (Not an Agent)"
           >
-            <User className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[#70798C] group-hover:text-[#000004] shrink-0" />
+            <div className="w-5 h-5 rounded-full bg-[#342A21] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+              {currentUser.fullName
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase()}
+            </div>
 
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-              Profile
+              {currentUser.fullName.split(' ')[0]}
             </span>
 
             {/* Mobile Tooltip */}
             <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-              Profile
+              {currentUser.fullName}
             </span>
           </button>
         </div>

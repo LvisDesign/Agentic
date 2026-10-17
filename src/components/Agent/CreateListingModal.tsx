@@ -109,17 +109,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
     );
   };
 
-  const handleAddSamplePreset = () => {
-    setTitle('Executive 2-Bedroom Terraced Flat with Dedicated Transformer');
-    setCity('Warri');
-    setNeighborhood('DDPA Estate, Effurun / Warri');
-    setFullAddress('House 14, Road 3, DDPA Estate, Off Airport Road, Warri, Delta State');
-    setPropertyType('2-Bedroom Flat');
-    setBaseRentInput('1800000');
-    setCautionFeeInput('150000');
-    setLegalAgencyFeeInput('360000');
-    setServiceChargeInput('150000');
-  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -241,16 +230,9 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-[#275DAD]/10 text-[#275DAD] text-xs font-semibold">
+              <span className="px-2 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21] text-xs font-semibold">
                 Agent Portal
               </span>
-              <button
-                type="button"
-                onClick={handleAddSamplePreset}
-                className="text-[11px] text-[#275DAD] hover:underline font-semibold"
-              >
-                Autofill Test Property
-              </button>
             </div>
             <h3 className="font-display text-lg sm:text-xl font-bold text-[#000004] mt-1">
               Publish Property Listing
@@ -269,7 +251,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
           {/* SECTION 1: LOCATION */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C] flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#275DAD]" />
+              <MapPin className="w-3.5 h-3.5 text-[#342A21]" />
               1. Geographic Location & Address
             </h4>
 
@@ -279,7 +261,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                 <select
                   value={selectedState}
                   onChange={(e) => setSelectedState(e.target.value as NigerianState)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs font-medium text-[#000004] bg-white focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs font-medium text-[#000004] bg-white focus:outline-none focus:border-[#342A21]"
                 >
                   <option value="Delta State">Delta State (Active Launch)</option>
                   <option value="Edo State">Edo State (Beta Expansion)</option>
@@ -294,7 +276,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                 <select
                   value={city}
                   onChange={(e) => setCity(e.target.value as DeltaCity)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs font-medium text-[#000004] bg-white focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs font-medium text-[#000004] bg-white focus:outline-none focus:border-[#342A21]"
                 >
                   <option value="Asaba">Asaba (Capital City)</option>
                   <option value="Warri">Warri (Commercial Hub)</option>
@@ -318,21 +300,21 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   value={neighborhood}
                   onChange={(e) => setNeighborhood(e.target.value)}
                   placeholder="e.g. GRA Phase 2, Airport Road, Campus 3"
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   required
                 />
               </div>
 
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">
-                  Protected Street Address (Revealed on Clearance)
+                  Internal Property Address (Private Agent Record — Never Disclosed to Tenants)
                 </label>
                 <input
                   type="text"
                   value={fullAddress}
                   onChange={(e) => setFullAddress(e.target.value)}
                   placeholder="e.g. Plot 18 Commissioners Quarters, Asaba"
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   required
                 />
               </div>
@@ -352,7 +334,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Luxury 2-Bedroom Serviced Flat with Solar Backup"
-                className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                 required
               />
             </div>
@@ -363,11 +345,11 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                 <select
                   value={propertyType}
                   onChange={(e) => setPropertyType(e.target.value as PropertyType)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] bg-white focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] bg-white focus:outline-none focus:border-[#342A21]"
                 >
                   <option value="Self-contain">Self-contain</option>
                   <option value="Single Room">Single Room</option>
-                  <option value="1-Bedroom Flat">1-Bedroom Flat</option>
+                  <option value="Bedseater">Bedseater</option>
                   <option value="2-Bedroom Flat">2-Bedroom Flat</option>
                   <option value="3-Bedroom Flat">3-Bedroom Flat</option>
                   <option value="Duplex / Semi-Detached">Duplex / Semi-Detached</option>
@@ -382,7 +364,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   max={10}
                   value={bedrooms}
                   onChange={(e) => setBedrooms(parseInt(e.target.value, 10))}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                 />
               </div>
 
@@ -394,7 +376,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   max={10}
                   value={bathrooms}
                   onChange={(e) => setBathrooms(parseInt(e.target.value, 10))}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                 />
               </div>
             </div>
@@ -440,7 +422,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                     value={formatCurrencyInput(baseRentInput)}
                     onChange={(e) => setBaseRentInput(e.target.value)}
                     placeholder="1,500,000"
-                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] font-semibold focus:outline-none focus:border-[#275DAD]"
+                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] font-semibold focus:outline-none focus:border-[#342A21]"
                     required
                   />
                 </div>
@@ -457,7 +439,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                     value={formatCurrencyInput(cautionFeeInput)}
                     onChange={(e) => setCautionFeeInput(e.target.value)}
                     placeholder="100,000"
-                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
               </div>
@@ -475,7 +457,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                     value={formatCurrencyInput(legalAgencyFeeInput)}
                     onChange={(e) => setLegalAgencyFeeInput(e.target.value)}
                     placeholder="300,000"
-                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
               </div>
@@ -491,7 +473,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                     value={formatCurrencyInput(serviceChargeInput)}
                     onChange={(e) => setServiceChargeInput(e.target.value)}
                     placeholder="120,000"
-                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
               </div>
@@ -508,7 +490,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             </div>
 
             {/* Computed Move-in Total Live Preview */}
-            <div className="p-3.5 rounded-xl bg-[#FCF9F5] border border-[#275DAD]/20 flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-[#FCF9F5] border border-[#342A21]/20 flex items-center justify-between">
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-[#70798C] font-semibold">
                   Computed Total Move-in Package
@@ -528,7 +510,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C] flex items-center gap-1.5">
-                  <Film className="w-3.5 h-3.5 text-[#275DAD]" />
+                  <Film className="w-3.5 h-3.5 text-[#342A21]" />
                   4. Property Media (House Videos & Photos)
                 </h4>
                 <p className="text-[11px] text-[#70798C] mt-0.5">
@@ -543,7 +525,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                 htmlFor="agent-media-files"
                 className="cursor-pointer px-3 py-2 rounded-lg bg-white border border-[#000004]/20 hover:border-[#000004] text-[#000004] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
               >
-                <Upload className="w-3.5 h-3.5 text-[#275DAD]" />
+                <Upload className="w-3.5 h-3.5 text-[#342A21]" />
                 <span>Upload Videos & Photos</span>
                 <input
                   id="agent-media-files"
@@ -560,7 +542,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                 <select
                   value={newMediaType}
                   onChange={(e) => setNewMediaType(e.target.value as 'image' | 'video')}
-                  className="px-2 py-1.5 rounded-lg border border-[#E5E7EB] bg-white text-xs font-medium text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                  className="px-2 py-1.5 rounded-lg border border-[#E5E7EB] bg-white text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
                 >
                   <option value="video">House Video</option>
                   <option value="image">Photo</option>
@@ -570,7 +552,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   placeholder={newMediaType === 'video' ? 'Paste MP4 / Video URL' : 'Paste Image URL'}
                   value={newMediaUrl}
                   onChange={(e) => setNewMediaUrl(e.target.value)}
-                  className="flex-1 px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#275DAD]"
+                  className="flex-1 px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                 />
                 <button
                   type="button"
@@ -609,7 +591,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   <span className="absolute top-1.5 left-1.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1">
                     {item.type === 'video' ? (
                       <>
-                        <Film className="w-2.5 h-2.5 text-blue-400" />
+                        <Film className="w-2.5 h-2.5 text-amber-200" />
                         <span>Video</span>
                       </>
                     ) : (
@@ -644,8 +626,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
           {/* SECTION 5: INSPECTION RULES */}
           <div className="space-y-3 pt-3 border-t border-[#E5E7EB]">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C] flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#275DAD]" />
-              5. Inspection Capacity Rules (Concurrency Cap: 5/hr)
+              <Clock className="w-3.5 h-3.5 text-[#342A21]" />
+              5. Inspection Capacity Rules (Agent Cap: Max 5 Bookings per Window)
             </h4>
 
             <div>
@@ -673,9 +655,9 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
               </div>
             </div>
 
-            <div className="p-3 rounded-lg bg-blue-50/60 border border-[#275DAD]/20 text-[11px] text-[#000004]">
+            <div className="p-3 rounded-lg bg-[#342A21]/5 border border-[#342A21]/20 text-[11px] text-[#000004]">
               <strong>Standard Delta Windows Configured: </strong>
-              10:00 AM – 11:00 AM, 12:00 PM – 1:00 PM, 2:00 PM – 3:00 PM, 4:00 PM – 5:00 PM. Each capped at strictly 5 concurrent seekers.
+              10:00 AM – 11:00 AM, 12:00 PM – 1:00 PM, 2:00 PM – 3:00 PM, 4:00 PM – 5:00 PM. As an agent, each window is capped at strictly 5 bookings to ensure you don't overcommit or waste house seekers' valuable time.
             </div>
           </div>
 

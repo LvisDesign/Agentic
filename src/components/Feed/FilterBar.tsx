@@ -84,7 +84,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             value={selectedCity}
             onChange={onSelectCity}
             headerTitle="Delta State Cities"
-            icon={<MapPin className="w-3.5 h-3.5 text-[#275DAD]" />}
+            icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
             align="left"
             variant="pill"
           />
@@ -112,7 +112,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <SlidersHorizontal className="w-3.5 h-3.5" />
           <span>Filter</span>
           {activeFiltersCount > 0 && (
-            <span className="w-4 h-4 rounded-full bg-white text-[#275DAD] text-[10px] font-bold flex items-center justify-center">
+            <span className="w-4 h-4 rounded-full bg-white text-[#342A21] text-[10px] font-bold flex items-center justify-center">
               {activeFiltersCount}
             </span>
           )}
@@ -153,10 +153,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   value={selectedState}
                   onChange={onSelectState}
                   headerTitle="Select Nigerian State"
-                  icon={<Building className="w-3.5 h-3.5 text-[#275DAD]" />}
+                  icon={<Building className="w-3.5 h-3.5 text-[#342A21]" />}
                   variant="form"
                 />
-                <p className="text-[11px] text-[#275DAD] mt-1">
+                <p className="text-[11px] text-[#342A21] mt-1">
                   Delta State is the active launch market with live inspection queues.
                 </p>
               </div>
@@ -202,12 +202,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                         onClick={() => onSelectType(t)}
                         className={`p-2 rounded-lg text-xs text-left border transition-colors flex items-center justify-between ${
                           isSelected
-                            ? 'bg-blue-50/40 border-[#275DAD] text-[#275DAD] font-semibold'
+                            ? 'bg-[#342A21]/10 border-[#342A21] text-[#342A21] font-semibold'
                             : 'bg-white border-[#E5E7EB] text-[#70798C] hover:border-slate-300'
                         }`}
                       >
                         <span className="truncate">{t}</span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-[#275DAD]" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#342A21]" />}
                       </button>
                     );
                   })}
@@ -231,7 +231,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   step={100000}
                   value={maxRent}
                   onChange={(e) => onSelectMaxRent(parseInt(e.target.value, 10))}
-                  className="w-full accent-[#275DAD] cursor-pointer"
+                  className="w-full accent-[#342A21] cursor-pointer"
                 />
                 <div className="flex justify-between text-[10px] text-[#70798C] mt-1">
                   <span>₦300,000 (Student self-contain)</span>

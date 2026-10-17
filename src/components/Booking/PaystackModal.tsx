@@ -59,11 +59,6 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
     setTimeout(() => setCopiedAccount(false), 2000);
   };
 
-  const fillDemoCard = () => {
-    setCardNumber('5399 8321 0014 7729');
-    setCardExpiry('08/29');
-    setCardCvv('821');
-  };
 
   const handleSimulatePayment = (method: 'Card' | 'Bank Transfer' | 'USSD') => {
     setIsProcessing(true);
@@ -79,7 +74,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
           particleCount: 80,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['#275DAD', '#10B981', '#FCF9F5', '#000004']
+          colors: ['#342A21', '#10B981', '#FCF9F5', '#000004']
         });
       } catch (err) {
         // Fallback if confetti context not available
@@ -125,7 +120,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
         {/* User Context Strip */}
         <div className="bg-[#FCF9F5] px-4 py-2 border-b border-[#E5E7EB] flex items-center justify-between text-xs text-[#70798C]">
           <span className="truncate max-w-[200px]">{applicantEmail || 'partner@deltarent.ng'}</span>
-          <span className="font-medium text-[#275DAD]">{purposeTitle || 'Advert Placement Sponsorship'}</span>
+          <span className="font-medium text-[#342A21]">{purposeTitle || 'Advert Placement Sponsorship'}</span>
         </div>
 
         {/* Payment Methods Nav */}
@@ -134,7 +129,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
             onClick={() => setActiveTab('card')}
             className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
               activeTab === 'card'
-                ? 'border-[#275DAD] text-[#275DAD] bg-blue-50/20'
+                ? 'border-[#342A21] text-[#342A21] bg-[#342A21]/5'
                 : 'border-transparent text-[#70798C] hover:text-[#000004]'
             }`}
           >
@@ -145,7 +140,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
             onClick={() => setActiveTab('bank')}
             className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
               activeTab === 'bank'
-                ? 'border-[#275DAD] text-[#275DAD] bg-blue-50/20'
+                ? 'border-[#342A21] text-[#342A21] bg-[#342A21]/5'
                 : 'border-transparent text-[#70798C] hover:text-[#000004]'
             }`}
           >
@@ -156,7 +151,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
             onClick={() => setActiveTab('ussd')}
             className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
               activeTab === 'ussd'
-                ? 'border-[#275DAD] text-[#275DAD] bg-blue-50/20'
+                ? 'border-[#342A21] text-[#342A21] bg-[#342A21]/5'
                 : 'border-transparent text-[#70798C] hover:text-[#000004]'
             }`}
           >
@@ -174,13 +169,10 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
                 <label className="text-xs font-medium text-[#70798C]">
                   Card Details (Verve, Mastercard, Visa)
                 </label>
-                <button
-                  type="button"
-                  onClick={fillDemoCard}
-                  className="text-[11px] text-[#275DAD] hover:underline font-semibold"
-                >
-                  Autofill Demo Card
-                </button>
+                <span className="text-[11px] text-[#70798C] font-medium flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-emerald-600" />
+                  256-bit Encrypted
+                </span>
               </div>
 
               <div>
@@ -189,7 +181,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
                   value={cardNumber}
                   onChange={(e) => setCardNumber(e.target.value)}
                   placeholder="0000 0000 0000 0000"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] font-mono focus:outline-none focus:border-[#275DAD] focus:ring-1 focus:ring-[#275DAD]"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] font-mono focus:outline-none focus:border-[#342A21] focus:ring-1 focus:ring-[#342A21]"
                 />
               </div>
 
@@ -201,7 +193,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
                     value={cardExpiry}
                     onChange={(e) => setCardExpiry(e.target.value)}
                     placeholder="MM / YY"
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] font-mono focus:outline-none focus:border-[#275DAD]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] font-mono focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
                 <div>
@@ -212,13 +204,13 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
                     value={cardCvv}
                     onChange={(e) => setCardCvv(e.target.value)}
                     placeholder="123"
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] font-mono focus:outline-none focus:border-[#275DAD]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] font-mono focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
               </div>
 
               <div className="p-2.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] text-[11px] text-[#70798C] flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#275DAD] shrink-0" />
+                <ShieldCheck className="w-4 h-4 text-[#342A21] shrink-0" />
                 <span>Zero Risk: Held in Delta Escrow until physical inspection takes place.</span>
               </div>
             </div>
@@ -227,7 +219,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
           {/* TAB 2: BANK TRANSFER */}
           {activeTab === 'bank' && (
             <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-blue-50/60 border border-[#275DAD]/20 text-center">
+              <div className="p-3.5 rounded-xl bg-[#342A21]/5 border border-[#342A21]/20 text-center">
                 <div className="text-xs text-[#70798C]">Transfer exactly</div>
                 <div className="text-xl font-bold text-[#000004] font-display">
                   {formatNaira(amount)}
@@ -250,7 +242,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
                     </span>
                     <button
                       onClick={handleCopyAccount}
-                      className="text-[#275DAD] hover:text-[#1e4b8f] p-1"
+                      className="text-[#342A21] hover:text-[#251E17] p-1"
                       title="Copy account number"
                     >
                       {copiedAccount ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -278,7 +270,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
               <select
                 value={selectedBank}
                 onChange={(e) => setSelectedBank(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] bg-white focus:outline-none focus:border-[#275DAD]"
+                className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] bg-white focus:outline-none focus:border-[#342A21]"
               >
                 <option value="GTBank">Guaranty Trust Bank (*737*)</option>
                 <option value="Zenith">Zenith Bank (*966*)</option>
@@ -289,7 +281,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
 
               <div className="p-4 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] text-center">
                 <div className="text-xs text-[#70798C]">Dial this code on your mobile phone:</div>
-                <div className="font-mono text-base font-bold text-[#275DAD] my-1.5 select-all">
+                <div className="font-mono text-base font-bold text-[#342A21] my-1.5 select-all">
                   *737*000*2500#
                 </div>
                 <div className="text-[11px] text-[#70798C]">

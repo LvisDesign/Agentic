@@ -18,7 +18,7 @@ export type DeltaCity =
 export type PropertyType = 
   | 'Self-contain'
   | 'Single Room'
-  | '1-Bedroom Flat'
+  | 'Bedseater'
   | '2-Bedroom Flat'
   | '3-Bedroom Flat'
   | 'Duplex / Semi-Detached'
@@ -60,7 +60,7 @@ export interface BookingRecord {
   slotDate: string;
   applicantName: string;
   applicantPhone: string;
-  applicantEmail: string;
+  applicantEmail?: string;
   status: BookingStatus;
   queuePosition?: number;         // e.g. 1, 2 if QUEUED
   inspectionFeeAmount: number;    // e.g. 2500 NGN
@@ -116,3 +116,20 @@ export interface PropertyListing {
 }
 
 export type UserRole = 'seeker' | 'agent';
+
+export interface UserProfile {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  city: DeltaCity | string;
+  preferredPropertyType?: PropertyType | string;
+  budget?: number;
+  nin?: string;
+  isVerifiedTenant: boolean;
+  avatarUrl?: string;
+  isAgent: boolean;
+  agencyName?: string;
+  cacNumber?: string;
+  savedListingIds: string[];
+}

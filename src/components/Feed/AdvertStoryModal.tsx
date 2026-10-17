@@ -135,7 +135,7 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
         <div className="absolute top-6 left-3 right-3 z-30 flex items-center justify-between text-white">
           <div className="flex items-center gap-2.5">
             {/* Squared Thumbnail with Rounded Edges in Brand Color */}
-            <div className="w-9 h-9 rounded-[12px] p-[2px] bg-gradient-to-tr from-[#275DAD] via-[#3B82F6] to-[#1E4B8F] shadow-xs">
+            <div className="w-9 h-9 rounded-[12px] p-[2px] bg-gradient-to-tr from-[#342A21] via-[#524436] to-[#251E17] shadow-xs">
               <img
                 src={activeAd.thumbnailUrl}
                 alt={activeAd.advertiserName}
@@ -148,7 +148,7 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
                 {activeAd.advertiserName}
               </span>
               <div className="flex items-center gap-1 text-[10px] text-white/80">
-                <span className="px-1 py-0.2 rounded bg-[#275DAD]/80 font-semibold uppercase text-[8px] tracking-wider">
+                <span className="px-1 py-0.2 rounded bg-[#342A21]/90 font-semibold uppercase text-[8px] tracking-wider">
                   {activeAd.badgeText}
                 </span>
                 <span>•</span>

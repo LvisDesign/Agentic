@@ -29,7 +29,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
       >
         <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#275DAD] text-white flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#342A21] text-white flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
@@ -52,7 +52,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
         <div className="p-5 overflow-y-auto space-y-4 text-xs">
           {/* Step 1 */}
           <div className="p-3.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex gap-3">
-            <span className="w-6 h-6 rounded-full bg-[#275DAD] text-white font-bold flex items-center justify-center shrink-0">
+            <span className="w-6 h-6 rounded-full bg-[#342A21] text-white font-bold flex items-center justify-center shrink-0">
               1
             </span>
             <div>
@@ -67,25 +67,25 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
 
           {/* Step 2 */}
           <div className="p-3.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex gap-3">
-            <span className="w-6 h-6 rounded-full bg-[#275DAD] text-white font-bold flex items-center justify-center shrink-0">
+            <span className="w-6 h-6 rounded-full bg-[#342A21] text-white font-bold flex items-center justify-center shrink-0">
               2
             </span>
             <div>
               <h4 className="font-bold text-[#000004] text-sm flex items-center gap-1.5">
-                <span>Concurrency Cap & Queue Engine</span>
+                <span>Agent Concurrency Cap & Queue Engine</span>
                 <span className="text-[10px] bg-[#F0544F]/10 text-[#F0544F] px-1.5 py-0.2 rounded font-bold">
-                  Max 5/hr
+                  Agents Capped at 5/hr
                 </span>
               </h4>
               <p className="text-[#70798C] mt-1 leading-relaxed">
-                To prevent overcrowding and respect tenant privacy, physical inspections are capped at strictly <strong>5 persons per hourly window</strong>. If a window is full, applicants join the Standby Waitlist Queue with live positions (#1, #2).
+                Tenants can book as many property inspections as they want. Only <strong>agents are restricted to 5 bookings per time window</strong> to ensure agents don't overcrowd showings or waste the valuable time of tenants and house seekers.
               </p>
             </div>
           </div>
 
           {/* Step 3 */}
           <div className="p-3.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex gap-3">
-            <span className="w-6 h-6 rounded-full bg-[#275DAD] text-white font-bold flex items-center justify-center shrink-0">
+            <span className="w-6 h-6 rounded-full bg-[#342A21] text-white font-bold flex items-center justify-center shrink-0">
               3
             </span>
             <div>
@@ -100,15 +100,15 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
 
           {/* Step 4 */}
           <div className="p-3.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex gap-3">
-            <span className="w-6 h-6 rounded-full bg-[#275DAD] text-white font-bold flex items-center justify-center shrink-0">
+            <span className="w-6 h-6 rounded-full bg-[#342A21] text-white font-bold flex items-center justify-center shrink-0">
               4
             </span>
             <div>
               <h4 className="font-bold text-[#000004] text-sm">
-                100% Free Inspection Booking
+                100% Free & Unlimited Bookings for Tenants
               </h4>
               <p className="text-[#70798C] mt-1 leading-relaxed">
-                Applicants reserve physical property inspection slots completely free of charge with zero booking fees. Strictly 5 persons per window concurrency limit prevents crowded showings.
+                House seekers reserve physical property inspection slots completely free of charge with zero booking fees and no quota limits. The 5-seeker cap is strictly enforced on agents to prevent crowded showings and schedule delays.
               </p>
             </div>
           </div>
@@ -124,7 +124,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
                 Confirmed Passes & Paid Advert Sponsorships
               </h4>
               <p className="text-emerald-800 mt-1 leading-relaxed">
-                Confirmed passes instantly reveal direct agent phone, 1-click WhatsApp link, complete physical address, and gate security code. Paystack payment checkout is dedicated exclusively for promoting sponsored adverts.
+                Confirmed passes instantly reveal the agent's direct phone number so you can call directly or copy their number to coordinate the showing meeting point. Paystack payment checkout is dedicated exclusively for promoting sponsored adverts.
               </p>
             </div>
           </div>

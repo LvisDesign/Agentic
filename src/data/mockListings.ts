@@ -620,7 +620,7 @@ export const PROPERTY_TYPES = [
   'All Property Types',
   'Self-contain',
   'Single Room',
-  '1-Bedroom Flat',
+  'Bedseater',
   '2-Bedroom Flat',
   '3-Bedroom Flat',
   'Duplex / Semi-Detached'

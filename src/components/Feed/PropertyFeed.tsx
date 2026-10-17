@@ -67,7 +67,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
     return (
       <div className="h-[100dvh] w-full flex flex-col items-center justify-center p-6 text-center bg-[#FCF9F5]">
         <div className="w-16 h-16 rounded-2xl bg-white border border-[#E5E7EB] shadow-xs flex items-center justify-center text-[#70798C] mb-4">
-          <SearchX className="w-8 h-8 text-[#275DAD]" />
+          <SearchX className="w-8 h-8 text-[#342A21]" />
         </div>
         <h3 className="font-display text-2xl font-bold text-[#000004]">
           No Properties Found
@@ -77,7 +77,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
         </p>
         <button
           onClick={onResetFilters}
-          className="mt-5 py-2.5 px-5 rounded-xl bg-[#275DAD] hover:bg-[#1e4b8f] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+          className="mt-5 py-2.5 px-5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
         >
           <RefreshCcw className="w-3.5 h-3.5" />
           <span>Reset Rental Filters</span>

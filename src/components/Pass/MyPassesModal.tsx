@@ -34,10 +34,10 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
             </div>
             <div>
               <h3 className="font-display text-lg font-bold text-[#000004]">
-                My Inspection Passes & Queue Tickets
+                My Property Inspections
               </h3>
               <p className="text-xs text-[#70798C]">
-                {bookings.length} active reservation(s) in Delta State
+                {bookings.length} active inspection(s) in Delta State
               </p>
             </div>
           </div>
@@ -60,7 +60,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
 
               if (b.status === 'CONFIRMED_UNLOCKED') {
                 return (
-                  <div key={b.id} className="border border-[#275DAD]/20 rounded-xl overflow-hidden">
+                  <div key={b.id} className="border border-[#342A21]/20 rounded-xl overflow-hidden">
                     <InspectionPassCard booking={b} listing={listing} />
                   </div>
                 );
@@ -72,7 +72,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                   className={`p-4 rounded-xl border ${
                     b.status === 'QUEUED'
                       ? 'border-[#F0544F]/30 bg-[#F0544F]/5'
-                      : 'border-[#275DAD]/30 bg-blue-50/20'
+                      : 'border-[#342A21]/30 bg-[#342A21]/5'
                   } flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
                 >
                   <div className="space-y-1">
@@ -84,10 +84,10 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                     </div>
 
                     <div className="text-xs text-[#70798C] flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-[#275DAD]" />
+                      <Calendar className="w-3.5 h-3.5 text-[#342A21]" />
                       <span>{b.slotDate}</span>
                       <span>•</span>
-                      <Clock className="w-3.5 h-3.5 text-[#275DAD]" />
+                      <Clock className="w-3.5 h-3.5 text-[#342A21]" />
                       <span>{b.slotTimeWindow}</span>
                     </div>
 
@@ -99,7 +99,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                         </span>
                       )}
                       {b.status === 'REQUEST_SUBMITTED' && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#275DAD]">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#342A21]">
                           <Clock className="w-3.5 h-3.5" />
                           Awaiting Agent Confirmation • Contact Details Protected
                         </span>

@@ -80,14 +80,14 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           <img
             src={agentProfile.avatarUrl}
             alt={agentProfile.fullName}
-            className="w-16 h-16 rounded-full object-cover border-2 border-[#275DAD]"
+            className="w-16 h-16 rounded-full object-cover border-2 border-[#342A21]"
           />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-display text-2xl font-bold text-[#000004]">
                 {agentProfile.fullName}
               </h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-blue-50 text-[#275DAD] text-xs font-semibold">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21] text-xs font-semibold">
                 Partner
               </span>
             </div>
@@ -125,7 +125,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
           <div className="flex items-center justify-between text-xs text-[#70798C]">
             <span>Inspections Booked</span>
-            <CalendarCheck className="w-4 h-4 text-[#275DAD]" />
+            <CalendarCheck className="w-4 h-4 text-[#342A21]" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {agentProfile.completedInspections + acceptedOrPaid.length}
@@ -152,13 +152,13 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           <div className="font-display text-xl sm:text-2xl font-bold text-[#F0544F] mt-1">
             {queuedRequests.length}
           </div>
-          <span className="text-[10px] text-[#F0544F]">At 5/5 Capacity Limit</span>
+          <span className="text-[10px] text-[#F0544F]">Capped at 5 Seekers/Window</span>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
           <div className="flex items-center justify-between text-xs text-[#70798C]">
             <span>Active Listings</span>
-            <Building className="w-4 h-4 text-[#275DAD]" />
+            <Building className="w-4 h-4 text-[#342A21]" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {listings.length}
@@ -205,13 +205,13 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-display text-base font-bold text-[#000004]">
-                  Incoming Booking Approvals (Within 5-Slot Cap)
+                  Incoming Booking Approvals (Strict 5-Slot Cap)
                 </h3>
                 <p className="text-xs text-[#70798C]">
-                  Accepting a booking confirms the inspection and reveals your contact details & physical address to the seeker.
+                  You are restricted to strictly 5 bookings per window to prevent overcrowding and ensure you never waste house seekers' time.
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-[#275DAD]">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21]">
                 {pendingRequests.length} Pending
               </span>
             </div>
@@ -219,13 +219,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             {pendingRequests.length === 0 ? (
               <div className="p-8 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB]">
                 <Clock className="w-8 h-8 text-[#70798C]/60 mx-auto mb-2" />
-                <p className="text-xs text-[#70798C]">No pending booking requests right now.</p>
-                <button
-                  onClick={onSwitchToSeeker}
-                  className="mt-3 text-xs text-[#275DAD] font-semibold hover:underline cursor-pointer"
-                >
-                  Switch to Seeker view to simulate a live inspection booking →
-                </button>
+                <p className="text-[11px] text-[#70798C] mt-1">
+                  Incoming property inspection reservations from verified seekers will appear here in real time.
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -242,14 +238,14 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                             {b.applicantName}
                           </span>
                           <span className="text-xs text-[#70798C]">({b.applicantPhone})</span>
-                          <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-blue-100 text-[#275DAD]">
+                          <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-[#342A21]/15 text-[#342A21]">
                             Pass: {b.id}
                           </span>
                         </div>
                         <div className="text-xs text-[#70798C]">
                           Property: <strong className="text-[#000004]">{property.title}</strong>
                         </div>
-                        <div className="text-xs text-[#275DAD] font-medium flex items-center gap-1.5">
+                        <div className="text-xs text-[#342A21] font-medium flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
                           Requested Window: {b.slotDate} at {b.slotTimeWindow}
                         </div>
@@ -339,7 +335,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               Active Confirmed Inspection Passes
             </h3>
             <p className="text-xs text-[#70798C] mb-4">
-              Free inspection reservation confirmed. Physical address and contact released to applicant.
+              Free inspection reservation confirmed. Your direct phone number has been provided to the applicant to coordinate the showing.
             </p>
 
             {acceptedOrPaid.length === 0 ? (
@@ -418,7 +414,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                     </span>
                     <button
                       onClick={onSwitchToSeeker}
-                      className="text-[#275DAD] hover:underline font-semibold flex items-center gap-1"
+                      className="text-[#342A21] hover:underline font-semibold flex items-center gap-1"
                     >
                       <span>Preview in Feed</span>
                       <ArrowUpRight className="w-3.5 h-3.5" />

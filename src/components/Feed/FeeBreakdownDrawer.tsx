@@ -31,7 +31,7 @@ export const FeeBreakdownDrawer: React.FC<FeeBreakdownDrawerProps> = ({
         {/* Drawer Header */}
         <div className="p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
           <div>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#275DAD]/10 text-[#275DAD]">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#342A21]/10 text-[#342A21]">
               <ShieldCheck className="w-3.5 h-3.5" />
               100% Transparent Fee Guarantee
             </span>
@@ -54,7 +54,7 @@ export const FeeBreakdownDrawer: React.FC<FeeBreakdownDrawerProps> = ({
         {/* Content & Line Items */}
         <div className="p-6 overflow-y-auto space-y-6">
           {/* Prominent Move-in Total Hero */}
-          <div className="p-5 rounded-xl bg-[#FCF9F5] border border-[#275DAD]/15 text-center">
+          <div className="p-5 rounded-xl bg-[#FCF9F5] border border-[#342A21]/15 text-center">
             <span className="text-xs uppercase tracking-wider font-semibold text-[#70798C]">
               Total Certified Move-in Package
             </span>
@@ -73,7 +73,7 @@ export const FeeBreakdownDrawer: React.FC<FeeBreakdownDrawerProps> = ({
             </h4>
 
             {/* Base Rent */}
-            <div className="flex items-center justify-between p-3.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#275DAD]/40 transition-colors">
+            <div className="flex items-center justify-between p-3.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21]/40 transition-colors">
               <div>
                 <div className="text-sm font-semibold text-[#000004] flex items-center gap-1.5">
                   Base Rent ({fees.rentPeriod})
@@ -88,7 +88,7 @@ export const FeeBreakdownDrawer: React.FC<FeeBreakdownDrawerProps> = ({
             </div>
 
             {/* Caution Deposit */}
-            <div className="flex items-center justify-between p-3.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#275DAD]/40 transition-colors">
+            <div className="flex items-center justify-between p-3.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21]/40 transition-colors">
               <div>
                 <div className="text-sm font-semibold text-[#000004] flex items-center gap-1.5">
                   Caution Deposit
@@ -106,7 +106,7 @@ export const FeeBreakdownDrawer: React.FC<FeeBreakdownDrawerProps> = ({
             </div>
 
             {/* Legal & Agency */}
-            <div className="flex items-center justify-between p-3.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#275DAD]/40 transition-colors">
+            <div className="flex items-center justify-between p-3.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21]/40 transition-colors">
               <div>
                 <div className="text-sm font-semibold text-[#000004]">
                   Legal & Agency Agreement Fee
@@ -121,7 +121,7 @@ export const FeeBreakdownDrawer: React.FC<FeeBreakdownDrawerProps> = ({
             </div>
 
             {/* Service Charge */}
-            <div className="flex items-center justify-between p-3.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#275DAD]/40 transition-colors">
+            <div className="flex items-center justify-between p-3.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21]/40 transition-colors">
               <div>
                 <div className="text-sm font-semibold text-[#000004]">
                   Estate Service Charge
@@ -137,10 +137,10 @@ export const FeeBreakdownDrawer: React.FC<FeeBreakdownDrawerProps> = ({
           </div>
 
           {/* Nigerian Market Protection Notice */}
-          <div className="p-4 rounded-xl bg-blue-50/70 border border-[#275DAD]/20 flex items-start gap-3">
-            <Info className="w-5 h-5 text-[#275DAD] shrink-0 mt-0.5" />
+          <div className="p-4 rounded-xl bg-[#342A21]/5 border border-[#342A21]/20 flex items-start gap-3">
+            <Info className="w-5 h-5 text-[#342A21] shrink-0 mt-0.5" />
             <div className="text-xs text-[#000004]/80 leading-relaxed">
-              <span className="font-semibold text-[#275DAD]">Delta State Tenancy Protection: </span>
+              <span className="font-semibold text-[#342A21]">Delta State Tenancy Protection: </span>
               In accordance with regional fair rental practices, DeltaRent locks this exact fee schedule. If an agent attempts to introduce impromptu "gate fees", "landlord agreement top-ups", or unlisted surcharges during inspection, report immediately for an instant refund of your clearance fee.
             </div>
           </div>

@@ -3,9 +3,9 @@
 :root {
   --canvas: #FCF9F5;
   --surface: #FFFFFF;
-  --primary: #275DAD;
-  --primary-hover: #1e4b8f;
-  --primary-subtle: #EBF2FA;
+  --primary: #342A21;
+  --primary-hover: #231C16;
+  --primary-subtle: #F6F3EF;
   --neutral: #70798C;
   --neutral-light: #F4F5F7;
   --neutral-border: #E5E7EB;
@@ -26,9 +26,9 @@
 @theme {
   --color-canvas: #FCF9F5;
   --color-surface: #FFFFFF;
-  --color-primary: #275DAD;
-  --color-primary-hover: #1e4b8f;
-  --color-primary-subtle: #EBF2FA;
+  --color-primary: #342A21;
+  --color-primary-hover: #231C16;
+  --color-primary-subtle: #F6F3EF;
   --color-neutral: #70798C;
   --color-neutral-light: #F4F5F7;
   --color-neutral-border: #E5E7EB;

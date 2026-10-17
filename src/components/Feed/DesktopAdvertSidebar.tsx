@@ -17,13 +17,13 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
 }) => {
   return (
     <aside 
-      className="hidden lg:flex flex-col w-[300px] xl:w-[320px] shrink-0 h-full max-h-[820px] bg-white rounded-3xl border border-[#275DAD]/15 shadow-card p-4 overflow-hidden relative"
+      className="hidden lg:flex flex-col w-[300px] xl:w-[320px] shrink-0 h-full max-h-[820px] bg-white rounded-3xl border border-[#342A21]/15 shadow-card p-4 overflow-hidden relative"
       aria-label="Sponsored Advertisements"
     >
       {/* 1. Header Section: General Tag & Post Ad CTA */}
       <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] shrink-0">
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#275DAD]/10 border border-[#275DAD]/25 text-[#275DAD] text-[11px] font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#342A21]/10 border border-[#342A21]/25 text-[#342A21] text-[11px] font-bold uppercase tracking-wider">
             Sponsored Ads
           </span>
         </div>
@@ -41,7 +41,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
       <div className="pt-3 pb-2 shrink-0">
         <div className="text-[10px] font-bold uppercase tracking-wider text-[#70798C] mb-2 px-1 flex items-center justify-between">
           <span>Active Story Ads</span>
-          <span className="text-[10px] font-semibold text-[#275DAD]">{adverts.length} Live</span>
+          <span className="text-[10px] font-semibold text-[#342A21]">{adverts.length} Live</span>
         </div>
 
         <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1 px-0.5">
@@ -51,10 +51,10 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
             className="flex flex-col items-center gap-1 shrink-0 group focus:outline-none cursor-pointer"
             title="Post a rental story advert"
           >
-            <div className="w-[52px] h-[52px] rounded-[15px] border-2 border-dashed border-[#275DAD]/50 group-hover:border-[#275DAD] bg-white group-hover:bg-[#275DAD]/5 flex items-center justify-center transition-all shadow-xs">
-              <Plus className="w-4 h-4 text-[#275DAD] group-hover:scale-110 transition-transform" />
+            <div className="w-[52px] h-[52px] rounded-[15px] border-2 border-dashed border-[#342A21]/50 group-hover:border-[#342A21] bg-white group-hover:bg-[#342A21]/5 flex items-center justify-center transition-all shadow-xs">
+              <Plus className="w-4 h-4 text-[#342A21] group-hover:scale-110 transition-transform" />
             </div>
-            <span className="text-[10px] font-bold text-[#000004] group-hover:text-[#275DAD] transition-colors">
+            <span className="text-[10px] font-bold text-[#000004] group-hover:text-[#342A21] transition-colors">
               Add Ad
             </span>
           </button>
@@ -74,8 +74,8 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
                 <div
                   className={`w-[52px] h-[52px] rounded-[15px] p-[2px] transition-all duration-200 shadow-xs ${
                     isActive
-                      ? 'bg-[#000004] ring-2 ring-[#275DAD] scale-105'
-                      : 'bg-gradient-to-tr from-[#275DAD] via-[#3B82F6] to-[#1E4B8F] group-hover:from-[#1E4B8F] group-hover:to-[#275DAD] group-hover:scale-105'
+                      ? 'bg-[#000004] ring-2 ring-[#342A21] scale-105'
+                      : 'bg-gradient-to-tr from-[#342A21] via-[#524436] to-[#251E17] group-hover:from-[#251E17] group-hover:to-[#342A21] group-hover:scale-105'
                   }`}
                 >
                   <div className="w-full h-full p-[1.5px] bg-white rounded-[13px] overflow-hidden">
@@ -87,7 +87,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
                     />
                   </div>
                 </div>
-                <span className="text-[10px] font-medium text-[#000004] max-w-[52px] truncate group-hover:text-[#275DAD] transition-colors">
+                <span className="text-[10px] font-medium text-[#000004] max-w-[52px] truncate group-hover:text-[#342A21] transition-colors">
                   {ad.title}
                 </span>
               </button>
@@ -113,12 +113,12 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
               onClick={() => onSelectAdvert(ad)}
               className={`p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center gap-3 group ${
                 isActive
-                  ? 'border-[#275DAD] bg-blue-50/40 shadow-xs'
-                  : 'border-[#E5E7EB] hover:border-[#275DAD]/50 hover:bg-slate-50/80 hover:shadow-xs bg-white'
+                  ? 'border-[#342A21] bg-[#342A21]/5 shadow-xs'
+                  : 'border-[#E5E7EB] hover:border-[#342A21]/50 hover:bg-slate-50/80 hover:shadow-xs bg-white'
               }`}
             >
               {/* Squared thumbnail with rounded edges in brand color decoration (NO black labels) */}
-              <div className="w-14 h-14 shrink-0 rounded-[14px] p-[2px] bg-gradient-to-tr from-[#275DAD] via-[#3B82F6] to-[#1E4B8F] group-hover:from-[#1E4B8F] group-hover:to-[#275DAD] transition-all shadow-xs">
+              <div className="w-14 h-14 shrink-0 rounded-[14px] p-[2px] bg-gradient-to-tr from-[#342A21] via-[#524436] to-[#251E17] group-hover:from-[#251E17] group-hover:to-[#342A21] transition-all shadow-xs">
                 <div className="w-full h-full p-[1.5px] bg-white rounded-[12px] overflow-hidden">
                   <img
                     src={ad.thumbnailUrl}
@@ -131,7 +131,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
 
               {/* Advert Content Details */}
               <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-bold text-[#000004] group-hover:text-[#275DAD] transition-colors truncate">
+                <div className="text-[11px] font-bold text-[#000004] group-hover:text-[#342A21] transition-colors truncate">
                   <span className="truncate">{ad.title}</span>
                 </div>
 
@@ -143,7 +143,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
                   <span className="font-semibold text-[#000004]">
                     {ad.price || 'Active Listing'}
                   </span>
-                  <span className="text-[#275DAD] font-semibold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                  <span className="text-[#342A21] font-semibold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
                     <span>View</span>
                     <ChevronRight className="w-3 h-3" />
                   </span>
@@ -156,10 +156,10 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
 
       {/* 4. Bottom Promotion Callout Banner */}
       <div className="pt-2 border-t border-[#E5E7EB] shrink-0">
-        <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#FCF9F5] to-blue-50/40 border border-[#275DAD]/15 flex items-center justify-between gap-2">
+        <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#FCF9F5] to-[#342A21]/5 border border-[#342A21]/15 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-1 text-[10px] font-bold text-[#000004]">
-              <Zap className="w-3 h-3 text-[#275DAD]" />
+              <Zap className="w-3 h-3 text-[#342A21]" />
               <span>Reach Delta Renters</span>
             </div>
             <p className="text-[9px] text-[#70798C] truncate">
@@ -168,7 +168,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
           </div>
           <button
             onClick={onOpenPostAd}
-            className="px-2 py-1 rounded-lg bg-[#275DAD] hover:bg-[#1e4b8f] text-white text-[10px] font-bold shrink-0 transition-colors shadow-xs"
+            className="px-2 py-1 rounded-lg bg-[#342A21] hover:bg-[#251E17] text-white text-[10px] font-bold shrink-0 transition-colors shadow-xs"
           >
             Promote
           </button>

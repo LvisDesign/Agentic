@@ -95,7 +95,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
           disabled={disabled}
           onClick={() => setIsOpen((prev) => !prev)}
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-[#000004] hover:bg-slate-100/70 transition-all focus:outline-none cursor-pointer select-none active:scale-[0.98] ${
-            isOpen ? 'bg-slate-100/80 text-[#275DAD]' : ''
+            isOpen ? 'bg-slate-100/80 text-[#342A21]' : ''
           } ${className}`}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
@@ -104,7 +104,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
           <span className="truncate max-w-[130px] sm:max-w-[170px]">{displayLabel}</span>
           <ChevronDown
             className={`w-3.5 h-3.5 text-[#70798C] transition-transform duration-200 shrink-0 ${
-              isOpen ? 'rotate-180 text-[#275DAD]' : ''
+              isOpen ? 'rotate-180 text-[#342A21]' : ''
             }`}
           />
         </button>
@@ -113,8 +113,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
           type="button"
           disabled={disabled}
           onClick={() => setIsOpen((prev) => !prev)}
-          className={`w-full px-3 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium text-[#000004] flex items-center justify-between hover:border-[#275DAD]/50 focus:outline-none focus:ring-2 focus:ring-[#275DAD]/20 transition-all cursor-pointer select-none active:scale-[0.99] ${
-            isOpen ? 'border-[#275DAD] ring-2 ring-[#275DAD]/20' : ''
+          className={`w-full px-3 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium text-[#000004] flex items-center justify-between hover:border-[#342A21]/50 focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 transition-all cursor-pointer select-none active:scale-[0.99] ${
+            isOpen ? 'border-[#342A21] ring-2 ring-[#342A21]/20' : ''
           } ${className}`}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
@@ -125,7 +125,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
           </div>
           <ChevronDown
             className={`w-4 h-4 text-[#70798C] transition-transform duration-200 shrink-0 ${
-              isOpen ? 'rotate-180 text-[#275DAD]' : ''
+              isOpen ? 'rotate-180 text-[#342A21]' : ''
             }`}
           />
         </button>
@@ -157,8 +157,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                   onClick={() => handleSelect(option.value)}
                   className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all cursor-pointer text-left select-none ${
                     isSelected
-                      ? 'bg-[#275DAD]/10 text-[#275DAD] font-bold shadow-xs'
-                      : 'text-[#000004] hover:bg-slate-100 hover:text-[#275DAD] font-medium'
+                      ? 'bg-[#342A21]/10 text-[#342A21] font-bold shadow-xs'
+                      : 'text-[#000004] hover:bg-slate-100 hover:text-[#342A21] font-medium'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate mr-2">
@@ -173,7 +173,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     </div>
                   </div>
                   {isSelected && (
-                    <Check className="w-3.5 h-3.5 text-[#275DAD] shrink-0 stroke-[2.5]" />
+                    <Check className="w-3.5 h-3.5 text-[#342A21] shrink-0 stroke-[2.5]" />
                   )}
                 </button>
               );
