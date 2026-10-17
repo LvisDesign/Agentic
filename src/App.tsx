@@ -1,7 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { INITIAL_LISTINGS } from './data/mockListings';
 import { PropertyListing, BookingRecord, UserRole, UserProfile } from './types/marketplace';
 import { Header } from './components/Header';
+import { PWAInstallBanner } from './components/UI/PWAInstallBanner';
+import { setAppBadge, clearAppBadge } from './utils/pwa';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
 import { AgentDashboard } from './components/Agent/AgentDashboard';
@@ -22,8 +24,9 @@ const INITIAL_USER: UserProfile = {
   fullName: 'Chinedu Okafor',
   email: 'chinedu.okafor@gmail.com',
   phone: '0803 891 0293',
+  state: 'Delta State',
   city: 'Asaba',
-  preferredPropertyType: '2-Bedroom Flat',
+  preferredPropertyType: 'Bedseater',
   budget: 2000000,
   nin: 'NIN-2910-***-9021',
   isVerifiedTenant: true,
@@ -33,6 +36,20 @@ const INITIAL_USER: UserProfile = {
 
 // Seed initial bookings for immediate testability
 const INITIAL_BOOKINGS: BookingRecord[] = [
+  {
+    id: 'DT-ABK-5120',
+    propertyId: 'prop-abraka-03',
+    slotId: 'slot-abk-1',
+    slotTimeWindow: '2:00 PM – 3:00 PM',
+    slotDate: 'Today',
+    applicantName: 'Chinedu Okafor',
+    applicantPhone: '0803 891 0293',
+    applicantEmail: 'chinedu.okafor@gmail.com',
+    status: 'CONFIRMED_UNLOCKED',
+    inspectionFeeAmount: 0,
+    confirmedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+  },
   {
     id: 'DT-ASB-8492',
     propertyId: 'prop-asaba-01',
@@ -65,9 +82,39 @@ const INITIAL_BOOKINGS: BookingRecord[] = [
 export function App() {
   const [listings, setListings] = useState<PropertyListing[]>(INITIAL_LISTINGS);
   const [bookings, setBookings] = useState<BookingRecord[]>(INITIAL_BOOKINGS);
-  const [currentRole, setCurrentRole] = useState<UserRole>('seeker');
-  const [userView, setUserView] = useState<'dashboard' | 'feed'>('dashboard');
-  const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USER);
+
+  // User Authentication State (Persisted in localStorage)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    return localStorage.getItem('deltarent_auth') === 'true';
+  });
+
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('deltarent_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // fallback
+      }
+    }
+    return INITIAL_USER;
+  });
+
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    const saved = localStorage.getItem('deltarent_user');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.isAgent) return 'agent';
+      } catch (e) {
+        // fallback
+      }
+    }
+    return 'seeker';
+  });
+
+  // Default to live video feed for first-time visitors / guests
+  const [userView, setUserView] = useState<'dashboard' | 'feed'>('feed');
   const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(['prop-asaba-01']);
 
   // Filter state
@@ -76,12 +123,37 @@ export function App() {
   const [selectedState, setSelectedState] = useState('Delta State (Active Launch)');
   const [maxRent, setMaxRent] = useState(5000000);
 
-  // Modals
+  // Modals & Navigation state
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMyPassesOpen, setIsMyPassesOpen] = useState(false);
   const [isBecomeAgentOpen, setIsBecomeAgentOpen] = useState(false);
-  const [isSignupOpen, setIsSignupOpen] = useState(false);
+
+  // For first-time visitors, open signup modal on arrival if they haven't skipped yet
+  const [isSignupOpen, setIsSignupOpen] = useState<boolean>(() => {
+    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
+    const hasSkipped = sessionStorage.getItem('deltarent_guest_skipped') === 'true';
+    return !isAuth && !hasSkipped;
+  });
+
   const [activeModalListing, setActiveModalListing] = useState<PropertyListing | null>(null);
+
+  // Synchronize dynamic home-screen badge count with active inspection passes
+  useEffect(() => {
+    const activePassesCount = bookings.filter(
+      (b) => b.status === 'CONFIRMED_UNLOCKED' || b.status === 'REQUEST_SUBMITTED' || b.status === 'QUEUED' || b.status === 'ACCEPTED_PENDING_PAYMENT'
+    ).length;
+    if (activePassesCount > 0) {
+      setAppBadge(activePassesCount);
+    } else {
+      clearAppBadge();
+    }
+  }, [bookings]);
+
+  // Authentication gating & resume booking state
+  const [pendingBookingListing, setPendingBookingListing] = useState<PropertyListing | null>(null);
+  const [signupNotice, setSignupNotice] = useState<{ title: string; message: string } | null>(null);
+  const [signupInitialRole, setSignupInitialRole] = useState<'seeker' | 'agent'>('seeker');
+  const [signupInitialMode, setSignupInitialMode] = useState<'signup' | 'login'>('signup');
 
   // Advert stories state
   const [adverts, setAdverts] = useState<AdvertStory[]>(MOCK_ADVERT_STORIES);
@@ -233,9 +305,85 @@ export function App() {
     setCurrentRole('agent');
   };
 
+  // Centralized booking opener with auth guard:
+  // If user is a guest/unauthenticated, prompt signup/login and remember listing to resume!
+  const handleOpenBooking = (listing: PropertyListing) => {
+    if (!isAuthenticated) {
+      setPendingBookingListing(listing);
+      setSignupNotice({
+        title: 'Sign Up Required to Book Inspection',
+        message: `Create a free account or sign in to book your inspection slot for "${listing.title}". It takes less than 30 seconds!`,
+      });
+      setSignupInitialRole('seeker');
+      setSignupInitialMode('signup');
+      setIsSignupOpen(true);
+      return;
+    }
+    setActiveModalListing(listing);
+  };
+
+  const handleOpenSignup = () => {
+    if (isAuthenticated) return;
+    setSignupNotice(null);
+    setSignupInitialRole('seeker');
+    setSignupInitialMode('signup');
+    setIsSignupOpen(true);
+  };
+
+  const handleOpenLogin = () => {
+    if (isAuthenticated) return;
+    setSignupNotice(null);
+    setSignupInitialRole('seeker');
+    setSignupInitialMode('login');
+    setIsSignupOpen(true);
+  };
+
+  const handleOpenAgentSignup = () => {
+    if (isAuthenticated) return;
+    setSignupNotice(null);
+    setSignupInitialRole('agent');
+    setSignupInitialMode('signup');
+    setIsSignupOpen(true);
+  };
+
+  const handleSkipSignup = () => {
+    sessionStorage.setItem('deltarent_guest_skipped', 'true');
+    setIsSignupOpen(false);
+    setSignupNotice(null);
+    setPendingBookingListing(null);
+    setUserView('feed');
+  };
+
+  const handleSignOut = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('deltarent_auth');
+    localStorage.removeItem('deltarent_user');
+    setCurrentRole('seeker');
+    setUserView('feed');
+  };
+
   // Handler: Update current user from signup/login modal
-  const handleUpdateUser = (updatedUser: UserProfile) => {
+  const handleUpdateUser = (updatedUser: UserProfile, role?: 'seeker' | 'agent') => {
     setCurrentUser(updatedUser);
+    setIsAuthenticated(true);
+    localStorage.setItem('deltarent_auth', 'true');
+    localStorage.setItem('deltarent_user', JSON.stringify(updatedUser));
+    setSignupNotice(null);
+
+    if (role === 'agent' || updatedUser.isAgent) {
+      setCurrentRole('agent');
+      setPendingBookingListing(null);
+    } else {
+      setCurrentRole('seeker');
+      // If there was a pending booking attempt, smoothly open the inspection booking modal for them!
+      if (pendingBookingListing) {
+        const target = pendingBookingListing;
+        setPendingBookingListing(null);
+        setTimeout(() => {
+          setActiveModalListing(target);
+        }, 350);
+      }
+    }
   };
 
   // Reset filters
@@ -264,13 +412,16 @@ export function App() {
         onOpenProfile={() => setIsProfileOpen(true)}
         currentUser={currentUser}
         onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
-        onOpenSignup={() => setIsSignupOpen(true)}
+        onOpenSignup={handleOpenSignup}
+        onOpenLogin={handleOpenLogin}
+        isAuthenticated={isAuthenticated}
+        onOpenAgentSignup={handleOpenAgentSignup}
       />
 
       {/* 2. Main Content Area */}
       {currentRole === 'seeker' ? (
         userView === 'dashboard' ? (
-          /* Seeker / User Dashboard: Looks the same as AgentDashboard, but tailored for a User (No post rental / no approving others) */
+          /* Seeker / User Dashboard: Tailored for user with guest awareness */
           <main className="flex-1 w-full">
             <UserDashboard
               currentUser={currentUser}
@@ -278,12 +429,13 @@ export function App() {
               bookings={bookings}
               savedPropertyIds={savedPropertyIds}
               onToggleSaveProperty={handleToggleSaveProperty}
-              onOpenBookingModal={(listing) => setActiveModalListing(listing)}
+              onOpenBookingModal={handleOpenBooking}
               onCancelBooking={handleCancelBooking}
               onOpenMyPasses={() => setIsMyPassesOpen(true)}
               onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
-              onOpenSignup={() => setIsSignupOpen(true)}
+              onOpenSignup={handleOpenSignup}
               onSwitchToFeed={() => setUserView('feed')}
+              isAuthenticated={isAuthenticated}
             />
           </main>
         ) : (
@@ -324,6 +476,7 @@ export function App() {
                   onBookSlot={handleBookSlot}
                   onUpdateBooking={handleUpdateBooking}
                   onSimulateAgentAccept={handleAcceptBooking}
+                  onOpenBookingModal={handleOpenBooking}
                   onResetFilters={handleResetFilters}
                 />
               </div>
@@ -353,7 +506,7 @@ export function App() {
         onClose={() => setIsMyPassesOpen(false)}
         bookings={bookings}
         listings={listings}
-        onOpenBookingModal={(listing) => setActiveModalListing(listing)}
+        onOpenBookingModal={handleOpenBooking}
       />
 
       <UserProfileModal
@@ -365,7 +518,8 @@ export function App() {
         onOpenMyPasses={() => setIsMyPassesOpen(true)}
         currentUser={currentUser}
         onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
-        onOpenSignup={() => setIsSignupOpen(true)}
+        onOpenSignup={handleOpenSignup}
+        onSignOut={handleSignOut}
       />
 
       <BecomeAgentModal
@@ -377,9 +531,17 @@ export function App() {
 
       <SignupModal
         isOpen={isSignupOpen}
-        onClose={() => setIsSignupOpen(false)}
+        onClose={() => {
+          setIsSignupOpen(false);
+          setSignupNotice(null);
+        }}
         currentUser={currentUser}
         onUpdateUser={handleUpdateUser}
+        onSkip={handleSkipSignup}
+        initialRole={signupInitialRole}
+        initialMode={signupInitialMode}
+        notice={signupNotice}
+        isAuthenticated={isAuthenticated}
       />
 
       {activeModalListing && (
@@ -405,7 +567,7 @@ export function App() {
             setSelectedStoryAd(null);
             const prop = listings.find((l) => l.id === propertyId);
             if (prop) {
-              setActiveModalListing(prop);
+              handleOpenBooking(prop);
             }
           }}
         />
@@ -416,6 +578,9 @@ export function App() {
         onClose={() => setIsPostAdOpen(false)}
         onAddAdvert={handleAddAdvert}
       />
+
+      {/* 5. In-App PWA Install Banner & Prompt */}
+      <PWAInstallBanner />
     </div>
   );
 }

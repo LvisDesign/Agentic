@@ -7,7 +7,8 @@ import {
   Compass,
   LayoutDashboard,
   UserCheck,
-  CalendarCheck
+  CalendarCheck,
+  UserPlus
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 
@@ -22,6 +23,9 @@ interface HeaderProps {
   currentUser: UserProfile;
   onOpenBecomeAgent: () => void;
   onOpenSignup: () => void;
+  onOpenLogin?: () => void;
+  isAuthenticated: boolean;
+  onOpenAgentSignup?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -35,6 +39,9 @@ export const Header: React.FC<HeaderProps> = ({
   currentUser,
   onOpenBecomeAgent,
   onOpenSignup,
+  onOpenLogin,
+  isAuthenticated,
+  onOpenAgentSignup,
 }) => {
   const confirmedPassesCount = activeBookings.filter(
     (b) => b.status === 'CONFIRMED_UNLOCKED'
@@ -62,7 +69,12 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#342A21]/10 text-[#342A21] hidden xs:inline-block">
                 Delta State
               </span>
-              {currentRole === 'seeker' ? (
+              {!isAuthenticated ? (
+                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-slate-100 text-[#70798C] border border-slate-200 hidden sm:inline-flex items-center gap-1">
+                  <User className="w-2.5 h-2.5" />
+                  Guest Mode
+                </span>
+              ) : currentRole === 'seeker' ? (
                 <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center gap-1">
                   <UserCheck className="w-2.5 h-2.5" />
                   Tenant Mode
@@ -193,32 +205,60 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* TAB 5: User Profile */}
-          <button
-            onClick={onOpenProfile}
-            className="relative w-10 h-10 md:w-auto md:px-3 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group cursor-pointer"
-            aria-label="Profile"
-            title="Profile (Not an Agent)"
-          >
-            <div className="w-5 h-5 rounded-full bg-[#342A21] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-              {currentUser.fullName
-                .split(' ')
-                .map((n) => n[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase()}
-            </div>
+          {/* TAB 5: User Profile or Guest Auth */}
+          {!isAuthenticated ? (
+            <>
+              <button
+                onClick={onOpenLogin || onOpenSignup}
+                className="relative h-9 sm:h-10 md:h-11 px-2.5 sm:px-3 md:px-3.5 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-[#000004] hover:bg-[#1f2937] text-white transition-all duration-200 active:scale-95 group cursor-pointer shadow-xs"
+                aria-label="Sign In"
+                title="Sign In"
+              >
+                <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                <span className="font-bold text-xs whitespace-nowrap">
+                  Sign In
+                </span>
+              </button>
 
-            {/* Desktop Label */}
-            <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-              {currentUser.fullName.split(' ')[0]}
-            </span>
+              <button
+                onClick={onOpenSignup}
+                className="relative h-9 sm:h-10 md:h-11 px-2.5 sm:px-3.5 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 transition-all duration-200 active:scale-95 group cursor-pointer shadow-xs"
+                aria-label="Signup"
+                title="Signup"
+              >
+                <UserPlus className="w-3.5 h-3.5 text-amber-700" />
+                <span className="font-bold text-xs whitespace-nowrap">
+                  Signup
+                </span>
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onOpenProfile}
+              className="relative w-10 h-10 md:w-auto md:px-3 md:h-11 rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group cursor-pointer"
+              aria-label="Profile"
+              title="Profile"
+            >
+              <div className="w-5 h-5 rounded-full bg-[#342A21] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                {currentUser.fullName
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </div>
 
-            {/* Mobile Tooltip */}
-            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-              {currentUser.fullName}
-            </span>
-          </button>
+              {/* Desktop Label */}
+              <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
+                {currentUser.fullName.split(' ')[0]}
+              </span>
+
+              {/* Mobile Tooltip */}
+              <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
+                {currentUser.fullName}
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </header>

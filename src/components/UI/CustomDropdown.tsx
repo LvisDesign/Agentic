@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, Search, X } from 'lucide-react';
 
 export interface DropdownOption {
   value: string;
   label: string;
   icon?: React.ReactNode;
   subtitle?: string;
+  disabled?: boolean;
+  badge?: string;
 }
 
 export interface CustomDropdownProps {
@@ -36,7 +38,9 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Normalize options to DropdownOption objects
   const normalizedOptions: DropdownOption[] = options.map((opt) =>
@@ -44,6 +48,8 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       ? { value: opt, label: opt }
       : opt
   );
+
+  const isSearchable = normalizedOptions.length > 7;
 
   const selectedOption = normalizedOptions.find((opt) => opt.value === value);
   const displayLabel = selectedOption ? selectedOption.label : placeholder;
@@ -65,18 +71,33 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleKeyDown);
+      if (isSearchable) {
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 50);
+      }
+    } else {
+      setSearchQuery('');
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, isSearchable]);
 
   const handleSelect = (val: string) => {
     onChange(val);
     setIsOpen(false);
+    setSearchQuery('');
   };
+
+  const displayedOptions = isSearchable && searchQuery
+    ? normalizedOptions.filter((opt) =>
+        opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        opt.value.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : normalizedOptions;
 
   // Alignment classes for dropdown panel
   const alignmentClass =
@@ -145,20 +166,54 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
             </div>
           )}
 
+          {/* Search Box when more than 7 options */}
+          {isSearchable && (
+            <div className="relative px-1 pt-1 pb-1.5 shrink-0">
+              <Search className="w-3.5 h-3.5 text-[#70798C] absolute left-3.5 top-3" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search city / option..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 rounded-xl border border-[#E5E7EB] bg-slate-50 text-xs text-[#000004] placeholder:text-[#70798C] outline-none focus:border-[#000004] focus:bg-white transition-all"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="w-4 h-4 rounded-full bg-slate-200 text-[#70798C] flex items-center justify-center absolute right-3 top-3 hover:bg-slate-300 cursor-pointer"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+          )}
+
           <div className="max-h-64 overflow-y-auto space-y-0.5 overscroll-contain">
-            {normalizedOptions.map((option) => {
+            {displayedOptions.map((option) => {
               const isSelected = option.value === value;
+              const isDisabled = option.disabled;
+
               return (
                 <button
                   key={option.value}
                   type="button"
                   role="option"
                   aria-selected={isSelected}
-                  onClick={() => handleSelect(option.value)}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all cursor-pointer text-left select-none ${
-                    isSelected
-                      ? 'bg-[#342A21]/10 text-[#342A21] font-bold shadow-xs'
-                      : 'text-[#000004] hover:bg-slate-100 hover:text-[#342A21] font-medium'
+                  aria-disabled={isDisabled}
+                  disabled={isDisabled}
+                  onClick={() => {
+                    if (!isDisabled) {
+                      handleSelect(option.value);
+                    }
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all text-left select-none ${
+                    isDisabled
+                      ? 'opacity-40 text-slate-400 bg-slate-50/50 cursor-not-allowed hover:bg-slate-50/50'
+                      : isSelected
+                      ? 'bg-[#342A21]/10 text-[#342A21] font-bold shadow-xs cursor-pointer'
+                      : 'text-[#000004] hover:bg-slate-100 hover:text-[#342A21] font-medium cursor-pointer'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate mr-2">
@@ -172,12 +227,22 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                       )}
                     </div>
                   </div>
-                  {isSelected && (
+                  {isDisabled ? (
+                    <span className="text-[9px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                      {option.badge || 'Coming Soon'}
+                    </span>
+                  ) : isSelected ? (
                     <Check className="w-3.5 h-3.5 text-[#342A21] shrink-0 stroke-[2.5]" />
-                  )}
+                  ) : null}
                 </button>
               );
             })}
+
+            {displayedOptions.length === 0 && (
+              <div className="py-4 text-center text-xs text-[#70798C]">
+                No matching option
+              </div>
+            )}
           </div>
         </div>
       )}

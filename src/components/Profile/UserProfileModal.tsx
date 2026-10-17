@@ -12,10 +12,13 @@ import {
   Building2, 
   AlertCircle,
   UserCheck,
-  UserPlus
+  UserPlus,
+  LogOut,
+  BellRing
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNigerianPhone } from '../../utils/formatters';
+import { getNotificationPermission, requestNotificationPermission, setAppBadge } from '../../utils/pwa';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -26,7 +29,8 @@ interface UserProfileModalProps {
   onOpenMyPasses: () => void;
   currentUser: UserProfile;
   onOpenBecomeAgent: () => void;
-  onOpenSignup: () => void;
+  onOpenSignup?: () => void;
+  onSignOut?: () => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -39,8 +43,37 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   currentUser,
   onOpenBecomeAgent,
   onOpenSignup,
+  onSignOut,
 }) => {
   const [showArchitectureGuide, setShowArchitectureGuide] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => getNotificationPermission());
+  const [testAlertSent, setTestAlertSent] = useState(false);
+
+  const handleToggleAlerts = async () => {
+    const perm = await requestNotificationPermission();
+    setNotificationPermission(perm);
+  };
+
+  const handleSendTestNotification = async () => {
+    if (notificationPermission !== 'granted') {
+      const perm = await requestNotificationPermission();
+      setNotificationPermission(perm);
+      if (perm !== 'granted') return;
+    }
+
+    setAppBadge(1);
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Inspection Accepted by Lister', {
+        body: 'Your apartment inspection pass for Asaba 2-Bedroom Flat is confirmed. Agent contact coordinates unlocked!',
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-192x192.png',
+        tag: 'deltarent-test-alert',
+      });
+      setTestAlertSent(true);
+      setTimeout(() => setTestAlertSent(false), 3000);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -107,15 +140,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                onClose();
-                onOpenSignup();
-              }}
-              className="text-[11px] text-[#342A21] font-semibold hover:underline"
-            >
-              Edit
-            </button>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+              Active Member
+            </span>
           </div>
 
           {/* Account Role & Scope Notice */}
@@ -134,35 +161,37 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </p>
           </div>
 
-          {/* BECOME AN AGENT OPTION CARD */}
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-[#000004] to-[#1a2332] text-white shadow-sm space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center border border-amber-400/30">
-                  <Building2 className="w-3.5 h-3.5" />
+          {/* BECOME AN AGENT OPTION CARD (Only shown if not already an agent) */}
+          {!currentUser.isAgent && (
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-[#000004] to-[#1a2332] text-white shadow-sm space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center border border-amber-400/30">
+                    <Building2 className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="font-bold text-xs text-white">
+                    Want to List Properties?
+                  </span>
                 </div>
-                <span className="font-bold text-xs text-white">
-                  Want to List Properties?
+                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-[#000004]">
+                  Upgrade
                 </span>
               </div>
-              <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-[#000004]">
-                Upgrade
-              </span>
+              <p className="text-[11px] text-white/80 leading-relaxed">
+                Register as a DeltaRent Partner Agent. Upload unlimited apartments across Delta State, set strict 5-capacity inspection time slots, and dispatch directly to tenants.
+              </p>
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenBecomeAgent();
+                }}
+                className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Apply to Become an Agent</span>
+              </button>
             </div>
-            <p className="text-[11px] text-white/80 leading-relaxed">
-              Register as a DeltaRent Partner Agent. Upload unlimited apartments across Delta State, set strict 5-capacity inspection time slots, and dispatch directly to tenants.
-            </p>
-            <button
-              onClick={() => {
-                onClose();
-                onOpenBecomeAgent();
-              }}
-              className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Apply to Become an Agent</span>
-            </button>
-          </div>
+          )}
 
           {/* Contact Details */}
           <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] space-y-2.5">
@@ -181,7 +210,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <span className="text-[#70798C] flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5 text-[#342A21]" /> Email
               </span>
-              <span className="font-semibold text-[#000004]">{currentUser.email}</span>
+              <span className="font-semibold text-[#000004]">{currentUser.email || 'Optional (Not provided)'}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
+              <span className="text-[#70798C] flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-[#342A21]" /> Looking For Apartment In
+              </span>
+              <span className="font-semibold text-[#000004]">{currentUser.state || `${currentUser.city}, Delta State`}</span>
             </div>
             <div className="flex items-center justify-between text-xs py-1">
               <span className="text-[#70798C] flex items-center gap-1.5">
@@ -217,29 +252,53 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <ChevronRight className="w-4 h-4 text-[#70798C] group-hover:translate-x-0.5 group-hover:text-[#342A21] transition-all" />
           </div>
 
-          {/* Switch Account Trigger */}
-          <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-slate-100 text-[#000004] flex items-center justify-center">
-                <UserPlus className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-bold text-xs text-[#000004]">Account Switcher</div>
-                <div className="text-[11px] text-[#70798C]">
-                  Sign up as a new tenant or change profile
+          {/* Mobile Alerts & Push Notifications Setting */}
+          <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-[#275DAD]/10 text-[#275DAD] flex items-center justify-center">
+                  <BellRing className="w-4 h-4" />
+                </div>
+                <div>
+                  <h5 className="font-bold text-xs text-[#000004]">Mobile Alerts & Notifications</h5>
+                  <p className="text-[11px] text-[#70798C]">Push updates for inspection slots & lister updates</p>
                 </div>
               </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                notificationPermission === 'granted'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : notificationPermission === 'denied'
+                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                  : 'bg-amber-50 text-amber-800 border-amber-200'
+              }`}>
+                {notificationPermission === 'granted' ? 'Enabled' : notificationPermission === 'denied' ? 'Blocked' : 'Not Enabled'}
+              </span>
             </div>
-            <button
-              onClick={() => {
-                onClose();
-                onOpenSignup();
-              }}
-              className="px-3 py-1.5 rounded-lg border border-[#E5E7EB] hover:bg-slate-50 text-[11px] font-bold text-[#000004] transition-colors cursor-pointer"
-            >
-              Sign Up / In
-            </button>
+
+            <div className="flex items-center gap-2 pt-0.5">
+              {notificationPermission !== 'granted' ? (
+                <button
+                  type="button"
+                  onClick={handleToggleAlerts}
+                  className="flex-1 py-2 px-3 rounded-xl bg-[#275DAD] hover:bg-[#1f4b8c] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <BellRing className="w-3.5 h-3.5" />
+                  <span>Enable Mobile Alerts</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSendTestNotification}
+                  className="flex-1 py-2 px-3 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{testAlertSent ? 'Test Alert Sent (Badge Set)!' : 'Send Test Push Alert'}</span>
+                </button>
+              )}
+            </div>
           </div>
+
+
 
           {/* Switch back to Tenant View (Only shown if currently in Agent Mode) */}
           {currentRole === 'agent' && (
@@ -306,8 +365,21 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[#E5E7EB] bg-[#FCF9F5] flex items-center justify-between">
-          <span className="text-[11px] text-[#70798C]">Delta State Marketplace Engine</span>
+        <div className="p-4 border-t border-[#E5E7EB] bg-[#FCF9F5] flex items-center justify-between gap-2">
+          {onSignOut ? (
+            <button
+              onClick={() => {
+                onClose();
+                onSignOut();
+              }}
+              className="py-2 px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sign Out</span>
+            </button>
+          ) : (
+            <span className="text-[11px] text-[#70798C]">Delta State Marketplace Engine</span>
+          )}
           <button
             onClick={onClose}
             className="py-2 px-4 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] transition-colors cursor-pointer"

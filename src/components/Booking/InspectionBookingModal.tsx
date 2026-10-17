@@ -11,10 +11,12 @@ import {
   CreditCard,
   UserCheck,
   Info,
-  Lock
+  Lock,
+  BellRing
 } from 'lucide-react';
 import { PropertyListing, InspectionSlot, BookingRecord, BookingStatus } from '../../types/marketplace';
 import { formatNaira, generateBookingRef } from '../../utils/formatters';
+import { getNotificationPermission, requestNotificationPermission } from '../../utils/pwa';
 import { QueueStatusBadge } from './QueueStatusBadge';
 import { InspectionPassCard } from '../Pass/InspectionPassCard';
 
@@ -44,6 +46,7 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
   const [applicantName, setApplicantName] = useState('Chinedu Okafor');
   const [applicantPhone, setApplicantPhone] = useState('0803 891 0293');
   const [applicantEmail, setApplicantEmail] = useState('');
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => getNotificationPermission());
 
   if (!isOpen) return null;
 
@@ -53,6 +56,11 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
 
   // Check if current user already has an active booking for this property
   const activeBooking = existingBooking;
+
+  const handleRequestAlerts = async () => {
+    const perm = await requestNotificationPermission();
+    setNotificationPermission(perm);
+  };
 
   const handleInitiateBooking = () => {
     if (!selectedSlot) return;
@@ -119,6 +127,25 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
 
         {/* Modal Body */}
         <div className="p-5 overflow-y-auto space-y-5">
+          {/* Mobile Alerts Banner for Active Bookings */}
+          {activeBooking && notificationPermission !== 'granted' && (
+            <div className="p-3 rounded-2xl bg-blue-50/80 border border-blue-200/80 flex items-center justify-between gap-3 text-xs text-blue-950">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-xl bg-[#275DAD] text-white flex items-center justify-center shrink-0">
+                  <BellRing className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-[11px] font-medium leading-tight">Get instant phone alerts when the agent responds or your slot upgrades.</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleRequestAlerts}
+                className="shrink-0 px-3 py-1.5 rounded-xl bg-[#275DAD] hover:bg-[#1f4b8c] text-white font-bold text-[11px] transition-colors cursor-pointer shadow-xs"
+              >
+                Enable Alerts
+              </button>
+            </div>
+          )}
+
           {/* STATE 1: UNLOCKED FREE INSPECTION PASS */}
           {activeBooking && (activeBooking.status === 'CONFIRMED_UNLOCKED' || activeBooking.status === 'ACCEPTED_PENDING_PAYMENT') && (
             <div className="space-y-4">

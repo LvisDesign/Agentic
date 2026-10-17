@@ -25,6 +25,7 @@ interface PropertyCardProps {
   onBookSlot: (booking: BookingRecord) => void;
   onUpdateBooking: (booking: BookingRecord) => void;
   onSimulateAgentAccept?: (bookingId: string) => void;
+  onOpenBookingModal?: (listing: PropertyListing) => void;
   index: number;
   totalCount: number;
 }
@@ -35,6 +36,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   onBookSlot,
   onUpdateBooking,
   onSimulateAgentAccept,
+  onOpenBookingModal,
   index,
   totalCount,
 }) => {
@@ -178,7 +180,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         {/* 5. PINNED BOTTOM ACTION BAR: Always 100% visible on both mobile & desktop without any vertical scrolling */}
         <div className="px-3.5 py-2.5 sm:px-5 sm:py-3 bg-white border-t border-[#E5E7EB] shrink-0">
           <button
-            onClick={() => setShowBookingModal(true)}
+            onClick={() => {
+              if (onOpenBookingModal) {
+                onOpenBookingModal(listing);
+              } else {
+                setShowBookingModal(true);
+              }
+            }}
             className={`w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center shadow-sm transition-all active:scale-[0.99] cursor-pointer ${
               activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT'
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'

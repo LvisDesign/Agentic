@@ -1,180 +1,545 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   User, 
   Mail, 
   Phone, 
   MapPin, 
-  Home, 
   CheckCircle2, 
   Building2,
-  ArrowRight
+  ArrowRight,
+  ShieldCheck,
+  CalendarCheck,
+  LogIn,
+  Check,
+  Info
 } from 'lucide-react';
-import { DeltaCity, PropertyType, UserProfile } from '../../types/marketplace';
+import { DeltaCity, UserProfile } from '../../types/marketplace';
+import { StateDropdown } from '../UI/StateDropdown';
+import { CustomDropdown } from '../UI/CustomDropdown';
+
+export const NIGERIAN_STATES = [
+  'Delta State',
+  'Lagos State',
+  'Abuja (FCT)',
+  'Rivers State',
+  'Edo State',
+  'Anambra State',
+  'Enugu State',
+  'Ogun State',
+  'Oyo State',
+  'Akwa Ibom State',
+  'Abia State',
+  'Imo State',
+  'Bayelsa State',
+  'Cross River State',
+  'Kano State',
+  'Kaduna State',
+  'Plateau State',
+  'Kwara State',
+  'Ondo State',
+  'Osun State',
+  'Ekiti State',
+  'Benue State',
+  'Kogi State',
+  'Nasarawa State',
+  'Niger State',
+  'Adamawa State',
+  'Bauchi State',
+  'Borno State',
+  'Gombe State',
+  'Taraba State',
+  'Yobe State',
+  'Jigawa State',
+  'Katsina State',
+  'Kebbi State',
+  'Sokoto State',
+  'Zamfara State',
+  'Ebonyi State'
+];
+
+const DELTA_CITIES: DeltaCity[] = [
+  'Asaba',
+  'Warri',
+  'Effurun',
+  'Udu',
+  'Enerhen',
+  'Opete',
+  'Okpaka',
+  'Okuokoko',
+  'Otokutu',
+  'Ujvewu',
+  'Ughelli',
+  'Sapele',
+  'Agbor',
+  'Abraka',
+  'Okpanam',
+  'Ibusa',
+  'Ogwashi-Uku',
+  'Oleh',
+  'Ozoro',
+  'Oghara',
+  'Ekpan',
+  'Ovwian',
+  'Aladja',
+  'Orhuwhorun',
+  'Agbarho',
+  'Eku',
+  'Kwale',
+  'Obiaruku',
+  'Issele-Uku',
+  'Orerokpe',
+  'Koko',
+  'Bomadi',
+  'Patani',
+  'Burutu',
+  'Others'
+];
 
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserProfile;
-  onUpdateUser: (updatedUser: UserProfile) => void;
+  onUpdateUser: (updatedUser: UserProfile, role?: 'seeker' | 'agent') => void;
+  onSkip?: () => void;
+  initialRole?: 'seeker' | 'agent';
+  initialMode?: 'signup' | 'login';
+  notice?: { title: string; message: string } | null;
+  isAuthenticated?: boolean;
 }
-
-const DELTA_CITIES: DeltaCity[] = [
-  'Asaba',
-  'Warri',
-  'Ughelli',
-  'Sapele',
-  'Agbor',
-  'Abraka',
-  'Effurun',
-  'Oleh'
-];
-
-const PROPERTY_TYPES: PropertyType[] = [
-  'Self-contain',
-  'Single Room',
-  'Bedseater',
-  '2-Bedroom Flat',
-  '3-Bedroom Flat',
-  'Duplex / Semi-Detached'
-];
 
 export const SignupModal: React.FC<SignupModalProps> = ({
   isOpen,
   onClose,
   currentUser,
   onUpdateUser,
+  onSkip,
+  initialRole = 'seeker',
+  initialMode = 'signup',
+  notice = null,
+  isAuthenticated = false,
 }) => {
-  const [mode, setMode] = useState<'signup' | 'login'>('signup');
-  const [fullName, setFullName] = useState(currentUser.fullName);
-  const [email, setEmail] = useState(currentUser.email);
-  const [phone, setPhone] = useState(currentUser.phone);
-  const [city, setCity] = useState<DeltaCity | string>(currentUser.city || 'Asaba');
-  const [propertyType, setPropertyType] = useState<PropertyType | string>(
-    currentUser.preferredPropertyType || '2-Bedroom Flat'
-  );
+  // Navigation & mode state
+  const [activeRoleTab, setActiveRoleTab] = useState<'seeker' | 'agent'>(initialRole);
+  const [authMode, setAuthMode] = useState<'signup' | 'login'>(initialMode);
+
+  // Sync initial props when opened
+  useEffect(() => {
+    if (isOpen) {
+      if (initialRole) setActiveRoleTab(initialRole);
+      if (initialMode) setAuthMode(initialMode);
+    }
+  }, [isOpen, initialRole, initialMode]);
+
+  // Seeker / Tenant Form Fields
+  const [seekerFullName, setSeekerFullName] = useState(currentUser.fullName || '');
+  const [seekerPhone, setSeekerPhone] = useState(currentUser.phone || '');
+  const [seekerEmail, setSeekerEmail] = useState(currentUser.email || '');
+  const [seekerState, setSeekerState] = useState(currentUser.state || 'Delta State');
+  const [seekerCity, setSeekerCity] = useState<string>(currentUser.city || 'Asaba');
+
+  // Agent Form Fields
+  const [agentFullName, setAgentFullName] = useState('');
+  const [agencyName, setAgencyName] = useState('');
+  const [agentType, setAgentType] = useState<'agency' | 'individual' | 'landlord'>('agency');
+  const [agentPhone, setAgentPhone] = useState('');
+  const [agentWhatsapp, setAgentWhatsapp] = useState('');
+  const [sameAsPhone, setSameAsPhone] = useState(true);
+  const [agentEmail, setAgentEmail] = useState('');
+  const [agentState, setAgentState] = useState('Delta State');
+  const [agentCity, setAgentCity] = useState('Asaba');
+  const [agentCac, setAgentCac] = useState('');
+
+  // Login Form Fields
+  const [loginPhoneOrEmail, setLoginPhoneOrEmail] = useState('');
+  const [loginRole, setLoginRole] = useState<'seeker' | 'agent'>('seeker');
+
+  // Success state
   const [isSuccess, setIsSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState({ title: '', subtitle: '' });
 
-  if (!isOpen) return null;
+  if (!isOpen || isAuthenticated) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Handle phone changes to sync WhatsApp if checked
+  const handleAgentPhoneChange = (val: string) => {
+    setAgentPhone(val);
+    if (sameAsPhone) {
+      setAgentWhatsapp(val);
+    }
+  };
+
+  const handleToggleSameAsPhone = (checked: boolean) => {
+    setSameAsPhone(checked);
+    if (checked) {
+      setAgentWhatsapp(agentPhone);
+    }
+  };
+
+  // Submission for Tenant Signup
+  const handleSeekerSignup = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !phone.trim()) return;
+    if (!seekerFullName.trim() || !seekerPhone.trim()) return;
 
     const updated: UserProfile = {
       ...currentUser,
-      fullName: fullName.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      city: city,
-      preferredPropertyType: propertyType,
+      id: currentUser.id || `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
+      fullName: seekerFullName.trim(),
+      phone: seekerPhone.trim(),
+      email: seekerEmail.trim() || undefined,
+      state: seekerState,
+      city: seekerState === 'Delta State' ? seekerCity : 'Capital City',
       isVerifiedTenant: true,
-      isAgent: false, // Normal user signup is not an agent!
+      isAgent: false,
     };
 
+    setSuccessMessage({
+      title: `Welcome, ${seekerFullName.trim()}!`,
+      subtitle: `Your tenant profile is active for ${seekerState}. Inspection bookings are now unlocked!`,
+    });
     setIsSuccess(true);
+
     setTimeout(() => {
-      onUpdateUser(updated);
+      onUpdateUser(updated, 'seeker');
+      setIsSuccess(false);
+      onClose();
+    }, 1100);
+  };
+
+  // Submission for Agent Signup
+  const handleAgentSignup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!agentFullName.trim() || !agencyName.trim() || !agentPhone.trim()) return;
+
+    const finalWhatsapp = sameAsPhone ? agentPhone.trim() : (agentWhatsapp.trim() || agentPhone.trim());
+
+    const updated: UserProfile = {
+      ...currentUser,
+      id: `DT-AGT-${Math.floor(1000 + Math.random() * 9000)}`,
+      fullName: agentFullName.trim(),
+      agencyName: agencyName.trim(),
+      agentType: agentType,
+      phone: agentPhone.trim(),
+      whatsapp: finalWhatsapp,
+      email: agentEmail.trim() || undefined,
+      operatingState: agentState,
+      operatingCity: agentCity,
+      state: agentState,
+      city: agentCity,
+      cacNumber: agentCac.trim() || 'VERIFIED-REG',
+      isVerifiedTenant: false,
+      isAgent: true,
+    };
+
+    setSuccessMessage({
+      title: `Welcome, ${agentFullName.trim()}!`,
+      subtitle: `${agencyName.trim()} is now registered. Redirecting to your Agent Listing Portal...`,
+    });
+    setIsSuccess(true);
+
+    setTimeout(() => {
+      onUpdateUser(updated, 'agent');
       setIsSuccess(false);
       onClose();
     }, 1200);
   };
 
+  // Submission for Login
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = loginPhoneOrEmail.trim();
+    if (!query) return;
+
+    const isAgentLogin =
+      loginRole === 'agent' ||
+      query === '0803 555 1234' ||
+      query.toLowerCase().includes('agent') ||
+      query.toLowerCase().includes('apex') ||
+      (currentUser.isAgent && (query === currentUser.phone || query === currentUser.email));
+
+    const updated: UserProfile = isAgentLogin
+      ? {
+          id: 'DT-AGT-9012',
+          fullName: 'Victor Ossai',
+          agencyName: 'Apex Real Estate Ltd',
+          agentType: 'agency',
+          phone: query.includes('@') ? '0803 555 1234' : query,
+          whatsapp: '0803 555 1234',
+          email: query.includes('@') ? query : 'victor@apexrealty.ng',
+          operatingState: 'Delta State',
+          operatingCity: 'Asaba',
+          state: 'Delta State',
+          city: 'Asaba',
+          cacNumber: 'RC-1849204',
+          isVerifiedTenant: false,
+          isAgent: true,
+          savedListingIds: [],
+        }
+      : {
+          id: 'DT-USR-8492',
+          fullName: 'Chinedu Okafor',
+          phone: query.includes('@') ? '0803 891 0293' : query,
+          email: query.includes('@') ? query : 'chinedu.okafor@gmail.com',
+          state: 'Delta State',
+          city: 'Asaba',
+          preferredPropertyType: 'Bedseater',
+          isVerifiedTenant: true,
+          isAgent: false,
+          savedListingIds: ['prop-asaba-01'],
+        };
+
+    setSuccessMessage({
+      title: `Welcome back, ${updated.fullName}!`,
+      subtitle: isAgentLogin
+        ? 'Signed in as Agent. Loading your listings and inspection requests...'
+        : 'Signed in as Tenant. Your saved inspections and passes are ready!',
+    });
+    setIsSuccess(true);
+
+    setTimeout(() => {
+      onUpdateUser(updated, isAgentLogin ? 'agent' : 'seeker');
+      setIsSuccess(false);
+      onClose();
+    }, 1000);
+  };
+
+  // Demo Quick-fill helpers for easy testing
+  const handleFillDemoTenant = () => {
+    setLoginPhoneOrEmail('0803 891 0293');
+    setLoginRole('seeker');
+  };
+
+  const handleFillDemoAgent = () => {
+    setLoginPhoneOrEmail('0803 555 1234');
+    setLoginRole('agent');
+  };
+
+  const handleSkipClick = () => {
+    if (onSkip) {
+      onSkip();
+    } else {
+      onClose();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-fade-in">
       <div 
-        className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[92vh] animate-slide-up"
+        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[92vh] animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        {/* Notice Alert (When prompted by trying to book an inspection) */}
+        {notice && (
+          <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 flex items-center gap-2.5 text-amber-950">
+            <div className="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
+              <CalendarCheck className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold leading-tight">{notice.title}</p>
+              <p className="text-[11px] text-amber-800 leading-tight mt-0.5 truncate sm:whitespace-normal">
+                {notice.message}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Header */}
         <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#000004] text-white flex items-center justify-center shadow-xs">
-              <User className="w-5 h-5" />
+              {authMode === 'login' ? (
+                <LogIn className="w-5 h-5 text-emerald-400" />
+              ) : activeRoleTab === 'seeker' ? (
+                <User className="w-5 h-5 text-emerald-400" />
+              ) : (
+                <Building2 className="w-5 h-5 text-amber-400" />
+              )}
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <h3 className="font-display text-lg font-bold text-[#000004]">
-                  {mode === 'signup' ? 'Tenant Registration' : 'Tenant Sign In'}
+                  {authMode === 'login'
+                    ? 'Sign In'
+                    : activeRoleTab === 'seeker'
+                      ? 'Tenant Registration'
+                      : 'Agent / Landlord Registration'}
                 </h3>
-                <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  User Account
-                </span>
               </div>
               <p className="text-xs text-[#70798C]">
-                Get immediate access to verified agent rentals in Delta State
+                {authMode === 'login'
+                  ? 'Enter your phone number or email to access your account'
+                  : activeRoleTab === 'seeker'
+                    ? 'Find, inspect, and secure apartments across Delta State'
+                    : 'List rentals and connect with verified tenants across Delta State'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] flex items-center justify-center cursor-pointer transition-colors"
+            title="Close"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Tab switch between signup and login */}
-        <div className="px-5 pt-4 pb-1 flex border-b border-[#E5E7EB] bg-slate-50/50">
+        {/* 1. PRIMARY MODE SWITCH: Sign In vs Create Account */}
+        <div className="px-5 pt-3 pb-0 flex border-b border-[#E5E7EB] bg-white">
           <button
             type="button"
-            onClick={() => setMode('signup')}
-            className={`flex-1 pb-2.5 text-xs font-bold text-center border-b-2 transition-colors ${
-              mode === 'signup'
+            onClick={() => setAuthMode('login')}
+            className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all cursor-pointer ${
+              authMode === 'login'
                 ? 'border-[#000004] text-[#000004]'
                 : 'border-transparent text-[#70798C] hover:text-[#000004]'
             }`}
           >
-            Create Tenant Account
+            Sign In
           </button>
           <button
             type="button"
-            onClick={() => setMode('login')}
-            className={`flex-1 pb-2.5 text-xs font-bold text-center border-b-2 transition-colors ${
-              mode === 'login'
+            onClick={() => setAuthMode('signup')}
+            className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all cursor-pointer ${
+              authMode === 'signup'
                 ? 'border-[#000004] text-[#000004]'
                 : 'border-transparent text-[#70798C] hover:text-[#000004]'
             }`}
           >
-            Existing Sign In
+            Create Account
           </button>
         </div>
 
-        {isSuccess ? (
-          <div className="p-8 text-center space-y-3 my-auto">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm animate-bounce">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-            <h4 className="font-display text-lg font-bold text-[#000004]">
-              Welcome, {fullName}!
-            </h4>
-            <p className="text-xs text-[#70798C] max-w-xs mx-auto">
-              Your tenant profile is active. You have full, unrestricted access to all apartments already uploaded by verified Delta agents!
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-3.5 text-xs no-scrollbar">
-            {/* Full Name */}
-            <div>
-              <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                Full Legal Name <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <User className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Chinedu Okafor"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-9.5 pr-3.5 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
-                />
-              </div>
-            </div>
+        {/* 2. ROLE SWITCH TABS: House Seeker vs Agent (ONLY shown during Create Account) */}
+        {authMode === 'signup' && (
+          <div className="p-2 sm:px-5 sm:pt-3 sm:pb-2 bg-[#FCF9F5]/60 border-b border-[#E5E7EB]">
+            <div className="grid grid-cols-2 p-1 bg-slate-200/70 rounded-2xl gap-1">
+              <button
+                type="button"
+                onClick={() => setActiveRoleTab('seeker')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  activeRoleTab === 'seeker'
+                    ? 'bg-white text-[#000004] shadow-xs'
+                    : 'text-[#70798C] hover:text-[#000004]'
+                }`}
+              >
+                <User className={`w-3.5 h-3.5 ${activeRoleTab === 'seeker' ? 'text-emerald-600' : ''}`} />
+                <span>House Seeker (Tenant)</span>
+              </button>
 
-            {/* Phone & Email */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setActiveRoleTab('agent')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  activeRoleTab === 'agent'
+                    ? 'bg-white text-[#000004] shadow-xs'
+                    : 'text-[#70798C] hover:text-[#000004]'
+                }`}
+              >
+                <Building2 className={`w-3.5 h-3.5 ${activeRoleTab === 'agent' ? 'text-amber-600' : ''}`} />
+                <span>Agent / Landlord</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 3. CONTENT AREA */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 no-scrollbar">
+          {isSuccess ? (
+            <div className="py-10 px-4 text-center space-y-3.5 my-auto animate-fade-in">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm animate-bounce">
+                <CheckCircle2 className="w-10 h-10" />
+              </div>
+              <h4 className="font-display text-xl font-bold text-[#000004]">
+                {successMessage.title}
+              </h4>
+              <p className="text-xs text-[#70798C] max-w-sm mx-auto leading-relaxed">
+                {successMessage.subtitle}
+              </p>
+            </div>
+          ) : authMode === 'login' ? (
+            /* --- SIMPLE, CLEAN SIGN IN FORM --- */
+            <form onSubmit={handleLogin} className="space-y-4 py-2 text-xs">
+              <div>
+                <label className="block text-xs font-bold text-[#000004] mb-1.5">
+                  Phone Number or Email Address <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-[#70798C] absolute left-3.5 top-3.5" />
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    placeholder="0803 000 0000 or email@domain.com"
+                    value={loginPhoneOrEmail}
+                    onChange={(e) => setLoginPhoneOrEmail(e.target.value)}
+                    className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none shadow-xs transition-colors bg-white font-medium placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+
+              {/* Demo quick sign-in triggers */}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px]">
+                <span className="text-[#70798C] font-medium">Quick Demo Test:</span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleFillDemoTenant}
+                    className="py-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[#000004] font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                  >
+                    👤 Tenant
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFillDemoAgent}
+                    className="py-1 px-2.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-950 font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                  >
+                    🏢 Agent
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                >
+                  <LogIn className="w-4 h-4 text-emerald-400" />
+                  <span>Sign In</span>
+                </button>
+              </div>
+
+              <div className="text-center pt-1 text-xs text-[#70798C]">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => setAuthMode('signup')}
+                  className="font-bold text-[#000004] hover:underline cursor-pointer"
+                >
+                  Create an account
+                </button>
+              </div>
+            </form>
+          ) : activeRoleTab === 'seeker' ? (
+            /* --- 1. FIRST-TIME TENANT SIGNUP FORM --- */
+            <form onSubmit={handleSeekerSignup} className="space-y-3.5 text-xs">
+              {/* Full Name */}
+              <div>
+                <label className="block text-[11px] font-bold text-[#000004] mb-1">
+                  Full Name <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Chinedu Okafor"
+                    value={seekerFullName}
+                    onChange={(e) => setSeekerFullName(e.target.value)}
+                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number */}
               <div>
                 <label className="block text-[11px] font-bold text-[#000004] mb-1">
                   Phone Number <span className="text-rose-500">*</span>
@@ -185,91 +550,342 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     type="tel"
                     required
                     placeholder="0803 000 0000"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                    value={seekerPhone}
+                    onChange={(e) => setSeekerPhone(e.target.value)}
+                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
                   />
                 </div>
               </div>
 
+              {/* Email (Optional) */}
               <div>
-                <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                  Email Address
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[11px] font-bold text-[#000004]">
+                    Email Address
+                  </label>
+                  <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.2 rounded">
+                    Optional
+                  </span>
+                </div>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
                   <input
                     type="email"
-                    placeholder="name@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                    placeholder="name@email.com (optional)"
+                    value={seekerEmail}
+                    onChange={(e) => setSeekerEmail(e.target.value)}
+                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
                   />
                 </div>
               </div>
-            </div>
 
-            {/* City Selection */}
-            <div>
-              <label className="block text-[11px] font-bold text-[#000004] mb-1 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-[#342A21]" />
-                <span>Primary City in Delta State</span>
-              </label>
-              <select
-                value={city}
-                onChange={(e) => setCity(e.target.value as DeltaCity)}
-                className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs text-[#000004] outline-none"
-              >
-                {DELTA_CITIES.map((c) => (
-                  <option key={c} value={c}>{c}, Delta State</option>
-                ))}
-              </select>
-            </div>
+              {/* Choose State looking for apartment with custom dropdown & greyed out states */}
+              <div>
+                <StateDropdown
+                  value={seekerState}
+                  onChange={(val) => setSeekerState(val)}
+                  label="Choose State Looking For Apartment"
+                  required
+                />
+              </div>
 
-            {/* Property Type preference */}
-            <div>
-              <label className="block text-[11px] font-bold text-[#000004] mb-1 flex items-center gap-1">
-                <Home className="w-3.5 h-3.5 text-[#342A21]" />
-                <span>Preferred Apartment Type</span>
-              </label>
-              <select
-                value={propertyType}
-                onChange={(e) => setPropertyType(e.target.value as PropertyType)}
-                className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs text-[#000004] outline-none"
-              >
-                {PROPERTY_TYPES.map((pt) => (
-                  <option key={pt} value={pt}>{pt}</option>
-                ))}
-              </select>
-            </div>
+              {/* If Delta State selected, provide city option */}
+              {seekerState === 'Delta State' && (
+                <div>
+                  <label className="block text-[11px] font-bold text-[#70798C] mb-1 flex items-center justify-between">
+                    <span>Preferred City in Delta State</span>
+                    <span className="text-[10px] text-[#342A21] font-semibold">{seekerCity}, Delta</span>
+                  </label>
+                  <CustomDropdown
+                    options={DELTA_CITIES}
+                    value={seekerCity}
+                    onChange={(c) => setSeekerCity(c)}
+                    headerTitle="Delta State Cities"
+                    icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                    variant="form"
+                  />
+                </div>
+              )}
 
-            {/* Notice: Not an agent */}
-            <div className="p-3 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex items-center gap-2 text-[11px] text-[#70798C]">
-              <Building2 className="w-4 h-4 text-[#70798C] shrink-0" />
-              <span>
-                Standard Tenant Profile. You can browse and book agent listings for free. An option to register as an agent is always available in your profile.
-              </span>
-            </div>
+              {/* Quick Info Box */}
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-2 text-[11px] text-[#70798C]">
+                <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>
+                  Signing up unlocks instant booking for verified inspection slots. No inspection fees are charged until your booking is officially accepted.
+                </span>
+              </div>
 
-            {/* Submit button */}
-            <div className="pt-2 flex items-center gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-1/3 py-2.5 rounded-xl border border-[#E5E7EB] hover:bg-slate-50 text-xs font-semibold text-[#70798C] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="w-2/3 py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-colors cursor-pointer"
-              >
-                <span>{mode === 'signup' ? 'Sign Up & Browse Apartments' : 'Sign In'}</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </form>
-        )}
+              {/* Action Buttons */}
+              <div className="pt-2 space-y-2">
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-colors cursor-pointer"
+                >
+                  <span>Complete Signup & Unlock Inspections</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+
+                <div className="text-center pt-1 text-xs text-[#70798C]">
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('login')}
+                    className="font-bold text-[#000004] hover:underline cursor-pointer"
+                  >
+                    Sign in
+                  </button>
+                </div>
+              </div>
+            </form>
+          ) : (
+            /* --- 2. AGENT / LANDLORD SIGNUP FORM --- */
+            <form onSubmit={handleAgentSignup} className="space-y-3.5 text-xs">
+              {/* Account Type Selector */}
+              <div>
+                <label className="block text-[11px] font-bold text-[#000004] mb-1">
+                  Agent / Listing Category <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setAgentType('agency')}
+                    className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition-all ${
+                      agentType === 'agency'
+                        ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
+                        : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                    }`}
+                  >
+                    Agency / Firm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAgentType('individual')}
+                    className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition-all ${
+                      agentType === 'individual'
+                        ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
+                        : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                    }`}
+                  >
+                    Realtor / Agent
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAgentType('landlord')}
+                    className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition-all ${
+                      agentType === 'landlord'
+                        ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
+                        : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                    }`}
+                  >
+                    Direct Landlord
+                  </button>
+                </div>
+              </div>
+
+              {/* Full Name & Agency Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#000004] mb-1">
+                    Agent Full Name <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Victor Ossai"
+                      value={agentFullName}
+                      onChange={(e) => setAgentFullName(e.target.value)}
+                      className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#000004] mb-1">
+                    Agency / Business Name <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Apex Real Estate Ltd"
+                      value={agencyName}
+                      onChange={(e) => setAgencyName(e.target.value)}
+                      className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Direct Phone & WhatsApp */}
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#000004] mb-1">
+                      Direct Phone Number <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
+                      <input
+                        type="tel"
+                        required
+                        placeholder="0803 123 4567"
+                        value={agentPhone}
+                        onChange={(e) => handleAgentPhoneChange(e.target.value)}
+                        className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-[#000004]">
+                        WhatsApp Number
+                      </label>
+                      <label className="flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={sameAsPhone}
+                          onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
+                          className="w-3 h-3 rounded accent-[#000004]"
+                        />
+                        <span className="text-[10px] text-[#70798C] font-semibold">
+                          Same as phone
+                        </span>
+                      </label>
+                    </div>
+                    <input
+                      type="tel"
+                      disabled={sameAsPhone}
+                      placeholder={sameAsPhone ? (agentPhone || 'Synced with phone') : '0803 000 0000'}
+                      value={sameAsPhone ? agentPhone : agentWhatsapp}
+                      onChange={(e) => setAgentWhatsapp(e.target.value)}
+                      className={`w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs text-[#000004] outline-none ${
+                        sameAsPhone ? 'bg-slate-50 text-[#70798C]' : 'bg-white focus:border-[#000004]'
+                      }`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Operating State & City */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <StateDropdown
+                    value={agentState}
+                    onChange={(val) => setAgentState(val)}
+                    label="Operating State"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#000004] mb-1">
+                    Operating City / Towns <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Asaba, Warri, Okpanam"
+                    value={agentCity}
+                    onChange={(e) => setAgentCity(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Optional Email & CAC */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-[#000004]">
+                      Email Address
+                    </label>
+                    <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.2 rounded">
+                      Optional
+                    </span>
+                  </div>
+                  <input
+                    type="email"
+                    placeholder="agency@domain.com"
+                    value={agentEmail}
+                    onChange={(e) => setAgentEmail(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-[#000004]">
+                      CAC / License No.
+                    </label>
+                    <span className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded font-semibold border border-amber-200">
+                      Verified Badge
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="e.g. RC-182903 or Reg No."
+                      value={agentCac}
+                      onChange={(e) => setAgentCac(e.target.value)}
+                      className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Notice */}
+              <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-start gap-2 text-[11px] text-amber-950">
+                <Check className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <span>
+                  As an Agent, you will receive real-time inspection requests from pre-screened tenants directly in your Agent Portal.
+                </span>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-2 space-y-2">
+                <button
+                  type="submit"
+                  className="w-full py-3 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-colors cursor-pointer"
+                >
+                  <Building2 className="w-4 h-4 text-amber-400" />
+                  <span>Register as Agent & Open Portal</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+
+                <div className="text-center pt-1 text-xs text-[#70798C]">
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setAuthMode('login')}
+                    className="font-bold text-[#000004] hover:underline cursor-pointer"
+                  >
+                    Sign in
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* 4. FOOTER: Skip for Now CTA */}
+        <div className="px-5 py-3 bg-[#FCF9F5] border-t border-[#E5E7EB] flex flex-col sm:flex-row items-center justify-between gap-2.5">
+          <p className="text-[11px] text-[#70798C] text-center sm:text-left">
+            Just browsing? You can explore the live video feed without an account.
+          </p>
+          <button
+            type="button"
+            onClick={handleSkipClick}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-[#000004] border border-[#E5E7EB] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer shrink-0"
+          >
+            <span>Skip for now & explore feed</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#342A21]" />
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -16,7 +16,7 @@ interface BecomeAgentModalProps {
   onClose: () => void;
   currentUser: {
     fullName: string;
-    email: string;
+    email?: string;
     phone: string;
     city: string;
   };
@@ -31,12 +31,39 @@ interface BecomeAgentModalProps {
 const AVAILABLE_CITIES: DeltaCity[] = [
   'Asaba',
   'Warri',
+  'Effurun',
+  'Udu',
+  'Enerhen',
+  'Opete',
+  'Okpaka',
+  'Okuokoko',
+  'Otokutu',
+  'Ujvewu',
   'Ughelli',
   'Sapele',
   'Agbor',
   'Abraka',
-  'Effurun',
-  'Oleh'
+  'Okpanam',
+  'Ibusa',
+  'Ogwashi-Uku',
+  'Oleh',
+  'Ozoro',
+  'Oghara',
+  'Ekpan',
+  'Ovwian',
+  'Aladja',
+  'Orhuwhorun',
+  'Agbarho',
+  'Eku',
+  'Kwale',
+  'Obiaruku',
+  'Issele-Uku',
+  'Orerokpe',
+  'Koko',
+  'Bomadi',
+  'Patani',
+  'Burutu',
+  'Others'
 ];
 
 export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({

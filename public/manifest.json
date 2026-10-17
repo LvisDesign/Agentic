@@ -1,0 +1,28 @@
+{
+  "name": "Platform Name [Temporary]",
+  "short_name": "Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FCF9F5",
+  "theme_color": "#275DAD",
+  "description": "Direct accommodation and vacancy marketplace in Nigeria.",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

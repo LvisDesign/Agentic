@@ -36,6 +36,7 @@ interface UserDashboardProps {
   onOpenBecomeAgent: () => void;
   onOpenSignup: () => void;
   onSwitchToFeed: () => void;
+  isAuthenticated?: boolean;
 }
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({
@@ -50,6 +51,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   onOpenBecomeAgent,
   onOpenSignup,
   onSwitchToFeed,
+  isAuthenticated = true,
 }) => {
   const [activeTab, setActiveTab] = useState<'passes' | 'inventory' | 'saved'>('passes');
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
@@ -73,59 +75,78 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       <div className="bg-white rounded-2xl p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#342A21] to-[#1f1914] text-white flex items-center justify-center font-bold text-xl shadow-xs border-2 border-white ring-2 ring-[#342A21]/20 shrink-0">
-            {currentUser.fullName
-              .split(' ')
-              .map((n) => n[0])
-              .join('')
-              .slice(0, 2)
-              .toUpperCase()}
+            {isAuthenticated ? (
+              currentUser.fullName
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase()
+            ) : (
+              'GU'
+            )}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-2xl font-bold text-[#000004]">
-                {currentUser.fullName}
+                {isAuthenticated ? currentUser.fullName : 'Guest Explorer'}
               </h1>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
-                <UserCheck className="w-3 h-3" />
-                Verified Tenant
-              </span>
-              {/* Not an Agent Distinction Badge */}
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
-                <AlertCircle className="w-3 h-3 text-amber-600" />
-                Not an Agent
-              </span>
+              {isAuthenticated ? (
+                <>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
+                    <UserCheck className="w-3 h-3" />
+                    Verified Tenant
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
+                    <AlertCircle className="w-3 h-3 text-amber-600" />
+                    Not an Agent
+                  </span>
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-[#70798C] text-xs font-semibold border border-slate-200">
+                  Guest Mode (Read-Only)
+                </span>
+              )}
             </div>
             <p className="text-xs text-[#70798C] mt-0.5">
-              Delta State Tenant • Member ID: {currentUser.id} • Looking in {currentUser.city}, Delta
+              {isAuthenticated
+                ? `${currentUser.state || 'Delta State'} Tenant • Member ID: ${currentUser.id} • Looking in ${currentUser.city || 'Delta'}`
+                : 'Browsing rentals as guest • Create an account to book verified inspection appointments'}
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-[#70798C]">
-              <span className="font-mono text-[#000004] font-semibold">
-                {formatNigerianPhone(currentUser.phone)}
-              </span>
-              <span>•</span>
-              <span className="text-[#342A21] font-medium">
-                Seeking: {currentUser.preferredPropertyType || 'Any Rental'}
-              </span>
-              <span>•</span>
-              <button
-                onClick={onOpenSignup}
-                className="text-xs text-[#70798C] hover:text-[#000004] underline cursor-pointer"
-              >
-                Switch Account
-              </button>
+              {isAuthenticated ? (
+                <>
+                  <span className="font-mono text-[#000004] font-semibold">
+                    {formatNigerianPhone(currentUser.phone)}
+                  </span>
+                  <span>•</span>
+                  <span className="text-[#342A21] font-medium">
+                    Seeking: {currentUser.preferredPropertyType || 'Any Rental'}
+                  </span>
+                </>
+              ) : (
+                <button
+                  onClick={onOpenSignup}
+                  className="font-bold text-xs text-[#342A21] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Click here to Sign Up / Log In →</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Action Buttons: Become an Agent + View Live Feed */}
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-          {/* Become an Agent CTA Button */}
-          <button
-            onClick={onOpenBecomeAgent}
-            className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#000004] to-[#1f2937] hover:from-[#1f2937] hover:to-[#374151] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
-          >
-            <span>Become an Agent</span>
-          </button>
+          {/* Become an Agent CTA Button (only if not already an agent) */}
+          {!currentUser.isAgent && (
+            <button
+              onClick={onOpenBecomeAgent}
+              className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#000004] to-[#1f2937] hover:from-[#1f2937] hover:to-[#374151] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
+            >
+              <span>Become an Agent</span>
+            </button>
+          )}
 
           <button
             onClick={onSwitchToFeed}
@@ -151,12 +172,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             </p>
           </div>
         </div>
-        <button
-          onClick={onOpenBecomeAgent}
-          className="shrink-0 px-3 py-1.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-amber-300 text-[11px] font-bold text-[#000004] flex items-center gap-1.5 transition-colors cursor-pointer"
-        >
-          <span>Want to upload properties? Become an Agent →</span>
-        </button>
+        {!currentUser.isAgent && (
+          <button
+            onClick={onOpenBecomeAgent}
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-amber-300 text-[11px] font-bold text-[#000004] flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <span>Want to upload properties? Become an Agent →</span>
+          </button>
+        )}
       </div>
 
       {/* 3. KPI Cards Grid (Matches Agent Dashboard 4-card structure) */}

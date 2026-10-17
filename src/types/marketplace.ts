@@ -8,12 +8,41 @@ export type NigerianState =
 export type DeltaCity = 
   | 'Asaba'
   | 'Warri'
-  | 'Abraka'
+  | 'Effurun'
+  | 'Udu'
+  | 'Enerhen'
+  | 'Opete'
+  | 'Okpaka'
+  | 'Okuokoko'
+  | 'Otokutu'
+  | 'Ujevwu / Ujvewu'
+  | 'Ujevwu'
+  | 'Ujvewu'
   | 'Ughelli'
   | 'Sapele'
   | 'Agbor'
+  | 'Abraka'
+  | 'Okpanam'
+  | 'Ibusa'
+  | 'Ogwashi-Uku'
   | 'Oleh'
-  | 'Effurun';
+  | 'Ozoro'
+  | 'Oghara'
+  | 'Ekpan'
+  | 'Ovwian'
+  | 'Aladja'
+  | 'Orhuwhorun'
+  | 'Agbarho'
+  | 'Eku'
+  | 'Kwale'
+  | 'Obiaruku'
+  | 'Issele-Uku'
+  | 'Orerokpe'
+  | 'Koko'
+  | 'Bomadi'
+  | 'Patani'
+  | 'Burutu'
+  | 'Others';
 
 export type PropertyType = 
   | 'Self-contain'
@@ -120,8 +149,9 @@ export type UserRole = 'seeker' | 'agent';
 export interface UserProfile {
   id: string;
   fullName: string;
-  email: string;
+  email?: string;
   phone: string;
+  state?: string;
   city: DeltaCity | string;
   preferredPropertyType?: PropertyType | string;
   budget?: number;
@@ -131,5 +161,10 @@ export interface UserProfile {
   isAgent: boolean;
   agencyName?: string;
   cacNumber?: string;
+  whatsapp?: string;
+  operatingState?: string;
+  operatingCity?: string;
+  agentType?: 'agency' | 'individual' | 'landlord';
   savedListingIds: string[];
 }
+

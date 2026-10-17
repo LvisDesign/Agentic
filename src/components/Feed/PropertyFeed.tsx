@@ -9,6 +9,7 @@ interface PropertyFeedProps {
   onBookSlot: (booking: BookingRecord) => void;
   onUpdateBooking: (booking: BookingRecord) => void;
   onSimulateAgentAccept?: (bookingId: string) => void;
+  onOpenBookingModal?: (listing: PropertyListing) => void;
   onResetFilters: () => void;
 }
 
@@ -18,6 +19,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
   onBookSlot,
   onUpdateBooking,
   onSimulateAgentAccept,
+  onOpenBookingModal,
   onResetFilters,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -102,6 +104,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
             onBookSlot={onBookSlot}
             onUpdateBooking={onUpdateBooking}
             onSimulateAgentAccept={onSimulateAgentAccept}
+            onOpenBookingModal={onOpenBookingModal}
             index={index}
             totalCount={listings.length}
           />

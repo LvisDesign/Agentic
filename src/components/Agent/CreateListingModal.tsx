@@ -280,12 +280,39 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                 >
                   <option value="Asaba">Asaba (Capital City)</option>
                   <option value="Warri">Warri (Commercial Hub)</option>
-                  <option value="Abraka">Abraka (DELSU Academic Hub)</option>
+                  <option value="Effurun">Effurun (Metropolitan Hub)</option>
+                  <option value="Udu">Udu</option>
+                  <option value="Enerhen">Enerhen</option>
+                  <option value="Opete">Opete</option>
+                  <option value="Okpaka">Okpaka</option>
+                  <option value="Okuokoko">Okuokoko</option>
+                  <option value="Otokutu">Otokutu</option>
+                  <option value="Ujvewu">Ujvewu</option>
                   <option value="Ughelli">Ughelli (Central Zone)</option>
                   <option value="Sapele">Sapele (Coastal Corridor)</option>
                   <option value="Agbor">Agbor (Transit Hub)</option>
+                  <option value="Abraka">Abraka (DELSU Academic Hub)</option>
+                  <option value="Okpanam">Okpanam</option>
+                  <option value="Ibusa">Ibusa</option>
+                  <option value="Ogwashi-Uku">Ogwashi-Uku</option>
                   <option value="Oleh">Oleh (Law Campus Zone)</option>
-                  <option value="Effurun">Effurun (Metropolitan Hub)</option>
+                  <option value="Ozoro">Ozoro</option>
+                  <option value="Oghara">Oghara</option>
+                  <option value="Ekpan">Ekpan</option>
+                  <option value="Ovwian">Ovwian</option>
+                  <option value="Aladja">Aladja</option>
+                  <option value="Orhuwhorun">Orhuwhorun</option>
+                  <option value="Agbarho">Agbarho</option>
+                  <option value="Eku">Eku</option>
+                  <option value="Kwale">Kwale</option>
+                  <option value="Obiaruku">Obiaruku</option>
+                  <option value="Issele-Uku">Issele-Uku</option>
+                  <option value="Orerokpe">Orerokpe</option>
+                  <option value="Koko">Koko</option>
+                  <option value="Bomadi">Bomadi</option>
+                  <option value="Patani">Patani</option>
+                  <option value="Burutu">Burutu</option>
+                  <option value="Others">Others</option>
                 </select>
               </div>
             </div>
