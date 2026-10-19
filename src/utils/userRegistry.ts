@@ -15,6 +15,7 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     isVerifiedTenant: true,
     isAgent: false,
     savedListingIds: ['prop-asaba-01'],
+    createdAt: '2026-10-01T10:00:00.000Z',
   },
   {
     id: 'DT-AGT-9012',
@@ -32,6 +33,7 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     isVerifiedTenant: false,
     isAgent: true,
     savedListingIds: [],
+    createdAt: '2026-10-01T10:00:00.000Z',
   },
   {
     id: 'DT-WRI-3918',
@@ -43,6 +45,7 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     isVerifiedTenant: true,
     isAgent: false,
     savedListingIds: ['prop-warri-02'],
+    createdAt: '2026-10-01T10:00:00.000Z',
   },
 ];
 

@@ -12,6 +12,7 @@ import {
   Search
 } from 'lucide-react';
 import { DELTA_CITIES, ALL_NIGERIAN_STATES, PROPERTY_TYPES } from '../../data/mockListings';
+import { DELTA_ALL_TOWNS } from '../../data/deltaCities';
 import { formatNaira } from '../../utils/formatters';
 import { AdvertStory } from '../../data/mockAdverts';
 import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
@@ -95,12 +96,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       });
     });
 
-    // Predefined Standard Cities
-    DELTA_CITIES.filter((c) => c !== 'All Delta Cities').forEach((c) => {
+    // Predefined Standard Cities & Towns across Delta State
+    DELTA_ALL_TOWNS.forEach((town) => {
       opts.push({
-        value: c,
-        label: c,
-        subtitle: 'Delta LGA / Zone',
+        value: town.value,
+        label: town.label,
+        subtitle: town.subtitle,
       });
     });
 
@@ -216,7 +217,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   variant="form"
                 />
                 <p className="text-[11px] text-[#342A21] mt-1">
-                  Delta State is the active launch market with live inspection queues.
+                  Delta State is currently available with live inspection queues.
                 </p>
               </div>
 

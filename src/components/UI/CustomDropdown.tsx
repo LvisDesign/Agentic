@@ -181,7 +181,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
           type="button"
           disabled={disabled}
           onClick={() => setIsOpen((prev) => !prev)}
-          className={`w-full px-3 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium text-[#000004] flex items-center justify-between hover:border-[#342A21]/50 focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 transition-all cursor-pointer select-none active:scale-[0.99] ${
+          className={`w-full px-3 py-2 min-h-[38px] rounded-lg border border-[#E5E7EB] bg-white text-xs font-medium text-[#000004] flex items-center justify-between hover:border-[#342A21]/50 focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 transition-all cursor-pointer select-none active:scale-[0.99] ${
             isOpen ? 'border-[#342A21] ring-2 ring-[#342A21]/20' : ''
           } ${isCustomValue ? 'border-amber-400 bg-amber-50/50' : ''} ${className}`}
           aria-haspopup="listbox"
@@ -190,13 +190,24 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
           <div className="flex items-center gap-2 truncate">
             {icon && <span className="shrink-0">{icon}</span>}
             <span className="truncate">{displayLabel}</span>
+            {selectedOption?.badge && !isCustomValue && (
+              <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${
+                selectedOption.badge.toLowerCase().includes('active')
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : selectedOption.badge.toLowerCase().includes('beta')
+                  ? 'bg-slate-100 text-slate-600'
+                  : 'bg-amber-100 text-amber-800'
+              }`}>
+                {selectedOption.badge}
+              </span>
+            )}
             {isCustomValue && (
-              <span className="text-[9px] font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
+              <span className="text-[9px] font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded shrink-0">
                 Custom Area
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0 ml-1.5">
             {isCustomValue && onClear && (
               <span
                 role="button"
@@ -212,7 +223,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
               </span>
             )}
             <ChevronDown
-              className={`w-4 h-4 text-[#70798C] transition-transform duration-200 ${
+              className={`w-3.5 h-3.5 text-[#70798C] transition-transform duration-200 ${
                 isOpen ? 'rotate-180 text-[#342A21]' : ''
               }`}
             />
@@ -337,11 +348,15 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                     </div>
                   </div>
                   {isDisabled ? (
-                    <span className="text-[9px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">
+                    <span className="text-[9px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 shrink-0">
                       {option.badge || 'Coming Soon'}
                     </span>
                   ) : option.badge ? (
-                    <span className="text-[9px] font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded shrink-0">
+                    <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                      option.badge.toLowerCase().includes('active') || option.badge.toLowerCase().includes('launch')
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : 'bg-amber-100 text-amber-800 border border-amber-200'
+                    }`}>
                       {option.badge}
                     </span>
                   ) : isSelected ? (

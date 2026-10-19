@@ -23,6 +23,7 @@ import {
 import { DeltaCity, UserProfile } from '../../types/marketplace';
 import { StateDropdown } from '../UI/StateDropdown';
 import { CustomDropdown } from '../UI/CustomDropdown';
+import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { usePWA } from '../../utils/pwa';
 import { 
   checkUserExists, 
@@ -71,43 +72,7 @@ export const NIGERIAN_STATES = [
   'Ebonyi State'
 ];
 
-const DELTA_CITIES: DeltaCity[] = [
-  'Asaba',
-  'Warri',
-  'Effurun',
-  'Udu',
-  'Enerhen',
-  'Opete',
-  'Okpaka',
-  'Okuokoko',
-  'Otokutu',
-  'Ujvewu',
-  'Ughelli',
-  'Sapele',
-  'Agbor',
-  'Abraka',
-  'Okpanam',
-  'Ibusa',
-  'Ogwashi-Uku',
-  'Oleh',
-  'Ozoro',
-  'Oghara',
-  'Ekpan',
-  'Ovwian',
-  'Aladja',
-  'Orhuwhorun',
-  'Agbarho',
-  'Eku',
-  'Kwale',
-  'Obiaruku',
-  'Issele-Uku',
-  'Orerokpe',
-  'Koko',
-  'Bomadi',
-  'Patani',
-  'Burutu',
-  'Others'
-];
+
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -270,6 +235,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       city: seekerState === 'Delta State' ? seekerCity : 'Capital City',
       isVerifiedTenant: true,
       isAgent: false,
+      createdAt: currentUser.createdAt || new Date().toISOString(),
     };
 
     if (isStandalone) {
@@ -324,6 +290,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       cacNumber: agentCac.trim() || 'VERIFIED-REG',
       isVerifiedTenant: false,
       isAgent: true,
+      createdAt: currentUser.createdAt || new Date().toISOString(),
     };
 
     if (isStandalone) {
@@ -902,12 +869,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <span className="text-[10px] text-[#342A21] font-semibold">{seekerCity}, Delta</span>
                   </label>
                   <CustomDropdown
-                    options={DELTA_CITIES}
+                    options={DELTA_CITY_OPTIONS}
                     value={seekerCity}
                     onChange={(c) => setSeekerCity(c)}
-                    headerTitle="Delta State Cities"
+                    headerTitle="Delta State Cities & Towns"
+                    placeholder="Select City / Town"
                     icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
                     variant="form"
+                    allowCustomInput={true}
                   />
                 </div>
               )}

@@ -33,6 +33,7 @@ const INITIAL_USER: UserProfile = {
   isVerifiedTenant: true,
   isAgent: false,
   savedListingIds: ['prop-asaba-01'],
+  createdAt: '2026-10-01T10:00:00.000Z',
 };
 
 // Seed initial bookings for immediate testability
@@ -121,7 +122,7 @@ export function App() {
   // Filter state
   const [selectedCity, setSelectedCity] = useState('All Delta Cities');
   const [selectedType, setSelectedType] = useState('All Property Types');
-  const [selectedState, setSelectedState] = useState('Delta State (Active Launch)');
+  const [selectedState, setSelectedState] = useState('Delta State');
   const [maxRent, setMaxRent] = useState(5000000);
 
   // Modals & Navigation state
@@ -366,6 +367,16 @@ export function App() {
     setUserView('feed');
   };
 
+  const handleUpdateAvatar = (avatarUrl: string) => {
+    const updated: UserProfile = {
+      ...currentUser,
+      avatarUrl,
+    };
+    saveRegisteredUser(updated);
+    setCurrentUser(updated);
+    localStorage.setItem('deltarent_user', JSON.stringify(updated));
+  };
+
   // Handler: Update current user from signup/login modal
   const handleUpdateUser = (updatedUser: UserProfile, role?: 'seeker' | 'agent') => {
     saveRegisteredUser(updatedUser);
@@ -452,6 +463,7 @@ export function App() {
               onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
               onOpenSignup={handleOpenSignup}
               onSwitchToFeed={() => setUserView('feed')}
+              onSwitchToAgent={() => setCurrentRole('agent')}
               isAuthenticated={isAuthenticated}
             />
           </main>
@@ -509,6 +521,7 @@ export function App() {
         /* Agent Mode Portal */
         <main className="flex-1 w-full">
           <AgentDashboard
+            currentUser={currentUser}
             listings={listings}
             bookings={bookings}
             onAcceptBooking={handleAcceptBooking}
@@ -516,7 +529,7 @@ export function App() {
             onListingCreated={handleListingCreated}
             onSwitchToSeeker={() => {
               setCurrentRole('seeker');
-              setUserView('dashboard');
+              setUserView('feed');
             }}
           />
         </main>
@@ -539,6 +552,8 @@ export function App() {
         activeBookings={bookings}
         onOpenMyPasses={() => setIsMyPassesOpen(true)}
         currentUser={currentUser}
+        onUpdateAvatar={handleUpdateAvatar}
+        onUpdateProfile={handleUpdateUser}
         onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
         onOpenSignup={handleOpenSignup}
         onSignOut={handleSignOut}

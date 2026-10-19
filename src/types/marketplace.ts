@@ -7,7 +7,12 @@ export type NigerianState =
 
 export type DeltaCity = 
   | 'Asaba'
+  | 'GRA Asaba'
+  | 'Airport Road'
+  | 'Airport Road (Asaba)'
+  | 'Airport Road (Warri / Effurun)'
   | 'Warri'
+  | 'GRA Warri'
   | 'Effurun'
   | 'Udu'
   | 'Enerhen'
@@ -15,7 +20,6 @@ export type DeltaCity =
   | 'Okpaka'
   | 'Okuokoko'
   | 'Otokutu'
-  | 'Ujevwu / Ujvewu'
   | 'Ujevwu'
   | 'Ujvewu'
   | 'Ughelli'
@@ -37,12 +41,37 @@ export type DeltaCity =
   | 'Kwale'
   | 'Obiaruku'
   | 'Issele-Uku'
+  | 'Issele-Azagba'
   | 'Orerokpe'
+  | 'Osubi'
   | 'Koko'
   | 'Bomadi'
   | 'Patani'
   | 'Burutu'
-  | 'Others';
+  | 'Ubulu-Uku'
+  | 'Umunede'
+  | 'Abavo'
+  | 'Owa-Oyibu'
+  | 'Owa-Alero'
+  | 'Aboh'
+  | 'Ashaka'
+  | 'Ossissa'
+  | 'Akwukwu-Igbo'
+  | 'Illah'
+  | 'Isiokolo'
+  | 'Kokori'
+  | 'Mosogar'
+  | 'Jesse'
+  | 'Otu-Jeremi'
+  | 'Effurun-Otor'
+  | 'Ogbe-Ijoh'
+  | 'Escravos'
+  | 'Okerenkoko'
+  | 'Forcados'
+  | 'Ogulagha'
+  | 'Kiagbodo'
+  | 'Others'
+  | (string & {});
 
 export type PropertyType = 
   | 'Self-contain'
@@ -166,5 +195,7 @@ export interface UserProfile {
   operatingCity?: string;
   agentType?: 'agency' | 'individual' | 'landlord';
   savedListingIds: string[];
+  createdAt?: string;
+  lastProfileEditAt?: string;
 }
 

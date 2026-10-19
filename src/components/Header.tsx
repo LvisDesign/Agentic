@@ -6,7 +6,6 @@ import {
   User, 
   Compass, 
   LayoutDashboard, 
-  UserCheck, 
   CalendarCheck, 
   UserPlus, 
   Download 
@@ -82,30 +81,14 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#342A21]/10 text-[#342A21] hidden xs:inline-block">
                 Delta State
               </span>
-              {!isAuthenticated ? (
-                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-slate-100 text-[#70798C] border border-slate-200 hidden sm:inline-flex items-center gap-1">
-                  <User className="w-2.5 h-2.5" />
-                  Guest Mode
-                </span>
-              ) : currentRole === 'seeker' ? (
-                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hidden sm:inline-flex items-center gap-1">
-                  <UserCheck className="w-2.5 h-2.5" />
-                  Tenant Mode
-                </span>
-              ) : (
-                <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-[#000004] text-amber-300 border border-amber-400/30 hidden sm:inline-flex items-center gap-1">
-                  <ShieldCheck className="w-2.5 h-2.5" />
-                  Agent Mode
-                </span>
-              )}
             </div>
           </div>
         </div>
 
         {/* Center / Right: Squircle Navigation Island */}
         <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-[22px] bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs">
-          {/* TAB 1: User Dashboard (Only rendered when authenticated) */}
-          {isAuthenticated && (
+          {/* TAB 1: User Dashboard (Only rendered for non-agents / seekers when authenticated) */}
+          {isAuthenticated && currentRole !== 'agent' && !currentUser.isAgent && (
             <button
               onClick={() => {
                 onChangeRole('seeker');
@@ -168,8 +151,8 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* TAB 3: Inspections (CalendarCheck with Badge) - Only rendered when authenticated */}
-          {isAuthenticated && (
+          {/* TAB 3: Inspections (CalendarCheck with Badge) - Only rendered for seekers/tenants when authenticated */}
+          {isAuthenticated && currentRole !== 'agent' && !currentUser.isAgent && (
             <button
               onClick={onOpenMyPasses}
               className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3.5 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
@@ -207,18 +190,24 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* TAB 4: Agent Management Portal (Only visible when logged in as an Agent) */}
-          {isAuthenticated && currentRole === 'agent' && (
+          {isAuthenticated && (currentRole === 'agent' || currentUser.isAgent) && (
             <button
               onClick={() => onChangeRole('agent')}
-              className="relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03] shrink-0"
+              className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
+                currentRole === 'agent'
+                  ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
+                  : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
+              }`}
               aria-label="Agent Portal"
               title="Agent Portal"
             >
-              <ShieldCheck className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 text-amber-300" />
+              <ShieldCheck className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-amber-300' : 'text-[#70798C]'}`} />
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
                 Agent Portal
               </span>
-              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+              {currentRole === 'agent' && (
+                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+              )}
             </button>
           )}
 
@@ -253,17 +242,25 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenProfile}
               className="relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group cursor-pointer shrink-0"
-              aria-label="Profile"
-              title="Profile"
+              aria-label={(currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
+              title={(currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
             >
-              <div className="w-5 h-5 rounded-full bg-[#342A21] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                {currentUser.fullName
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .slice(0, 2)
-                  .toUpperCase()}
-              </div>
+              {currentUser.avatarUrl ? (
+                <img
+                  src={currentUser.avatarUrl}
+                  alt={currentUser.fullName}
+                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-[#342A21]/20"
+                />
+              ) : (
+                <div className="w-5 h-5 rounded-full bg-[#342A21] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                  {currentUser.fullName
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </div>
+              )}
 
               {/* Desktop Label */}
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
@@ -272,7 +269,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Mobile Tooltip */}
               <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-                {currentUser.fullName}
+                {(currentUser.isAgent || currentRole === 'agent') ? `Agent Portal (${currentUser.fullName})` : currentUser.fullName}
               </span>
             </button>
           )}

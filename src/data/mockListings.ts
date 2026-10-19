@@ -596,47 +596,10 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
   }
 ];
 
-export const DELTA_CITIES = [
-  'All Delta Cities',
-  'Asaba',
-  'Warri',
-  'Effurun',
-  'Udu',
-  'Enerhen',
-  'Opete',
-  'Okpaka',
-  'Okuokoko',
-  'Otokutu',
-  'Ujvewu',
-  'Ughelli',
-  'Sapele',
-  'Agbor',
-  'Abraka',
-  'Okpanam',
-  'Ibusa',
-  'Ogwashi-Uku',
-  'Oleh',
-  'Ozoro',
-  'Oghara',
-  'Ekpan',
-  'Ovwian',
-  'Aladja',
-  'Orhuwhorun',
-  'Agbarho',
-  'Eku',
-  'Kwale',
-  'Obiaruku',
-  'Issele-Uku',
-  'Orerokpe',
-  'Koko',
-  'Bomadi',
-  'Patani',
-  'Burutu',
-  'Others'
-];
+export { DELTA_CITIES } from './deltaCities';
 
 export const ALL_NIGERIAN_STATES = [
-  { value: 'Delta State (Active Launch)', label: 'Delta State (Active Launch)', disabled: false },
+  { value: 'Delta State', label: 'Delta State', disabled: false },
   { value: 'Edo State (Expanding Soon)', label: 'Edo State', disabled: true, badge: 'Coming Soon' },
   { value: 'Rivers State (Expanding Soon)', label: 'Rivers State', disabled: true, badge: 'Coming Soon' },
   { value: 'Lagos State (Expanding Soon)', label: 'Lagos State', disabled: true, badge: 'Coming Soon' },

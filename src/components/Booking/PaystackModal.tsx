@@ -14,6 +14,15 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatNaira } from '../../utils/formatters';
+import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
+
+const BANK_OPTIONS: DropdownOption[] = [
+  { value: 'GTBank', label: 'Guaranty Trust Bank (*737*)', subtitle: 'GTCO Instant USSD' },
+  { value: 'Zenith', label: 'Zenith Bank (*966*)', subtitle: 'Zenith Direct Banking' },
+  { value: 'Access', label: 'Access Bank (*901*)', subtitle: 'Access / Diamond Mobile' },
+  { value: 'UBA', label: 'United Bank for Africa (*919*)', subtitle: 'UBA Magic Banking' },
+  { value: 'FirstBank', label: 'First Bank of Nigeria (*894*)', subtitle: 'FirstBank FirstMonie' },
+];
 
 interface PaystackModalProps {
   isOpen: boolean;
@@ -267,17 +276,13 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
               <label className="text-xs font-medium text-[#70798C] block">
                 Select your Nigerian Bank
               </label>
-              <select
+              <CustomDropdown
+                options={BANK_OPTIONS}
                 value={selectedBank}
-                onChange={(e) => setSelectedBank(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] bg-white focus:outline-none focus:border-[#342A21]"
-              >
-                <option value="GTBank">Guaranty Trust Bank (*737*)</option>
-                <option value="Zenith">Zenith Bank (*966*)</option>
-                <option value="Access">Access Bank (*901*)</option>
-                <option value="UBA">United Bank for Africa (*919*)</option>
-                <option value="FirstBank">First Bank of Nigeria (*894*)</option>
-              </select>
+                onChange={(val) => setSelectedBank(val)}
+                headerTitle="Select Nigerian Bank"
+                variant="form"
+              />
 
               <div className="p-4 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] text-center">
                 <div className="text-xs text-[#70798C]">Dial this code on your mobile phone:</div>

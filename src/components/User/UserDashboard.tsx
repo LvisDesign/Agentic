@@ -36,6 +36,7 @@ interface UserDashboardProps {
   onOpenBecomeAgent: () => void;
   onOpenSignup: () => void;
   onSwitchToFeed: () => void;
+  onSwitchToAgent?: () => void;
   isAuthenticated?: boolean;
 }
 
@@ -51,6 +52,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   onOpenBecomeAgent,
   onOpenSignup,
   onSwitchToFeed,
+  onSwitchToAgent,
   isAuthenticated = true,
 }) => {
   const [activeTab, setActiveTab] = useState<'passes' | 'inventory' | 'saved'>('passes');
@@ -74,8 +76,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       {/* 1. Top Banner / User Identity */}
       <div className="bg-white rounded-2xl p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#342A21] to-[#1f1914] text-white flex items-center justify-center font-bold text-xl shadow-xs border-2 border-white ring-2 ring-[#342A21]/20 shrink-0">
-            {isAuthenticated ? (
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#342A21] to-[#1f1914] text-white flex items-center justify-center font-bold text-xl shadow-xs border-2 border-white ring-2 ring-[#342A21]/20 shrink-0 overflow-hidden">
+            {isAuthenticated && currentUser.avatarUrl ? (
+              <img
+                src={currentUser.avatarUrl}
+                alt={currentUser.fullName}
+                className="w-full h-full object-cover"
+              />
+            ) : isAuthenticated ? (
               currentUser.fullName
                 .split(' ')
                 .map((n) => n[0])
@@ -92,16 +100,23 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 {isAuthenticated ? currentUser.fullName : 'Guest Explorer'}
               </h1>
               {isAuthenticated ? (
-                <>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
-                    <UserCheck className="w-3 h-3" />
-                    Verified Tenant
+                currentUser.isAgent ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#000004] text-amber-300 text-xs font-semibold">
+                    <ShieldCheck className="w-3 h-3" />
+                    Verified Partner Agent
                   </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
-                    <AlertCircle className="w-3 h-3 text-amber-600" />
-                    Not an Agent
-                  </span>
-                </>
+                ) : (
+                  <>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
+                      <UserCheck className="w-3 h-3" />
+                      Verified Tenant
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
+                      <AlertCircle className="w-3 h-3 text-amber-600" />
+                      Tenant Account
+                    </span>
+                  </>
+                )
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-[#70798C] text-xs font-semibold border border-slate-200">
                   Guest Mode (Read-Only)
@@ -110,7 +125,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             </div>
             <p className="text-xs text-[#70798C] mt-0.5">
               {isAuthenticated
-                ? `${currentUser.state || 'Delta State'} Tenant • Member ID: ${currentUser.id} • Looking in ${currentUser.city || 'Delta'}`
+                ? currentUser.isAgent
+                  ? `${currentUser.agencyName || 'Partner Agency'} • Agent ID: ${currentUser.id} • Operating in ${currentUser.operatingCity || currentUser.city || 'Delta State'}`
+                  : `${currentUser.state || 'Delta State'} Tenant • Member ID: ${currentUser.id} • Looking in ${currentUser.city || 'Delta'}`
                 : 'Browsing rentals as guest • Create an account to book verified inspection appointments'}
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-[#70798C]">
@@ -121,7 +138,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   </span>
                   <span>•</span>
                   <span className="text-[#342A21] font-medium">
-                    Seeking: {currentUser.preferredPropertyType || 'Any Rental'}
+                    {currentUser.isAgent
+                      ? `CAC: ${currentUser.cacNumber || 'Registered Agent'}`
+                      : `Seeking: ${currentUser.preferredPropertyType || 'Any Rental'}`}
                   </span>
                 </>
               ) : (
@@ -138,8 +157,15 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
         {/* Action Buttons: Become an Agent + View Live Feed */}
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-          {/* Become an Agent CTA Button (only if not already an agent) */}
-          {!currentUser.isAgent && (
+          {currentUser.isAgent ? (
+            <button
+              onClick={() => onSwitchToAgent?.()}
+              className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Go to Agent Portal</span>
+            </button>
+          ) : (
             <button
               onClick={onOpenBecomeAgent}
               className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#000004] to-[#1f2937] hover:from-[#1f2937] hover:to-[#374151] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
@@ -157,30 +183,53 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         </div>
       </div>
 
-      {/* 2. Notice Box: Tenant Access & Agent Role Explanation */}
-      <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#342A21]/5 via-[#FCF9F5] to-emerald-50/70 border border-[#342A21]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-xl bg-[#342A21]/10 text-[#342A21] flex items-center justify-center shrink-0 mt-0.5">
-            <Building className="w-4 h-4" />
+      {/* 2. Notice Box */}
+      {currentUser.isAgent ? (
+        <div className="mb-6 p-4 rounded-2xl bg-[#FCF9F5] border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#000004] text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-bold text-[#000004]">
+                Agent Portal Active: {currentUser.agencyName || 'Partner Agent'}
+              </h4>
+              <p className="text-[11px] text-[#70798C] mt-0.5">
+                You are logged in as a partner agent. You can preview house rentals here or open your Agent Portal to manage listings and tenant bookings.
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-bold text-[#000004]">
-              Tenant Access: Direct Browsing of Verified Agent Rentals
-            </h4>
-            <p className="text-[11px] text-[#70798C] mt-0.5">
-              You are signed in as a tenant. You can book as many property inspections as you want across Delta State! Only agents are restricted to 5 bookings per window to prevent overcrowding and ensure they never waste your time.
-            </p>
-          </div>
+          <button
+            onClick={() => onSwitchToAgent?.()}
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Open Agent Portal →</span>
+          </button>
         </div>
-        {!currentUser.isAgent && (
+      ) : (
+        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-[#342A21]/5 via-[#FCF9F5] to-emerald-50/70 border border-[#342A21]/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#342A21]/10 text-[#342A21] flex items-center justify-center shrink-0 mt-0.5">
+              <Building className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-bold text-[#000004]">
+                Tenant Access: Direct Browsing of Verified Agent Rentals
+              </h4>
+              <p className="text-[11px] text-[#70798C] mt-0.5">
+                You are signed in as a tenant. You can book as many property inspections as you want across Delta State! Only agents are restricted to 5 bookings per window to prevent overcrowding and ensure they never waste your time.
+              </p>
+            </div>
+          </div>
           <button
             onClick={onOpenBecomeAgent}
             className="shrink-0 px-3 py-1.5 rounded-lg bg-white border border-[#E5E7EB] hover:border-amber-300 text-[11px] font-bold text-[#000004] flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <span>Want to upload properties? Become an Agent →</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* 3. KPI Cards Grid (Matches Agent Dashboard 4-card structure) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
@@ -473,8 +522,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           <div className="bg-white rounded-2xl border border-[#F0544F]/30 p-5 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="font-display text-base font-bold text-[#000004] flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#F0544F] animate-pulse" />
+                <h3 className="font-display text-base font-bold text-[#000004]">
                   My Standby Waitlist Queue
                 </h3>
                 <p className="text-xs text-[#70798C]">

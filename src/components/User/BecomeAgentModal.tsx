@@ -10,6 +10,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { DeltaCity } from '../../types/marketplace';
+import { DELTA_CITIES } from '../../data/deltaCities';
 
 interface BecomeAgentModalProps {
   isOpen: boolean;
@@ -28,43 +29,7 @@ interface BecomeAgentModalProps {
   }) => void;
 }
 
-const AVAILABLE_CITIES: DeltaCity[] = [
-  'Asaba',
-  'Warri',
-  'Effurun',
-  'Udu',
-  'Enerhen',
-  'Opete',
-  'Okpaka',
-  'Okuokoko',
-  'Otokutu',
-  'Ujvewu',
-  'Ughelli',
-  'Sapele',
-  'Agbor',
-  'Abraka',
-  'Okpanam',
-  'Ibusa',
-  'Ogwashi-Uku',
-  'Oleh',
-  'Ozoro',
-  'Oghara',
-  'Ekpan',
-  'Ovwian',
-  'Aladja',
-  'Orhuwhorun',
-  'Agbarho',
-  'Eku',
-  'Kwale',
-  'Obiaruku',
-  'Issele-Uku',
-  'Orerokpe',
-  'Koko',
-  'Bomadi',
-  'Patani',
-  'Burutu',
-  'Others'
-];
+const AVAILABLE_CITIES: string[] = DELTA_CITIES.filter((c) => c !== 'All Delta Cities');
 
 export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
   isOpen,

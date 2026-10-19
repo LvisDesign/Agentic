@@ -11,7 +11,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Film,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 import { PropertyListing } from '../../types/marketplace';
@@ -23,6 +25,151 @@ interface InFeedSponsoredCarouselProps {
   onOpenBookingModal?: (listing: PropertyListing) => void;
   listings?: PropertyListing[];
 }
+
+interface InFeedSponsoredVideoProps {
+  mediaUrl: string;
+}
+
+const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.playsInline = true;
+    video.defaultMuted = true;
+    if (isInitialMount.current) {
+      video.muted = true;
+      setIsMuted(true);
+      isInitialMount.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    const container = containerRef.current;
+    if (!video || !container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.25) {
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => setIsPlaying(true))
+              .catch(() => {
+                if (video && !video.muted) {
+                  video.muted = true;
+                  setIsMuted(true);
+                  video.play()
+                    .then(() => setIsPlaying(true))
+                    .catch(() => {});
+                }
+              });
+          }
+        } else if (!entry.isIntersecting || entry.intersectionRatio < 0.1) {
+          if (!video.paused) {
+            video.pause();
+            setIsPlaying(false);
+          }
+        }
+      },
+      {
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0],
+      }
+    );
+
+    observer.observe(container);
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (!video.paused) {
+          video.pause();
+          setIsPlaying(false);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const video = videoRef.current;
+    if (!video) return;
+
+    const nextMuted = !video.muted;
+    video.muted = nextMuted;
+    if (!nextMuted && video.volume === 0) {
+      video.volume = 1;
+    }
+    setIsMuted(nextMuted);
+  };
+
+  return (
+    <div ref={containerRef} className="w-full h-full relative">
+      <video
+        ref={videoRef}
+        src={mediaUrl}
+        className="w-full h-full object-cover"
+        muted={isMuted}
+        playsInline
+        loop
+        preload="auto"
+        onVolumeChange={(e) => setIsMuted(e.currentTarget.muted || e.currentTarget.volume === 0)}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+      />
+      <span className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 border border-white/20 z-10">
+        <Film className="w-2.5 h-2.5 text-amber-300" />
+        <span>VIDEO</span>
+      </span>
+
+      {/* Floating Mute / Unmute Button */}
+      <button
+        type="button"
+        onClick={toggleMute}
+        onMouseDown={(e) => e.stopPropagation()}
+        aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+        className="absolute top-2 right-2 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/65 hover:bg-black/85 text-white backdrop-blur-md border border-white/20 shadow-xs transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95"
+        title={isMuted ? 'Click to unmute' : 'Click to mute'}
+      >
+        {isMuted ? (
+          <>
+            <VolumeX className="w-3 h-3 text-white/90" />
+            <span className="text-[10px] font-semibold text-white/90">Unmute</span>
+          </>
+        ) : (
+          <>
+            <Volume2 className="w-3 h-3 text-emerald-400" />
+            <span className="text-[10px] font-semibold text-emerald-300">Sound On</span>
+          </>
+        )}
+      </button>
+
+      {!isPlaying && (
+        <div className="absolute inset-0 bg-black/20 group-hover/media:bg-transparent transition-colors flex items-center justify-center pointer-events-none">
+          <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center text-white group-hover/media:scale-110 transition-transform">
+            <Film className="w-4 h-4 text-white" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = ({
   adverts,
@@ -333,26 +480,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                     className="mt-2.5 rounded-xl overflow-hidden aspect-video bg-black/60 border border-white/10 relative group/media cursor-pointer flex items-center justify-center"
                   >
                     {ad.mediaType === 'video' ? (
-                      <>
-                        <video
-                          src={ad.mediaUrl}
-                          className="w-full h-full object-cover"
-                          muted
-                          playsInline
-                          loop
-                          onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
-                          onMouseLeave={(e) => e.currentTarget.pause()}
-                        />
-                        <span className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
-                          <Film className="w-2.5 h-2.5 text-amber-300" />
-                          <span>VIDEO</span>
-                        </span>
-                        <div className="absolute inset-0 bg-black/20 group-hover/media:bg-transparent transition-colors flex items-center justify-center pointer-events-none">
-                          <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center text-white group-hover/media:scale-110 transition-transform">
-                            <Film className="w-4 h-4 text-white" />
-                          </div>
-                        </div>
-                      </>
+                      <InFeedSponsoredVideo mediaUrl={ad.mediaUrl} />
                     ) : (
                       <>
                         <img

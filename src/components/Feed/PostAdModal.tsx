@@ -14,7 +14,7 @@ import {
   Video
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
-import { DELTA_CITIES } from '../../data/mockListings';
+import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { formatNaira } from '../../utils/formatters';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { CustomDropdown } from '../UI/CustomDropdown';
@@ -237,12 +237,14 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 <div>
                   <label className="text-xs text-[#70798C] block mb-1">City Hub</label>
                   <CustomDropdown
-                    options={DELTA_CITIES.filter((c) => c !== 'All Delta Cities')}
+                    options={DELTA_CITY_OPTIONS}
                     value={city}
                     onChange={setCity}
-                    headerTitle="Select City Hub"
+                    headerTitle="Select City or Town"
+                    placeholder="Select City / Town"
                     icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
                     variant="form"
+                    allowCustomInput={true}
                   />
                 </div>
 

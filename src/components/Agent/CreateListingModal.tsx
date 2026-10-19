@@ -5,7 +5,6 @@ import {
   MapPin, 
   Image as ImageIcon, 
   Film, 
-  CheckCircle, 
   Plus, 
   ShieldCheck,
   Calendar,
@@ -14,6 +13,56 @@ import {
 } from 'lucide-react';
 import { PropertyListing, DeltaCity, PropertyType, NigerianState } from '../../types/marketplace';
 import { formatNaira, formatCurrencyInput, parseCurrencyInput } from '../../utils/formatters';
+import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
+import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
+
+const NIGERIAN_STATE_OPTIONS: DropdownOption[] = [
+  {
+    value: 'Delta State',
+    label: 'Delta State',
+    subtitle: 'Primary Hub — Verified Direct Booking',
+  },
+  {
+    value: 'Edo State',
+    label: 'Edo State',
+    subtitle: 'Benin City & Environs',
+    badge: 'Coming Soon',
+    disabled: true,
+  },
+  {
+    value: 'Rivers State',
+    label: 'Rivers State',
+    subtitle: 'Port Harcourt Metro',
+    badge: 'Coming Soon',
+    disabled: true,
+  },
+  {
+    value: 'Lagos State',
+    label: 'Lagos State',
+    subtitle: 'Island & Mainland Zones',
+    badge: 'Coming Soon',
+    disabled: true,
+  },
+  {
+    value: 'Abuja (FCT)',
+    label: 'Abuja (FCT)',
+    subtitle: 'Federal Capital Territory',
+    badge: 'Coming Soon',
+    disabled: true,
+  },
+];
+
+
+
+const PROPERTY_TYPE_OPTIONS: DropdownOption[] = [
+  { value: 'Self-contain', label: 'Self-contain', subtitle: 'Room with private toilet and kitchen' },
+  { value: 'Single Room', label: 'Single Room', subtitle: 'Single room (shared toilet/bathroom)' },
+  { value: 'Bedseater', label: 'Bedseater', subtitle: 'Spacious room self-contain' },
+  { value: '2-Bedroom Flat', label: '2-Bedroom Flat', subtitle: '2 bedrooms with parlor and kitchen' },
+  { value: '3-Bedroom Flat', label: '3-Bedroom Flat', subtitle: '3 bedrooms with parlor and kitchen' },
+  { value: 'Duplex / Semi-Detached', label: 'Duplex / Whole House', subtitle: 'Standalone duplex or whole compound' },
+];
+
 
 interface CreateListingModalProps {
   isOpen: boolean;
@@ -65,7 +114,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   const [selectedState, setSelectedState] = useState<NigerianState>('Delta State');
   const [city, setCity] = useState<DeltaCity>('Asaba');
   const [neighborhood, setNeighborhood] = useState('');
-  const [fullAddress, setFullAddress] = useState('');
   const [propertyType, setPropertyType] = useState<PropertyType>('2-Bedroom Flat');
   const [bedrooms, setBedrooms] = useState(2);
   const [bathrooms, setBathrooms] = useState(2);
@@ -80,9 +128,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
   // Media (Whatever the agent uploads: house videos or images)
   const [uploadedMedia, setUploadedMedia] = useState<MediaItemDraft[]>([...DEFAULT_SAMPLE_MEDIA]);
-  const [newMediaUrl, setNewMediaUrl] = useState('');
-  const [newMediaType, setNewMediaType] = useState<'image' | 'video'>('video');
-  const [newMediaCaption, setNewMediaCaption] = useState('');
 
   // Inspection Window Rules
   const [selectedDays, setSelectedDays] = useState<string[]>(['Mon', 'Wed', 'Fri', 'Sat']);
@@ -129,21 +174,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
     e.target.value = '';
   };
 
-  const handleAddMediaUrl = () => {
-    if (!newMediaUrl.trim()) return;
-    setUploadedMedia((prev) => [
-      ...prev,
-      {
-        id: `url-${Date.now()}`,
-        type: newMediaType,
-        url: newMediaUrl.trim(),
-        caption: newMediaCaption.trim() || (newMediaType === 'video' ? 'House Walkthrough Video' : 'House Photo'),
-      },
-    ]);
-    setNewMediaUrl('');
-    setNewMediaCaption('');
-  };
-
   const handleRemoveMedia = (id: string) => {
     setUploadedMedia((prev) => prev.filter((m) => m.id !== id));
   };
@@ -157,7 +187,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       state: selectedState,
       city,
       neighborhood: neighborhood || 'Central Residential District',
-      fullAddress: fullAddress || `Protected Address in ${neighborhood}, ${city}, Delta State`,
+      fullAddress: `${neighborhood ? `${neighborhood}, ` : ''}${city}, ${selectedState}`,
       propertyType,
       bedrooms,
       bathrooms,
@@ -235,7 +265,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
               </span>
             </div>
             <h3 className="font-display text-lg sm:text-xl font-bold text-[#000004] mt-1">
-              Publish Property Listing
+              Add New Property
             </h3>
           </div>
           <button
@@ -252,135 +282,79 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C] flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-[#342A21]" />
-              1. Geographic Location & Address
+              1. House Location
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
               <div>
-                <label className="text-xs text-[#70798C] block mb-1">State (Nigeria)</label>
-                <select
+                <label className="text-xs text-[#70798C] block mb-1">State</label>
+                <CustomDropdown
+                  options={NIGERIAN_STATE_OPTIONS}
                   value={selectedState}
-                  onChange={(e) => setSelectedState(e.target.value as NigerianState)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs font-medium text-[#000004] bg-white focus:outline-none focus:border-[#342A21]"
-                >
-                  <option value="Delta State">Delta State (Active Launch)</option>
-                  <option value="Edo State">Edo State (Beta Expansion)</option>
-                  <option value="Rivers State">Rivers State (Beta Expansion)</option>
-                  <option value="Lagos State">Lagos State (Beta Expansion)</option>
-                  <option value="Abuja (FCT)">Abuja (FCT) (Beta Expansion)</option>
-                </select>
+                  onChange={(val) => setSelectedState(val as NigerianState)}
+                  headerTitle="Select State"
+                  variant="form"
+                />
               </div>
 
               <div>
-                <label className="text-xs text-[#70798C] block mb-1">Delta City / LGA Hub</label>
-                <select
+                <label className="text-xs text-[#70798C] block mb-1">City / Town</label>
+                <CustomDropdown
+                  options={DELTA_CITY_OPTIONS}
                   value={city}
-                  onChange={(e) => setCity(e.target.value as DeltaCity)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs font-medium text-[#000004] bg-white focus:outline-none focus:border-[#342A21]"
-                >
-                  <option value="Asaba">Asaba (Capital City)</option>
-                  <option value="Warri">Warri (Commercial Hub)</option>
-                  <option value="Effurun">Effurun (Metropolitan Hub)</option>
-                  <option value="Udu">Udu</option>
-                  <option value="Enerhen">Enerhen</option>
-                  <option value="Opete">Opete</option>
-                  <option value="Okpaka">Okpaka</option>
-                  <option value="Okuokoko">Okuokoko</option>
-                  <option value="Otokutu">Otokutu</option>
-                  <option value="Ujvewu">Ujvewu</option>
-                  <option value="Ughelli">Ughelli (Central Zone)</option>
-                  <option value="Sapele">Sapele (Coastal Corridor)</option>
-                  <option value="Agbor">Agbor (Transit Hub)</option>
-                  <option value="Abraka">Abraka (DELSU Academic Hub)</option>
-                  <option value="Okpanam">Okpanam</option>
-                  <option value="Ibusa">Ibusa</option>
-                  <option value="Ogwashi-Uku">Ogwashi-Uku</option>
-                  <option value="Oleh">Oleh (Law Campus Zone)</option>
-                  <option value="Ozoro">Ozoro</option>
-                  <option value="Oghara">Oghara</option>
-                  <option value="Ekpan">Ekpan</option>
-                  <option value="Ovwian">Ovwian</option>
-                  <option value="Aladja">Aladja</option>
-                  <option value="Orhuwhorun">Orhuwhorun</option>
-                  <option value="Agbarho">Agbarho</option>
-                  <option value="Eku">Eku</option>
-                  <option value="Kwale">Kwale</option>
-                  <option value="Obiaruku">Obiaruku</option>
-                  <option value="Issele-Uku">Issele-Uku</option>
-                  <option value="Orerokpe">Orerokpe</option>
-                  <option value="Koko">Koko</option>
-                  <option value="Bomadi">Bomadi</option>
-                  <option value="Patani">Patani</option>
-                  <option value="Burutu">Burutu</option>
-                  <option value="Others">Others</option>
-                </select>
+                  onChange={(val) => setCity(val as DeltaCity)}
+                  headerTitle="Select City or Town"
+                  placeholder="Select City / Town"
+                  variant="form"
+                  allowCustomInput={true}
+                  customSearchSubtitle="Type area or town in Delta State"
+                />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-[#70798C] block mb-1">
-                  Public Neighborhood Tag
-                </label>
-                <input
-                  type="text"
-                  value={neighborhood}
-                  onChange={(e) => setNeighborhood(e.target.value)}
-                  placeholder="e.g. GRA Phase 2, Airport Road, Campus 3"
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs text-[#70798C] block mb-1">
-                  Internal Property Address (Private Agent Record — Never Disclosed to Tenants)
-                </label>
-                <input
-                  type="text"
-                  value={fullAddress}
-                  onChange={(e) => setFullAddress(e.target.value)}
-                  placeholder="e.g. Plot 18 Commissioners Quarters, Asaba"
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
-                  required
-                />
-              </div>
+            <div>
+              <label className="text-xs text-[#70798C] block mb-1">
+                Area / Neighborhood
+              </label>
+              <input
+                type="text"
+                value={neighborhood}
+                onChange={(e) => setNeighborhood(e.target.value)}
+                placeholder="e.g. GRA Phase 2, Airport Road, Campus 3"
+                className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
+                required
+              />
             </div>
           </div>
 
           {/* SECTION 2: PROPERTY SPECS */}
           <div className="space-y-3 pt-3 border-t border-[#E5E7EB]">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C]">
-              2. Property Title & Configuration
+              2. House Details
             </h4>
 
             <div>
-              <label className="text-xs text-[#70798C] block mb-1">Listing Headline</label>
+              <label className="text-xs text-[#70798C] block mb-1">Property Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Luxury 2-Bedroom Serviced Flat with Solar Backup"
+                placeholder="e.g. Newly built 2-Bedroom Flat with constant light and water"
                 className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3 relative z-20">
               <div>
-                <label className="text-xs text-[#70798C] block mb-1">Type</label>
-                <select
+                <label className="text-xs text-[#70798C] block mb-1">House Type</label>
+                <CustomDropdown
+                  options={PROPERTY_TYPE_OPTIONS}
                   value={propertyType}
-                  onChange={(e) => setPropertyType(e.target.value as PropertyType)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] bg-white focus:outline-none focus:border-[#342A21]"
-                >
-                  <option value="Self-contain">Self-contain</option>
-                  <option value="Single Room">Single Room</option>
-                  <option value="Bedseater">Bedseater</option>
-                  <option value="2-Bedroom Flat">2-Bedroom Flat</option>
-                  <option value="3-Bedroom Flat">3-Bedroom Flat</option>
-                  <option value="Duplex / Semi-Detached">Duplex / Semi-Detached</option>
-                </select>
+                  onChange={(val) => setPropertyType(val as PropertyType)}
+                  headerTitle="Select House Type"
+                  variant="form"
+                />
               </div>
 
               <div>
@@ -396,7 +370,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
               </div>
 
               <div>
-                <label className="text-xs text-[#70798C] block mb-1">Baths</label>
+                <label className="text-xs text-[#70798C] block mb-1">Bathrooms / Toilets</label>
                 <input
                   type="number"
                   min={1}
@@ -413,7 +387,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
           <div className="space-y-3 pt-3 border-t border-[#E5E7EB]">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C]">
-                3. Cost Inputs (Auto-Masked in ₦)
+                3. Rent & Payments
               </h4>
               <div className="flex items-center gap-1 bg-[#FCF9F5] p-1 rounded-lg border border-[#E5E7EB]">
                 <button
@@ -423,7 +397,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                     rentPeriod === 'per annum' ? 'bg-[#000004] text-white' : 'text-[#70798C]'
                   }`}
                 >
-                  Per Annum
+                  Per Year
                 </button>
                 <button
                   type="button"
@@ -440,7 +414,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">
-                  Base Rent Amount (₦) *
+                  House Rent (₦) *
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-[#70798C] font-semibold">₦</span>
@@ -457,7 +431,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">
-                  Refundable Caution Deposit (₦)
+                  Caution Deposit (₦)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-[#70798C] font-semibold">₦</span>
@@ -472,10 +446,10 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">
-                  Legal & Agency Fee (₦)
+                  Agreement & Agency Fee (₦)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-[#70798C] font-semibold">₦</span>
@@ -491,7 +465,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">
-                  Service Charge (₦)
+                  Service Charge / Estate Dues (₦)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-[#70798C] font-semibold">₦</span>
@@ -504,26 +478,16 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   />
                 </div>
               </div>
-
-              <div>
-                <label className="text-xs text-[#70798C] block mb-1">
-                  Seeker Inspection Fee
-                </label>
-                <div className="w-full px-3 py-2 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] text-xs font-semibold text-emerald-600 flex items-center gap-1.5">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>100% Free Booking (₦0)</span>
-                </div>
-              </div>
             </div>
 
             {/* Computed Move-in Total Live Preview */}
             <div className="p-3.5 rounded-xl bg-[#FCF9F5] border border-[#342A21]/20 flex items-center justify-between">
               <div>
                 <span className="text-[11px] uppercase tracking-wider text-[#70798C] font-semibold">
-                  Computed Total Move-in Package
+                  Total Move-in Package
                 </span>
                 <div className="text-xs text-[#70798C]">
-                  All transparent items certified for applicant display
+                  Total amount tenant pays before moving in
                 </div>
               </div>
               <div className="font-display text-xl font-bold text-[#000004]">
@@ -538,22 +502,22 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C] flex items-center gap-1.5">
                   <Film className="w-3.5 h-3.5 text-[#342A21]" />
-                  4. Property Media (House Videos & Photos)
+                  4. House Photos & Videos
                 </h4>
                 <p className="text-[11px] text-[#70798C] mt-0.5">
-                  Upload house walkthrough videos and high-res photos. Tenants see whatever you upload directly in the feed.
+                  Upload clear photos and video walkthrough of the house.
                 </p>
               </div>
             </div>
 
-            {/* Upload Buttons & Direct URL Input */}
-            <div className="flex flex-col sm:flex-row gap-2">
+            {/* Upload Button */}
+            <div>
               <label 
                 htmlFor="agent-media-files"
-                className="cursor-pointer px-3 py-2 rounded-lg bg-white border border-[#000004]/20 hover:border-[#000004] text-[#000004] font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                className="cursor-pointer w-full py-3 px-4 rounded-xl bg-slate-50 hover:bg-slate-100/80 border-2 border-dashed border-[#E5E7EB] hover:border-[#342A21]/40 text-[#000004] font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs select-none active:scale-[0.99]"
               >
-                <Upload className="w-3.5 h-3.5 text-[#342A21]" />
-                <span>Upload Videos & Photos</span>
+                <Upload className="w-4 h-4 text-[#342A21]" />
+                <span>Upload Photos & Videos</span>
                 <input
                   id="agent-media-files"
                   type="file"
@@ -563,33 +527,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   className="hidden"
                 />
               </label>
-
-              {/* URL Quick-Add */}
-              <div className="flex-1 flex gap-1.5">
-                <select
-                  value={newMediaType}
-                  onChange={(e) => setNewMediaType(e.target.value as 'image' | 'video')}
-                  className="px-2 py-1.5 rounded-lg border border-[#E5E7EB] bg-white text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
-                >
-                  <option value="video">House Video</option>
-                  <option value="image">Photo</option>
-                </select>
-                <input
-                  type="url"
-                  placeholder={newMediaType === 'video' ? 'Paste MP4 / Video URL' : 'Paste Image URL'}
-                  value={newMediaUrl}
-                  onChange={(e) => setNewMediaUrl(e.target.value)}
-                  className="flex-1 px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddMediaUrl}
-                  disabled={!newMediaUrl.trim()}
-                  className="px-3 py-1.5 rounded-lg bg-[#000004] text-white text-xs font-semibold hover:bg-neutral-800 disabled:opacity-40 transition-colors shrink-0"
-                >
-                  Add
-                </button>
-              </div>
             </div>
 
             {/* Media Items Grid */}
@@ -654,12 +591,12 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
           <div className="space-y-3 pt-3 border-t border-[#E5E7EB]">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#70798C] flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-[#342A21]" />
-              5. Inspection Capacity Rules (Agent Cap: Max 5 Bookings per Window)
+              5. Inspection Days & Time Slots
             </h4>
 
             <div>
               <label className="text-xs text-[#70798C] block mb-1.5">
-                Active Weekly Inspection Days
+                Days Available for Inspection
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => {
@@ -683,8 +620,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             </div>
 
             <div className="p-3 rounded-lg bg-[#342A21]/5 border border-[#342A21]/20 text-[11px] text-[#000004]">
-              <strong>Standard Delta Windows Configured: </strong>
-              10:00 AM – 11:00 AM, 12:00 PM – 1:00 PM, 2:00 PM – 3:00 PM, 4:00 PM – 5:00 PM. As an agent, each window is capped at strictly 5 bookings to ensure you don't overcommit or waste house seekers' valuable time.
+              <strong>Inspection Hours: </strong>
+              10:00 AM – 11:00 AM, 12:00 PM – 1:00 PM, 2:00 PM – 3:00 PM, 4:00 PM – 5:00 PM. Each time slot takes a maximum of 5 house seekers so you don't get crowded or stressed.
             </div>
           </div>
 
@@ -701,7 +638,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
               type="submit"
               className="py-2.5 px-6 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-md transition-colors"
             >
-              Publish to Delta Marketplace Feed
+              Publish Property
             </button>
           </div>
         </form>

@@ -15,20 +15,22 @@ import {
   Phone,
   MessageSquare
 } from 'lucide-react';
-import { PropertyListing, BookingRecord, AgentProfile } from '../../types/marketplace';
+import { PropertyListing, BookingRecord, AgentProfile, UserProfile } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { CreateListingModal } from './CreateListingModal';
 
 interface AgentDashboardProps {
+  currentUser?: UserProfile;
   listings: PropertyListing[];
   bookings: BookingRecord[];
   onAcceptBooking: (bookingId: string) => void;
   onRejectBooking: (bookingId: string) => void;
   onListingCreated: (listing: PropertyListing) => void;
-  onSwitchToSeeker: () => void;
+  onSwitchToSeeker?: () => void;
 }
 
 export const AgentDashboard: React.FC<AgentDashboardProps> = ({
+  currentUser,
   listings,
   bookings,
   onAcceptBooking,
@@ -39,8 +41,8 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'requests' | 'listings'>('requests');
 
-  // Primary Agent: Chief Oghenetega Macaulay
-  const agentProfile: AgentProfile = listings[0]?.agent || {
+  // Active Agent Profile
+  const defaultAgent = listings[0]?.agent || {
     id: 'agent-chief-oghene',
     fullName: 'Chief Oghenetega Macaulay',
     agencyName: 'Delta Heritage Realty Ltd',
@@ -53,6 +55,24 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     phone: '08034928172',
     whatsapp: '2348034928172',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+  };
+
+  const agentProfile: AgentProfile = (currentUser?.isAgent && currentUser.fullName) ? {
+    id: currentUser.id || 'agent-active',
+    fullName: currentUser.fullName,
+    agencyName: currentUser.agencyName || 'Apex Real Estate Ltd',
+    isVerified: true,
+    cacNumber: currentUser.cacNumber || 'RC-1849204',
+    rating: 4.9,
+    reviewCount: 42,
+    completedInspections: 138,
+    responseTime: 'Responds within 10 mins',
+    phone: currentUser.phone || '0803 555 1234',
+    whatsapp: currentUser.whatsapp || currentUser.phone || '2348035551234',
+    avatarUrl: currentUser.avatarUrl || defaultAgent.avatarUrl,
+  } : {
+    ...defaultAgent,
+    avatarUrl: currentUser?.avatarUrl || defaultAgent.avatarUrl,
   };
 
   // Compute metrics
@@ -87,9 +107,6 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               <h1 className="font-display text-2xl font-bold text-[#000004]">
                 {agentProfile.fullName}
               </h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21] text-xs font-semibold">
-                Partner
-              </span>
             </div>
             <p className="text-xs text-[#70798C] mt-0.5">
               {agentProfile.agencyName} • CAC: {agentProfile.cacNumber} • Rating {agentProfile.rating}★
@@ -97,7 +114,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             <div className="flex items-center gap-2 mt-2 text-xs text-[#70798C]">
               <span className="font-mono text-[#000004] font-semibold">{formatNigerianPhone(agentProfile.phone)}</span>
               <span>•</span>
-              <span className="text-emerald-600 font-medium">Active Dispatch Mode</span>
+              <span className="text-emerald-600 font-medium">Online & Available</span>
             </div>
           </div>
         </div>
@@ -108,14 +125,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Post New Rental</span>
-          </button>
-
-          <button
-            onClick={onSwitchToSeeker}
-            className="py-2.5 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-xs font-semibold text-[#000004] transition-colors"
-          >
-            Explore Feed
+            <span>Add New Property</span>
           </button>
         </div>
       </div>
@@ -124,46 +134,46 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
           <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Inspections Booked</span>
+            <span>Booked Inspections</span>
             <CalendarCheck className="w-4 h-4 text-[#342A21]" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {agentProfile.completedInspections + acceptedOrPaid.length}
           </div>
-          <span className="text-[10px] text-emerald-600 font-medium">100% Free Seeker Passes</span>
+          <span className="text-[10px] text-emerald-600 font-medium">Total inspections scheduled</span>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
           <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Pending Approvals</span>
+            <span>Pending Requests</span>
             <Clock className="w-4 h-4 text-amber-500" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {pendingRequests.length}
           </div>
-          <span className="text-[10px] text-[#70798C]">Requires Agent Action</span>
+          <span className="text-[10px] text-[#70798C]">Waiting for your reply</span>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
           <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Standby Queue</span>
+            <span>Waiting List</span>
             <Users className="w-4 h-4 text-[#F0544F]" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#F0544F] mt-1">
             {queuedRequests.length}
           </div>
-          <span className="text-[10px] text-[#F0544F]">Capped at 5 Seekers/Window</span>
+          <span className="text-[10px] text-[#F0544F]">Max 5 people per time slot</span>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
           <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Active Listings</span>
+            <span>My Listed Houses</span>
             <Building className="w-4 h-4 text-[#342A21]" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {listings.length}
           </div>
-          <span className="text-[10px] text-[#70798C]">Delta State Network</span>
+          <span className="text-[10px] text-[#70798C]">Live on platform</span>
         </div>
       </div>
 
@@ -177,7 +187,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
           }`}
         >
-          <span>Inspection Queue & Requests</span>
+          <span>Inspection Requests</span>
           {(pendingRequests.length > 0 || queuedRequests.length > 0) && (
             <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#000004] text-white">
               {pendingRequests.length + queuedRequests.length}
@@ -193,7 +203,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
           }`}
         >
-          <span>Published Rental Inventory ({listings.length})</span>
+          <span>My Properties ({listings.length})</span>
         </button>
       </div>
 
@@ -205,10 +215,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-display text-base font-bold text-[#000004]">
-                  Incoming Booking Approvals (Strict 5-Slot Cap)
+                  New Inspection Requests
                 </h3>
                 <p className="text-xs text-[#70798C]">
-                  You are restricted to strictly 5 bookings per window to prevent overcrowding and ensure you never waste house seekers' time.
+                  Each time slot takes a maximum of 5 people so you don't get crowded or stressed.
                 </p>
               </div>
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21]">
@@ -220,7 +230,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               <div className="p-8 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB]">
                 <Clock className="w-8 h-8 text-[#70798C]/60 mx-auto mb-2" />
                 <p className="text-[11px] text-[#70798C] mt-1">
-                  Incoming property inspection reservations from verified seekers will appear here in real time.
+                  When house seekers book an inspection, their requests will appear here immediately.
                 </p>
               </div>
             ) : (
@@ -239,7 +249,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                           </span>
                           <span className="text-xs text-[#70798C]">({b.applicantPhone})</span>
                           <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-[#342A21]/15 text-[#342A21]">
-                            Pass: {b.id}
+                            Booking ID: {b.id}
                           </span>
                         </div>
                         <div className="text-xs text-[#70798C]">
@@ -247,7 +257,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         </div>
                         <div className="text-xs text-[#342A21] font-medium flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" />
-                          Requested Window: {b.slotDate} at {b.slotTimeWindow}
+                          Date & Time: {b.slotDate}, {b.slotTimeWindow}
                         </div>
                       </div>
 
@@ -257,7 +267,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                           className="flex-1 sm:flex-none py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer"
                         >
                           <CheckCircle className="w-3.5 h-3.5" />
-                          Confirm & Reveal Contact
+                          Accept Booking
                         </button>
                         <button
                           onClick={() => onRejectBooking(b.id)}
@@ -277,23 +287,22 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           <div className="bg-white rounded-2xl border border-[#F0544F]/30 p-5 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="font-display text-base font-bold text-[#000004] flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#F0544F] animate-pulse" />
-                  Standby Queue (Limit Reached: 5/5)
+                <h3 className="font-display text-base font-bold text-[#000004]">
+                  Waiting List (Time Slot Full: 5/5)
                 </h3>
                 <p className="text-xs text-[#70798C]">
-                  Seekers waiting for a dropped or canceled slot. Automatically promoted in sequence.
+                  People waiting for an open space if someone cancels. They get added automatically in line.
                 </p>
               </div>
               <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#F0544F]/10 text-[#F0544F]">
-                {queuedRequests.length} on Queue
+                {queuedRequests.length} on Waiting List
               </span>
             </div>
 
             {queuedRequests.length === 0 ? (
               <div className="p-6 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB]">
                 <p className="text-xs text-[#70798C]">
-                  No applicants currently on standby waitlist.
+                  Nobody is on the waiting list right now.
                 </p>
               </div>
             ) : (
@@ -306,14 +315,14 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 rounded-full bg-[#F0544F] text-white text-[11px] font-bold">
-                          Queue Position #{b.queuePosition || 1}
+                          Waiting List #{b.queuePosition || 1}
                         </span>
                         <span className="font-bold text-sm text-[#000004]">
                           {b.applicantName}
                         </span>
                       </div>
                       <div className="text-xs text-[#70798C] mt-1">
-                        Locked Window: {b.slotDate} • {b.slotTimeWindow}
+                        Requested Time: {b.slotDate}, {b.slotTimeWindow}
                       </div>
                     </div>
 
@@ -321,7 +330,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       onClick={() => onAcceptBooking(b.id)}
                       className="w-full sm:w-auto py-2 px-4 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors"
                     >
-                      Grant Early Acceptance
+                      Accept Early
                     </button>
                   </div>
                 ))}
@@ -332,15 +341,15 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           {/* Section: Confirmed Inspection Passes */}
           <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs">
             <h3 className="font-display text-base font-bold text-[#000004] mb-1">
-              Active Confirmed Inspection Passes
+              Confirmed Inspections
             </h3>
             <p className="text-xs text-[#70798C] mb-4">
-              Free inspection reservation confirmed. Your direct phone number has been provided to the applicant to coordinate the showing.
+              These house seekers have booked their inspection. They have your phone number to call you.
             </p>
 
             {acceptedOrPaid.length === 0 ? (
               <div className="p-6 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB] text-xs text-[#70798C]">
-                No unlocked passes yet. Accept a booking request to generate a confirmed inspection pass!
+                No confirmed inspections yet. Once you accept a request, it will show here.
               </div>
             ) : (
               <div className="space-y-2.5">
@@ -353,19 +362,19 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-[#000004]">{b.applicantName}</span>
                         <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-emerald-600 text-white">
-                          PASS CONFIRMED
+                          CONFIRMED
                         </span>
                       </div>
                       <div className="text-[#70798C] mt-0.5">
-                        Pass ID: <span className="font-mono text-[#000004] font-medium">{b.id}</span> • {b.slotDate} at {b.slotTimeWindow}
+                        Booking ID: <span className="font-mono text-[#000004] font-medium">{b.id}</span> • {b.slotDate}, {b.slotTimeWindow}
                       </div>
                     </div>
 
                     <div className="text-right">
                       <div className="font-display text-sm font-bold text-emerald-600">
-                        FREE PASS
+                        CONFIRMED
                       </div>
-                      <div className="text-[10px] text-[#70798C]">Verified Seeker</div>
+                      <div className="text-[10px] text-[#70798C]">House Seeker</div>
                     </div>
                   </div>
                 ))}
@@ -410,13 +419,13 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
 
                   <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between text-xs">
                     <span className="text-[#70798C]">
-                      Slots: {prop.inspectionSlots.length} Windows
+                      {prop.inspectionSlots.length} Time Slots
                     </span>
                     <button
                       onClick={onSwitchToSeeker}
                       className="text-[#342A21] hover:underline font-semibold flex items-center gap-1"
                     >
-                      <span>Preview in Feed</span>
+                      <span>View in Feed</span>
                       <ArrowUpRight className="w-3.5 h-3.5" />
                     </button>
                   </div>

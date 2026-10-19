@@ -20,8 +20,7 @@ export const NIGERIAN_STATES_DATA: StateDropdownOption[] = [
   {
     name: 'Delta State',
     isActive: true,
-    subtitle: 'Active Launch Hub • Verified rentals & direct inspection bookings',
-    badge: 'Active Hub',
+    subtitle: 'Verified rentals & direct inspection bookings',
   },
   { name: 'Lagos State', isActive: false, subtitle: 'Expansion Market', badge: 'Coming Soon' },
   { name: 'Abuja (FCT)', isActive: false, subtitle: 'Expansion Market', badge: 'Coming Soon' },
@@ -134,7 +133,7 @@ export const StateDropdown: React.FC<StateDropdownProps> = ({
   };
 
   const handleAttemptDisabled = (stateName: string) => {
-    setInactiveNotice(`${stateName} is coming soon! Delta State is currently the only active launch hub.`);
+    setInactiveNotice(`${stateName} is coming soon! Delta State is currently the available hub.`);
     setTimeout(() => {
       setInactiveNotice(null);
     }, 3000);
