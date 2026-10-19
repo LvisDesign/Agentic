@@ -148,14 +148,14 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
             }`}
-            aria-label="Seeker Feed"
-            title="Seeker Feed"
+            aria-label="Explore"
+            title="Explore"
           >
             <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${(currentRole === 'seeker' && userView === 'feed') || !isAuthenticated ? 'text-white' : ''}`} />
             
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-              Live Feed
+              Explore
             </span>
 
             {((currentRole === 'seeker' && userView === 'feed') || !isAuthenticated) && (
@@ -164,7 +164,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Mobile Tooltip */}
             <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-              Live Feed
+              Explore
             </span>
           </button>
 

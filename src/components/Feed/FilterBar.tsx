@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Filter, 
   MapPin, 
@@ -7,13 +7,16 @@ import {
   X, 
   SlidersHorizontal,
   Check,
-  Building
+  Building,
+  Sparkles,
+  Search
 } from 'lucide-react';
 import { DELTA_CITIES, ALL_NIGERIAN_STATES, PROPERTY_TYPES } from '../../data/mockListings';
 import { formatNaira } from '../../utils/formatters';
 import { AdvertStory } from '../../data/mockAdverts';
-import { AdvertStoriesTray } from './AdvertStoriesTray';
-import { CustomDropdown } from '../UI/CustomDropdown';
+import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
+import { PropertyListing } from '../../types/marketplace';
+import { extractPostedLocations } from '../../utils/locationMatcher';
 
 interface FilterBarProps {
   selectedCity: string;
@@ -25,6 +28,7 @@ interface FilterBarProps {
   maxRent: number;
   onSelectMaxRent: (val: number) => void;
   totalFiltered: number;
+  listings?: PropertyListing[];
   adverts?: AdvertStory[];
   onSelectAdvert?: (ad: AdvertStory) => void;
   onOpenPostAd?: () => void;
@@ -41,12 +45,67 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   maxRent,
   onSelectMaxRent,
   totalFiltered,
+  listings = [],
   adverts,
   onSelectAdvert,
   onOpenPostAd,
   activeStoryId,
 }) => {
   const [isOpenModal, setIsOpenModal] = useState(false);
+  const [modalCustomLocation, setModalCustomLocation] = useState('');
+
+  // Extract dynamic areas & neighborhoods posted by agents across listings in chosen state
+  const postedAreas = useMemo(() => {
+    return extractPostedLocations(listings, selectedState);
+  }, [listings, selectedState]);
+
+  // Build combined options list for location dropdown
+  const locationDropdownOptions = useMemo(() => {
+    const opts: DropdownOption[] = [
+      {
+        value: 'All Delta Cities',
+        label: 'All Delta Cities',
+        subtitle: 'Show all properties across Delta State',
+      },
+    ];
+
+    // If current selectedCity is a custom string not in postedAreas and not in DELTA_CITIES
+    const isCustomActive =
+      selectedCity &&
+      selectedCity !== 'All Delta Cities' &&
+      !DELTA_CITIES.includes(selectedCity) &&
+      !postedAreas.some((p) => p.name.toLowerCase() === selectedCity.toLowerCase());
+
+    if (isCustomActive) {
+      opts.push({
+        value: selectedCity,
+        label: `"${selectedCity}"`,
+        subtitle: 'Custom Location / Word Match',
+        badge: 'Custom',
+      });
+    }
+
+    // Dynamic Agent-Posted Areas
+    postedAreas.forEach((area) => {
+      opts.push({
+        value: area.name,
+        label: area.name,
+        subtitle: `${area.city} • Active Agent Area`,
+        badge: `${area.count} listing${area.count > 1 ? 's' : ''}`,
+      });
+    });
+
+    // Predefined Standard Cities
+    DELTA_CITIES.filter((c) => c !== 'All Delta Cities').forEach((c) => {
+      opts.push({
+        value: c,
+        label: c,
+        subtitle: 'Delta LGA / Zone',
+      });
+    });
+
+    return opts;
+  }, [postedAreas, selectedCity]);
 
   const activeFiltersCount = 
     (selectedCity !== 'All Delta Cities' ? 1 : 0) +
@@ -57,69 +116,69 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     onSelectCity('All Delta Cities');
     onSelectType('All Property Types');
     onSelectMaxRent(5000000);
+    setModalCustomLocation('');
+  };
+
+  const handleApplyModalCustomLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (modalCustomLocation.trim()) {
+      onSelectCity(modalCustomLocation.trim());
+      setModalCustomLocation('');
+    }
   };
 
   return (
     <>
       {/* Sub-Header Container docked directly below Header */}
-      <div className="fixed top-16 left-0 right-0 z-30 bg-[#FCF9F5]/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs flex flex-col items-center">
-        {/* Advert Stories Tray (Squared with Rounded Edges) on top of the FilterBar - ONLY ON MOBILE (< lg) */}
-        {adverts && onSelectAdvert && onOpenPostAd && (
-          <div className="w-full lg:hidden">
-            <AdvertStoriesTray
-              adverts={adverts}
-              onSelectAdvert={onSelectAdvert}
-              onOpenPostAd={onOpenPostAd}
-              activeStoryId={activeStoryId}
-            />
-          </div>
-        )}
-
-        {/* Filter Pill Row (Screenshot 2 layer) */}
-        <div className="h-11 w-full flex items-center justify-center px-3 border-t border-[#E5E7EB]/50 lg:border-t-0">
+      <div className="fixed top-16 left-0 right-0 z-30 bg-[#FCF9F5]/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs flex items-center justify-center">
+        {/* Filter Pill Row */}
+        <div className="h-11 w-full flex items-center justify-center px-3">
           <div className="flex items-center gap-1.5 p-1 rounded-full bg-white border border-[#E5E7EB] shadow-xs max-w-full">
-          {/* City Quick Selector */}
-          <CustomDropdown
-            options={DELTA_CITIES}
-            value={selectedCity}
-            onChange={onSelectCity}
-            headerTitle="Delta State Cities"
-            icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
-            align="left"
-            variant="pill"
-          />
-
-          <span className="w-px h-4 bg-[#E5E7EB]" />
-
-          {/* Property Type Quick Selector */}
-          <div className="hidden sm:inline-block">
+            {/* City & Area Quick Selector (Dynamic with agent-posted locations & custom entry) */}
             <CustomDropdown
-              options={PROPERTY_TYPES}
-              value={selectedType}
-              onChange={onSelectType}
-              headerTitle="Property Types"
-              icon={<Home className="w-3.5 h-3.5 text-[#70798C]" />}
-              align="center"
+              options={locationDropdownOptions}
+              value={selectedCity}
+              onChange={onSelectCity}
+              onClear={() => onSelectCity('All Delta Cities')}
+              headerTitle="Delta State Cities & Areas"
+              icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+              align="left"
               variant="pill"
+              allowCustomInput={true}
+              customSearchSubtitle="Search listings with this location name or similar words"
             />
-          </div>
 
-        {/* More Filters Modal Trigger */}
-        <button
-          onClick={() => setIsOpenModal(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#000004] text-white text-xs font-semibold hover:bg-[#1f2937] transition-colors"
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          <span>Filter</span>
-          {activeFiltersCount > 0 && (
-            <span className="w-4 h-4 rounded-full bg-white text-[#342A21] text-[10px] font-bold flex items-center justify-center">
-              {activeFiltersCount}
-            </span>
-          )}
-        </button>
+            <span className="w-px h-4 bg-[#E5E7EB]" />
+
+            {/* Property Type Quick Selector */}
+            <div className="hidden sm:inline-block">
+              <CustomDropdown
+                options={PROPERTY_TYPES}
+                value={selectedType}
+                onChange={onSelectType}
+                headerTitle="Property Types"
+                icon={<Home className="w-3.5 h-3.5 text-[#70798C]" />}
+                align="center"
+                variant="pill"
+              />
+            </div>
+
+            {/* More Filters Modal Trigger */}
+            <button
+              onClick={() => setIsOpenModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#000004] text-white text-xs font-semibold hover:bg-[#1f2937] transition-colors cursor-pointer"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <span>Filter</span>
+              {activeFiltersCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-white text-[#342A21] text-[10px] font-bold flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
       {/* Expanded Filter Modal */}
       {isOpenModal && (
@@ -136,7 +195,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               </div>
               <button
                 onClick={() => setIsOpenModal(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] flex items-center justify-center cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -161,10 +220,87 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 </p>
               </div>
 
-              {/* Delta Cities Pills */}
+              {/* Custom Location / Specific Neighborhood Search Box */}
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-[#70798C] block mb-1.5">
+                  Search Any Location / Landmark
+                </label>
+                <form onSubmit={handleApplyModalCustomLocation} className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="w-3.5 h-3.5 text-[#70798C] absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="e.g. Airport Road, GRA Phase 2, DELSU, Amukpe..."
+                      value={modalCustomLocation}
+                      onChange={(e) => setModalCustomLocation(e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 rounded-xl border border-[#E5E7EB] bg-slate-50 text-xs text-[#000004] placeholder:text-[#70798C] outline-none focus:border-[#342A21] focus:bg-white"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!modalCustomLocation.trim()}
+                    className="px-3 py-2 bg-[#342A21] disabled:opacity-40 text-white rounded-xl text-xs font-bold hover:bg-[#251E17] cursor-pointer"
+                  >
+                    Set Area
+                  </button>
+                </form>
+                {selectedCity !== 'All Delta Cities' && (
+                  <div className="mt-2 flex items-center justify-between bg-amber-50 border border-amber-200/80 px-2.5 py-1.5 rounded-xl">
+                    <div className="flex items-center gap-1.5 text-xs text-amber-900 font-medium truncate">
+                      <MapPin className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <span className="truncate">Active Filter: <strong>{selectedCity}</strong></span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onSelectCity('All Delta Cities')}
+                      className="text-[10px] text-amber-800 hover:text-amber-950 font-bold underline cursor-pointer shrink-0 ml-2"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Dynamic Agent-Posted Active Neighborhoods */}
+              {postedAreas.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-1 mb-2">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#70798C]">
+                      Agent-Posted Areas in Delta
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {postedAreas.map((area) => {
+                      const isSelected = selectedCity.toLowerCase() === area.name.toLowerCase();
+                      return (
+                        <button
+                          key={area.name}
+                          type="button"
+                          onClick={() => onSelectCity(area.name)}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#342A21] text-white shadow-xs font-bold'
+                              : 'bg-amber-50/70 text-amber-900 border border-amber-200/60 hover:bg-amber-100 hover:border-amber-300'
+                          }`}
+                        >
+                          <span className="truncate">{area.name}</span>
+                          <span className={`text-[9px] px-1 py-0.2 rounded font-semibold ${
+                            isSelected ? 'bg-white/20 text-white' : 'bg-amber-200/60 text-amber-800'
+                          }`}>
+                            {area.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Standard Delta Cities Pills */}
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-[#70798C] block mb-2">
-                  Delta City / LGA Zone
+                  Standard Delta Cities & LGAs
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {DELTA_CITIES.map((c) => {
@@ -174,7 +310,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                         key={c}
                         type="button"
                         onClick={() => onSelectCity(c)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                           isSelected
                             ? 'bg-[#000004] text-white shadow-xs font-semibold'
                             : 'bg-[#FCF9F5] text-[#70798C] border border-[#E5E7EB] hover:text-[#000004]'
@@ -200,7 +336,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                         key={t}
                         type="button"
                         onClick={() => onSelectType(t)}
-                        className={`p-2 rounded-lg text-xs text-left border transition-colors flex items-center justify-between ${
+                        className={`p-2 rounded-lg text-xs text-left border transition-colors flex items-center justify-between cursor-pointer ${
                           isSelected
                             ? 'bg-[#342A21]/10 border-[#342A21] text-[#342A21] font-semibold'
                             : 'bg-white border-[#E5E7EB] text-[#70798C] hover:border-slate-300'
@@ -213,6 +349,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   })}
                 </div>
               </div>
+
 
               {/* Max Rent Price Slider */}
               <div>

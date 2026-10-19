@@ -2,6 +2,9 @@ import React, { useRef, useEffect } from 'react';
 import { PropertyListing, BookingRecord } from '../../types/marketplace';
 import { PropertyCard } from './PropertyCard';
 import { MapPin, SearchX, RefreshCcw } from 'lucide-react';
+import { AdvertStory } from '../../data/mockAdverts';
+import { InFeedSponsoredCarousel } from './InFeedSponsoredCarousel';
+import { AdvertStoriesTray } from './AdvertStoriesTray';
 
 interface PropertyFeedProps {
   listings: PropertyListing[];
@@ -11,6 +14,10 @@ interface PropertyFeedProps {
   onSimulateAgentAccept?: (bookingId: string) => void;
   onOpenBookingModal?: (listing: PropertyListing) => void;
   onResetFilters: () => void;
+  adverts?: AdvertStory[];
+  onSelectAdvert?: (ad: AdvertStory) => void;
+  onOpenPostAd?: () => void;
+  activeStoryId?: string | null;
 }
 
 export const PropertyFeed: React.FC<PropertyFeedProps> = ({
@@ -21,6 +28,10 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
   onSimulateAgentAccept,
   onOpenBookingModal,
   onResetFilters,
+  adverts,
+  onSelectAdvert,
+  onOpenPostAd,
+  activeStoryId,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -93,21 +104,53 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
       ref={containerRef}
       className="h-full w-full overflow-y-auto feed-scroll-container no-scrollbar relative bg-[#FCF9F5] py-2 sm:py-4 px-1.5 sm:px-2 space-y-4 sm:space-y-6 overscroll-contain"
     >
+      {/* Top Mobile Ads Section (Wide Banner Carousel) - Only visible on mobile/tablets (< lg) */}
+      {adverts && adverts.length > 0 && onSelectAdvert && (
+        <div className="block lg:hidden w-full pb-1">
+          <AdvertStoriesTray
+            adverts={adverts}
+            onSelectAdvert={onSelectAdvert}
+            onOpenPostAd={onOpenPostAd || (() => {})}
+            activeStoryId={activeStoryId}
+          />
+        </div>
+      )}
+
       {listings.map((listing, index) => {
         const activeBooking = bookings.find((b) => b.propertyId === listing.id);
+        
+        // Show sponsored carousel after 2nd listing (index === 1), or after 1st listing if only 1 listing exists.
+        // If there are 6+ listings, also show secondary carousel set after 5th listing (index === 4).
+        const showAdsAfterThisListing = adverts && adverts.length > 0 && (
+          index === 1 || 
+          (listings.length === 1 && index === 0) || 
+          (listings.length >= 6 && index === 4)
+        );
 
         return (
-          <PropertyCard
-            key={listing.id}
-            listing={listing}
-            activeBooking={activeBooking}
-            onBookSlot={onBookSlot}
-            onUpdateBooking={onUpdateBooking}
-            onSimulateAgentAccept={onSimulateAgentAccept}
-            onOpenBookingModal={onOpenBookingModal}
-            index={index}
-            totalCount={listings.length}
-          />
+          <React.Fragment key={listing.id}>
+            <PropertyCard
+              listing={listing}
+              activeBooking={activeBooking}
+              onBookSlot={onBookSlot}
+              onUpdateBooking={onUpdateBooking}
+              onSimulateAgentAccept={onSimulateAgentAccept}
+              onOpenBookingModal={onOpenBookingModal}
+              index={index}
+              totalCount={listings.length}
+            />
+
+            {/* In-feed Threads-style Sponsored Ads Carousel as tenants scroll down */}
+            {showAdsAfterThisListing && (
+              <InFeedSponsoredCarousel
+                adverts={index === 1 ? adverts : [...adverts].reverse()}
+                onSelectAdvert={onSelectAdvert}
+                onOpenPostAd={onOpenPostAd}
+                onOpenBookingModal={onOpenBookingModal}
+                listings={listings}
+              />
+            )}
+          </React.Fragment>
         );
       })}
       {/* Bottom spacer so user can comfortably scroll the last post into complete view */}

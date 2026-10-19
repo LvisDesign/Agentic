@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, MapPin, ChevronRight, Zap } from 'lucide-react';
+import { Plus, ChevronRight, Play } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 
 interface DesktopAdvertSidebarProps {
@@ -8,6 +8,25 @@ interface DesktopAdvertSidebarProps {
   onOpenPostAd: () => void;
   activeStoryId?: string | null;
 }
+
+const VerifiedBadge: React.FC = () => (
+  <span 
+    className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#2081E2] text-white shrink-0 ml-1 shadow-xs" 
+    title="Verified Advertiser"
+  >
+    <svg 
+      className="w-2 h-2" 
+      viewBox="0 0 12 12" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2.5" 
+      strokeLinecap="round" 
+      strokeLinejoin="round"
+    >
+      <polyline points="2.5 6 4.8 8.5 9.5 3.5" />
+    </svg>
+  </span>
+);
 
 export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
   adverts,
@@ -20,11 +39,14 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
       className="hidden lg:flex flex-col w-[300px] xl:w-[320px] shrink-0 h-full max-h-[820px] bg-white rounded-3xl border border-[#342A21]/15 shadow-card p-4 overflow-hidden relative"
       aria-label="Sponsored Advertisements"
     >
-      {/* 1. Header Section: General Tag & Post Ad CTA */}
+      {/* 1. Header Section: Title & Post Ad CTA */}
       <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB] shrink-0">
         <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#342A21]/10 border border-[#342A21]/25 text-[#342A21] text-[11px] font-bold uppercase tracking-wider">
-            Sponsored Ads
+          <span className="text-xs font-bold uppercase tracking-wider text-[#70798C]">
+            Featured Promotions
+          </span>
+          <span className="text-[10px] font-semibold text-[#342A21] bg-[#342A21]/10 px-1.5 py-0.5 rounded-full">
+            {adverts.length}
           </span>
         </div>
 
@@ -37,116 +59,71 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
         </button>
       </div>
 
-      {/* 2. Top Stories Squircle Row (Squared with rounded edges, brand color border) */}
-      <div className="pt-3 pb-2 shrink-0">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-[#70798C] mb-2 px-1 flex items-center justify-between">
-          <span>Active Story Ads</span>
-          <span className="text-[10px] font-semibold text-[#342A21]">{adverts.length} Live</span>
-        </div>
-
-        <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1 px-0.5">
-          {/* "+ Post" squircle avatar */}
-          <button
-            onClick={onOpenPostAd}
-            className="flex flex-col items-center gap-1 shrink-0 group focus:outline-none cursor-pointer"
-            title="Post a rental story advert"
-          >
-            <div className="w-[52px] h-[52px] rounded-[15px] border-2 border-dashed border-[#342A21]/50 group-hover:border-[#342A21] bg-white group-hover:bg-[#342A21]/5 flex items-center justify-center transition-all shadow-xs">
-              <Plus className="w-4 h-4 text-[#342A21] group-hover:scale-110 transition-transform" />
-            </div>
-            <span className="text-[10px] font-bold text-[#000004] group-hover:text-[#342A21] transition-colors">
-              Add Ad
-            </span>
-          </button>
-
-          {/* Advert squircle avatars (Brand color decoration, no black labels) */}
-          {adverts.map((ad) => {
-            const isActive = activeStoryId === ad.id;
-
-            return (
-              <button
-                key={`story-top-${ad.id}`}
-                onClick={() => onSelectAdvert(ad)}
-                className="flex flex-col items-center gap-1 shrink-0 group focus:outline-none cursor-pointer"
-                title={ad.title}
-              >
-                {/* Squircle border decoration in brand color */}
-                <div
-                  className={`w-[52px] h-[52px] rounded-[15px] p-[2px] transition-all duration-200 shadow-xs ${
-                    isActive
-                      ? 'bg-[#000004] ring-2 ring-[#342A21] scale-105'
-                      : 'bg-gradient-to-tr from-[#342A21] via-[#524436] to-[#251E17] group-hover:from-[#251E17] group-hover:to-[#342A21] group-hover:scale-105'
-                  }`}
-                >
-                  <div className="w-full h-full p-[1.5px] bg-white rounded-[13px] overflow-hidden">
-                    <img
-                      src={ad.thumbnailUrl}
-                      alt={ad.title}
-                      className="w-full h-full object-cover rounded-[11.5px] group-hover:scale-110 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
-                <span className="text-[10px] font-medium text-[#000004] max-w-[52px] truncate group-hover:text-[#342A21] transition-colors">
-                  {ad.title}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="w-full h-px bg-[#E5E7EB] my-1 shrink-0" />
-
-      {/* 3. Featured Sponsored Listings Feed (Scrollable without visible scrollbars) */}
-      <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 py-2 pr-0.5">
-        <div className="text-[10px] font-bold uppercase tracking-wider text-[#70798C] mb-1.5 px-1">
-          Featured Promotions
-        </div>
-
+      {/* 2. Vertically Listed Full-Bleed Showcase Cards */}
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 py-3 pr-0.5">
         {adverts.map((ad) => {
           const isActive = activeStoryId === ad.id;
 
           return (
             <div
-              key={`list-${ad.id}`}
+              key={`showcase-${ad.id}`}
               onClick={() => onSelectAdvert(ad)}
-              className={`p-2.5 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center gap-3 group ${
+              className={`group relative w-full h-[180px] rounded-2xl overflow-hidden cursor-pointer select-none bg-[#121214] border transition-all duration-300 shadow-xs hover:shadow-md ${
                 isActive
-                  ? 'border-[#342A21] bg-[#342A21]/5 shadow-xs'
-                  : 'border-[#E5E7EB] hover:border-[#342A21]/50 hover:bg-slate-50/80 hover:shadow-xs bg-white'
+                  ? 'border-[#342A21] ring-2 ring-[#342A21] ring-offset-2 ring-offset-white scale-[1.01]'
+                  : 'border-black/10 hover:border-black/30'
               }`}
             >
-              {/* Squared thumbnail with rounded edges in brand color decoration (NO black labels) */}
-              <div className="w-14 h-14 shrink-0 rounded-[14px] p-[2px] bg-gradient-to-tr from-[#342A21] via-[#524436] to-[#251E17] group-hover:from-[#251E17] group-hover:to-[#342A21] transition-all shadow-xs">
-                <div className="w-full h-full p-[1.5px] bg-white rounded-[12px] overflow-hidden">
-                  <img
-                    src={ad.thumbnailUrl}
-                    alt={ad.title}
-                    className="w-full h-full object-cover rounded-[10.5px] group-hover:scale-110 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                </div>
+              {/* Full-bleed background image */}
+              <img
+                src={ad.thumbnailUrl}
+                alt={ad.title}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                loading="lazy"
+              />
+
+              {/* Gradient overlays: subtle vignette at top, deep cinematic fade at bottom */}
+              <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 via-50% to-transparent pointer-events-none" />
+
+              {/* Top Bar: Category/Deal Pill Badge & Media Type Indicator */}
+              <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none z-10">
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-black/45 backdrop-blur-md text-white border border-white/20 shadow-xs">
+                  {ad.badgeText || ad.category}
+                </span>
+
+                {ad.mediaType === 'video' ? (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-black/45 backdrop-blur-md text-white/95 border border-white/20 flex items-center gap-1 shadow-xs">
+                    <Play className="w-2.5 h-2.5 fill-white text-white" />
+                    <span>Video</span>
+                  </span>
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-black/35 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 group-hover:bg-[#000004] group-hover:text-white group-hover:scale-110 transition-all shadow-xs">
+                    <ChevronRight className="w-3 h-3" />
+                  </div>
+                )}
               </div>
 
-              {/* Advert Content Details */}
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] font-bold text-[#000004] group-hover:text-[#342A21] transition-colors truncate">
-                  <span className="truncate">{ad.title}</span>
+              {/* Bottom Details Overlay */}
+              <div className="absolute inset-x-0 bottom-0 p-3 pt-6 flex flex-col justify-end z-10">
+                {/* Title & Verified Checkmark */}
+                <div className="flex items-center gap-1 min-w-0">
+                  <h4 className="text-[13px] font-bold text-white tracking-tight truncate leading-tight group-hover:text-white/95">
+                    {ad.title}
+                  </h4>
+                  {ad.isVerified && <VerifiedBadge />}
                 </div>
 
-                <p className="text-[11px] text-[#70798C] truncate mt-0.5">
-                  {ad.advertiserName}
-                </p>
-
-                <div className="flex items-center justify-between mt-1 text-[10px]">
-                  <span className="font-semibold text-[#000004]">
-                    {ad.price || 'Active Listing'}
+                {/* Secondary details: Advertiser name & Floor/Price */}
+                <div className="flex items-center justify-between text-[11px] text-white/80 mt-1">
+                  <span className="truncate max-w-[55%] text-white/75 font-medium">
+                    {ad.advertiserName}
                   </span>
-                  <span className="text-[#342A21] font-semibold flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
-                    <span>View</span>
-                    <ChevronRight className="w-3 h-3" />
-                  </span>
+                  {ad.price && (
+                    <span className="font-semibold text-white tracking-tight shrink-0 ml-1">
+                      {ad.price}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -154,13 +131,12 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
         })}
       </div>
 
-      {/* 4. Bottom Promotion Callout Banner */}
+      {/* 3. Bottom Promotion Callout Banner */}
       <div className="pt-2 border-t border-[#E5E7EB] shrink-0">
         <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#FCF9F5] to-[#342A21]/5 border border-[#342A21]/15 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <div className="flex items-center gap-1 text-[10px] font-bold text-[#000004]">
-              <Zap className="w-3 h-3 text-[#342A21]" />
-              <span>Reach Delta Renters</span>
+            <div className="text-[10px] font-bold text-[#000004]">
+              Reach Delta Renters
             </div>
             <p className="text-[9px] text-[#70798C] truncate">
               Instant story ads on Asaba, Warri & more
@@ -168,7 +144,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
           </div>
           <button
             onClick={onOpenPostAd}
-            className="px-2 py-1 rounded-lg bg-[#342A21] hover:bg-[#251E17] text-white text-[10px] font-bold shrink-0 transition-colors shadow-xs"
+            className="px-2 py-1 rounded-lg bg-[#342A21] hover:bg-[#251E17] text-white text-[10px] font-bold shrink-0 transition-colors shadow-xs cursor-pointer"
           >
             Promote
           </button>

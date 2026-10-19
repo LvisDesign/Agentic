@@ -167,12 +167,24 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
         </div>
 
         {/* 3. Media Viewport (Image / Video) */}
-        <div className="relative w-full h-full bg-slate-900 overflow-hidden">
-          <img
-            src={activeAd.mediaUrl}
-            alt={activeAd.headline}
-            className="w-full h-full object-cover"
-          />
+        <div className="relative w-full h-full bg-slate-900 overflow-hidden flex items-center justify-center">
+          {activeAd.mediaType === 'video' ? (
+            <video
+              key={activeAd.mediaUrl}
+              src={activeAd.mediaUrl}
+              className="w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+          ) : (
+            <img
+              src={activeAd.mediaUrl}
+              alt={activeAd.headline}
+              className="w-full h-full object-cover"
+            />
+          )}
 
           {/* Top & Bottom Shading Gradients for contrast */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 pointer-events-none" />

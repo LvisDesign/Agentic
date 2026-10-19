@@ -8,7 +8,10 @@ import {
   MapPin, 
   ShieldCheck,
   TrendingUp,
-  CreditCard
+  CreditCard,
+  Film,
+  Image as ImageIcon,
+  Video
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 import { DELTA_CITIES } from '../../data/mockListings';
@@ -36,7 +39,11 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   const [phone, setPhone] = useState('0803 492 8172');
   const [whatsapp, setWhatsapp] = useState('2348034928172');
   const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly'>('weekly');
-  const [uploadedImage, setUploadedImage] = useState('/images/properties/asaba_gra_exterior.jpg');
+  const [uploadedMedia, setUploadedMedia] = useState<{ url: string; type: 'image' | 'video'; name: string }>({
+    url: '/images/properties/asaba_gra_exterior.jpg',
+    type: 'image',
+    name: 'asaba_gra_exterior.jpg',
+  });
   const [showPaystackModal, setShowPaystackModal] = useState(false);
   const [paymentRef, setPaymentRef] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
@@ -45,11 +52,16 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
 
   const advertCost = selectedPlan === 'weekly' ? 5000 : 15000;
 
-  const handleImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|ogg|m4v)$/i.test(file.name);
     const url = URL.createObjectURL(file);
-    setUploadedImage(url);
+    setUploadedMedia({
+      url,
+      type: isVideo ? 'video' : 'image',
+      name: file.name,
+    });
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
@@ -68,9 +80,9 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
       advertiserName: advertiserName || 'Partner',
       category: 'Property',
       badgeText: selectedPlan === 'monthly' ? 'TOP AD' : 'SPONSORED',
-      thumbnailUrl: uploadedImage,
-      mediaUrl: uploadedImage,
-      mediaType: 'image',
+      thumbnailUrl: uploadedMedia.type === 'video' ? '/images/properties/asaba_gra_exterior.jpg' : uploadedMedia.url,
+      mediaUrl: uploadedMedia.url,
+      mediaType: uploadedMedia.type,
       headline: headline || `Premium Rental in ${neighborhood || city}`,
       description: description || `Newly listed property in ${neighborhood}, ${city}. Contact partner directly on WhatsApp.`,
       location: `${neighborhood ? `${neighborhood}, ` : ''}${city}`,
@@ -272,25 +284,63 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 />
               </div>
 
-              {/* Photo Upload & Preview */}
+              {/* Media Upload & Preview (Both Videos & Photos Supported) */}
               <div>
-                <label className="text-xs text-[#70798C] block mb-1">
-                  Advert Banner Photo
-                </label>
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-xl border border-[#E5E7EB] overflow-hidden bg-slate-900 shrink-0">
-                    <img src={uploadedImage} alt="preview" className="w-full h-full object-cover" />
-                  </div>
-                  <label className="cursor-pointer px-3 py-2 rounded-lg border border-[#E5E7EB] hover:bg-slate-50 text-xs font-semibold text-[#000004] flex items-center gap-1.5 transition-colors">
-                    <Upload className="w-3.5 h-3.5 text-[#342A21]" />
-                    <span>Upload Custom Photo</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageFile}
-                      className="hidden"
-                    />
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-[#70798C] uppercase tracking-wider block">
+                    Advert Media (Videos & Photos)
                   </label>
+                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                    MP4, WebM, MOV, JPG, PNG
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-20 h-20 rounded-xl border border-[#E5E7EB] overflow-hidden bg-slate-900 shrink-0 relative flex items-center justify-center shadow-xs">
+                    {uploadedMedia.type === 'video' ? (
+                      <>
+                        <video
+                          src={uploadedMedia.url}
+                          className="w-full h-full object-cover"
+                          muted
+                          autoPlay
+                          loop
+                          playsInline
+                        />
+                        <span className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+                          <Film className="w-5 h-5 text-amber-300 drop-shadow" />
+                        </span>
+                        <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
+                          VIDEO
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <img src={uploadedMedia.url} alt="preview" className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
+                          PHOTO
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <label className="cursor-pointer py-2 px-3 rounded-lg border border-[#342A21]/30 hover:border-[#342A21] bg-white text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors">
+                      <Upload className="w-3.5 h-3.5 text-[#342A21]" />
+                      <span>{uploadedMedia.type === 'video' ? 'Change Video or Photo' : 'Upload Video or Photo'}</span>
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        onChange={handleMediaFile}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[11px] text-[#70798C] leading-snug">
+                      {uploadedMedia.type === 'video' 
+                        ? `🎬 Video attached (${uploadedMedia.name})` 
+                        : '📷 Photo attached. Walkthrough videos convert 3x more tenants!'}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

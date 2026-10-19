@@ -115,7 +115,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             onClick={onSwitchToSeeker}
             className="py-2.5 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-xs font-semibold text-[#000004] transition-colors"
           >
-            View Live Feed
+            Explore Feed
           </button>
         </div>
       </div>

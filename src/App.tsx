@@ -6,6 +6,7 @@ import { setAppBadge, clearAppBadge } from './utils/pwa';
 import { saveRegisteredUser } from './utils/userRegistry';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
+import { matchesLocation } from './utils/locationMatcher';
 import { AgentDashboard } from './components/Agent/AgentDashboard';
 import { UserDashboard } from './components/User/UserDashboard';
 import { BecomeAgentModal } from './components/User/BecomeAgentModal';
@@ -164,10 +165,11 @@ export function App() {
     setAdverts((prev) => [newAd, ...prev]);
   };
 
-  // Filter logic
+  // Smart Location & Word-Similarity Filter Logic
   const filteredListings = useMemo(() => {
     return listings.filter((item) => {
-      if (selectedCity !== 'All Delta Cities' && item.city !== selectedCity) {
+      // Dynamic location matching (checks state, city, agent-posted neighborhood, address, and word similarity)
+      if (!matchesLocation(item, selectedCity, selectedState)) {
         return false;
       }
       if (selectedType !== 'All Property Types' && item.propertyType !== selectedType) {
@@ -178,7 +180,7 @@ export function App() {
       }
       return true;
     });
-  }, [listings, selectedCity, selectedType, maxRent]);
+  }, [listings, selectedCity, selectedState, selectedType, maxRent]);
 
   // Handler: Book an inspection slot
   const handleBookSlot = (newBooking: BookingRecord) => {
@@ -467,14 +469,15 @@ export function App() {
               maxRent={maxRent}
               onSelectMaxRent={setMaxRent}
               totalFiltered={filteredListings.length}
+              listings={listings}
               adverts={adverts}
               onSelectAdvert={(ad) => setSelectedStoryAd(ad)}
               onOpenPostAd={() => setIsPostAdOpen(true)}
               activeStoryId={selectedStoryAd?.id}
             />
 
-            {/* Responsive Layout: Desktop view features Sponsored Ads on the left side; mobile features ads on top */}
-            <div className="w-full max-w-7xl mx-auto h-[calc(100dvh-226px)] lg:h-[calc(100dvh-112px)] mt-[226px] lg:mt-[112px] flex items-center justify-center gap-6 px-2 sm:px-6 overflow-hidden">
+            {/* Responsive Layout: Desktop features Sponsored Ads on left; mobile features in-feed sponsored carousel as tenants scroll down */}
+            <div className="w-full max-w-7xl mx-auto h-[calc(100dvh-112px)] mt-[112px] flex items-center justify-center gap-6 px-2 sm:px-6 overflow-hidden">
               {/* Desktop Left Side Sponsored Ads */}
               <DesktopAdvertSidebar
                 adverts={adverts}
@@ -493,6 +496,10 @@ export function App() {
                   onSimulateAgentAccept={handleAcceptBooking}
                   onOpenBookingModal={handleOpenBooking}
                   onResetFilters={handleResetFilters}
+                  adverts={adverts}
+                  onSelectAdvert={(ad) => setSelectedStoryAd(ad)}
+                  onOpenPostAd={() => setIsPostAdOpen(true)}
+                  activeStoryId={selectedStoryAd?.id}
                 />
               </div>
             </div>
