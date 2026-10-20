@@ -13,8 +13,7 @@ import {
   ArrowUpRight,
   Building,
   Phone,
-  MessageSquare,
-  Sparkles
+  MessageSquare
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, AgentProfile, UserProfile, ListingAvailability } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
@@ -566,10 +565,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                             {prop.addons.map((addon) => (
                               <span
                                 key={addon}
-                                className="px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200/70 text-[10px] font-semibold flex items-center gap-1"
+                                className="px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200/70 text-[10px] font-semibold"
                               >
-                                <Sparkles className="w-2.5 h-2.5 text-purple-600 shrink-0" />
-                                <span>{addon}</span>
+                                {addon}
                               </span>
                             ))}
                           </div>

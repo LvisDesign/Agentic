@@ -10,7 +10,6 @@ import {
   Calendar,
   Clock,
   Trash2,
-  Sparkles,
   AlertCircle
 } from 'lucide-react';
 import { PropertyListing, DeltaCity, PropertyType, NigerianState, UserProfile } from '../../types/marketplace';
@@ -408,7 +407,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             <div className="pt-3 border-t border-slate-100">
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-bold text-[#000004] flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                   <span>Property Add-ons & Key Amenities</span>
                   <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.5 rounded">
                     Optional
@@ -485,7 +483,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                       key={item}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-[#E5E7EB] text-xs font-bold text-[#000004] shadow-2xs"
                     >
-                      <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
                       <span>{item}</span>
                       <button
                         type="button"
