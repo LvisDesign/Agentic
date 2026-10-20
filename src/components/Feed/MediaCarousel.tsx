@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Volume2, VolumeX, Film, RotateCcw } from 'lucide-react';
-import { DEFAULT_FALLBACK_IMAGE, DEFAULT_WALKTHROUGH_VIDEO } from '../../utils/mediaStorage';
+import { DEFAULT_FALLBACK_IMAGE, DEFAULT_WALKTHROUGH_VIDEO, getBlobFromIDB } from '../../utils/mediaStorage';
 
 interface MediaItem {
   id?: string;
@@ -16,6 +16,7 @@ interface MediaCarouselProps {
 }
 
 interface CarouselVideoItemProps {
+  id?: string;
   url: string;
   poster?: string;
   caption: string;
@@ -38,6 +39,7 @@ function resolveVideoSource(src?: string): string {
  * Provides active mute/unmute controls so users can freely choose whether to mute or play sound.
  */
 const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
+  id,
   url,
   poster,
   caption,
@@ -50,10 +52,35 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   const [videoSource, setVideoSource] = useState(() => resolveVideoSource(url));
   const isInitialMount = useRef(true);
 
+  // If this device holds the authentic original video in IndexedDB, load and play it directly
+  useEffect(() => {
+    let isCancelled = false;
+    if (id) {
+      getBlobFromIDB(id).then((blob) => {
+        if (blob && !isCancelled) {
+          try {
+            const localBlobUrl = URL.createObjectURL(blob);
+            console.log('[DeltaRent Video] Loaded authentic agent-uploaded video from local device cache:', id);
+            setVideoSource(localBlobUrl);
+            setHasError(false);
+          } catch (e) {
+            console.warn('[DeltaRent Video] Could not create local blob URL:', e);
+          }
+        }
+      }).catch(() => {});
+    }
+    return () => {
+      isCancelled = true;
+    };
+  }, [id]);
+
   // Synchronize URL changes
   useEffect(() => {
-    setVideoSource(resolveVideoSource(url));
-    setHasError(false);
+    // If not already playing a local blob from this device
+    if (!videoSource.startsWith('blob:')) {
+      setVideoSource(resolveVideoSource(url));
+      setHasError(false);
+    }
   }, [url]);
 
   // Set initial muted state on mount for browser autoplay compliance without overriding user changes
@@ -387,6 +414,7 @@ export const MediaCarousel: React.FC<MediaCarouselProps> = ({ media, title }) =>
           >
             {item.type === 'video' ? (
               <CarouselVideoItem
+                id={item.id}
                 url={item.url}
                 poster={item.poster}
                 caption={item.caption || title}

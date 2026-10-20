@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 import { PropertyListing, ListingAvailability } from '../types/marketplace';
 import { INITIAL_LISTINGS } from '../data/mockListings';
-import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO } from '../utils/mediaStorage';
+import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO, getBlobFromIDB, uploadMediaToSupabaseStorage } from '../utils/mediaStorage';
 
 const LOCAL_STORAGE_KEY = 'deltarent_listings';
 
@@ -145,6 +145,63 @@ export async function syncLocalListingsToCloud(): Promise<void> {
 }
 
 /**
+ * Scans listings for any agent walkthrough videos stored in client IndexedDB,
+ * and automatically uploads the real video file to Supabase Storage if the bucket is enabled.
+ * Once uploaded, updates the listing URL in Supabase database so all mobile devices stream the real video.
+ */
+export async function syncLocalVideosToCloudStorage(): Promise<void> {
+  const client = getSupabaseClient();
+  if (!isSupabaseConfigured() || !client) return;
+
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!saved) return;
+    const localListings: PropertyListing[] = JSON.parse(saved);
+    if (!Array.isArray(localListings) || localListings.length === 0) return;
+
+    let hasUpdates = false;
+
+    for (const listing of localListings) {
+      if (!Array.isArray(listing.media)) continue;
+
+      let listingMediaChanged = false;
+      const updatedMedia = await Promise.all(
+        listing.media.map(async (m) => {
+          if (m.type === 'video' && m.id) {
+            const isCloudCDN = m.url && m.url.includes('/storage/v1/object/public/property-media/');
+            if (!isCloudCDN) {
+              const blob = await getBlobFromIDB(m.id);
+              if (blob) {
+                const cloudUrl = await uploadMediaToSupabaseStorage(blob, `walkthrough-${listing.id}.mp4`);
+                if (cloudUrl) {
+                  console.log(`[DeltaRent Media] Successfully uploaded agent video to cloud for listing ${listing.id}:`, cloudUrl);
+                  listingMediaChanged = true;
+                  return { ...m, url: cloudUrl };
+                }
+              }
+            }
+          }
+          return m;
+        })
+      );
+
+      if (listingMediaChanged) {
+        listing.media = updatedMedia;
+        hasUpdates = true;
+        // Update in Supabase
+        await client.from('listings').update({ media: updatedMedia }).eq('id', listing.id);
+      }
+    }
+
+    if (hasUpdates) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localListings));
+    }
+  } catch (err) {
+    console.warn('[DeltaRent Media] Cloud video background sync notice:', err);
+  }
+}
+
+/**
  * Fetches all active property listings from Supabase (or fallback to local storage)
  */
 export async function fetchAllListings(): Promise<PropertyListing[]> {
@@ -152,8 +209,9 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
   // If Supabase is configured, sync local listings first then load from cloud database
   if (isSupabaseConfigured() && client) {
     try {
-      // 1. Sync any existing local listings up to Supabase
+      // 1. Sync any existing local listings and videos up to Supabase
       await syncLocalListingsToCloud();
+      syncLocalVideosToCloudStorage().catch(() => {});
 
       // 2. Fetch all real listings from Supabase
       const { data, error } = await client

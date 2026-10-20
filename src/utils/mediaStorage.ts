@@ -244,19 +244,20 @@ export interface ProcessedMedia {
  * Uploads media file (video or photo) directly to Supabase Storage bucket 'property-media'
  * If the bucket is available, returns the permanent public CDN streaming URL.
  */
-export async function uploadMediaToSupabaseStorage(file: File): Promise<string | null> {
+export async function uploadMediaToSupabaseStorage(file: File | Blob, defaultName?: string): Promise<string | null> {
   const client = getSupabaseClient();
   if (!client || !isSupabaseConfigured()) return null;
 
   try {
-    const ext = file.name.split('.').pop() || (file.type.startsWith('video/') ? 'mp4' : 'jpg');
-    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const rawName = (file instanceof File ? file.name : defaultName) || `media-${Date.now()}.mp4`;
+    const ext = rawName.split('.').pop() || (file.type.startsWith('video/') ? 'mp4' : 'jpg');
+    const cleanFileName = rawName.replace(/[^a-zA-Z0-9.-]/g, '_');
     const filePath = `listings/${Date.now()}-${Math.random().toString(36).substring(2, 7)}-${cleanFileName}`;
 
     const { data, error } = await client.storage.from('property-media').upload(filePath, file, {
       cacheControl: '3600',
       upsert: true,
-      contentType: file.type || (file.type.startsWith('video/') ? 'video/mp4' : 'image/jpeg'),
+      contentType: file.type || (ext === 'mp4' ? 'video/mp4' : 'image/jpeg'),
     });
 
     if (error) {
