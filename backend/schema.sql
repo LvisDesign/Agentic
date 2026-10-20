@@ -66,7 +66,12 @@ create index if not exists idx_bookings_status on public.bookings (status);
 alter table public.listings enable row level security;
 alter table public.bookings enable row level security;
 
--- 4. Public Access Policies
+-- 4. Grant table privileges to public api roles
+grant usage on schema public to anon, authenticated;
+grant all on table public.listings to anon, authenticated;
+grant all on table public.bookings to anon, authenticated;
+
+-- 5. Public Access Policies
 drop policy if exists "Public can read listings" on public.listings;
 create policy "Public can read listings" on public.listings for select using (true);
 

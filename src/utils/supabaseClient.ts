@@ -1,30 +1,37 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const envUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const DEFAULT_SUPABASE_URL = 'https://iadzihievmbhssqycpol.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'sb_publishable_qZPhiM3jauva5DPZj_1Kkw_McqmAa0w';
+
+const envUrl = (import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL).trim();
+const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY).trim();
 
 export interface SupabaseConfig {
   url: string;
   key: string;
   isConfigured: boolean;
-  source: 'env' | 'localStorage' | 'none';
+  source: 'env' | 'localStorage' | 'default' | 'none';
 }
 
 export const getSupabaseConfig = (): SupabaseConfig => {
   const localUrl = (typeof window !== 'undefined' ? localStorage.getItem('deltarent_supabase_url') || '' : '').trim();
   const localKey = (typeof window !== 'undefined' ? localStorage.getItem('deltarent_supabase_key') || '' : '').trim();
 
-  if (envUrl && envKey && envUrl.startsWith('https://')) {
-    return { url: envUrl, key: envKey, isConfigured: true, source: 'env' };
-  }
+  const url = localUrl || envUrl || DEFAULT_SUPABASE_URL;
+  const key = localKey || envKey || DEFAULT_SUPABASE_KEY;
 
-  if (localUrl && localKey && localUrl.startsWith('https://')) {
-    return { url: localUrl, key: localKey, isConfigured: true, source: 'localStorage' };
+  if (url && key && url.startsWith('https://')) {
+    return { 
+      url, 
+      key, 
+      isConfigured: true, 
+      source: localUrl ? 'localStorage' : envUrl ? 'env' : 'default' 
+    };
   }
 
   return {
-    url: envUrl || localUrl,
-    key: envKey || localKey,
+    url,
+    key,
     isConfigured: false,
     source: 'none',
   };
