@@ -175,6 +175,7 @@ export interface PropertyListing {
   inspectionSlots: InspectionSlot[];
   inspectionDays: string[]; // e.g. ["Mon", "Wed", "Sat"]
   tags: string[];
+  addons?: string[];
   createdAt: string;
   availabilityStatus?: ListingAvailability;
   lastConfirmedAt?: string;

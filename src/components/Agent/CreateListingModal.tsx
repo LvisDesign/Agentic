@@ -9,7 +9,9 @@ import {
   ShieldCheck,
   Calendar,
   Clock,
-  Trash2
+  Trash2,
+  Sparkles,
+  AlertCircle
 } from 'lucide-react';
 import { PropertyListing, DeltaCity, PropertyType, NigerianState, UserProfile } from '../../types/marketplace';
 import { formatNaira, formatCurrencyInput, parseCurrencyInput } from '../../utils/formatters';
@@ -63,6 +65,19 @@ const PROPERTY_TYPE_OPTIONS: DropdownOption[] = [
   { value: 'Duplex / Semi-Detached', label: 'Duplex / Whole House', subtitle: 'Standalone duplex or whole compound' },
 ];
 
+const SUGGESTED_ADDONS: string[] = [
+  '33KVA Dedicated Line',
+  'High-Speed Internet / WiFi',
+  'Solar Inverter Backup',
+  'Standby Generator',
+  'Treated Clean Water',
+  'Uniformed Estate Security',
+  'Prepaid Meter',
+  'POP Ceilings',
+  'Water Heater',
+  'Ample Parking Space',
+];
+
 
 interface CreateListingModalProps {
   isOpen: boolean;
@@ -78,32 +93,6 @@ interface MediaItemDraft {
   caption?: string;
 }
 
-const DEFAULT_SAMPLE_MEDIA: MediaItemDraft[] = [
-  {
-    id: 'sample-video-1',
-    type: 'video',
-    url: 'https://assets.mixkit.co/videos/preview/mixkit-modern-apartment-living-room-interior-39744-large.mp4',
-    caption: 'House Walkthrough Video',
-  },
-  {
-    id: 'sample-img-1',
-    type: 'image',
-    url: '/images/properties/warri_estate_exterior.jpg',
-    caption: 'Gated Estate Compound & Security Gatehouse',
-  },
-  {
-    id: 'sample-img-2',
-    type: 'image',
-    url: '/images/properties/asaba_vacant_living.jpg',
-    caption: 'Spacious Vacant Living Room with POP Ceiling',
-  },
-  {
-    id: 'sample-img-3',
-    type: 'image',
-    url: '/images/properties/vacant_luxury_kitchen.jpg',
-    caption: 'Fitted Kitchen with Granite Tops & Heat Extractor',
-  },
-];
 
 export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   isOpen,
@@ -124,15 +113,39 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   const [bathrooms, setBathrooms] = useState(2);
   const [rentPeriod, setRentPeriod] = useState<'per annum' | 'per month'>('per annum');
   
-  // Cost inputs formatted as currency strings
-  const [baseRentInput, setBaseRentInput] = useState('1500000');
-  const [cautionFeeInput, setCautionFeeInput] = useState('100000');
-  const [legalAgencyFeeInput, setLegalAgencyFeeInput] = useState('300000');
-  const [serviceChargeInput, setServiceChargeInput] = useState('120000');
-  const [inspectionFeeInput, setInspectionFeeInput] = useState('2500');
+  // Cost inputs formatted as currency strings (starts empty for agent to enter manually)
+  const [baseRentInput, setBaseRentInput] = useState('');
+  const [cautionFeeInput, setCautionFeeInput] = useState('');
+  const [legalAgencyFeeInput, setLegalAgencyFeeInput] = useState('');
+  const [serviceChargeInput, setServiceChargeInput] = useState('');
+  const [inspectionFeeInput, setInspectionFeeInput] = useState('');
 
-  // Media (Whatever the agent uploads: house videos or images)
-  const [uploadedMedia, setUploadedMedia] = useState<MediaItemDraft[]>([...DEFAULT_SAMPLE_MEDIA]);
+  // Optional Property Add-ons & Amenities (e.g. 33KVA, Internet, Solar, etc.)
+  const [addons, setAddons] = useState<string[]>([]);
+  const [addonInput, setAddonInput] = useState('');
+
+  const handleAddCustomAddon = () => {
+    const trimmed = addonInput.trim();
+    if (!trimmed) return;
+    if (!addons.some((a) => a.toLowerCase() === trimmed.toLowerCase())) {
+      setAddons((prev) => [...prev, trimmed]);
+    }
+    setAddonInput('');
+  };
+
+  const handleAddSuggestedAddon = (item: string) => {
+    if (!addons.some((a) => a.toLowerCase() === item.toLowerCase())) {
+      setAddons((prev) => [...prev, item]);
+    }
+  };
+
+  const handleRemoveAddon = (itemToRemove: string) => {
+    setAddons((prev) => prev.filter((a) => a !== itemToRemove));
+  };
+
+  // Media (starts completely empty, agent uploads photos/videos)
+  const [uploadedMedia, setUploadedMedia] = useState<MediaItemDraft[]>([]);
+  const [mediaError, setMediaError] = useState<string | null>(null);
 
   // Inspection Window Rules
   const [selectedDays, setSelectedDays] = useState<string[]>(['Mon', 'Wed', 'Fri', 'Sat']);
@@ -176,6 +189,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
     });
 
     setUploadedMedia((prev) => [...prev, ...newItems]);
+    setMediaError(null);
     e.target.value = '';
   };
 
@@ -185,6 +199,16 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!baseRentNum || baseRentNum <= 0) {
+      alert('Please enter a valid house rent amount.');
+      return;
+    }
+
+    if (uploadedMedia.length === 0) {
+      setMediaError('Please upload at least 1 photo or video walkthrough of the property.');
+      return;
+    }
 
     const newListing: PropertyListing = {
       id: `prop-agent-${Date.now()}`,
@@ -202,19 +226,11 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       electricityStatus: 'Band A (20+ hrs)',
       waterSupply: 'Borehole with Treatment',
       description: `Newly published verified listing in ${neighborhood}, ${city}. Inspected and approved under DeltaRent fair regional tenancy standards.`,
-      media: uploadedMedia.length > 0
-        ? uploadedMedia.map((item, i) => ({
-            type: item.type,
-            url: item.url,
-            caption: item.caption || `Property view ${i + 1}`,
-          }))
-        : [
-            {
-              type: 'image',
-              url: '/images/properties/asaba_gra_exterior.jpg',
-              caption: 'Property exterior view',
-            },
-          ],
+      media: uploadedMedia.map((item, i) => ({
+        type: item.type,
+        url: item.url,
+        caption: item.caption || `Property view ${i + 1}`,
+      })),
       fees: {
         baseRent: baseRentNum,
         rentPeriod,
@@ -247,7 +263,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         waitlistCount: 0,
       })),
       inspectionDays: selectedDays,
-      tags: [city, neighborhood || 'Residential', 'Direct Agent', 'Borehole'],
+      tags: [city, neighborhood || 'Residential', 'Direct Agent', ...addons],
+      addons: addons.length > 0 ? addons : undefined,
       createdAt: new Date().toISOString(),
     };
 
@@ -386,6 +403,103 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* Optional Property Add-ons & Amenities */}
+            <div className="pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-[#000004] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Property Add-ons & Key Amenities</span>
+                  <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.5 rounded">
+                    Optional
+                  </span>
+                </label>
+                {addons.length > 0 && (
+                  <span className="text-[10px] text-[#70798C] font-semibold">
+                    {addons.length} {addons.length === 1 ? 'addon' : 'addons'} added
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-[#70798C] mb-2">
+                Type any custom addon manually (e.g. <strong>33KVA</strong>, <strong>Internet</strong>, <strong>Starlink</strong>, <strong>Solar Inverter</strong>) or choose from suggestions below:
+              </p>
+
+              {/* Add Custom Addon Input Bar */}
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  type="text"
+                  value={addonInput}
+                  onChange={(e) => setAddonInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomAddon();
+                    }
+                  }}
+                  placeholder="Type an addon (e.g. 33KVA, Internet, Solar) and press Add or Enter"
+                  className="flex-1 px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#000004] bg-white placeholder:text-slate-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomAddon}
+                  disabled={!addonInput.trim()}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1 transition-all shrink-0 cursor-pointer ${
+                    addonInput.trim()
+                      ? 'bg-[#000004] hover:bg-[#1f2937] text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add</span>
+                </button>
+              </div>
+
+              {/* Quick Suggestion Pills */}
+              <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
+                <span className="text-[10px] text-[#70798C] font-semibold mr-0.5">Quick picks:</span>
+                {SUGGESTED_ADDONS.map((suggestion) => {
+                  const isAdded = addons.some((a) => a.toLowerCase() === suggestion.toLowerCase());
+                  return (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      disabled={isAdded}
+                      onClick={() => handleAddSuggestedAddon(suggestion)}
+                      className={`text-[10px] px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                        isAdded
+                          ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'bg-[#FCF9F5] border-[#E5E7EB] text-[#000004] hover:border-[#000004] hover:bg-white'
+                      }`}
+                    >
+                      + {suggestion}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Added Add-ons List */}
+              {addons.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 p-2.5 rounded-xl bg-amber-50/40 border border-amber-200/60 animate-fade-in">
+                  {addons.map((item) => (
+                    <span
+                      key={item}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-[#E5E7EB] text-xs font-bold text-[#000004] shadow-2xs"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                      <span>{item}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAddon(item)}
+                        className="text-[#70798C] hover:text-rose-600 transition-colors ml-0.5 cursor-pointer p-0.5 rounded-full hover:bg-rose-50"
+                        title={`Remove ${item}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* SECTION 3: TRANSPARENT FEES SCHEDULE */}
@@ -492,7 +606,9 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   Total Move-in Package
                 </span>
                 <div className="text-xs text-[#70798C]">
-                  Total amount tenant pays before moving in
+                  {totalMoveIn > 0 
+                    ? 'Total amount tenant pays before moving in'
+                    : 'Calculated automatically as you enter rent and fees'}
                 </div>
               </div>
               <div className="font-display text-xl font-bold text-[#000004]">
@@ -515,13 +631,21 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
               </div>
             </div>
 
+            {/* Validation Alert if agent tries to submit with 0 media */}
+            {mediaError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{mediaError}</span>
+              </div>
+            )}
+
             {/* Upload Button */}
             <div>
               <label 
                 htmlFor="agent-media-files"
-                className="cursor-pointer w-full py-3 px-4 rounded-xl bg-slate-50 hover:bg-slate-100/80 border-2 border-dashed border-[#E5E7EB] hover:border-[#342A21]/40 text-[#000004] font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs select-none active:scale-[0.99]"
+                className="cursor-pointer w-full py-3.5 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-[#E5E7EB] hover:border-[#000004]/40 text-[#000004] font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs select-none active:scale-[0.99]"
               >
-                <Upload className="w-4 h-4 text-[#342A21]" />
+                <Upload className="w-4 h-4 text-[#000004]" />
                 <span>Upload Photos & Videos</span>
                 <input
                   id="agent-media-files"
@@ -534,62 +658,77 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
               </label>
             </div>
 
-            {/* Media Items Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-              {uploadedMedia.map((item, i) => (
-                <div 
-                  key={item.id || i} 
-                  className="relative rounded-lg overflow-hidden border border-[#E5E7EB] aspect-square group bg-slate-950 flex items-center justify-center"
-                >
-                  {item.type === 'video' ? (
-                    <video
-                      src={item.url}
-                      className="w-full h-full object-cover"
-                      muted
-                      playsInline
-                    />
-                  ) : (
-                    <img 
-                      src={item.url} 
-                      alt={item.caption || 'preview'} 
-                      className="w-full h-full object-cover" 
-                    />
-                  )}
-
-                  {/* Badge */}
-                  <span className="absolute top-1.5 left-1.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1">
-                    {item.type === 'video' ? (
-                      <>
-                        <Film className="w-2.5 h-2.5 text-amber-200" />
-                        <span>Video</span>
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="w-2.5 h-2.5 text-white/80" />
-                        <span>Photo</span>
-                      </>
-                    )}
-                  </span>
-
-                  {/* Delete Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveMedia(item.id)}
-                    title="Remove media"
-                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-white hover:bg-red-600 flex items-center justify-center transition-colors shadow-xs"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-
-                  {/* Bottom Caption */}
-                  {item.caption && (
-                    <span className="absolute bottom-1 left-1 right-1 text-center bg-black/60 backdrop-blur-xs text-white text-[9px] px-1 py-0.5 rounded truncate">
-                      {item.caption}
-                    </span>
-                  )}
+            {/* Media Items Grid or Clean Empty Dropzone State */}
+            {uploadedMedia.length === 0 ? (
+              <div className="p-6 rounded-xl border border-dashed border-[#E5E7EB] bg-[#FCF9F5] text-center space-y-1.5">
+                <div className="flex items-center justify-center gap-2 text-[#70798C] mb-1">
+                  <Film className="w-5 h-5 text-amber-600" />
+                  <ImageIcon className="w-5 h-5 text-blue-600" />
                 </div>
-              ))}
-            </div>
+                <p className="text-xs font-bold text-[#000004]">
+                  No photos or videos added yet
+                </p>
+                <p className="text-[11px] text-[#70798C] max-w-sm mx-auto">
+                  Click the upload button above to add clear walkthrough videos and photos of this property from your device.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                {uploadedMedia.map((item, i) => (
+                  <div 
+                    key={item.id || i} 
+                    className="relative rounded-lg overflow-hidden border border-[#E5E7EB] aspect-square group bg-slate-950 flex items-center justify-center"
+                  >
+                    {item.type === 'video' ? (
+                      <video
+                        src={item.url}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                      />
+                    ) : (
+                      <img 
+                        src={item.url} 
+                        alt={item.caption || 'preview'} 
+                        className="w-full h-full object-cover" 
+                      />
+                    )}
+
+                    {/* Badge */}
+                    <span className="absolute top-1.5 left-1.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-medium px-1.5 py-0.5 rounded flex items-center gap-1">
+                      {item.type === 'video' ? (
+                        <>
+                          <Film className="w-2.5 h-2.5 text-amber-200" />
+                          <span>Video</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-2.5 h-2.5 text-white/80" />
+                          <span>Photo</span>
+                        </>
+                      )}
+                    </span>
+
+                    {/* Delete Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveMedia(item.id)}
+                      title="Remove media"
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/70 text-white hover:bg-red-600 flex items-center justify-center transition-colors shadow-xs cursor-pointer"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+
+                    {/* Bottom Caption */}
+                    {item.caption && (
+                      <span className="absolute bottom-1 left-1 right-1 text-center bg-black/60 backdrop-blur-xs text-white text-[9px] px-1 py-0.5 rounded truncate">
+                        {item.caption}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* SECTION 5: INSPECTION RULES */}

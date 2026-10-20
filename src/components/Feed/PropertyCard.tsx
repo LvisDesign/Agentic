@@ -331,6 +331,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 <Droplet className="w-3 h-3 text-[#0284c7]" />
                 {listing.waterSupply}
               </span>
+              {listing.addons && listing.addons.length > 0 && (
+                listing.addons.map((addon) => (
+                  <span
+                    key={addon}
+                    className="px-2 py-0.5 rounded-md bg-purple-50 border border-purple-200/80 text-purple-900 font-medium flex items-center gap-1 shrink-0"
+                  >
+                    <Sparkles className="w-2.5 h-2.5 text-purple-600" />
+                    <span>{addon}</span>
+                  </span>
+                ))
+              )}
             </div>
 
             {/* 4. Transparent Move-in Cost Schedule Preview Card */}
