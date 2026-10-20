@@ -137,20 +137,54 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
     return null;
   }
 
+  // In local development or on localhost, DO NOT register service workers.
+  // Unregister any existing service worker and purge all cache storage so Vite HMR works instantly.
+  const isLocalhost =
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '[::1]' ||
+    import.meta.env.DEV;
+
+  if (isLocalhost) {
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) {
+        await reg.unregister();
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch (err) {
+      console.warn('[PWA] Dev cache cleanup notice:', err);
+    }
+    return null;
+  }
+
   try {
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
     });
 
-    // Check for updates periodically
+    // When an updated service worker is found, tell it to activate immediately
     registration.addEventListener('updatefound', () => {
       const installingWorker = registration.installing;
       if (installingWorker) {
         installingWorker.addEventListener('statechange', () => {
           if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('[PWA] New version available.');
+            console.log('[PWA] New version installed; activating immediately...');
+            installingWorker.postMessage({ type: 'SKIP_WAITING' });
           }
         });
+      }
+    });
+
+    // Auto-reload the page when the new service worker takes control so the user gets fresh assets
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload();
       }
     });
 

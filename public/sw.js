@@ -1,7 +1,7 @@
 // Service Worker for DeltaRent Progressive Web App
 // Handles static caching, offline fallback, web push notifications, and app badging API
 
-const CACHE_NAME = 'deltarent-pwa-v1';
+const CACHE_NAME = 'deltarent-pwa-v4';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -15,8 +15,16 @@ const PRECACHE_ASSETS = [
 // Badge counter state within SW lifecycle
 let currentBadgeCount = 0;
 
+// Listen for SKIP_WAITING message to immediately take over
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // 1. Install Event: Pre-cache static shell & activate immediately
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches
       .open(CACHE_NAME)
@@ -25,11 +33,10 @@ self.addEventListener('install', (event) => {
           console.warn('[SW] Pre-caching partial failure:', err);
         });
       })
-      .then(() => self.skipWaiting())
   );
 });
 
-// 2. Activate Event: Clean up stale caches and claim clients
+// 2. Activate Event: Clean up stale caches and claim clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
@@ -38,6 +45,7 @@ self.addEventListener('activate', (event) => {
         return Promise.all(
           cacheNames.map((name) => {
             if (name !== CACHE_NAME) {
+              console.log('[SW] Purging stale cache:', name);
               return caches.delete(name);
             }
           })
@@ -47,7 +55,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. Fetch Event: Network-first for navigation with offline fallback, Cache-first for assets
+// 3. Fetch Event: Network-first for navigation & code, Cache-first for static media only
 self.addEventListener('fetch', (event) => {
   const request = event.request;
 
@@ -59,18 +67,28 @@ self.addEventListener('fetch', (event) => {
   // Ignore cross-origin non-http schemes (e.g. chrome-extension)
   if (!url.protocol.startsWith('http')) return;
 
-  // Navigation requests (HTML pages)
+  // Never intercept or cache localhost development, Supabase storage/REST, or API calls
+  if (
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname.includes('supabase.co') ||
+    url.pathname.startsWith('/api/') ||
+    url.pathname.includes('/@vite/') ||
+    url.pathname.includes('/@fs/')
+  ) {
+    return;
+  }
+
+  // Navigation requests (HTML pages): Network First with offline fallback
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Cache fresh copy of navigation
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
           return response;
         })
         .catch(async () => {
-          // Network failed: try cache, or fallback to offline.html
           const cached = await caches.match(request);
           if (cached) return cached;
           const offlineFallback = await caches.match('/offline.html');
@@ -80,7 +98,34 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets (CSS, JS, WebP, PNG, SVGs, Fonts)
+  // For HTML, JS scripts, CSS stylesheets, Vite bundles: STRICT Network First so updates are instant
+  const isCodeAsset =
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.ts') ||
+    url.pathname.endsWith('.tsx') ||
+    url.pathname.includes('/assets/');
+
+  if (isCodeAsset) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          const cached = await caches.match(request);
+          return cached || new Response('Offline', { status: 503 });
+        })
+    );
+    return;
+  }
+
+  // Static media assets (Images, SVGs, Fonts)
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
