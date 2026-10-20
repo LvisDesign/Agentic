@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 import { PropertyListing, ListingAvailability } from '../types/marketplace';
 import { INITIAL_LISTINGS } from '../data/mockListings';
 import { FALLBACK_PROPERTY_IMAGES } from '../utils/mediaStorage';
@@ -32,12 +32,64 @@ export function sanitizeListingMedia(item: PropertyListing, index: number = 0): 
   };
 }
 
+export interface ForceSyncResult {
+  uploaded: number;
+  totalLocal: number;
+  error?: string;
+}
+
+/**
+ * Force-syncs all local agent listings to Supabase cloud database
+ * Returns an object with the count of listings uploaded and any error message.
+ */
+export async function forceSyncLocalListings(): Promise<ForceSyncResult> {
+  const client = getSupabaseClient();
+  if (!isSupabaseConfigured() || !client) {
+    return {
+      uploaded: 0,
+      totalLocal: 0,
+      error: 'Supabase database is not connected yet. Please check your Supabase URL & Anon Key.',
+    };
+  }
+
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!saved) {
+      return { uploaded: 0, totalLocal: 0, error: 'No listings found in browser storage on this device.' };
+    }
+
+    const localListings: PropertyListing[] = JSON.parse(saved);
+    if (!Array.isArray(localListings) || localListings.length === 0) {
+      return { uploaded: 0, totalLocal: 0, error: 'No listings in local storage.' };
+    }
+
+    const agentListings = localListings.filter(
+      (item) => item.id && (item.id.startsWith('prop-agent-') || !INITIAL_LISTINGS.some((m) => m.id === item.id))
+    );
+
+    if (agentListings.length === 0) {
+      return { uploaded: 0, totalLocal: 0, error: 'No custom agent listings found to upload.' };
+    }
+
+    let uploaded = 0;
+    for (const item of agentListings) {
+      await saveNewListing(item);
+      uploaded++;
+    }
+
+    return { uploaded, totalLocal: agentListings.length };
+  } catch (err: any) {
+    return { uploaded: 0, totalLocal: 0, error: err?.message || 'Failed syncing to Supabase cloud.' };
+  }
+}
+
 /**
  * Automatically syncs any local agent listings to Supabase
  * Runs when an agent opens the app so existing listings are uploaded to cloud
  */
 export async function syncLocalListingsToCloud(): Promise<void> {
-  if (!isSupabaseConfigured() || !supabase) return;
+  const client = getSupabaseClient();
+  if (!isSupabaseConfigured() || !client) return;
 
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -52,7 +104,7 @@ export async function syncLocalListingsToCloud(): Promise<void> {
     if (agentListings.length === 0) return;
 
     // Check which listings already exist in Supabase
-    const { data: cloudData, error } = await supabase.from('listings').select('id');
+    const { data: cloudData, error } = await client.from('listings').select('id');
     if (error) {
       console.warn('[DeltaRent Supabase] Table check error (table may need creation):', error.message);
       return;
@@ -76,14 +128,15 @@ export async function syncLocalListingsToCloud(): Promise<void> {
  * Fetches all active property listings from Supabase (or fallback to local storage)
  */
 export async function fetchAllListings(): Promise<PropertyListing[]> {
+  const client = getSupabaseClient();
   // If Supabase is configured, sync local listings first then load from cloud database
-  if (isSupabaseConfigured() && supabase) {
+  if (isSupabaseConfigured() && client) {
     try {
       // 1. Sync any existing local listings up to Supabase
       await syncLocalListingsToCloud();
 
       // 2. Fetch all real listings from Supabase
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false });
@@ -168,9 +221,10 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
  */
 export async function saveNewListing(listing: PropertyListing): Promise<void> {
   const sanitized = sanitizeListingMedia(listing);
+  const client = getSupabaseClient();
 
   // Save to Supabase if connected
-  if (isSupabaseConfigured() && supabase) {
+  if (isSupabaseConfigured() && client) {
     try {
       const row = {
         id: sanitized.id,
@@ -201,7 +255,7 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
         last_confirmed_at: sanitized.lastConfirmedAt || new Date().toISOString(),
       };
 
-      const { error } = await supabase.from('listings').upsert([row]);
+      const { error } = await client.from('listings').upsert([row]);
       if (error) {
         console.error('[DeltaRent Supabase] Error saving listing to database:', error);
       } else {
@@ -225,9 +279,10 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
  * Updates listing availability status in Supabase and locally
  */
 export async function updateAvailability(listingId: string, status: ListingAvailability): Promise<void> {
-  if (isSupabaseConfigured() && supabase) {
+  const client = getSupabaseClient();
+  if (isSupabaseConfigured() && client) {
     try {
-      await supabase
+      await client
         .from('listings')
         .update({ availability_status: status })
         .eq('id', listingId);
@@ -253,10 +308,11 @@ export async function updateAvailability(listingId: string, status: ListingAvail
  */
 export async function confirmFreshness(listingId: string): Promise<void> {
   const now = new Date().toISOString();
+  const client = getSupabaseClient();
 
-  if (isSupabaseConfigured() && supabase) {
+  if (isSupabaseConfigured() && client) {
     try {
-      await supabase
+      await client
         .from('listings')
         .update({ last_confirmed_at: now, availability_status: 'Available' })
         .eq('id', listingId);

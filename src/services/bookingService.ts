@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 import { BookingRecord, BookingStatus } from '../types/marketplace';
 
 const LOCAL_STORAGE_KEY = 'deltarent_bookings';
@@ -7,9 +7,10 @@ const LOCAL_STORAGE_KEY = 'deltarent_bookings';
  * Fetches inspection bookings from Supabase (or local storage fallback)
  */
 export async function fetchAllBookings(): Promise<BookingRecord[]> {
-  if (isSupabaseConfigured() && supabase) {
+  const client = getSupabaseClient();
+  if (isSupabaseConfigured() && client) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('bookings')
         .select('*')
         .order('created_at', { ascending: false });
@@ -59,7 +60,8 @@ export async function fetchAllBookings(): Promise<BookingRecord[]> {
  * Creates a new booking in Supabase and locally
  */
 export async function saveNewBooking(booking: BookingRecord): Promise<void> {
-  if (isSupabaseConfigured() && supabase) {
+  const client = getSupabaseClient();
+  if (isSupabaseConfigured() && client) {
     try {
       const row = {
         id: booking.id,
@@ -79,7 +81,7 @@ export async function saveNewBooking(booking: BookingRecord): Promise<void> {
         confirmed_at: booking.confirmedAt || null,
       };
 
-      await supabase.from('bookings').upsert([row]);
+      await client.from('bookings').upsert([row]);
     } catch (err) {
       console.warn('[DeltaRent Supabase] Failed saving booking to cloud:', err);
     }
@@ -98,10 +100,11 @@ export async function saveNewBooking(booking: BookingRecord): Promise<void> {
  */
 export async function updateBookingStatus(bookingId: string, status: BookingStatus): Promise<void> {
   const confirmedAt = status === 'APPROVED_CONFIRMED' || status === 'CONFIRMED_UNLOCKED' ? new Date().toISOString() : undefined;
+  const client = getSupabaseClient();
 
-  if (isSupabaseConfigured() && supabase) {
+  if (isSupabaseConfigured() && client) {
     try {
-      await supabase
+      await client
         .from('bookings')
         .update({ status, confirmed_at: confirmedAt })
         .eq('id', bookingId);
