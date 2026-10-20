@@ -33,18 +33,66 @@ export function sanitizeListingMedia(item: PropertyListing, index: number = 0): 
 }
 
 /**
+ * Automatically syncs any local agent listings to Supabase
+ * Runs when an agent opens the app so existing listings are uploaded to cloud
+ */
+export async function syncLocalListingsToCloud(): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) return;
+
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!saved) return;
+    const localListings: PropertyListing[] = JSON.parse(saved);
+    if (!Array.isArray(localListings) || localListings.length === 0) return;
+
+    // Filter to real agent listings (exclude any mock/demo listings)
+    const agentListings = localListings.filter(
+      (item) => item.id && (item.id.startsWith('prop-agent-') || !INITIAL_LISTINGS.some((m) => m.id === item.id))
+    );
+    if (agentListings.length === 0) return;
+
+    // Check which listings already exist in Supabase
+    const { data: cloudData, error } = await supabase.from('listings').select('id');
+    if (error) {
+      console.warn('[DeltaRent Supabase] Table check error (table may need creation):', error.message);
+      return;
+    }
+
+    const cloudIdSet = new Set((cloudData || []).map((r) => r.id));
+    const unuploaded = agentListings.filter((item) => !cloudIdSet.has(item.id));
+
+    if (unuploaded.length > 0) {
+      console.log(`[DeltaRent Supabase] Syncing ${unuploaded.length} local listing(s) to cloud database...`);
+      for (const item of unuploaded) {
+        await saveNewListing(item);
+      }
+    }
+  } catch (err) {
+    console.warn('[DeltaRent Supabase] Auto-sync error:', err);
+  }
+}
+
+/**
  * Fetches all active property listings from Supabase (or fallback to local storage)
  */
 export async function fetchAllListings(): Promise<PropertyListing[]> {
-  // If Supabase is configured, load from cloud database
+  // If Supabase is configured, sync local listings first then load from cloud database
   if (isSupabaseConfigured() && supabase) {
     try {
+      // 1. Sync any existing local listings up to Supabase
+      await syncLocalListingsToCloud();
+
+      // 2. Fetch all real listings from Supabase
       const { data, error } = await supabase
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
+      if (error) {
+        console.error('[DeltaRent Supabase Error] Could not fetch listings from Supabase:', error.message);
+      }
+
+      if (!error && Array.isArray(data)) {
         const cloudListings: PropertyListing[] = data.map((row, idx) => {
           const item: PropertyListing = {
             id: row.id,
