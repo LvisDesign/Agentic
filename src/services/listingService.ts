@@ -149,19 +149,21 @@ export async function syncLocalListingsToCloud(): Promise<void> {
  * and automatically uploads the real video file to Supabase Storage if the bucket is enabled.
  * Once uploaded, updates the listing URL in Supabase database so all mobile devices stream the real video.
  */
-export async function syncLocalVideosToCloudStorage(): Promise<void> {
+export async function syncLocalVideosToCloudStorage(listingsToCheck?: PropertyListing[]): Promise<void> {
   const client = getSupabaseClient();
   if (!isSupabaseConfigured() || !client) return;
 
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!saved) return;
-    const localListings: PropertyListing[] = JSON.parse(saved);
-    if (!Array.isArray(localListings) || localListings.length === 0) return;
+    let listings = listingsToCheck;
+    if (!listings) {
+      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (saved) {
+        listings = JSON.parse(saved);
+      }
+    }
+    if (!Array.isArray(listings) || listings.length === 0) return;
 
-    let hasUpdates = false;
-
-    for (const listing of localListings) {
+    for (const listing of listings) {
       if (!Array.isArray(listing.media)) continue;
 
       let listingMediaChanged = false;
@@ -187,14 +189,18 @@ export async function syncLocalVideosToCloudStorage(): Promise<void> {
 
       if (listingMediaChanged) {
         listing.media = updatedMedia;
-        hasUpdates = true;
         // Update in Supabase
         await client.from('listings').update({ media: updatedMedia }).eq('id', listing.id);
+        // Also update localStorage cache
+        try {
+          const savedNow = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (savedNow) {
+            const all: PropertyListing[] = JSON.parse(savedNow);
+            const replaced = all.map((it) => (it.id === listing.id ? { ...it, media: updatedMedia } : it));
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(replaced));
+          }
+        } catch (e) {}
       }
-    }
-
-    if (hasUpdates) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localListings));
     }
   } catch (err) {
     console.warn('[DeltaRent Media] Cloud video background sync notice:', err);
@@ -260,6 +266,9 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
         const realCloudListings = cloudListings.filter(
           (l) => !INITIAL_LISTINGS.some((m) => m.id === l.id)
         );
+
+        // Check if any real listings have local video blobs on this machine waiting to upload
+        syncLocalVideosToCloudStorage(realCloudListings).catch(() => {});
 
         // Cache in localStorage
         try {
