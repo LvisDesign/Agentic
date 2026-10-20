@@ -21,6 +21,9 @@ import { PostAdModal } from './components/Feed/PostAdModal';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
+import { fetchAllListings, saveNewListing, updateAvailability, confirmFreshness } from './services/listingService';
+import { fetchAllBookings, saveNewBooking, updateBookingStatus } from './services/bookingService';
+import { supabase, isSupabaseConfigured } from './utils/supabaseClient';
 
 // Initial User Profile (Tenant Demo User)
 const INITIAL_USER: UserProfile = {
@@ -185,6 +188,50 @@ export function App() {
       // ignore
     }
   }, [bookings]);
+
+  // Synchronize listings and bookings from Supabase Cloud on mount & realtime changes
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchAllListings().then((fetched) => {
+      if (isMounted && fetched && fetched.length > 0) {
+        setListings(fetched);
+      }
+    });
+
+    fetchAllBookings().then((fetched) => {
+      if (isMounted && fetched) {
+        setBookings(fetched);
+      }
+    });
+
+    // Real-time listener: sync instantly across phones & laptops when changes occur in Supabase
+    const client = supabase;
+    if (isSupabaseConfigured() && client) {
+      const channel = client
+        .channel('deltarent_realtime_sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, () => {
+          fetchAllListings().then((updated) => {
+            if (isMounted && updated) setListings(updated);
+          });
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
+          fetchAllBookings().then((updated) => {
+            if (isMounted && updated) setBookings(updated);
+          });
+        })
+        .subscribe();
+
+      return () => {
+        isMounted = false;
+        client.removeChannel(channel);
+      };
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // User Authentication State (Persisted in localStorage)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -408,6 +455,7 @@ export function App() {
     setListings((prev) =>
       prev.map((item) => (item.id === listingId ? { ...item, availabilityStatus: status } : item))
     );
+    updateAvailability(listingId, status);
 
     // If marked as Rented Out, auto-archive/hide from public feed within 3 seconds
     if (status === 'Rented Out') {
@@ -428,11 +476,13 @@ export function App() {
           : item
       )
     );
+    confirmFreshness(listingId);
   };
 
   // Handler: Book an inspection slot
   const handleBookSlot = (newBooking: BookingRecord) => {
     setBookings((prev) => [newBooking, ...prev.filter((b) => b.propertyId !== newBooking.propertyId)]);
+    saveNewBooking(newBooking);
 
     // Update listing slot counter
     setListings((prevListings) =>
@@ -504,6 +554,7 @@ export function App() {
     setBookings((prev) =>
       prev.map((b) => (b.id === bookingId ? updatedBooking : b))
     );
+    updateBookingStatus(bookingId, 'CONFIRMED_UNLOCKED');
 
     // Trigger instant PWA Web Push notification simulation
     const listerName = targetListing.agent.fullName || 'Chief Oghenetega Macaulay';
@@ -525,6 +576,8 @@ export function App() {
   const handleRejectBooking = (bookingId: string) => {
     const targetBooking = bookings.find((b) => b.id === bookingId);
     if (!targetBooking) return;
+
+    updateBookingStatus(bookingId, 'REJECTED_BY_AGENT');
 
     // Remove or cancel the target booking
     const remainingBookings = bookings.filter((b) => b.id !== bookingId);
@@ -561,6 +614,7 @@ export function App() {
   // Handler: Create listing from agent onboarding form
   const handleListingCreated = (newListing: PropertyListing) => {
     setListings((prev) => [newListing, ...prev]);
+    saveNewListing(newListing);
   };
 
   // Handler: User upgrades to Agent
