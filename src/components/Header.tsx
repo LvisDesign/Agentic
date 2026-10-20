@@ -8,12 +8,10 @@ import {
   LayoutDashboard, 
   CalendarCheck, 
   UserPlus, 
-  Download,
-  Database
+  Download 
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 import { usePWA } from '../utils/pwa';
-import { isSupabaseConfigured } from '../utils/supabaseClient';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -29,7 +27,6 @@ interface HeaderProps {
   onOpenLogin?: () => void;
   isAuthenticated: boolean;
   onOpenAgentSignup?: () => void;
-  onOpenCloudDb?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -46,7 +43,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLogin,
   isAuthenticated,
   onOpenAgentSignup,
-  onOpenCloudDb,
 }) => {
   const confirmedPassesCount = activeBookings.filter(
     (b) => b.status === 'CONFIRMED_UNLOCKED'
@@ -85,17 +81,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#342A21]/10 text-[#342A21] hidden xs:inline-block">
                 Delta State
               </span>
-              {onOpenCloudDb && (
-                <button
-                  onClick={onOpenCloudDb}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer"
-                  title="Supabase Cloud Sync Status"
-                >
-                  <Database className="w-3 h-3 text-emerald-600" />
-                  <span>Cloud</span>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured() ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -286,22 +271,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
                 {(currentUser.isAgent || currentRole === 'agent') ? `Agent Portal (${currentUser.fullName})` : currentUser.fullName}
               </span>
-            </button>
-          )}
-
-          {/* TAB 5.5: Cloud Database & Sync (Mobile & Desktop) */}
-          {onOpenCloudDb && (
-            <button
-              onClick={onOpenCloudDb}
-              className="relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-2.5 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group cursor-pointer shrink-0"
-              title="Supabase Cloud Database & Cross-Device Sync"
-              aria-label="Cloud Database & Sync"
-            >
-              <Database className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0" />
-              <span className="hidden xl:inline font-semibold text-xs whitespace-nowrap">
-                Cloud
-              </span>
-              <span className={`w-1.5 h-1.5 rounded-full ${isSupabaseConfigured() ? 'bg-emerald-500' : 'bg-amber-500'}`} />
             </button>
           )}
 

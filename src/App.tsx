@@ -24,7 +24,6 @@ import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet'
 import { fetchAllListings, saveNewListing, updateAvailability, confirmFreshness } from './services/listingService';
 import { fetchAllBookings, saveNewBooking, updateBookingStatus } from './services/bookingService';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from './utils/supabaseClient';
-import { CloudDatabaseModal } from './components/UI/CloudDatabaseModal';
 
 // Initial User Profile (Tenant Demo User)
 const INITIAL_USER: UserProfile = {
@@ -306,7 +305,6 @@ export function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMyPassesOpen, setIsMyPassesOpen] = useState(false);
   const [isBecomeAgentOpen, setIsBecomeAgentOpen] = useState(false);
-  const [isCloudDbModalOpen, setIsCloudDbModalOpen] = useState(false);
 
   // For first-time visitors, open signup modal on arrival if they haven't skipped yet
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(() => {
@@ -772,7 +770,6 @@ export function App() {
         onOpenLogin={handleOpenLogin}
         isAuthenticated={isAuthenticated}
         onOpenAgentSignup={handleOpenAgentSignup}
-        onOpenCloudDb={() => setIsCloudDbModalOpen(true)}
       />
 
       {/* 2. Main Content Area */}
@@ -869,7 +866,6 @@ export function App() {
               setCurrentRole('seeker');
               setUserView('feed');
             }}
-            onOpenCloudDb={() => setIsCloudDbModalOpen(true)}
           />
         </main>
       )}
@@ -959,17 +955,6 @@ export function App() {
           booking={unlockedSheetData.booking}
         />
       )}
-
-      {/* 6. Live Supabase Cloud Database & Cross-Device Sync Modal */}
-      <CloudDatabaseModal
-        isOpen={isCloudDbModalOpen}
-        onClose={() => setIsCloudDbModalOpen(false)}
-        onSyncCompleted={() => {
-          fetchAllListings().then((fetched) => {
-            if (fetched && fetched.length > 0) setListings(fetched);
-          });
-        }}
-      />
     </div>
   );
 }

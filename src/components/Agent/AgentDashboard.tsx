@@ -35,7 +35,6 @@ interface AgentDashboardProps {
   onUpdateAvailability?: (listingId: string, status: ListingAvailability) => void;
   onConfirmFreshness?: (listingId: string) => void;
   onSwitchToSeeker?: () => void;
-  onOpenCloudDb?: () => void;
 }
 
 export const AgentDashboard: React.FC<AgentDashboardProps> = ({
@@ -48,7 +47,6 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   onUpdateAvailability,
   onConfirmFreshness,
   onSwitchToSeeker,
-  onOpenCloudDb,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'requests' | 'listings'>('requests');
@@ -166,18 +164,6 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto">
-          {onOpenCloudDb && (
-            <button
-              onClick={onOpenCloudDb}
-              className="flex-1 sm:flex-none py-2.5 px-3.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#000004] text-xs font-bold flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer"
-              title="Supabase live cloud connection & cross-device synchronization"
-            >
-              <Database className="w-4 h-4 text-emerald-600" />
-              <span className="hidden xs:inline">Cloud Database</span>
-              <span className={`w-2 h-2 rounded-full ${isSupabaseConfigured() ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            </button>
-          )}
-
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-colors"
@@ -497,37 +483,6 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
       {/* TAB 2: MY LISTINGS */}
       {activeTab === 'listings' && (
         <div className="space-y-4">
-          {/* Cloud Database & Cross-Device Sync Quick Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                <Database className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold text-[#000004] flex items-center gap-2">
-                  <span>Supabase Cross-Device Sync</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    isSupabaseConfigured() ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {isSupabaseConfigured() ? 'Cloud Live' : 'Local Storage Mode'}
-                  </span>
-                </h4>
-                <p className="text-[11px] text-[#70798C]">
-                  Properties listed on desktop automatically sync so tenants on mobile can view & book immediately.
-                </p>
-              </div>
-            </div>
-            {onOpenCloudDb && (
-              <button
-                onClick={onOpenCloudDb}
-                className="w-full sm:w-auto px-3.5 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer shrink-0"
-              >
-                <UploadCloud className="w-3.5 h-3.5" />
-                <span>Sync Properties Now</span>
-              </button>
-            )}
-          </div>
-
           {agentListings.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-[#E5E7EB] p-10 sm:p-14 shadow-xs text-center space-y-4">
               <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 text-[#70798C] flex items-center justify-center mx-auto">
