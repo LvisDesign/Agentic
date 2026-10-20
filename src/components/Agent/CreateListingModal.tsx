@@ -16,6 +16,7 @@ import { PropertyListing, DeltaCity, PropertyType, NigerianState, UserProfile } 
 import { formatNaira, formatCurrencyInput, parseCurrencyInput } from '../../utils/formatters';
 import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
+import { processUploadedFile, DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 
 const NIGERIAN_STATE_OPTIONS: DropdownOption[] = [
   {
@@ -89,6 +90,7 @@ interface MediaItemDraft {
   id: string;
   type: 'image' | 'video';
   url: string;
+  poster?: string;
   caption?: string;
 }
 
@@ -144,6 +146,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
   // Media (starts completely empty, agent uploads photos/videos)
   const [uploadedMedia, setUploadedMedia] = useState<MediaItemDraft[]>([]);
+  const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
 
   // Inspection Window Rules
@@ -172,24 +175,27 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   };
 
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const newItems: MediaItemDraft[] = Array.from(files).map((file, idx) => {
-      const isVideo = file.type.startsWith('video/');
-      const objectUrl = URL.createObjectURL(file);
-      return {
-        id: `upload-${Date.now()}-${idx}`,
-        type: isVideo ? 'video' : 'image',
-        url: objectUrl,
-        caption: file.name.replace(/\.[^/.]+$/, ''),
-      };
-    });
-
-    setUploadedMedia((prev) => [...prev, ...newItems]);
+    setIsProcessingMedia(true);
     setMediaError(null);
-    e.target.value = '';
+
+    try {
+      const fileList = Array.from(files);
+      const processed = await Promise.all(
+        fileList.map((file, idx) => processUploadedFile(file, uploadedMedia.length + idx))
+      );
+
+      setUploadedMedia((prev) => [...prev, ...processed]);
+    } catch (err) {
+      console.error('Failed to process uploaded media files:', err);
+      setMediaError('Could not process some files. Please check formats and try again.');
+    } finally {
+      setIsProcessingMedia(false);
+      e.target.value = '';
+    }
   };
 
   const handleRemoveMedia = (id: string) => {
@@ -226,8 +232,10 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       waterSupply: undefined,
       description: `Newly published verified listing in ${neighborhood}, ${city}. Inspected and approved under DeltaRent fair regional tenancy standards.`,
       media: uploadedMedia.map((item, i) => ({
+        id: item.id,
         type: item.type,
         url: item.url,
+        poster: item.poster,
         caption: item.caption || `Property view ${i + 1}`,
       })),
       fees: {
@@ -640,15 +648,29 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             <div>
               <label 
                 htmlFor="agent-media-files"
-                className="cursor-pointer w-full py-3.5 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-[#E5E7EB] hover:border-[#000004]/40 text-[#000004] font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs select-none active:scale-[0.99]"
+                className={`w-full py-3.5 px-4 rounded-xl border-2 border-dashed font-semibold text-xs flex items-center justify-center gap-2 transition-all shadow-2xs select-none ${
+                  isProcessingMedia 
+                    ? 'bg-amber-50/70 border-amber-300 text-amber-900 cursor-wait' 
+                    : 'cursor-pointer bg-slate-50 hover:bg-slate-100 border-[#E5E7EB] hover:border-[#000004]/40 text-[#000004] active:scale-[0.99]'
+                }`}
               >
-                <Upload className="w-4 h-4 text-[#000004]" />
-                <span>Upload Photos & Videos</span>
+                {isProcessingMedia ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span>Optimizing and saving media files...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 text-[#000004]" />
+                    <span>Upload Photos & Walkthrough Videos</span>
+                  </>
+                )}
                 <input
                   id="agent-media-files"
                   type="file"
                   accept="image/*,video/*"
                   multiple
+                  disabled={isProcessingMedia}
                   onChange={handleFileUpload}
                   className="hidden"
                 />
@@ -679,6 +701,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                     {item.type === 'video' ? (
                       <video
                         src={item.url}
+                        poster={item.poster}
                         className="w-full h-full object-cover"
                         muted
                         playsInline
@@ -687,6 +710,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                       <img 
                         src={item.url} 
                         alt={item.caption || 'preview'} 
+                        onError={(e) => { e.currentTarget.src = DEFAULT_FALLBACK_IMAGE; }}
                         className="w-full h-full object-cover" 
                       />
                     )}

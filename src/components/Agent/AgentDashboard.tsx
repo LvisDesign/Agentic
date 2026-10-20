@@ -13,11 +13,13 @@ import {
   ArrowUpRight,
   Building,
   Phone,
-  MessageSquare
+  MessageSquare,
+  Film
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, AgentProfile, UserProfile, ListingAvailability } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { CreateListingModal } from './CreateListingModal';
+import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 
 interface AgentDashboardProps {
   currentUser?: UserProfile;
@@ -510,12 +512,37 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                     key={prop.id}
                     className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-xs flex flex-col"
                   >
-                    <div className="h-44 relative">
-                      <img
-                        src={prop.media[0]?.url}
-                        alt={prop.title}
-                        className="w-full h-full object-cover"
-                      />
+                    <div className="h-44 relative bg-slate-900 overflow-hidden">
+                      {prop.media[0]?.type === 'video' ? (
+                        <div className="w-full h-full relative">
+                          <img
+                            src={prop.media[0]?.poster || prop.media[0]?.url || DEFAULT_FALLBACK_IMAGE}
+                            alt={prop.title}
+                            onError={(e) => {
+                              e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                            }}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+                            <span className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center shadow-lg border border-white/20">
+                              <Film className="w-4 h-4 text-amber-300" />
+                            </span>
+                          </div>
+                          <span className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 border border-white/10 z-10">
+                            <Film className="w-3 h-3 text-amber-300" />
+                            Walkthrough
+                          </span>
+                        </div>
+                      ) : (
+                        <img
+                          src={prop.media[0]?.url || DEFAULT_FALLBACK_IMAGE}
+                          alt={prop.title}
+                          onError={(e) => {
+                            e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                          }}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
                       <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium">
                         {prop.city}, Delta
                       </div>

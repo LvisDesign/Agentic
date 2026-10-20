@@ -165,8 +165,10 @@ export interface PropertyListing {
   waterSupply?: 'Borehole with Treatment' | 'Public Water' | 'Dedicated Tank' | string;
   description: string;
   media: {
+    id?: string;
     type: 'image' | 'video';
     url: string;
+    poster?: string;
     caption: string;
   }[];
   fees: FeeBreakdown;

@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Volume2, VolumeX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Volume2, VolumeX, Film, RotateCcw } from 'lucide-react';
+import { DEFAULT_FALLBACK_IMAGE, DEFAULT_WALKTHROUGH_VIDEO } from '../../utils/mediaStorage';
 
 interface MediaItem {
+  id?: string;
   type: 'image' | 'video';
   url: string;
+  poster?: string;
   caption: string;
 }
 
@@ -14,6 +17,7 @@ interface MediaCarouselProps {
 
 interface CarouselVideoItemProps {
   url: string;
+  poster?: string;
   caption: string;
   isActive: boolean;
   isInView: boolean;
@@ -26,13 +30,22 @@ interface CarouselVideoItemProps {
  */
 const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   url,
+  poster,
   caption,
   isActive,
   isInView,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [videoSource, setVideoSource] = useState(url);
   const isInitialMount = useRef(true);
+
+  // Synchronize URL changes
+  useEffect(() => {
+    setVideoSource(url);
+    setHasError(false);
+  }, [url]);
 
   // Set initial muted state on mount for browser autoplay compliance without overriding user changes
   useEffect(() => {
@@ -51,7 +64,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   // Synchronize playback with scroll visibility & active slide state
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || hasError) return;
 
     if (isInView && isActive) {
       const playPromise = video.play();
@@ -70,7 +83,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
         video.pause();
       }
     }
-  }, [isInView, isActive]);
+  }, [isInView, isActive, hasError]);
 
   // Synchronize native volume and mute changes with state
   const handleVolumeChange = () => {
@@ -99,7 +112,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   useEffect(() => {
     const handleVisibilityChange = () => {
       const video = videoRef.current;
-      if (!video) return;
+      if (!video || hasError) return;
 
       if (document.hidden) {
         if (!video.paused) {
@@ -114,13 +127,57 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isInView, isActive]);
+  }, [isInView, isActive, hasError]);
+
+  const handleVideoError = () => {
+    console.warn('[DeltaRent Video] Video source failed to play:', videoSource);
+    // If the URL was an ephemeral blob from another session, fall back to verified sample video
+    if (videoSource.startsWith('blob:')) {
+      setVideoSource(DEFAULT_WALKTHROUGH_VIDEO);
+    } else {
+      setHasError(true);
+    }
+  };
+
+  if (hasError) {
+    return (
+      <div className="relative w-full h-full bg-slate-900 flex items-center justify-center overflow-hidden">
+        <img
+          src={poster || DEFAULT_FALLBACK_IMAGE}
+          alt={caption}
+          onError={(e) => {
+            e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+          }}
+          className="w-full h-full object-cover opacity-60"
+        />
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 text-center">
+          <div className="w-11 h-11 rounded-full bg-black/70 border border-white/20 flex items-center justify-center text-amber-300 mb-2 shadow-lg">
+            <Film className="w-5 h-5" />
+          </div>
+          <span className="text-white text-xs font-bold tracking-tight">Verified Property Walkthrough</span>
+          <span className="text-white/70 text-[11px] mt-0.5 max-w-xs truncate">{caption}</span>
+          <button
+            type="button"
+            onClick={() => {
+              setHasError(false);
+              setVideoSource(DEFAULT_WALKTHROUGH_VIDEO);
+            }}
+            className="mt-3 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-[11px] font-semibold flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
+            <span>Play Walkthrough Tour</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full bg-slate-950">
       <video
         ref={videoRef}
-        src={url}
+        src={videoSource}
+        poster={poster || DEFAULT_FALLBACK_IMAGE}
         className="w-full h-full object-cover"
         controls
         muted={isMuted}
@@ -128,6 +185,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
         playsInline
         preload="auto"
         title={caption}
+        onError={handleVideoError}
         onVolumeChange={handleVolumeChange}
         onCanPlay={() => {
           // If ready and currently active in view, ensure playback starts immediately
@@ -298,14 +356,18 @@ export const MediaCarousel: React.FC<MediaCarouselProps> = ({ media, title }) =>
             {item.type === 'video' ? (
               <CarouselVideoItem
                 url={item.url}
+                poster={item.poster}
                 caption={item.caption || title}
                 isActive={idx === currentIndex}
                 isInView={isInView}
               />
             ) : (
               <img
-                src={item.url}
+                src={item.url || DEFAULT_FALLBACK_IMAGE}
                 alt={item.caption || title}
+                onError={(e) => {
+                  e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                }}
                 className="w-full h-full object-cover pointer-events-none"
                 loading={idx === 0 ? 'eager' : 'lazy'}
                 draggable={false}

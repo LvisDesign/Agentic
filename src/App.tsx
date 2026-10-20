@@ -9,6 +9,7 @@ import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
 import { matchesLocation } from './utils/locationMatcher';
 import { AgentDashboard } from './components/Agent/AgentDashboard';
+import { FALLBACK_PROPERTY_IMAGES } from './utils/mediaStorage';
 import { UserDashboard } from './components/User/UserDashboard';
 import { BecomeAgentModal } from './components/User/BecomeAgentModal';
 import { SignupModal } from './components/User/SignupModal';
@@ -100,37 +101,52 @@ const INITIAL_BOOKINGS: BookingRecord[] = [
 
 export function App() {
   const [listings, setListings] = useState<PropertyListing[]>(() => {
-    const isLocal = isLocalUrl();
     const saved = localStorage.getItem('deltarent_listings');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const cleaned = parsed.map((item: PropertyListing) => {
-            if (item.id && item.id.startsWith('prop-agent-')) {
+          // Keep custom agent listings created on this device, and sanitize any expired blob URLs
+          const customAgentListings = parsed
+            .filter((item: PropertyListing) => item.id && item.id.startsWith('prop-agent-'))
+            .map((item: PropertyListing, idx: number) => {
+              const sanitizedMedia = (item.media || []).map((m, mIdx) => {
+                const isBlob = typeof m.url === 'string' && m.url.startsWith('blob:');
+                if (isBlob) {
+                  const fallback = FALLBACK_PROPERTY_IMAGES[(idx + mIdx) % FALLBACK_PROPERTY_IMAGES.length];
+                  return {
+                    ...m,
+                    url: m.poster || fallback,
+                    poster: m.poster || fallback,
+                  };
+                }
+                return m;
+              });
+
               return {
                 ...item,
-                electricityStatus: undefined,
-                waterSupply: undefined,
+                media: sanitizedMedia.length > 0 ? sanitizedMedia : [{
+                  type: 'image' as const,
+                  url: FALLBACK_PROPERTY_IMAGES[idx % FALLBACK_PROPERTY_IMAGES.length],
+                  caption: 'Property Exterior',
+                }],
               };
-            }
-            return item;
-          });
+            });
 
-          // On deployed environments, exclude demo listings so only real listings created by agents are shown
-          if (!isLocal) {
-            return cleaned.filter((item: PropertyListing) =>
-              item.id.startsWith('prop-agent-') || !INITIAL_LISTINGS.some((m) => m.id === item.id)
-            );
-          }
+          // Any other non-platform custom listings
+          const platformIds = new Set(INITIAL_LISTINGS.map((l) => l.id));
+          const otherCustomListings = parsed.filter((item: PropertyListing) =>
+            !item.id.startsWith('prop-agent-') && !platformIds.has(item.id)
+          );
 
-          return cleaned;
+          // Always return platform verified listings combined with custom agent listings
+          return [...customAgentListings, ...INITIAL_LISTINGS, ...otherCustomListings];
         }
       } catch (e) {
-        // fallback
+        console.error('Failed to parse saved listings', e);
       }
     }
-    return isLocal ? INITIAL_LISTINGS : [];
+    return INITIAL_LISTINGS;
   });
 
   const [bookings, setBookings] = useState<BookingRecord[]>(() => {

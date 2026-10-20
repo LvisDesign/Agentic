@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
+import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 
 interface UserDashboardProps {
   currentUser: UserProfile;
@@ -605,10 +606,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   key={prop.id}
                   className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-xs flex flex-col hover:border-[#342A21]/50 transition-colors"
                 >
-                  <div className="h-48 relative">
+                  <div className="h-48 relative bg-slate-900 overflow-hidden">
                     <img
-                      src={prop.media[0]?.url}
+                      src={prop.media[0]?.poster || prop.media[0]?.url || DEFAULT_FALLBACK_IMAGE}
                       alt={prop.title}
+                      onError={(e) => {
+                        e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                      }}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium flex items-center gap-1">
@@ -708,10 +712,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   key={prop.id}
                   className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-xs flex flex-col"
                 >
-                  <div className="h-44 relative">
+                  <div className="h-44 relative bg-slate-900 overflow-hidden">
                     <img
-                      src={prop.media[0]?.url}
+                      src={prop.media[0]?.poster || prop.media[0]?.url || DEFAULT_FALLBACK_IMAGE}
                       alt={prop.title}
+                      onError={(e) => {
+                        e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                      }}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium">
