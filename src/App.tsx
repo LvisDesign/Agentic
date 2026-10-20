@@ -3,7 +3,7 @@ import { INITIAL_LISTINGS } from './data/mockListings';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability } from './types/marketplace';
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge } from './utils/pwa';
-import { saveRegisteredUser, isBookingForUser, getMyDeviceBookingIds, recordMyDeviceBookingId, clearMyDeviceBookingIds } from './utils/userRegistry';
+import { saveRegisteredUser, isBookingForUser, getMyDeviceBookingIds, recordMyDeviceBookingId, clearMyDeviceBookingIds, getNotifiedBookingIds, recordNotifiedBookingId } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
@@ -280,6 +280,15 @@ export function App() {
     return (isAuth && isLocal) ? INITIAL_USER : GUEST_USER;
   });
 
+  // Track booking IDs created on this specific device/session
+  const [myDeviceBookingIds, setMyDeviceBookingIds] = useState<Set<string>>(() => getMyDeviceBookingIds());
+
+  // Strict User Isolation: Filter bookings that belong strictly to THIS logged-in user / tenant
+  // Ensures one tenant's booking or approval never appears on another tenant's screen or feed card
+  const userBookings = useMemo(() => {
+    return bookings.filter((b) => isBookingForUser(b, currentUser, myDeviceBookingIds));
+  }, [bookings, currentUser, myDeviceBookingIds]);
+
   // Navigation State Initialization: Resolves from URL Hash or localStorage
   // Ensures refreshing keeps users on their current page (Explore, Agent Portal, Dashboard, Passes)
   const initialNav = useMemo(() => {
@@ -454,10 +463,10 @@ export function App() {
         setBookings((prev) => prev.map((b) => (b.id === event.booking!.id ? event.booking! : b)));
 
         const targetListing = event.listing || listings.find((p) => p.id === event.booking!.propertyId);
-        const isApplicant = currentUser.phone && event.booking.applicantPhone &&
-          currentUser.phone.replace(/[^0-9]/g, '').slice(-10) === event.booking.applicantPhone.replace(/[^0-9]/g, '').slice(-10);
+        const isApplicant = isBookingForUser(event.booking, currentUser, myDeviceBookingIds);
 
-        if (isApplicant) {
+        if (isApplicant && !currentUser.isAgent) {
+          recordNotifiedBookingId(event.booking.id);
           const agentName = targetListing?.agent.fullName || 'The Lister';
           setPushNotification({
             title: '🎉 Inspection Approved!',
@@ -474,6 +483,11 @@ export function App() {
           });
           showDeviceNotification('🎉 Inspection Approved!', {
             body: `${agentName} confirmed your inspection. Contact details unlocked!`,
+            onClick: () => {
+              if (targetListing && event.booking) {
+                setUnlockedSheetData({ listing: targetListing, booking: event.booking });
+              }
+            },
           });
           playNotificationSound('success');
         }
@@ -575,29 +589,30 @@ export function App() {
               } else if (payload.eventType === 'UPDATE' && payload.new) {
                 const updatedRow = payload.new as any;
                 const status = updatedRow.status;
-                const applicantPhone = updatedRow.applicant_phone || updatedRow.applicantPhone;
                 const propId = updatedRow.property_id || updatedRow.propertyId;
                 const targetListing = listings.find((p) => p.id === propId);
 
-                const isMe = currentUser.phone && applicantPhone &&
-                  currentUser.phone.replace(/[^0-9]/g, '').slice(-10) === applicantPhone.replace(/[^0-9]/g, '').slice(-10);
+                const bookingRecord: BookingRecord = {
+                  id: updatedRow.id,
+                  propertyId: propId,
+                  slotId: updatedRow.slot_id || updatedRow.slotId,
+                  slotTimeWindow: updatedRow.slot_time_window || updatedRow.slotTimeWindow,
+                  slotDate: updatedRow.slot_date || updatedRow.slotDate,
+                  applicantName: updatedRow.applicant_name || updatedRow.applicantName || 'Applicant',
+                  applicantPhone: updatedRow.applicant_phone || updatedRow.applicantPhone,
+                  applicantEmail: updatedRow.applicant_email || updatedRow.applicantEmail,
+                  status: status as any,
+                  inspectionFeeAmount: Number(updatedRow.inspection_fee_amount || 0),
+                  createdAt: updatedRow.created_at || updatedRow.createdAt || new Date().toISOString(),
+                  confirmedAt: updatedRow.confirmed_at || updatedRow.confirmedAt || new Date().toISOString(),
+                };
 
-                if (isMe && (status === 'CONFIRMED_UNLOCKED' || status === 'APPROVED_CONFIRMED')) {
+                const isMe = isBookingForUser(bookingRecord, currentUser, myDeviceBookingIds);
+
+                if (isMe && !currentUser.isAgent && (status === 'CONFIRMED_UNLOCKED' || status === 'APPROVED_CONFIRMED')) {
+                  recordNotifiedBookingId(bookingRecord.id);
                   const agentName = targetListing?.agent.fullName || 'Agent';
                   const propTitle = targetListing?.title || 'the property';
-                  const bookingRecord: BookingRecord = {
-                    id: updatedRow.id,
-                    propertyId: propId,
-                    slotId: updatedRow.slot_id || updatedRow.slotId,
-                    slotTimeWindow: updatedRow.slot_time_window || updatedRow.slotTimeWindow,
-                    slotDate: updatedRow.slot_date || updatedRow.slotDate,
-                    applicantName: updatedRow.applicant_name || updatedRow.applicantName || 'Applicant',
-                    applicantPhone: applicantPhone,
-                    status: 'CONFIRMED_UNLOCKED',
-                    inspectionFeeAmount: 0,
-                    createdAt: updatedRow.created_at || updatedRow.createdAt || new Date().toISOString(),
-                    confirmedAt: updatedRow.confirmed_at || updatedRow.confirmedAt || new Date().toISOString(),
-                  };
 
                   setPushNotification({
                     title: '🎉 Inspection Approved!',
@@ -614,6 +629,11 @@ export function App() {
                   });
                   showDeviceNotification('🎉 Inspection Approved!', {
                     body: `${agentName} confirmed your inspection. Contact details unlocked!`,
+                    onClick: () => {
+                      if (targetListing) {
+                        setUnlockedSheetData({ listing: targetListing, booking: bookingRecord });
+                      }
+                    },
                   });
                   playNotificationSound('success');
                 }
@@ -634,16 +654,7 @@ export function App() {
       isMounted = false;
       unsubBroadcast();
     };
-  }, [currentUser.id, currentUser.isAgent, currentUser.phone, listings]);
-
-  // Track booking IDs created on this specific device/session
-  const [myDeviceBookingIds, setMyDeviceBookingIds] = useState<Set<string>>(() => getMyDeviceBookingIds());
-
-  // Strict User Isolation: Filter bookings that belong strictly to THIS logged-in user / tenant
-  // Ensures one tenant's booking or approval never appears on another tenant's screen or feed card
-  const userBookings = useMemo(() => {
-    return bookings.filter((b) => isBookingForUser(b, currentUser, myDeviceBookingIds));
-  }, [bookings, currentUser, myDeviceBookingIds]);
+  }, [currentUser, myDeviceBookingIds, listings]);
 
   // Synchronize dynamic home-screen badge count strictly with THIS user's active inspection passes
   useEffect(() => {
@@ -656,6 +667,52 @@ export function App() {
       clearAppBadge();
     }
   }, [userBookings]);
+
+  // Persistent Tenant Notification Trigger:
+  // Guarantees the applying tenant receives their celebratory alert & unlocked contact prompt
+  // even if their app was closed, offline, or logged out when the agent approved the booking.
+  useEffect(() => {
+    if (!currentUser || currentUser.isAgent) return;
+
+    const notified = getNotifiedBookingIds();
+    const unnotifiedConfirmedBooking = userBookings.find(
+      (b) =>
+        (b.status === 'CONFIRMED_UNLOCKED' || b.status === 'APPROVED_CONFIRMED') &&
+        !notified.has(b.id)
+    );
+
+    if (unnotifiedConfirmedBooking) {
+      recordNotifiedBookingId(unnotifiedConfirmedBooking.id);
+
+      const targetListing = listings.find((p) => p.id === unnotifiedConfirmedBooking.propertyId);
+      const agentName = targetListing?.agent.fullName || 'The Lister';
+      const propTitle = targetListing?.title || 'the property';
+
+      setPushNotification({
+        title: '🎉 Inspection Approved!',
+        body: `${agentName} confirmed your inspection for "${propTitle}". Contact details unlocked!`,
+        type: 'inspection_confirmed',
+        listing: targetListing,
+        booking: unnotifiedConfirmedBooking,
+        actionText: 'Tap to view unlocked contact',
+        onAction: () => {
+          if (targetListing) {
+            setUnlockedSheetData({ listing: targetListing, booking: unnotifiedConfirmedBooking });
+          }
+        },
+      });
+
+      playNotificationSound('success');
+      showDeviceNotification('🎉 Inspection Approved!', {
+        body: `${agentName} confirmed your inspection for "${propTitle}". Contact details unlocked!`,
+        onClick: () => {
+          if (targetListing) {
+            setUnlockedSheetData({ listing: targetListing, booking: unnotifiedConfirmedBooking });
+          }
+        },
+      });
+    }
+  }, [userBookings, listings, currentUser]);
 
   // Authentication gating & resume booking state
   const [pendingBookingListing, setPendingBookingListing] = useState<PropertyListing | null>(null);
@@ -897,25 +954,15 @@ export function App() {
       listing: targetListing,
     });
 
-    // Trigger instant PWA Web Push notification simulation
-    const listerName = targetListing.agent.fullName || 'Chief Oghenetega Macaulay';
-    const startTime = targetBooking.slotTimeWindow.includes('–')
-      ? targetBooking.slotTimeWindow.split('–')[0].trim()
-      : targetBooking.slotTimeWindow.includes('-')
-      ? targetBooking.slotTimeWindow.split('-')[0].trim()
-      : '2:00 PM';
-
-    setPushNotification({
-      title: 'Inspection Approved!',
-      body: `${listerName} confirmed your inspection for tomorrow at ${startTime}. Tap to view contact details.`,
-      listing: targetListing,
-      booking: updatedBooking,
-      type: 'inspection_confirmed',
-      actionText: 'Tap to view unlocked contact details',
-      onAction: () => {
-        setUnlockedSheetData({ listing: targetListing, booking: updatedBooking });
-      },
-    });
+    // Provide immediate feedback to the AGENT that they successfully confirmed the applicant
+    if (currentUser.isAgent) {
+      setPushNotification({
+        title: '✅ Inspection Approved!',
+        body: `You approved ${targetBooking.applicantName}'s inspection for "${targetListing.title}". Contact details unlocked for applicant.`,
+        type: 'general',
+      });
+      playNotificationSound('info');
+    }
   };
 
   // Handler: Agent declines a slot -> Automatically promotes next queued applicant!

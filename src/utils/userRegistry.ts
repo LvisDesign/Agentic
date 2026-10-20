@@ -315,6 +315,36 @@ export function clearMyDeviceBookingIds(): void {
   } catch (_) {}
 }
 
+const NOTIFIED_BOOKINGS_STORAGE_KEY = 'deltarent_notified_confirmed_bookings';
+
+/**
+ * Returns a Set of confirmed booking IDs that have already triggered a notification to the tenant.
+ */
+export function getNotifiedBookingIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(NOTIFIED_BOOKINGS_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch (_) {}
+  return new Set();
+}
+
+/**
+ * Marks a confirmed booking ID as notified.
+ */
+export function recordNotifiedBookingId(id: string): void {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    const set = getNotifiedBookingIds();
+    set.add(id);
+    localStorage.setItem(NOTIFIED_BOOKINGS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+  } catch (_) {}
+}
+
+
 /**
  * Determines whether a given booking belongs strictly to the specified user/tenant.
  * Ensures strict user isolation so that approval or booking of one tenant never affects
