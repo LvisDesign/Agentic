@@ -21,7 +21,7 @@ import { PostAdModal } from './components/Feed/PostAdModal';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
-import { fetchAllListings, saveNewListing, updateAvailability, confirmFreshness } from './services/listingService';
+import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness } from './services/listingService';
 import { fetchAllBookings, saveNewBooking, updateBookingStatus } from './services/bookingService';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from './utils/supabaseClient';
 
@@ -611,6 +611,18 @@ export function App() {
     saveNewListing(newListing);
   };
 
+  // Handler: Update listing from agent editor
+  const handleListingUpdated = (updatedListing: PropertyListing) => {
+    setListings((prev) => prev.map((l) => (l.id === updatedListing.id ? updatedListing : l)));
+    updateListing(updatedListing);
+  };
+
+  // Handler: Delete listing permanently
+  const handleDeleteListing = async (listingId: string) => {
+    setListings((prev) => prev.filter((l) => l.id !== listingId));
+    await deleteListing(listingId);
+  };
+
   // Handler: User upgrades to Agent
   const handleBecomeAgent = (agentData: {
     agencyName: string;
@@ -860,6 +872,8 @@ export function App() {
             onAcceptBooking={handleAcceptBooking}
             onRejectBooking={handleRejectBooking}
             onListingCreated={handleListingCreated}
+            onListingUpdated={handleListingUpdated}
+            onDeleteListing={handleDeleteListing}
             onUpdateAvailability={handleUpdateListingAvailability}
             onConfirmFreshness={handleConfirmListingFreshness}
             onSwitchToSeeker={() => {

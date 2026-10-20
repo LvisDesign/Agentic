@@ -82,8 +82,10 @@ const SUGGESTED_ADDONS: string[] = [
 interface CreateListingModalProps {
   isOpen: boolean;
   currentUser?: UserProfile;
+  initialListing?: PropertyListing | null;
   onClose: () => void;
   onListingCreated: (newListing: PropertyListing) => void;
+  onListingUpdated?: (updatedListing: PropertyListing) => void;
 }
 
 interface MediaItemDraft {
@@ -94,13 +96,15 @@ interface MediaItemDraft {
   caption?: string;
 }
 
-
 export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   isOpen,
   currentUser,
+  initialListing,
   onClose,
   onListingCreated,
+  onListingUpdated,
 }) => {
+  const isEditing = Boolean(initialListing);
   // Form State
   const initialCity = ((currentUser?.operatingCity || currentUser?.city || 'Asaba') as DeltaCity);
   const [title, setTitle] = useState('');
@@ -121,7 +125,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   const [serviceChargeInput, setServiceChargeInput] = useState('');
   const [inspectionFeeInput, setInspectionFeeInput] = useState('');
 
-  // Optional Property Add-ons & Amenities (e.g. 33KVA, Internet, Solar, etc.)
   const [addons, setAddons] = useState<string[]>([]);
   const [addonInput, setAddonInput] = useState('');
 
@@ -144,7 +147,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
     setAddons((prev) => prev.filter((a) => a !== itemToRemove));
   };
 
-  // Media (starts completely empty, agent uploads photos/videos)
+  // Media
   const [uploadedMedia, setUploadedMedia] = useState<MediaItemDraft[]>([]);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
@@ -157,6 +160,64 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
     '2:00 PM – 3:00 PM',
     '4:00 PM – 5:00 PM'
   ]);
+
+  // Synchronize state when editing an existing listing or opening new creation
+  React.useEffect(() => {
+    if (initialListing) {
+      setTitle(initialListing.title || '');
+      setSelectedState(initialListing.state || 'Delta State');
+      setCity(initialListing.city || initialCity);
+      setNeighborhood(initialListing.neighborhood || '');
+      setPropertyType(initialListing.propertyType || '2-Bedroom Flat');
+      setBedrooms(initialListing.bedrooms || 2);
+      setBathrooms(initialListing.bathrooms || 2);
+      setRentPeriod(initialListing.fees?.rentPeriod || 'per annum');
+      setBaseRentInput(formatCurrencyInput(String(initialListing.fees?.baseRent || '')));
+      setCautionFeeInput(formatCurrencyInput(String(initialListing.fees?.cautionFee || '')));
+      setLegalAgencyFeeInput(formatCurrencyInput(String(initialListing.fees?.legalAndAgencyFee || '')));
+      setServiceChargeInput(formatCurrencyInput(String(initialListing.fees?.serviceCharge || '')));
+      setInspectionFeeInput(formatCurrencyInput(String(initialListing.inspectionFee || '')));
+      setAddons(initialListing.addons || []);
+      setUploadedMedia(
+        (initialListing.media || []).map((m, idx) => ({
+          id: m.id || `media-existing-${idx}-${Date.now()}`,
+          type: m.type,
+          url: m.url,
+          poster: m.poster,
+          caption: m.caption,
+        }))
+      );
+      if (initialListing.inspectionDays && initialListing.inspectionDays.length > 0) {
+        setSelectedDays(initialListing.inspectionDays);
+      }
+      if (initialListing.inspectionSlots && initialListing.inspectionSlots.length > 0) {
+        setTimeSlots(initialListing.inspectionSlots.map((s) => s.timeWindow));
+      }
+    } else if (isOpen) {
+      setTitle('');
+      setSelectedState((currentUser?.operatingState as NigerianState) || 'Delta State');
+      setCity(initialCity);
+      setNeighborhood('');
+      setPropertyType('2-Bedroom Flat');
+      setBedrooms(2);
+      setBathrooms(2);
+      setRentPeriod('per annum');
+      setBaseRentInput('');
+      setCautionFeeInput('');
+      setLegalAgencyFeeInput('');
+      setServiceChargeInput('');
+      setInspectionFeeInput('');
+      setAddons([]);
+      setUploadedMedia([]);
+      setSelectedDays(['Mon', 'Wed', 'Fri', 'Sat']);
+      setTimeSlots([
+        '10:00 AM – 11:00 AM',
+        '12:00 PM – 1:00 PM',
+        '2:00 PM – 3:00 PM',
+        '4:00 PM – 5:00 PM'
+      ]);
+    }
+  }, [initialListing, isOpen]);
 
   if (!isOpen) return null;
 
@@ -215,6 +276,58 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       return;
     }
 
+    if (isEditing && initialListing) {
+      const updatedListing: PropertyListing = {
+        ...initialListing,
+        title: title || `${propertyType} in ${neighborhood || city}`,
+        state: selectedState,
+        city,
+        neighborhood: neighborhood || 'Central Residential District',
+        fullAddress: `${neighborhood ? `${neighborhood}, ` : ''}${city}, ${selectedState}`,
+        propertyType,
+        bedrooms,
+        bathrooms,
+        toilets: bathrooms + 1,
+        isServiced: serviceChargeNum > 0,
+        media: uploadedMedia.map((item, i) => ({
+          id: item.id,
+          type: item.type,
+          url: item.url,
+          poster: item.poster,
+          caption: item.caption || `Property view ${i + 1}`,
+        })),
+        fees: {
+          baseRent: baseRentNum,
+          rentPeriod,
+          cautionFee: cautionNum,
+          legalAndAgencyFee: legalAgencyNum,
+          serviceCharge: serviceChargeNum,
+          totalMoveInPackage: totalMoveIn,
+        },
+        inspectionFee: inspectionFeeNum,
+        inspectionDays: selectedDays,
+        inspectionSlots: timeSlots.map((window, idx) => {
+          const existing = initialListing.inspectionSlots?.[idx];
+          return {
+            id: existing?.id || `slot-${idx}-${Date.now().toString().slice(-4)}`,
+            timeWindow: window,
+            date: existing?.date || 'Today',
+            capacityLimit: existing?.capacityLimit || 5,
+            bookedCount: existing?.bookedCount || 0,
+            waitlistCount: existing?.waitlistCount || 0,
+          };
+        }),
+        tags: [city, neighborhood || 'Residential', 'Direct Agent', ...addons],
+        addons: addons.length > 0 ? addons : undefined,
+      };
+
+      if (onListingUpdated) {
+        onListingUpdated(updatedListing);
+      }
+      onClose();
+      return;
+    }
+
     const newListing: PropertyListing = {
       id: `prop-agent-${Date.now()}`,
       title: title || `${propertyType} in ${neighborhood || city}`,
@@ -246,7 +359,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         serviceCharge: serviceChargeNum,
         totalMoveInPackage: totalMoveIn,
       },
-      inspectionFee: 0,
+      inspectionFee: inspectionFeeNum,
       agent: {
         id: currentUser?.id || `agt-${Date.now()}`,
         fullName: currentUser?.fullName || 'Verified Agent',
@@ -290,16 +403,16 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21] text-xs font-semibold">
-                Agent Portal
+                {isEditing ? 'Listing Editor' : 'Agent Portal'}
               </span>
             </div>
             <h3 className="font-display text-lg sm:text-xl font-bold text-[#000004] mt-1">
-              Add New Property
+              {isEditing ? 'Edit Property Listing' : 'Add New Property'}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] flex items-center justify-center transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -801,9 +914,9 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             </button>
             <button
               type="submit"
-              className="py-2.5 px-6 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-md transition-colors"
+              className="py-2.5 px-6 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-md transition-colors cursor-pointer"
             >
-              Publish Property
+              {isEditing ? 'Save Changes' : 'Publish Property'}
             </button>
           </div>
         </form>

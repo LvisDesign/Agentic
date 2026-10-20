@@ -16,7 +16,9 @@ import {
   MessageSquare,
   Film,
   Database,
-  UploadCloud
+  UploadCloud,
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, AgentProfile, UserProfile, ListingAvailability } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
@@ -32,6 +34,8 @@ interface AgentDashboardProps {
   onAcceptBooking: (bookingId: string) => void;
   onRejectBooking: (bookingId: string) => void;
   onListingCreated: (listing: PropertyListing) => void;
+  onListingUpdated?: (listing: PropertyListing) => void;
+  onDeleteListing?: (listingId: string) => void;
   onUpdateAvailability?: (listingId: string, status: ListingAvailability) => void;
   onConfirmFreshness?: (listingId: string) => void;
   onSwitchToSeeker?: () => void;
@@ -44,11 +48,16 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   onAcceptBooking,
   onRejectBooking,
   onListingCreated,
+  onListingUpdated,
+  onDeleteListing,
   onUpdateAvailability,
   onConfirmFreshness,
   onSwitchToSeeker,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
+  const [listingToDelete, setListingToDelete] = useState<PropertyListing | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'requests' | 'listings'>('requests');
   const [dashboardToast, setDashboardToast] = useState<string | null>(null);
 
@@ -676,17 +685,41 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between text-xs">
-                        <span className="text-[#70798C]">
-                          {prop.inspectionSlots.length} Time Slots
-                        </span>
-                        <button
-                          onClick={onSwitchToSeeker}
-                          className="text-[#342A21] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>View in Feed</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between text-xs flex-wrap gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setEditingListing(prop)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80 shadow-2xs active:scale-95"
+                            title="Edit property details, rent price, media, and inspection slots"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-slate-700" />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setListingToDelete(prop)}
+                            className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200 shadow-2xs active:scale-95"
+                            title="Permanently delete this property listing"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <span className="text-[#70798C] text-[11px]">
+                            {prop.inspectionSlots.length} Slots
+                          </span>
+                          <button
+                            type="button"
+                            onClick={onSwitchToSeeker}
+                            className="text-[#342A21] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>View in Feed</span>
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -697,17 +730,93 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         </div>
       )}
 
-      {/* Create Listing Modal */}
+      {/* Create or Edit Listing Modal */}
       <CreateListingModal
-        isOpen={showCreateModal}
+        isOpen={showCreateModal || Boolean(editingListing)}
         currentUser={currentUser}
-        onClose={() => setShowCreateModal(false)}
+        initialListing={editingListing}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingListing(null);
+        }}
         onListingCreated={(newListing) => {
           onListingCreated(newListing);
           setDashboardToast(`Property "${newListing.title}" added to your listings!`);
           setTimeout(() => setDashboardToast(null), 3000);
         }}
+        onListingUpdated={(updatedListing) => {
+          if (onListingUpdated) {
+            onListingUpdated(updatedListing);
+          }
+          setEditingListing(null);
+          setDashboardToast(`Changes to "${updatedListing.title}" saved successfully!`);
+          setTimeout(() => setDashboardToast(null), 3000);
+        }}
       />
+
+      {/* Delete Confirmation Modal */}
+      {listingToDelete && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setListingToDelete(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto shadow-xs">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="font-display text-lg font-bold text-[#000004]">
+                Delete Property Listing?
+              </h3>
+              <p className="text-xs text-[#70798C] leading-relaxed">
+                Are you sure you want to permanently delete <strong>"{listingToDelete.title}"</strong>? 
+                This will remove it from DeltaRent across all devices and cancel any pending inspections.
+              </p>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setListingToDelete(null)}
+                className="flex-1 py-2.5 px-4 rounded-xl border border-[#E5E7EB] text-[#70798C] hover:text-[#000004] hover:bg-slate-50 font-bold text-xs transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={async () => {
+                  if (!listingToDelete) return;
+                  setIsDeleting(true);
+                  try {
+                    if (onDeleteListing) {
+                      await onDeleteListing(listingToDelete.id);
+                    }
+                    setDashboardToast('Property listing permanently deleted.');
+                    setTimeout(() => setDashboardToast(null), 3000);
+                  } finally {
+                    setIsDeleting(false);
+                    setListingToDelete(null);
+                  }
+                }}
+                className="flex-1 py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition-colors cursor-pointer shadow-md flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Yes, Delete Listing</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Status Toast */}
       {dashboardToast && (

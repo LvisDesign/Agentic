@@ -421,3 +421,47 @@ export async function confirmFreshness(listingId: string): Promise<void> {
     }
   } catch (e) {}
 }
+
+/**
+ * Updates an existing listing in Supabase cloud database and locally
+ */
+export async function updateListing(listing: PropertyListing): Promise<void> {
+  return saveNewListing(listing);
+}
+
+/**
+ * Permanently deletes a listing from Supabase cloud database and local cache
+ */
+export async function deleteListing(listingId: string): Promise<boolean> {
+  const client = getSupabaseClient();
+  let success = true;
+
+  // 1. Delete from Supabase cloud database
+  if (isSupabaseConfigured() && client) {
+    try {
+      const { error } = await client.from('listings').delete().eq('id', listingId);
+      if (error) {
+        console.error('[DeltaRent Supabase] Error deleting listing from database:', error.message);
+        success = false;
+      } else {
+        console.log('[DeltaRent Supabase] Listing permanently deleted from cloud database:', listingId);
+      }
+    } catch (err) {
+      console.warn('[DeltaRent Supabase] Exception deleting listing:', err);
+      success = false;
+    }
+  }
+
+  // 2. Remove from local storage cache
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (saved) {
+      const existing: PropertyListing[] = JSON.parse(saved);
+      const updated = existing.filter((item) => item.id !== listingId);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    }
+  } catch (e) {}
+
+  return success;
+}
+

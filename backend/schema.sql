@@ -81,6 +81,9 @@ create policy "Public can insert listings" on public.listings for insert with ch
 drop policy if exists "Public can update listings" on public.listings;
 create policy "Public can update listings" on public.listings for update using (true);
 
+drop policy if exists "Public can delete listings" on public.listings;
+create policy "Public can delete listings" on public.listings for delete using (true);
+
 drop policy if exists "Public can read bookings" on public.bookings;
 create policy "Public can read bookings" on public.bookings for select using (true);
 
