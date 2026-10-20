@@ -85,6 +85,24 @@ create policy "Public can insert bookings" on public.bookings for insert with ch
 drop policy if exists "Public can update bookings" on public.bookings;
 create policy "Public can update bookings" on public.bookings for update using (true);
 
--- 5. Enable Realtime Sync
-alter publication supabase_realtime add table public.listings;
-alter publication supabase_realtime add table public.bookings;
+-- 5. Enable Realtime Sync (idempotent, safe to re-run)
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' 
+    and schemaname = 'public' 
+    and tablename = 'listings'
+  ) then
+    alter publication supabase_realtime add table public.listings;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' 
+    and schemaname = 'public' 
+    and tablename = 'bookings'
+  ) then
+    alter publication supabase_realtime add table public.bookings;
+  end if;
+end $$;
