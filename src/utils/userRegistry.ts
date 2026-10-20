@@ -1,4 +1,4 @@
-import { UserProfile } from '../types/marketplace';
+import { UserProfile, BookingRecord } from '../types/marketplace';
 import { isLocalUrl } from './environment';
 
 // Default seeded accounts for instant marketplace testing
@@ -275,3 +275,117 @@ export function findUserByCredential(query: string): UserProfile | null {
 
   return null;
 }
+
+const MY_BOOKINGS_STORAGE_KEY = 'deltarent_my_booking_ids';
+
+/**
+ * Returns a Set of booking IDs explicitly created on this browser / device.
+ */
+export function getMyDeviceBookingIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(MY_BOOKINGS_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch (_) {}
+  return new Set();
+}
+
+/**
+ * Records a booking ID created on this browser / device.
+ */
+export function recordMyDeviceBookingId(id: string): void {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    const set = getMyDeviceBookingIds();
+    set.add(id);
+    localStorage.setItem(MY_BOOKINGS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+  } catch (_) {}
+}
+
+/**
+ * Clears all recorded device booking IDs (e.g. on logout).
+ */
+export function clearMyDeviceBookingIds(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(MY_BOOKINGS_STORAGE_KEY);
+  } catch (_) {}
+}
+
+/**
+ * Determines whether a given booking belongs strictly to the specified user/tenant.
+ * Ensures strict user isolation so that approval or booking of one tenant never affects
+ * or displays on another tenant's screen.
+ */
+export function isBookingForUser(
+  b: BookingRecord,
+  user: UserProfile | null | undefined,
+  myDeviceBookingIds?: Set<string>
+): boolean {
+  if (!b) return false;
+
+  const hasUserIdentity = Boolean(
+    user && (user.phone || user.email || (user.fullName && user.fullName !== 'Guest User'))
+  );
+
+  // If user is authenticated / has an identity
+  if (hasUserIdentity && user) {
+    const normUserPhone = normalizePhoneNumber(user.phone || '');
+    const normBookingPhone = normalizePhoneNumber(b.applicantPhone || '');
+
+    const normUserEmail = normalizeEmail(user.email);
+    const normBookingEmail = normalizeEmail(b.applicantEmail);
+
+    const normUserName = (user.fullName || '').trim().toLowerCase();
+    const normBookingName = (b.applicantName || '').trim().toLowerCase();
+
+    // 1. Phone match: definitive identifier
+    if (normUserPhone && normBookingPhone) {
+      if (normUserPhone === normBookingPhone || normUserPhone.slice(-10) === normBookingPhone.slice(-10)) {
+        return true;
+      }
+      // If both have phone numbers and they don't match, this booking strictly belongs to someone else!
+      return false;
+    }
+
+    // 2. Email match: definitive identifier
+    if (normUserEmail && normBookingEmail) {
+      if (normUserEmail === normBookingEmail) {
+        return true;
+      }
+      // If both have emails and they don't match, this booking strictly belongs to someone else!
+      return false;
+    }
+
+    // 3. Name match: if names are specific and match
+    if (normUserName && normBookingName && normUserName !== 'guest user' && normUserName.length > 3) {
+      if (normUserName === normBookingName) {
+        return true;
+      }
+      // If booking name is distinct and completely doesn't match
+      if (normBookingName !== 'applicant' && normBookingName.length > 3 && !normBookingName.includes(normUserName) && !normUserName.includes(normBookingName)) {
+        return false;
+      }
+    }
+
+    // 4. Fallback to device booking ID only if booking has no contradictory contact info
+    if (myDeviceBookingIds && myDeviceBookingIds.has(b.id)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // If user is a Guest / unauthenticated visitor:
+  // Only match bookings created on this specific device
+  if (myDeviceBookingIds && myDeviceBookingIds.has(b.id)) {
+    return true;
+  }
+
+  return false;
+}
+
+

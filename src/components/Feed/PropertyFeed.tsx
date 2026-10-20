@@ -9,6 +9,7 @@ import { AdvertStoriesTray } from './AdvertStoriesTray';
 interface PropertyFeedProps {
   listings: PropertyListing[];
   bookings: BookingRecord[];
+  userBookings?: BookingRecord[];
   onBookSlot: (booking: BookingRecord) => void;
   onUpdateBooking: (booking: BookingRecord) => void;
   onSimulateAgentAccept?: (bookingId: string) => void;
@@ -27,6 +28,7 @@ interface PropertyFeedProps {
 export const PropertyFeed: React.FC<PropertyFeedProps> = ({
   listings,
   bookings,
+  userBookings,
   onBookSlot,
   onUpdateBooking,
   onSimulateAgentAccept,
@@ -150,7 +152,8 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
       )}
 
       {listings.map((listing, index) => {
-        const activeBooking = bookings.find((b) => b.propertyId === listing.id);
+        // Only mark activeBooking if THIS specific user/tenant created or owns the booking
+        const activeBooking = (userBookings ?? []).find((b) => b.propertyId === listing.id);
         
         // Show sponsored carousel after 2nd listing (index === 1), or after 1st listing if only 1 listing exists.
         // If there are 6+ listings, also show secondary carousel set after 5th listing (index === 4).

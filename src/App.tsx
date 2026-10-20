@@ -3,7 +3,7 @@ import { INITIAL_LISTINGS } from './data/mockListings';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability } from './types/marketplace';
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge } from './utils/pwa';
-import { saveRegisteredUser } from './utils/userRegistry';
+import { saveRegisteredUser, isBookingForUser, getMyDeviceBookingIds, recordMyDeviceBookingId, clearMyDeviceBookingIds } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
@@ -636,9 +636,18 @@ export function App() {
     };
   }, [currentUser.id, currentUser.isAgent, currentUser.phone, listings]);
 
-  // Synchronize dynamic home-screen badge count with active inspection passes
+  // Track booking IDs created on this specific device/session
+  const [myDeviceBookingIds, setMyDeviceBookingIds] = useState<Set<string>>(() => getMyDeviceBookingIds());
+
+  // Strict User Isolation: Filter bookings that belong strictly to THIS logged-in user / tenant
+  // Ensures one tenant's booking or approval never appears on another tenant's screen or feed card
+  const userBookings = useMemo(() => {
+    return bookings.filter((b) => isBookingForUser(b, currentUser, myDeviceBookingIds));
+  }, [bookings, currentUser, myDeviceBookingIds]);
+
+  // Synchronize dynamic home-screen badge count strictly with THIS user's active inspection passes
   useEffect(() => {
-    const activePassesCount = bookings.filter(
+    const activePassesCount = userBookings.filter(
       (b) => b.status === 'CONFIRMED_UNLOCKED' || b.status === 'REQUEST_SUBMITTED' || b.status === 'QUEUED' || b.status === 'ACCEPTED_PENDING_PAYMENT'
     ).length;
     if (activePassesCount > 0) {
@@ -646,7 +655,7 @@ export function App() {
     } else {
       clearAppBadge();
     }
-  }, [bookings]);
+  }, [userBookings]);
 
   // Authentication gating & resume booking state
   const [pendingBookingListing, setPendingBookingListing] = useState<PropertyListing | null>(null);
@@ -794,7 +803,9 @@ export function App() {
 
   // Handler: Book an inspection slot
   const handleBookSlot = (newBooking: BookingRecord) => {
-    setBookings((prev) => [newBooking, ...prev.filter((b) => b.propertyId !== newBooking.propertyId)]);
+    recordMyDeviceBookingId(newBooking.id);
+    setMyDeviceBookingIds((prev) => new Set([...prev, newBooking.id]));
+    setBookings((prev) => [newBooking, ...prev.filter((b) => b.id !== newBooking.id)]);
     saveNewBooking(newBooking);
 
     const targetListing = listings.find((p) => p.id === newBooking.propertyId);
@@ -1053,6 +1064,8 @@ export function App() {
     localStorage.removeItem('deltarent_user');
     localStorage.removeItem('deltarent_active_role');
     localStorage.removeItem('deltarent_active_view');
+    clearMyDeviceBookingIds();
+    setMyDeviceBookingIds(new Set());
     setCurrentUser(GUEST_USER);
     setCurrentRole('seeker');
     setSavedPropertyIds([]);
@@ -1120,7 +1133,7 @@ export function App() {
         onChangeRole={setCurrentRole}
         userView={userView}
         onChangeUserView={setUserView}
-        activeBookings={bookings}
+        activeBookings={userBookings}
         onOpenMyPasses={() => {
           if (!isAuthenticated) {
             handleOpenSignup();
@@ -1151,7 +1164,7 @@ export function App() {
             <UserDashboard
               currentUser={currentUser}
               listings={listings}
-              bookings={bookings}
+              bookings={userBookings}
               savedPropertyIds={savedPropertyIds}
               onToggleSaveProperty={handleToggleSaveProperty}
               onOpenBookingModal={handleOpenBooking}
@@ -1198,6 +1211,7 @@ export function App() {
                 <PropertyFeed
                   listings={filteredListings}
                   bookings={bookings}
+                  userBookings={userBookings}
                   onBookSlot={handleBookSlot}
                   onUpdateBooking={handleUpdateBooking}
                   onSimulateAgentAccept={handleAcceptBooking}
@@ -1247,7 +1261,7 @@ export function App() {
       <MyPassesModal
         isOpen={isMyPassesOpen}
         onClose={() => setIsMyPassesOpen(false)}
-        bookings={bookings}
+        bookings={userBookings}
         listings={listings}
         onOpenBookingModal={handleOpenBooking}
       />
@@ -1257,7 +1271,7 @@ export function App() {
         onClose={() => setIsProfileOpen(false)}
         currentRole={currentRole}
         onChangeRole={setCurrentRole}
-        activeBookings={bookings}
+        activeBookings={userBookings}
         onOpenMyPasses={() => setIsMyPassesOpen(true)}
         currentUser={currentUser}
         onUpdateAvatar={handleUpdateAvatar}
@@ -1294,7 +1308,7 @@ export function App() {
           isOpen={true}
           onClose={() => setActiveModalListing(null)}
           listing={activeModalListing}
-          existingBooking={bookings.find((b) => b.propertyId === activeModalListing.id)}
+          existingBooking={userBookings.find((b) => b.propertyId === activeModalListing.id)}
           currentUser={currentUser}
           onBookSlot={handleBookSlot}
           onUpdateBooking={handleUpdateBooking}
