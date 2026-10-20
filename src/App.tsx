@@ -4,6 +4,7 @@ import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailabil
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge } from './utils/pwa';
 import { saveRegisteredUser } from './utils/userRegistry';
+import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
 import { matchesLocation } from './utils/locationMatcher';
@@ -20,7 +21,7 @@ import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
 
-// Initial User Profile (Tenant / Non-Agent)
+// Initial User Profile (Tenant Demo User)
 const INITIAL_USER: UserProfile = {
   id: 'DT-USR-8492',
   fullName: 'Chinedu Okafor',
@@ -35,6 +36,21 @@ const INITIAL_USER: UserProfile = {
   isAgent: false,
   savedListingIds: ['prop-asaba-01'],
   createdAt: '2026-10-01T10:00:00.000Z',
+};
+
+// Guest Profile for new, unauthenticated visitors
+const GUEST_USER: UserProfile = {
+  id: '',
+  fullName: '',
+  email: '',
+  phone: '',
+  state: 'Delta State',
+  city: 'Asaba',
+  preferredPropertyType: 'Bedseater',
+  isVerifiedTenant: false,
+  isAgent: false,
+  savedListingIds: [],
+  createdAt: '',
 };
 
 // Seed initial bookings for immediate testability
@@ -84,29 +100,58 @@ const INITIAL_BOOKINGS: BookingRecord[] = [
 
 export function App() {
   const [listings, setListings] = useState<PropertyListing[]>(() => {
+    const isLocal = isLocalUrl();
     const saved = localStorage.getItem('deltarent_listings');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const cleaned = parsed.map((item: PropertyListing) => {
+            if (item.id && item.id.startsWith('prop-agent-')) {
+              return {
+                ...item,
+                electricityStatus: undefined,
+                waterSupply: undefined,
+              };
+            }
+            return item;
+          });
+
+          // On deployed environments, exclude demo listings so only real listings created by agents are shown
+          if (!isLocal) {
+            return cleaned.filter((item: PropertyListing) =>
+              item.id.startsWith('prop-agent-') || !INITIAL_LISTINGS.some((m) => m.id === item.id)
+            );
+          }
+
+          return cleaned;
+        }
       } catch (e) {
         // fallback
       }
     }
-    return INITIAL_LISTINGS;
+    return isLocal ? INITIAL_LISTINGS : [];
   });
 
   const [bookings, setBookings] = useState<BookingRecord[]>(() => {
+    const isLocal = isLocalUrl();
     const saved = localStorage.getItem('deltarent_bookings');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          if (!isLocal) {
+            return parsed.filter((b: BookingRecord) =>
+              !INITIAL_BOOKINGS.some((m) => m.id === b.id)
+            );
+          }
+          return parsed;
+        }
       } catch (e) {
         // fallback
       }
     }
-    return INITIAL_BOOKINGS;
+    return isLocal ? INITIAL_BOOKINGS : [];
   });
 
   useEffect(() => {
@@ -127,22 +172,45 @@ export function App() {
 
   // User Authentication State (Persisted in localStorage)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('deltarent_auth') === 'true';
+    const isLocal = isLocalUrl();
+    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
+    if (!isLocal && isAuth) {
+      const saved = localStorage.getItem('deltarent_user');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012') {
+            localStorage.removeItem('deltarent_auth');
+            localStorage.removeItem('deltarent_user');
+            return false;
+          }
+        } catch (e) {}
+      }
+    }
+    return isAuth;
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const isLocal = isLocalUrl();
+    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
     const saved = localStorage.getItem('deltarent_user');
-    if (saved) {
+    if (isAuth && saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (!isLocal && (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012')) {
+          return GUEST_USER;
+        }
+        return parsed;
       } catch (e) {
         // fallback
       }
     }
-    return INITIAL_USER;
+    return (isAuth && isLocal) ? INITIAL_USER : GUEST_USER;
   });
 
   const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
+    if (!isAuth) return 'seeker';
     const saved = localStorage.getItem('deltarent_user');
     if (saved) {
       try {
@@ -157,7 +225,18 @@ export function App() {
 
   // Default to live video feed for first-time visitors / guests
   const [userView, setUserView] = useState<'dashboard' | 'feed'>('feed');
-  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(['prop-asaba-01']);
+  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(() => {
+    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
+    if (!isAuth) return [];
+    const saved = localStorage.getItem('deltarent_user');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.savedListingIds || [];
+      } catch (e) {}
+    }
+    return [];
+  });
 
   // Filter state
   const [selectedCity, setSelectedCity] = useState('All Delta Cities');
@@ -199,8 +278,32 @@ export function App() {
   const [signupInitialRole, setSignupInitialRole] = useState<'seeker' | 'agent'>('seeker');
   const [signupInitialMode, setSignupInitialMode] = useState<'signup' | 'login'>('signup');
 
-  // Sponsored adverts state
-  const [adverts, setAdverts] = useState<AdvertStory[]>(MOCK_ADVERT_STORIES);
+  // Sponsored adverts state - Only seed demo ads on local development
+  const [adverts, setAdverts] = useState<AdvertStory[]>(() => {
+    const isLocal = isLocalUrl();
+    const saved = localStorage.getItem('deltarent_adverts');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          if (!isLocal) {
+            return parsed.filter((ad: AdvertStory) =>
+              !MOCK_ADVERT_STORIES.some((m) => m.id === ad.id)
+            );
+          }
+          return parsed;
+        }
+      } catch (e) {}
+    }
+    return isLocal ? MOCK_ADVERT_STORIES : [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('deltarent_adverts', JSON.stringify(adverts));
+    } catch (e) {}
+  }, [adverts]);
+
   const [isPostAdOpen, setIsPostAdOpen] = useState(false);
 
   const handleAddAdvert = (newAd: AdvertStory) => {
@@ -516,7 +619,9 @@ export function App() {
     setIsAuthenticated(false);
     localStorage.removeItem('deltarent_auth');
     localStorage.removeItem('deltarent_user');
+    setCurrentUser(GUEST_USER);
     setCurrentRole('seeker');
+    setSavedPropertyIds([]);
     setUserView('feed');
   };
 
@@ -538,6 +643,10 @@ export function App() {
     localStorage.setItem('deltarent_auth', 'true');
     localStorage.setItem('deltarent_user', JSON.stringify(updatedUser));
     setSignupNotice(null);
+
+    if (updatedUser.savedListingIds) {
+      setSavedPropertyIds(updatedUser.savedListingIds);
+    }
 
     if (role === 'agent' || updatedUser.isAgent) {
       setCurrentRole('agent');
@@ -664,6 +773,14 @@ export function App() {
                   adverts={adverts}
                   onSelectAdvert={handleSelectAdvert}
                   onOpenPostAd={() => setIsPostAdOpen(true)}
+                  totalListingsCount={listings.length}
+                  onOpenBecomeAgent={() => {
+                    if (isAuthenticated) {
+                      setIsBecomeAgentOpen(true);
+                    } else {
+                      handleOpenAgentSignup();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -741,6 +858,7 @@ export function App() {
           onClose={() => setActiveModalListing(null)}
           listing={activeModalListing}
           existingBooking={bookings.find((b) => b.propertyId === activeModalListing.id)}
+          currentUser={currentUser}
           onBookSlot={handleBookSlot}
           onUpdateBooking={handleUpdateBooking}
           onSimulateAgentAccept={handleAcceptBooking}

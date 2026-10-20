@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, ChevronRight, Play } from 'lucide-react';
+import { Plus, ChevronRight, Play, Megaphone } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 
 interface DesktopAdvertSidebarProps {
@@ -59,8 +59,28 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
         </button>
       </div>
 
-      {/* 2. Vertically Listed Full-Bleed Showcase Cards */}
-      <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 py-3 pr-0.5">
+      {/* 2. Vertically Listed Full-Bleed Showcase Cards or Empty Promotion State */}
+      {adverts.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-4 text-center my-auto space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#FCF9F5] border border-[#342A21]/15 flex items-center justify-center text-[#342A21] shadow-2xs">
+            <Megaphone className="w-5 h-5 text-[#342A21]" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-[#000004]">No Active Promotions Yet</h4>
+            <p className="text-[11px] text-[#70798C] mt-1 leading-relaxed">
+              Showcase your properties, agency services, or home moving business to tenants across Delta State.
+            </p>
+          </div>
+          <button
+            onClick={onOpenPostAd}
+            className="py-2 px-3.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 text-amber-400" />
+            <span>Post First Ad</span>
+          </button>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto no-scrollbar space-y-3 py-3 pr-0.5">
         {adverts.map((ad) => {
           const isActive = activeStoryId === ad.id;
 
@@ -130,6 +150,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
           );
         })}
       </div>
+      )}
 
       {/* 3. Bottom Promotion Callout Banner */}
       <div className="pt-2 border-t border-[#E5E7EB] shrink-0">

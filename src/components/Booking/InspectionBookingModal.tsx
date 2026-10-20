@@ -14,7 +14,7 @@ import {
   Lock,
   BellRing
 } from 'lucide-react';
-import { PropertyListing, InspectionSlot, BookingRecord, BookingStatus } from '../../types/marketplace';
+import { PropertyListing, InspectionSlot, BookingRecord, BookingStatus, UserProfile } from '../../types/marketplace';
 import { formatNaira, generateBookingRef } from '../../utils/formatters';
 import { getNotificationPermission, requestNotificationPermission } from '../../utils/pwa';
 import { QueueStatusBadge } from './QueueStatusBadge';
@@ -25,6 +25,7 @@ interface InspectionBookingModalProps {
   onClose: () => void;
   listing: PropertyListing;
   existingBooking?: BookingRecord;
+  currentUser?: UserProfile;
   onBookSlot: (booking: BookingRecord) => void;
   onUpdateBooking: (booking: BookingRecord) => void;
   onSimulateAgentAccept?: (bookingId: string) => void;
@@ -35,6 +36,7 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
   onClose,
   listing,
   existingBooking,
+  currentUser,
   onBookSlot,
   onUpdateBooking,
   onSimulateAgentAccept,
@@ -43,9 +45,34 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
   const [selectedSlotId, setSelectedSlotId] = useState<string>(
     listing.inspectionSlots[0]?.id || ''
   );
-  const [applicantName, setApplicantName] = useState('Chinedu Okafor');
-  const [applicantPhone, setApplicantPhone] = useState('0803 891 0293');
-  const [applicantEmail, setApplicantEmail] = useState('');
+
+  const getInitialUser = (): { name: string; phone: string; email: string } => {
+    if (currentUser?.fullName && currentUser.fullName !== 'Guest User') {
+      return {
+        name: currentUser.fullName,
+        phone: currentUser.phone || '',
+        email: currentUser.email || '',
+      };
+    }
+    try {
+      const isAuth = localStorage.getItem('deltarent_auth') === 'true';
+      const saved = localStorage.getItem('deltarent_user');
+      if (isAuth && saved) {
+        const u = JSON.parse(saved);
+        return {
+          name: u.fullName || '',
+          phone: u.phone || '',
+          email: u.email || '',
+        };
+      }
+    } catch (e) {}
+    return { name: '', phone: '', email: '' };
+  };
+
+  const initialUser = getInitialUser();
+  const [applicantName, setApplicantName] = useState(initialUser.name);
+  const [applicantPhone, setApplicantPhone] = useState(initialUser.phone);
+  const [applicantEmail, setApplicantEmail] = useState(initialUser.email);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => getNotificationPermission());
 
   if (!isOpen) return null;
@@ -338,7 +365,7 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
                     type="text"
                     value={applicantName}
                     onChange={(e) => setApplicantName(e.target.value)}
-                    placeholder="e.g. Chinedu Okafor"
+                    placeholder="Enter your full name"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E7EB] text-sm text-[#000004] focus:outline-none focus:border-[#342A21]"
                     required
                   />

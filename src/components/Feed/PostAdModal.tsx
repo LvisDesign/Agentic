@@ -33,13 +33,13 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   onAddAdvert,
 }) => {
   const [headline, setHeadline] = useState('');
-  const [advertiserName, setAdvertiserName] = useState('Delta Heritage Realty');
+  const [advertiserName, setAdvertiserName] = useState('');
   const [city, setCity] = useState('Asaba');
   const [neighborhood, setNeighborhood] = useState('');
-  const [price, setPrice] = useState('1500000');
+  const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
-  const [phone, setPhone] = useState('0803 492 8172');
-  const [whatsapp, setWhatsapp] = useState('2348034928172');
+  const [phone, setPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   const [actionType, setActionType] = useState<'contact' | 'website'>('contact');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly'>('weekly');
@@ -224,6 +224,20 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               <label className="text-xs font-bold text-[#70798C] uppercase tracking-wider block">
                 2. Advert Information
               </label>
+
+              <div>
+                <label className="text-xs text-[#70798C] block mb-1">
+                  Business / Advertiser Name *
+                </label>
+                <input
+                  type="text"
+                  value={advertiserName}
+                  onChange={(e) => setAdvertiserName(e.target.value)}
+                  placeholder="e.g. Apex Real Estate or Warri Logistics"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
+                  required
+                />
+              </div>
 
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">

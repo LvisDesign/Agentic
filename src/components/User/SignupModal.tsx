@@ -25,6 +25,7 @@ import { StateDropdown } from '../UI/StateDropdown';
 import { CustomDropdown } from '../UI/CustomDropdown';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { usePWA } from '../../utils/pwa';
+import { isLocalUrl } from '../../utils/environment';
 import { 
   checkUserExists, 
   findUserByCredential, 
@@ -106,17 +107,37 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     if (isOpen) {
       if (initialRole) setActiveRoleTab(initialRole);
       if (initialMode) setAuthMode(initialMode);
+      setDuplicateError(null);
+
+      // Ensure all registration fields start blank for new signups
+      if (initialMode === 'signup' || !isAuthenticated) {
+        setSeekerFullName('');
+        setSeekerPhone('');
+        setSeekerEmail('');
+        setSeekerCity('');
+        setSeekerState('Delta State');
+
+        setAgentFullName('');
+        setAgencyName('');
+        setAgentPhone('');
+        setAgentWhatsapp('');
+        setAgentEmail('');
+        setAgentCitySelection('');
+        setAgentCity('');
+        setCustomAgentCity('');
+        setAgentCac('');
+      }
     }
-  }, [isOpen, initialRole, initialMode]);
+  }, [isOpen, initialRole, initialMode, isAuthenticated]);
 
-  // Seeker / Tenant Form Fields
-  const [seekerFullName, setSeekerFullName] = useState(currentUser.fullName || '');
-  const [seekerPhone, setSeekerPhone] = useState(currentUser.phone || '');
-  const [seekerEmail, setSeekerEmail] = useState(currentUser.email || '');
-  const [seekerState, setSeekerState] = useState(currentUser.state || 'Delta State');
-  const [seekerCity, setSeekerCity] = useState<string>(currentUser.city || 'Asaba');
+  // Seeker / Tenant Form Fields - Start completely blank for new tenants
+  const [seekerFullName, setSeekerFullName] = useState('');
+  const [seekerPhone, setSeekerPhone] = useState('');
+  const [seekerEmail, setSeekerEmail] = useState('');
+  const [seekerState, setSeekerState] = useState('Delta State');
+  const [seekerCity, setSeekerCity] = useState<string>('');
 
-  // Agent Form Fields
+  // Agent Form Fields - Start completely blank for new agents
   const [agentFullName, setAgentFullName] = useState('');
   const [agencyName, setAgencyName] = useState('');
   const [agentType, setAgentType] = useState<'agency' | 'individual' | 'landlord'>('agency');
@@ -125,14 +146,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [sameAsPhone, setSameAsPhone] = useState(true);
   const [agentEmail, setAgentEmail] = useState('');
   const [agentState, setAgentState] = useState('Delta State');
-  const [agentCity, setAgentCity] = useState('Asaba');
-  const [agentCitySelection, setAgentCitySelection] = useState('Asaba');
+  const [agentCity, setAgentCity] = useState('');
+  const [agentCitySelection, setAgentCitySelection] = useState('');
   const [customAgentCity, setCustomAgentCity] = useState('');
   const [agentCac, setAgentCac] = useState('');
 
   // Login Form Fields
   const [loginPhoneOrEmail, setLoginPhoneOrEmail] = useState('');
   const [loginRole, setLoginRole] = useState<'seeker' | 'agent'>('seeker');
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   // Success state
   const [isSuccess, setIsSuccess] = useState(false);
@@ -227,17 +249,22 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
     setDuplicateError(null);
 
+    const resolvedCity = seekerState === 'Delta State'
+      ? (seekerCity.trim() || 'Asaba')
+      : (seekerCity.trim() || 'Capital City');
+
     const updated: UserProfile = {
-      ...currentUser,
-      id: currentUser.id || `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
+      id: `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
       fullName: seekerFullName.trim(),
       phone: seekerPhone.trim(),
       email: seekerEmail.trim() || undefined,
       state: seekerState,
-      city: seekerState === 'Delta State' ? seekerCity : 'Capital City',
+      city: resolvedCity,
+      preferredPropertyType: 'Bedseater',
       isVerifiedTenant: true,
       isAgent: false,
-      createdAt: currentUser.createdAt || new Date().toISOString(),
+      savedListingIds: [],
+      createdAt: new Date().toISOString(),
     };
 
     if (isStandalone) {
@@ -281,7 +308,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     const finalWhatsapp = sameAsPhone ? agentPhone.trim() : (agentWhatsapp.trim() || agentPhone.trim());
 
     const updated: UserProfile = {
-      ...currentUser,
       id: `DT-AGT-${Math.floor(1000 + Math.random() * 9000)}`,
       fullName: agentFullName.trim(),
       agencyName: agencyName.trim(),
@@ -296,7 +322,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       cacNumber: agentCac.trim() || 'VERIFIED-REG',
       isVerifiedTenant: false,
       isAgent: true,
-      createdAt: currentUser.createdAt || new Date().toISOString(),
+      savedListingIds: [],
+      createdAt: new Date().toISOString(),
     };
 
     if (isStandalone) {
@@ -329,6 +356,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     // Check registry for exact match first
     const registeredMatch = findUserByCredential(query);
     if (registeredMatch) {
+      setLoginError(null);
       const isAgent = registeredMatch.isAgent;
       setSuccessMessage({
         title: `Welcome back, ${registeredMatch.fullName}!`,
@@ -346,7 +374,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       return;
     }
 
-    // Demo fallback
+    // On deployed environments, reject unknown credentials so fake accounts are not generated
+    if (!isLocalUrl()) {
+      setLoginError('No registered account was found with this phone number or email. Please check your credentials or create an account.');
+      return;
+    }
+
+    // Demo fallback (Local development only)
     const isSystemAdmin =
       query.toLowerCase().includes('admin') ||
       query === 'admin@deltarent.ng';
@@ -682,6 +716,27 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           ) : authMode === 'login' ? (
             /* --- SIMPLE, CLEAN SIGN IN FORM --- */
             <form onSubmit={handleLogin} className="space-y-4 py-2 text-xs">
+              {loginError && (
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px] flex items-start gap-2 animate-fade-in shadow-2xs">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-rose-950">{loginError}</p>
+                    <div className="mt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthMode('signup');
+                          setLoginError(null);
+                        }}
+                        className="font-bold underline text-rose-900 hover:text-rose-700 cursor-pointer"
+                      >
+                        Create an account now →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-[#000004] mb-1.5">
                   Phone Number or Email Address <span className="text-rose-500">*</span>
@@ -694,32 +749,37 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     autoFocus
                     placeholder="0803 000 0000 or email@domain.com"
                     value={loginPhoneOrEmail}
-                    onChange={(e) => setLoginPhoneOrEmail(e.target.value)}
+                    onChange={(e) => {
+                      setLoginPhoneOrEmail(e.target.value);
+                      if (loginError) setLoginError(null);
+                    }}
                     className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none shadow-xs transition-colors bg-white font-medium placeholder:text-slate-400"
                   />
                 </div>
               </div>
 
-              {/* Demo quick sign-in triggers */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px]">
-                <span className="text-[#70798C] font-medium">Quick Demo Test:</span>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleFillDemoTenant}
-                    className="py-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[#000004] font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
-                  >
-                    👤 Tenant
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleFillDemoAgent}
-                    className="py-1 px-2.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-950 font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
-                  >
-                    🏢 Agent
-                  </button>
+              {/* Demo quick sign-in triggers - ONLY visible on local developer environment */}
+              {isLocalUrl() && (
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px]">
+                  <span className="text-[#70798C] font-medium">Quick Demo Test:</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleFillDemoTenant}
+                      className="py-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[#000004] font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                    >
+                      👤 Tenant
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleFillDemoAgent}
+                      className="py-1 px-2.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-950 font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                    >
+                      🏢 Agent
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="pt-1">
                 <button
@@ -782,7 +842,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Chinedu Okafor"
+                    placeholder="Enter your full name"
                     value={seekerFullName}
                     onChange={(e) => setSeekerFullName(e.target.value)}
                     className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
@@ -879,7 +939,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 <div>
                   <label className="block text-[11px] font-bold text-[#70798C] mb-1 flex items-center justify-between">
                     <span>Preferred City in Delta State</span>
-                    <span className="text-[10px] text-[#342A21] font-semibold">{seekerCity}, Delta</span>
+                    {seekerCity ? (
+                      <span className="text-[10px] text-[#342A21] font-semibold">{seekerCity}, Delta</span>
+                    ) : null}
                   </label>
                   <CustomDropdown
                     options={DELTA_CITY_OPTIONS}
@@ -1113,7 +1175,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <label className="text-[11px] font-bold text-[#000004]">
                       Operating City / Towns <span className="text-rose-500">*</span>
                     </label>
-                    {agentState === 'Delta State' && agentCitySelection !== 'Others' && (
+                    {agentState === 'Delta State' && agentCitySelection && agentCitySelection !== 'Others' && (
                       <span className="text-[10px] text-[#70798C] font-semibold">
                         {agentCitySelection}, Delta
                       </span>

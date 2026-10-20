@@ -1,4 +1,5 @@
 import { UserProfile } from '../types/marketplace';
+import { isLocalUrl } from './environment';
 
 // Default seeded accounts for instant marketplace testing
 export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
@@ -89,18 +90,24 @@ export function normalizeEmail(email?: string): string {
   return email.trim().toLowerCase();
 }
 
+const DEMO_USER_IDS = new Set(['DT-USR-8492', 'DT-AGT-9012', 'DT-WRI-3918', 'DT-ADMIN-001']);
+
 /**
  * Retrieves all registered users from storage and defaults.
+ * On deployed URLs, demo accounts are excluded so the platform starts clean.
  */
 export function getRegisteredUsers(): UserProfile[] {
-  if (typeof window === 'undefined') return DEFAULT_REGISTERED_USERS;
+  const isLocal = isLocalUrl();
+  if (typeof window === 'undefined') return isLocal ? DEFAULT_REGISTERED_USERS : [];
 
   const usersMap = new Map<string, UserProfile>();
 
-  // 1. Seed defaults
-  DEFAULT_REGISTERED_USERS.forEach((user) => {
-    usersMap.set(user.id, user);
-  });
+  // 1. Seed defaults ONLY on local development environment
+  if (isLocal) {
+    DEFAULT_REGISTERED_USERS.forEach((user) => {
+      usersMap.set(user.id, user);
+    });
+  }
 
   // 2. Load from localStorage registered users registry
   try {
@@ -110,6 +117,10 @@ export function getRegisteredUsers(): UserProfile[] {
       if (Array.isArray(parsed)) {
         parsed.forEach((user) => {
           if (user && user.id) {
+            // On deployed view, filter out cached demo users
+            if (!isLocal && DEMO_USER_IDS.has(user.id)) {
+              return;
+            }
             usersMap.set(user.id, user);
           }
         });
@@ -125,7 +136,11 @@ export function getRegisteredUsers(): UserProfile[] {
     if (rawCurrent) {
       const current: UserProfile = JSON.parse(rawCurrent);
       if (current && current.id) {
-        usersMap.set(current.id, current);
+        if (!isLocal && DEMO_USER_IDS.has(current.id)) {
+          // ignore demo user on deployed URL
+        } else {
+          usersMap.set(current.id, current);
+        }
       }
     }
   } catch (err) {
@@ -140,6 +155,7 @@ export function getRegisteredUsers(): UserProfile[] {
  */
 export function saveRegisteredUser(user: UserProfile): void {
   if (typeof window === 'undefined' || !user) return;
+  if (!isLocalUrl() && DEMO_USER_IDS.has(user.id)) return;
 
   const allUsers = getRegisteredUsers();
   const existingIndex = allUsers.findIndex(

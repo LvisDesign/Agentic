@@ -161,8 +161,8 @@ export interface PropertyListing {
   toilets: number;
   isServiced: boolean;
   isFurnished: boolean;
-  electricityStatus: '24/7 Dedicated Line' | 'Band A (20+ hrs)' | 'Regular NEPA + Gen' | 'Solar Powered';
-  waterSupply: 'Borehole with Treatment' | 'Public Water' | 'Dedicated Tank';
+  electricityStatus?: '24/7 Dedicated Line' | 'Band A (20+ hrs)' | 'Regular NEPA + Gen' | 'Solar Powered' | string;
+  waterSupply?: 'Borehole with Treatment' | 'Public Water' | 'Dedicated Tank' | string;
   description: string;
   media: {
     type: 'image' | 'video';

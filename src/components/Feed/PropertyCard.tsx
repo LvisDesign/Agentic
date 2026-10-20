@@ -323,14 +323,18 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 <Bath className="w-3 h-3 text-[#70798C]" />
                 {listing.bathrooms} Bath
               </span>
-              <span className="px-2 py-0.5 rounded-md bg-amber-50/80 border border-amber-200 text-amber-900 font-medium flex items-center gap-1">
-                <Zap className="w-3 h-3 text-amber-600" />
-                {listing.electricityStatus}
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-[#00C3F7]/10 border border-[#00C3F7]/30 text-[#075985] font-medium flex items-center gap-1">
-                <Droplet className="w-3 h-3 text-[#0284c7]" />
-                {listing.waterSupply}
-              </span>
+              {listing.electricityStatus && (
+                <span className="px-2 py-0.5 rounded-md bg-amber-50/80 border border-amber-200 text-amber-900 font-medium flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-600" />
+                  {listing.electricityStatus}
+                </span>
+              )}
+              {listing.waterSupply && (
+                <span className="px-2 py-0.5 rounded-md bg-[#00C3F7]/10 border border-[#00C3F7]/30 text-[#075985] font-medium flex items-center gap-1">
+                  <Droplet className="w-3 h-3 text-[#0284c7]" />
+                  {listing.waterSupply}
+                </span>
+              )}
               {listing.addons && listing.addons.length > 0 && (
                 listing.addons.map((addon) => (
                   <span
