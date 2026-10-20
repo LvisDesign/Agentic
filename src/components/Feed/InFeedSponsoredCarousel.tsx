@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  MoreVertical, 
   Sparkles, 
   CheckCircle2, 
   ExternalLink, 
@@ -11,11 +10,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Film,
-  Image as ImageIcon,
   Volume2,
-  VolumeX
+  VolumeX,
+  MessageCircle,
+  Globe
 } from 'lucide-react';
-import { AdvertStory } from '../../data/mockAdverts';
+import { AdvertStory, getAdvertCtaConfig } from '../../data/mockAdverts';
 import { PropertyListing } from '../../types/marketplace';
 
 interface InFeedSponsoredCarouselProps {
@@ -133,10 +133,6 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
       />
-      <span className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 border border-white/20 z-10">
-        <Film className="w-2.5 h-2.5 text-amber-300" />
-        <span>VIDEO</span>
-      </span>
 
       {/* Floating Mute / Unmute Button */}
       <button
@@ -180,7 +176,6 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
 }) => {
   const [expandedAdIds, setExpandedAdIds] = useState<Record<string, boolean>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [activeMenuAdId, setActiveMenuAdId] = useState<string | null>(null);
 
   // Carousel track scroll reference and scroll states
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -208,13 +203,17 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
 
   const handleScrollLeft = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+      const card = scrollContainerRef.current.firstElementChild as HTMLElement | null;
+      const scrollDistance = card ? card.offsetWidth + 12 : scrollContainerRef.current.clientWidth * 0.88;
+      scrollContainerRef.current.scrollBy({ left: -scrollDistance, behavior: 'smooth' });
     }
   };
 
   const handleScrollRight = () => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+      const card = scrollContainerRef.current.firstElementChild as HTMLElement | null;
+      const scrollDistance = card ? card.offsetWidth + 12 : scrollContainerRef.current.clientWidth * 0.88;
+      scrollContainerRef.current.scrollBy({ left: scrollDistance, behavior: 'smooth' });
     }
   };
 
@@ -243,10 +242,18 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
     }
   };
 
-  const handleCTA = (e: React.MouseEvent, ad: AdvertStory) => {
+  const handleCTA = (e: React.MouseEvent | React.SyntheticEvent, ad: AdvertStory) => {
     e.stopPropagation();
 
-    // If ad links to a property and onOpenBookingModal exists
+    // 1. External organization / influencer website link
+    if (ad.actionType === 'website' || (ad.websiteUrl && !ad.propertyId)) {
+      if (ad.websiteUrl) {
+        window.open(ad.websiteUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    }
+
+    // 2. Direct property listing on platform
     if (ad.propertyId && onOpenBookingModal) {
       const matchedListing = listings.find((l) => l.id === ad.propertyId);
       if (matchedListing) {
@@ -255,7 +262,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
       }
     }
 
-    // Direct WhatsApp chat
+    // 3. Direct WhatsApp chat
     if (ad.whatsappNumber) {
       const text = encodeURIComponent(
         `Hello ${ad.advertiserName}, I saw your sponsored advert "${ad.headline}" on DeltaRent.`
@@ -264,7 +271,18 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
       return;
     }
 
-    // Default to story viewer if available
+    // 4. Phone call
+    if (ad.phone) {
+      window.open(`tel:${ad.phone.replace(/\s+/g, '')}`, '_self');
+      return;
+    }
+
+    // 5. Fallback website link
+    if (ad.websiteUrl) {
+      window.open(ad.websiteUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     if (onSelectAdvert) {
       onSelectAdvert(ad);
     }
@@ -273,112 +291,74 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
   if (!adverts || adverts.length === 0) return null;
 
   return (
-    <div className="w-full my-4 sm:my-6 rounded-3xl bg-[#000004] text-white p-3.5 sm:p-4 shadow-xl border border-white/10 relative overflow-hidden">
+    <div 
+      className="w-full my-4 sm:my-6 rounded-3xl p-3.5 sm:p-5 shadow-2xl border relative overflow-hidden backdrop-blur-2xl transition-all"
+      style={{
+        background: 'linear-gradient(135deg, rgba(135, 142, 122, 0.70) 0%, rgba(162, 168, 146, 0.60) 38%, rgba(195, 188, 172, 0.65) 72%, rgba(228, 222, 210, 0.80) 100%)',
+        borderColor: 'rgba(255, 255, 255, 0.80)',
+        boxShadow: '0 20px 50px -10px rgba(52, 42, 33, 0.16), 0 8px 20px -4px rgba(52, 42, 33, 0.08), inset 0 1.5px 2px 0 rgba(255, 255, 255, 0.90), inset 0 -1px 2px 0 rgba(100, 95, 80, 0.10)',
+      }}
+    >
+      {/* Specular Ambient Glass Light Sheen (matching sample gradient) */}
+      <div 
+        className="absolute inset-0 pointer-events-none rounded-3xl"
+        style={{
+          background: 'radial-gradient(ellipse 75% 55% at 85% 15%, rgba(255, 255, 255, 0.55) 0%, transparent 65%), linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 40%)',
+        }}
+      />
+
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-white text-[#000004] text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg border border-slate-200 animate-fade-in pointer-events-none whitespace-nowrap">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-[#342A21] text-white text-xs font-bold px-3.5 py-1.5 rounded-full shadow-lg border border-black/10 animate-fade-in pointer-events-none whitespace-nowrap">
           {toastMessage}
         </div>
       )}
 
-      {/* 1. SECTION HEADER (Matching Threads header structure with Left/Right Scroll Icons) */}
-      <div className="px-1 pt-1 pb-3 flex flex-col gap-1.5 border-b border-white/10">
-        {/* Top brand line: Logo + Title + Left/Right Scroll Icons + Menu */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="font-display font-bold text-sm tracking-tight text-white flex items-center gap-1.5">
-              <span>Sponsored Promos</span>
-              <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5 rounded-md bg-white/10 text-zinc-300">
-                Delta
-              </span>
-            </h3>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {onOpenPostAd && (
-              <button
-                onClick={onOpenPostAd}
-                className="hidden xs:inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold transition-all cursor-pointer"
-              >
-                <Plus className="w-3 h-3 text-amber-300" />
-                <span>Post Ad</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => setActiveMenuAdId(activeMenuAdId === 'header' ? null : 'header')}
-              className="w-7 h-7 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-              aria-label="Sponsored options"
-            >
-              <MoreVertical className="w-4 h-4" />
-            </button>
-          </div>
+      {/* 1. SECTION HEADER */}
+      <div className="px-1 pt-1 pb-3 flex items-center justify-between border-b border-[#342A21]/15 relative z-10">
+        <div className="flex items-center gap-2">
+          <h3 className="font-display font-extrabold text-sm sm:text-base tracking-tight text-[#1C1F18] flex items-center gap-1.5 drop-shadow-2xs">
+            <span>Sponsored Promos</span>
+            <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-white/70 text-[#1C1F18] border border-white/80 shadow-2xs backdrop-blur-xs">
+              Delta
+            </span>
+          </h3>
         </div>
 
-        {/* Subheader: Overlapping Avatars + Join / Activity text */}
-        <div className="flex items-center gap-2 pl-0.5">
-          <div className="flex items-center -space-x-1.5 overflow-hidden">
-            <span className="inline-block w-4.5 h-4.5 rounded-full ring-2 ring-[#000004] bg-emerald-500 text-[8px] font-bold text-white text-center leading-[18px]">
-              DH
-            </span>
-            <span className="inline-block w-4.5 h-4.5 rounded-full ring-2 ring-[#000004] bg-amber-500 text-[8px] font-bold text-white text-center leading-[18px]">
-              WM
-            </span>
-            <span className="inline-block w-4.5 h-4.5 rounded-full ring-2 ring-[#000004] bg-blue-500 text-[8px] font-bold text-white text-center leading-[18px]">
-              SG
-            </span>
-          </div>
-          
-          <p className="text-[11px] text-zinc-400 font-medium truncate">
-            <span className="text-zinc-200 font-semibold">higgsfield.ai</span> and 8 verified services joined
-          </p>
-        </div>
-
-        {/* Header menu dropdown */}
-        {activeMenuAdId === 'header' && (
-          <div className="mt-2 p-2 rounded-xl bg-[#23252B] border border-white/10 text-xs text-zinc-300 space-y-1.5 animate-slide-up">
-            <p className="font-semibold text-white">About DeltaRent Sponsored Spotlight</p>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">
-              These verified regional adverts and artisan services are promoted to house-hunters browsing rental apartments in Delta State.
-            </p>
-            {onOpenPostAd && (
-              <button
-                onClick={() => {
-                  setActiveMenuAdId(null);
-                  onOpenPostAd();
-                }}
-                className="w-full text-left font-bold text-amber-300 hover:text-amber-200 text-xs py-1"
-              >
-                + Promote Your Apartment or Service Here
-              </button>
-            )}
-          </div>
+        {onOpenPostAd && (
+          <button
+            onClick={onOpenPostAd}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#342A21] hover:bg-[#231C16] text-white text-[11px] font-bold transition-all shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 text-amber-300" />
+            <span>Post Ad</span>
+          </button>
         )}
       </div>
 
       {/* 2. HORIZONTAL SWIPE CAROUSEL (Peeking next card layout with Floating Left/Right Scroll Icons) */}
-      <div className="relative mt-3 group/carousel">
-        {/* Floating Left Scroll Icon */}
+      <div className="relative mt-3 group/carousel z-10">
+        {/* Floating Left Scroll Icon (Only on desktop and larger screens) */}
         {canScrollLeft && (
           <button
             onClick={handleScrollLeft}
-            className="absolute -left-1 sm:left-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#18191D]/90 hover:bg-white text-white hover:text-[#000004] border border-white/30 hover:border-white shadow-xl flex items-center justify-center backdrop-blur-md transition-all active:scale-90 cursor-pointer"
+            className="hidden md:flex absolute -left-2 lg:-left-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 hover:bg-white text-[#342A21] border border-[#E5E7EB] hover:border-[#342A21]/30 shadow-card hover:shadow-elevated items-center justify-center backdrop-blur-md transition-all active:scale-90 cursor-pointer"
             aria-label="Scroll left"
             title="Previous adverts"
           >
-            <ChevronLeft className="w-5 h-5 -ml-0.5" />
+            <ChevronLeft className="w-5 h-5 -ml-0.5 text-[#342A21]" />
           </button>
         )}
 
-        {/* Floating Right Scroll Icon */}
+        {/* Floating Right Scroll Icon (Only on desktop and larger screens) */}
         {canScrollRight && (
           <button
             onClick={handleScrollRight}
-            className="absolute -right-1 sm:right-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#18191D]/90 hover:bg-white text-white hover:text-[#000004] border border-white/30 hover:border-white shadow-xl flex items-center justify-center backdrop-blur-md transition-all active:scale-90 cursor-pointer"
+            className="hidden md:flex absolute -right-2 lg:-right-3.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/95 hover:bg-white text-[#342A21] border border-[#E5E7EB] hover:border-[#342A21]/30 shadow-card hover:shadow-elevated items-center justify-center backdrop-blur-md transition-all active:scale-90 cursor-pointer"
             aria-label="Scroll right"
             title="Next adverts"
           >
-            <ChevronRight className="w-5 h-5 -mr-0.5" />
+            <ChevronRight className="w-5 h-5 -mr-0.5 text-[#342A21]" />
           </button>
         )}
 
@@ -393,14 +373,14 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
           return (
             <div
               key={ad.id}
-              className="w-[85vw] max-w-[340px] shrink-0 snap-start rounded-[22px] bg-[#18191D] border border-white/10 p-4 flex flex-col justify-between shadow-lg relative group transition-transform active:scale-[0.99]"
+              className="w-[86%] sm:w-[88%] shrink-0 snap-start rounded-[22px] bg-white/95 hover:bg-white border border-[#E5E7EB] hover:border-[#342A21]/20 p-4 flex flex-col justify-between shadow-card hover:shadow-elevated relative group transition-all duration-200 active:scale-[0.99] backdrop-blur-sm"
             >
-              {/* Top Row: Author Avatar + Handle + Timestamp + Menu */}
+              {/* Top Row: Author Avatar + Handle + Timestamp + Share */}
               <div>
                 <div className="flex items-center justify-between gap-2 mb-2.5">
                   <div className="flex items-center gap-2.5 min-w-0">
                     {/* Avatar */}
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-zinc-800 shrink-0 border border-white/20">
+                    <div className="w-9 h-9 rounded-full overflow-hidden bg-[#F6F3EF] shrink-0 border border-[#E5E7EB]">
                       <img
                         src={ad.avatarUrl || ad.thumbnailUrl}
                         alt={ad.advertiserName}
@@ -411,62 +391,48 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
 
                     {/* Author Handle & Time */}
                     <div className="flex items-center gap-1.5 truncate">
-                      <span className="font-bold text-white text-xs sm:text-sm tracking-tight truncate">
+                      <span className="font-bold text-[#000004] text-xs sm:text-sm tracking-tight truncate">
                         {ad.advertiserHandle || ad.advertiserName.toLowerCase().replace(/\s+/g, '_')}
                       </span>
-                      <span className="text-zinc-500 text-xs shrink-0">•</span>
-                      <span className="text-zinc-400 text-xs shrink-0">
+                      <span className="text-[#70798C] text-xs shrink-0">•</span>
+                      <span className="text-[#70798C] text-xs shrink-0">
                         {ad.timeAgo || '2d'}
                       </span>
                       {ad.isVerified && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                       )}
                     </div>
                   </div>
 
-                  {/* Three Dots Menu Button */}
+                  {/* Direct Share Button */}
                   <button
-                    onClick={() => setActiveMenuAdId(activeMenuAdId === ad.id ? null : ad.id)}
-                    className="w-7 h-7 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors shrink-0"
-                    aria-label="Ad options"
+                    onClick={(e) => handleShare(e, ad)}
+                    className="w-7 h-7 rounded-full hover:bg-[#F6F3EF] text-[#70798C] hover:text-[#000004] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                    aria-label="Share advert"
+                    title="Share Advert"
                   >
-                    <MoreVertical className="w-4 h-4" />
+                    <Share2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                {/* Dropdown for Card Menu */}
-                {activeMenuAdId === ad.id && (
-                  <div className="mb-2 p-2 rounded-xl bg-[#23252B] border border-white/10 text-xs text-zinc-300 space-y-1 animate-slide-up">
-                    <p className="font-bold text-white text-[11px]">{ad.advertiserName}</p>
-                    <p className="text-[10px] text-zinc-400">{ad.location}</p>
-                    <button
-                      onClick={(e) => {
-                        handleShare(e, ad);
-                        setActiveMenuAdId(null);
-                      }}
-                      className="w-full text-left font-semibold text-zinc-200 hover:text-white text-[11px] py-1 flex items-center gap-1.5"
-                    >
-                      <Share2 className="w-3 h-3" />
-                      <span>Share Advert</span>
-                    </button>
-                  </div>
-                )}
-
                 {/* Bold Headline */}
-                <h4 className="font-bold text-white text-[14px] sm:text-[15px] leading-snug tracking-tight mb-2">
+                <h4 
+                  onClick={(e) => handleCTA(e, ad)}
+                  className="font-bold text-[#000004] text-[14px] sm:text-[15px] leading-snug tracking-tight mb-2 hover:text-[#342A21] cursor-pointer transition-colors"
+                >
                   {ad.headline}
                 </h4>
 
                 {/* Text Body Copy (with ... more toggle) */}
-                <div className="text-zinc-300 text-xs leading-relaxed">
-                  <p className={isExpanded ? 'whitespace-pre-line' : 'line-clamp-3'}>
+                <div className="text-[#70798C] text-xs leading-relaxed">
+                  <p className={isExpanded ? 'whitespace-pre-line text-[#342A21]' : 'line-clamp-3'}>
                     {ad.description}
                   </p>
                   
                   {ad.description.length > 90 && (
                     <button
                       onClick={() => setExpandedAdIds((prev) => ({ ...prev, [ad.id]: !isExpanded }))}
-                      className="text-zinc-500 hover:text-zinc-300 font-semibold text-xs mt-1 transition-colors"
+                      className="text-[#342A21] hover:underline font-bold text-xs mt-1 transition-colors cursor-pointer"
                     >
                       {isExpanded ? 'less' : '... more'}
                     </button>
@@ -476,24 +442,18 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                 {/* Media Preview (Walkthrough Video or High-Res Photo) */}
                 {ad.mediaUrl && (
                   <div 
-                    onClick={() => onSelectAdvert && onSelectAdvert(ad)}
-                    className="mt-2.5 rounded-xl overflow-hidden aspect-video bg-black/60 border border-white/10 relative group/media cursor-pointer flex items-center justify-center"
+                    onClick={(e) => handleCTA(e, ad)}
+                    className="mt-2.5 rounded-xl overflow-hidden aspect-video bg-slate-900 border border-[#E5E7EB] relative group/media cursor-pointer flex items-center justify-center"
                   >
                     {ad.mediaType === 'video' ? (
                       <InFeedSponsoredVideo mediaUrl={ad.mediaUrl} />
                     ) : (
-                      <>
-                        <img
-                          src={ad.mediaUrl}
-                          alt={ad.headline}
-                          className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                        <span className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
-                          <ImageIcon className="w-2.5 h-2.5 text-white/80" />
-                          <span>PHOTO</span>
-                        </span>
-                      </>
+                      <img
+                        src={ad.mediaUrl}
+                        alt={ad.headline}
+                        className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
                     )}
                   </div>
                 )}
@@ -501,26 +461,67 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                 {/* Location / Price Tag */}
                 <div className="mt-2.5 flex items-center gap-2 flex-wrap">
                   {ad.price && (
-                    <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
                       {ad.price}
                     </span>
                   )}
-                  <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-zinc-500" />
+                  <span className="text-[11px] text-[#70798C] flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-[#70798C] shrink-0" />
                     <span className="truncate max-w-[140px]">{ad.location}</span>
                   </span>
                 </div>
               </div>
 
-              {/* Bottom Action Area: Primary Action CTA Button */}
-              <div className="mt-4 pt-3 border-t border-white/10 flex flex-col">
-                <button
-                  onClick={(e) => handleCTA(e, ad)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-zinc-200 text-[#000004] font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
-                >
-                  <span>{ad.ctaText || 'Learn More'}</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+              {/* Bottom Action Area: Best-Practice Destination-Aware CTA */}
+              <div className="mt-3.5 pt-3 border-t border-[#E5E7EB] flex items-center gap-2">
+                {(() => {
+                  const cta = getAdvertCtaConfig(ad);
+                  return (
+                    <>
+                      <button
+                        onClick={(e) => handleCTA(e, ad)}
+                        className="flex-1 py-2.5 px-3.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold text-xs flex items-center justify-between gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer group/cta"
+                      >
+                        <span className="truncate">{cta.label}</span>
+                        <div className="flex items-center gap-1.5 text-white/70 group-hover/cta:text-white transition-colors shrink-0">
+                          {cta.type === 'website' && (
+                            <>
+                              <span className="text-[10px] font-normal opacity-70 hidden sm:inline truncate max-w-[110px]">
+                                {cta.destinationHint}
+                              </span>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </>
+                          )}
+                          {cta.type === 'contact' && (
+                            <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                          )}
+                          {cta.type === 'property' && (
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Secondary Quick Contact for Website/Property ads that also support WhatsApp */}
+                      {cta.type !== 'contact' && ad.whatsappNumber && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const text = encodeURIComponent(
+                              `Hello ${ad.advertiserName}, I saw your sponsored advert "${ad.headline}" on DeltaRent.`
+                            );
+                            window.open(`https://wa.me/${ad.whatsappNumber}?text=${text}`, '_blank');
+                          }}
+                          className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-colors shrink-0 shadow-2xs active:scale-95 cursor-pointer"
+                          title="Direct WhatsApp Chat"
+                          aria-label="Direct WhatsApp Chat"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           );
@@ -530,20 +531,20 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
         {onOpenPostAd && (
           <div
             onClick={onOpenPostAd}
-            className="w-[72vw] max-w-[280px] shrink-0 snap-start rounded-[22px] bg-gradient-to-b from-[#1E2026] to-[#121316] border-2 border-dashed border-white/20 hover:border-amber-400/60 p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all active:scale-[0.98] group"
+            className="w-[75%] sm:w-[65%] shrink-0 snap-start rounded-[22px] bg-white/85 hover:bg-white border-2 border-dashed border-[#342A21]/20 hover:border-[#342A21]/50 p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all active:scale-[0.98] group shadow-card"
           >
-            <div className="w-12 h-12 rounded-full bg-white/10 group-hover:bg-amber-400/20 text-white group-hover:text-amber-300 flex items-center justify-center mb-3 transition-colors">
+            <div className="w-12 h-12 rounded-full bg-[#F6F3EF] group-hover:bg-[#342A21] text-[#342A21] group-hover:text-white border border-[#E5E7EB] flex items-center justify-center mb-3 transition-colors shadow-2xs">
               <Plus className="w-6 h-6" />
             </div>
 
-            <h4 className="font-bold text-white text-sm mb-1 group-hover:text-amber-200">
+            <h4 className="font-bold text-[#000004] text-sm mb-1 group-hover:text-[#342A21] transition-colors">
               Grow Your Business Here
             </h4>
-            <p className="text-zinc-400 text-xs leading-relaxed mb-4 max-w-[220px]">
-              Reach thousands of house-hunters and tenants across Delta State today.
+            <p className="text-[#70798C] text-xs leading-relaxed mb-4 max-w-[220px]">
+              Reach thousands of verified house-hunters and tenants across Delta State today.
             </p>
 
-            <span className="py-2 px-4 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-bold text-xs shadow-sm transition-colors">
+            <span className="py-2 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold text-xs shadow-xs transition-colors">
               Post Sponsored Ad
             </span>
           </div>

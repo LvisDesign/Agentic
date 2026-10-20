@@ -1,13 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
-  ChevronLeft, 
-  ChevronRight, 
   MessageCircle, 
   Phone, 
-  ExternalLink,
-  MapPin,
-  Calendar
+  MapPin 
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 
@@ -200,25 +196,7 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
             className="absolute right-0 top-16 bottom-36 w-1/3 z-20 cursor-pointer"
             title="Next Story"
           />
-
-          {/* Left / Right Nav Arrows for desktop */}
-          {currentIndex > 0 && (
-            <button
-              onClick={handlePrev}
-              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white items-center justify-center backdrop-blur-sm transition-all border border-white/20"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          )}
-          {currentIndex < adverts.length - 1 && (
-            <button
-              onClick={handleNext}
-              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-30 w-8 h-8 rounded-full bg-black/40 hover:bg-black/70 text-white items-center justify-center backdrop-blur-sm transition-all border border-white/20"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+          </div>
 
         {/* 4. Bottom Advert Story Sheet Overlay */}
         <div className="absolute bottom-0 left-0 right-0 z-30 p-4 sm:p-5 bg-gradient-to-t from-black via-black/90 to-transparent text-white space-y-2.5">

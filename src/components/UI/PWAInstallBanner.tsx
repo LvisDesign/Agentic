@@ -138,7 +138,7 @@ export const PWAInstallBanner: React.FC = () => {
       >
         <div className="bg-white rounded-2xl p-4 shadow-xl border border-[#E5E7EB] flex items-start gap-3.5 relative ring-1 ring-black/5">
           {/* App Icon */}
-          <div className="w-11 h-11 rounded-xl bg-[#275DAD] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+          <div className="w-11 h-11 rounded-xl bg-[#000004] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
             <Smartphone className="w-5 h-5 text-white" />
           </div>
 
@@ -148,7 +148,7 @@ export const PWAInstallBanner: React.FC = () => {
               <span className="font-display font-bold text-sm text-[#000004]">
                 Install Platform App
               </span>
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#275DAD]/10 text-[#275DAD]">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#342A21]/10 text-[#342A21]">
                 Official App
               </span>
             </div>
@@ -161,7 +161,7 @@ export const PWAInstallBanner: React.FC = () => {
               <button
                 type="button"
                 onClick={handleInstallClick}
-                className="py-2 px-3.5 rounded-xl bg-[#275DAD] hover:bg-[#1f4b8c] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                className="py-2 px-3.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>{isIOSDevice ? 'How to Install' : 'Install App'}</span>
@@ -201,7 +201,7 @@ export const PWAInstallBanner: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#275DAD] text-white flex items-center justify-center shadow-xs">
+                <div className="w-9 h-9 rounded-xl bg-[#000004] text-white flex items-center justify-center shadow-xs">
                   <Smartphone className="w-4.5 h-4.5" />
                 </div>
                 <div>
@@ -223,7 +223,7 @@ export const PWAInstallBanner: React.FC = () => {
 
             <div className="space-y-2.5 text-xs text-[#000004]">
               <div className="p-3 rounded-2xl bg-slate-50 border border-[#E5E7EB] flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#275DAD] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-slate-100 text-[#000004] flex items-center justify-center shrink-0">
                   <Share2 className="w-4 h-4" />
                 </div>
                 <div>
@@ -233,7 +233,7 @@ export const PWAInstallBanner: React.FC = () => {
               </div>
 
               <div className="p-3 rounded-2xl bg-slate-50 border border-[#E5E7EB] flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#275DAD] flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-slate-100 text-[#000004] flex items-center justify-center shrink-0">
                   <PlusSquare className="w-4 h-4" />
                 </div>
                 <div>
@@ -242,8 +242,8 @@ export const PWAInstallBanner: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/60 text-[11px] text-blue-950 flex items-center gap-2">
-                <BellRing className="w-3.5 h-3.5 text-[#275DAD] shrink-0" />
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-[#70798C] flex items-center gap-2">
+                <BellRing className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
                 <span>Enables native mobile alerts and instant inspection updates on your home screen.</span>
               </div>
             </div>
@@ -251,7 +251,7 @@ export const PWAInstallBanner: React.FC = () => {
             <button
               type="button"
               onClick={handleDismiss}
-              className="w-full py-2.5 rounded-xl bg-[#275DAD] text-white text-xs font-bold hover:bg-[#1f4b8c] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] transition-colors cursor-pointer flex items-center justify-center gap-1.5"
             >
               <Check className="w-3.5 h-3.5" />
               <span>Got It</span>

@@ -11,7 +11,9 @@ import {
   CreditCard,
   Film,
   Image as ImageIcon,
-  Video
+  Video,
+  Globe,
+  ExternalLink
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
@@ -38,6 +40,8 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   const [description, setDescription] = useState('');
   const [phone, setPhone] = useState('0803 492 8172');
   const [whatsapp, setWhatsapp] = useState('2348034928172');
+  const [actionType, setActionType] = useState<'contact' | 'website'>('contact');
+  const [websiteUrl, setWebsiteUrl] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly'>('weekly');
   const [uploadedMedia, setUploadedMedia] = useState<{ url: string; type: 'image' | 'video'; name: string }>({
     url: '/images/properties/asaba_gra_exterior.jpg',
@@ -87,7 +91,9 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
       description: description || `Newly listed property in ${neighborhood}, ${city}. Contact partner directly on WhatsApp.`,
       location: `${neighborhood ? `${neighborhood}, ` : ''}${city}`,
       price: price ? `₦${parseInt(price, 10).toLocaleString()} /yr` : undefined,
-      ctaText: 'Chat on WhatsApp',
+      ctaText: actionType === 'website' ? 'Visit Website' : 'Contact Us',
+      actionType,
+      websiteUrl: actionType === 'website' && websiteUrl.trim() ? websiteUrl.trim() : undefined,
       whatsappNumber: whatsapp.replace(/\D/g, ''),
       phone,
       isVerified: true,
@@ -347,11 +353,64 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               </div>
             </div>
 
-            {/* Contact for Inquiries */}
+            {/* Action Goal & Contact for Inquiries */}
             <div className="space-y-3 pt-2 border-t border-[#E5E7EB]">
               <label className="text-xs font-bold text-[#70798C] uppercase tracking-wider block">
-                3. Lead Inquiries (WhatsApp / Calls)
+                3. Advert Destination & Call-to-Action
               </label>
+
+              {/* Destination Type Toggle */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActionType('contact')}
+                  className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    actionType === 'contact'
+                      ? 'border-[#342A21] bg-[#342A21] text-white shadow-xs'
+                      : 'border-[#E5E7EB] bg-slate-50 text-[#70798C] hover:bg-slate-100'
+                  }`}
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Direct Contact</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActionType('website')}
+                  className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                    actionType === 'website'
+                      ? 'border-[#342A21] bg-[#342A21] text-white shadow-xs'
+                      : 'border-[#E5E7EB] bg-slate-50 text-[#70798C] hover:bg-slate-100'
+                  }`}
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Website / Link</span>
+                </button>
+              </div>
+
+              {/* Website / Influencer Link Input (if website action chosen) */}
+              {actionType === 'website' && (
+                <div>
+                  <label className="text-xs text-[#70798C] block mb-1">
+                    Organization / Influencer Page URL *
+                  </label>
+                  <div className="relative">
+                    <Globe className="w-3.5 h-3.5 text-[#70798C] absolute left-3 top-2.5" />
+                    <input
+                      type="url"
+                      value={websiteUrl}
+                      onChange={(e) => setWebsiteUrl(e.target.value)}
+                      placeholder="https://yourbrand.com or https://instagram.com/yourhandle"
+                      className="w-full pl-8 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
+                      required={actionType === 'website'}
+                    />
+                  </div>
+                  <p className="text-[10px] text-[#70798C] mt-1">
+                    CTA button will display "Visit Website" and redirect users to this page.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[#70798C] block mb-1">WhatsApp (Digits with 234)</label>

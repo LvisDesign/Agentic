@@ -11,13 +11,21 @@ import {
   Bed, 
   Bath,
   Lock,
+  Flag,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  SlidersHorizontal,
+  Sparkles,
 } from 'lucide-react';
-import { PropertyListing, BookingRecord } from '../../types/marketplace';
+import { PropertyListing, BookingRecord, ListingAvailability } from '../../types/marketplace';
 import { formatNaira } from '../../utils/formatters';
 import { MediaCarousel } from './MediaCarousel';
-import { FeeBreakdownDrawer } from './FeeBreakdownDrawer';
+import { FeeBreakdownSheet } from './FeeBreakdownSheet';
+import { ReportListingModal } from './ReportListingModal';
 import { QueueStatusBadge } from '../Booking/QueueStatusBadge';
 import { InspectionBookingModal } from '../Booking/InspectionBookingModal';
+import { UnlockedContactSheet } from '../Booking/UnlockedContactSheet';
 
 interface PropertyCardProps {
   listing: PropertyListing;
@@ -26,6 +34,8 @@ interface PropertyCardProps {
   onUpdateBooking: (booking: BookingRecord) => void;
   onSimulateAgentAccept?: (bookingId: string) => void;
   onOpenBookingModal?: (listing: PropertyListing) => void;
+  onUpdateAvailability?: (listingId: string, status: ListingAvailability) => void;
+  onConfirmFreshness?: (listingId: string) => void;
   index: number;
   totalCount: number;
 }
@@ -37,15 +47,33 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   onUpdateBooking,
   onSimulateAgentAccept,
   onOpenBookingModal,
+  onUpdateAvailability,
+  onConfirmFreshness,
   index,
   totalCount,
 }) => {
   const [showFeeDrawer, setShowFeeDrawer] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [showUnlockedContact, setShowUnlockedContact] = useState(false);
+  const [showListerControls, setShowListerControls] = useState(false);
+  const [isReported, setIsReported] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedShare, setCopiedShare] = useState(false);
 
   // Primary slot to display capacity badge
   const primarySlot = listing.inspectionSlots[0];
+
+  const isFreshnessUnconfirmed = (() => {
+    if (!listing.lastConfirmedAt) return true;
+    const confirmedTime = new Date(listing.lastConfirmedAt).getTime();
+    const now = new Date('2026-10-19T23:24:27+01:00').getTime();
+    return (now - confirmedTime) > 48 * 60 * 60 * 1000;
+  })();
+
+  const isConfirmed = activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'APPROVED_CONFIRMED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT';
+  const isRentedOut = listing.availabilityStatus === 'Rented Out';
+  const isUnderInspection = listing.availabilityStatus === 'Under Inspection';
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -54,12 +82,20 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     setTimeout(() => setCopiedShare(false), 2000);
   };
 
+  const handleReportSubmitted = (_propertyId: string, _reason: string, _notes?: string) => {
+    setIsReported(true);
+    setToastMessage('Thank you. Our team will review this listing within 2 hours.');
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
+
   return (
     <div className="w-full flex flex-col items-center justify-start py-1 sm:py-2">
       {/* Centered Property Card with Natural Proportions & Outside Descriptions */}
       <div className="w-full max-w-xl sm:max-w-2xl bg-white rounded-2xl sm:rounded-3xl border border-[#E5E7EB] shadow-card flex flex-col overflow-hidden relative">
         
-        {/* CARD TOP HEADER: Location Tag, Live Capacity & Share (Zero Overlaps) */}
+        {/* CARD TOP HEADER: Location Tag, Live Capacity, Report Flag & Share (Zero Overlaps) */}
         <div className="px-3.5 sm:px-4 py-2 bg-white border-b border-[#E5E7EB] flex items-center justify-between gap-2 shrink-0">
           {/* Location tag */}
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#000004] truncate">
@@ -68,12 +104,70 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             <span className="text-[#70798C] font-normal text-[11px] shrink-0 hidden sm:inline">• Delta</span>
           </div>
 
-          {/* Capacity Badge & Share */}
+          {/* Capacity Badge, Report Flag & Share */}
           <div className="flex items-center gap-1.5 shrink-0">
             {primarySlot && (
               <QueueStatusBadge slot={primarySlot} size="sm" />
             )}
+
+            {isRentedOut && (
+              <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-extrabold bg-[#F0544F] text-white">
+                RENTED OUT
+              </span>
+            )}
+
+            {isUnderInspection && (
+              <span className="px-2 py-0.5 rounded-[6px] text-[10px] font-bold bg-amber-500 text-white">
+                Under Inspection
+              </span>
+            )}
+
+            {isReported && (
+              <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F0544F]/10 text-[#F0544F] border border-[#F0544F]/20">
+                <Flag className="w-2.5 h-2.5 fill-[#F0544F]" />
+                <span>Report Submitted</span>
+              </span>
+            )}
+
+            {/* Quick Lister Status Toggle Trigger */}
             <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowListerControls(!showListerControls);
+              }}
+              aria-label="Toggle lister controls"
+              className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
+                showListerControls 
+                  ? 'bg-[#000004] text-white border-[#000004]' 
+                  : 'bg-[#FCF9F5] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#000004] border-[#E5E7EB]'
+              }`}
+              title="Lister status & proof-of-life controls"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Subtle Flag Report Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowReportModal(true);
+              }}
+              aria-label="Report inaccurate or occupied listing"
+              className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
+                isReported
+                  ? 'bg-[#F0544F]/15 text-[#F0544F] border-[#F0544F]/30'
+                  : 'bg-[#FCF9F5] hover:bg-[#F0544F]/10 text-[#70798C] hover:text-[#F0544F] border-[#E5E7EB]'
+              }`}
+              title={isReported ? 'Report Submitted (Under Review)' : 'Report listing'}
+            >
+              <Flag className={`w-3.5 h-3.5 ${isReported ? 'fill-[#F0544F]' : ''}`} />
+            </button>
+
+            {/* Share Button */}
+            <button
+              type="button"
               onClick={handleShare}
               aria-label="Share property link"
               className="w-7 h-7 rounded-full bg-[#FCF9F5] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#000004] flex items-center justify-center border border-[#E5E7EB] transition-colors cursor-pointer"
@@ -88,9 +182,82 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
         </div>
 
+        {/* 48-Hour Proof-of-Life Check Banner */}
+        {isFreshnessUnconfirmed && (
+          <div className="px-3.5 py-1.5 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-800">
+              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>Availability Unconfirmed (&gt;48 hrs)</span>
+            </div>
+            {onConfirmFreshness && (
+              <button
+                type="button"
+                onClick={() => {
+                  onConfirmFreshness(listing.id);
+                  setToastMessage('Listing freshness verified! Ranking refreshed.');
+                  setTimeout(() => setToastMessage(null), 3000);
+                }}
+                className="px-2.5 py-1 rounded-[6px] bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold transition-colors cursor-pointer shadow-2xs"
+              >
+                Confirm listing is still vacant
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Quick Lister Availability Controls (Management Bar) */}
+        {showListerControls && (
+          <div className="px-3.5 py-2 bg-[#FCF9F5] border-b border-[rgba(112,121,140,0.22)] flex items-center justify-between gap-2 shrink-0 text-xs flex-wrap animate-fade-in">
+            <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider">
+              Lister Availability:
+            </span>
+            <div className="flex items-center gap-1.5">
+              {(['Available', 'Under Inspection', 'Rented Out'] as ListingAvailability[]).map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => {
+                    if (onUpdateAvailability) {
+                      onUpdateAvailability(listing.id, st);
+                      if (st === 'Rented Out') {
+                        setToastMessage('Listing marked as Rented Out. Hiding from public feed in 3s...');
+                        setTimeout(() => setToastMessage(null), 3500);
+                      }
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-[6px] text-[10px] font-bold transition-all cursor-pointer ${
+                    listing.availabilityStatus === st || (!listing.availabilityStatus && st === 'Available')
+                      ? st === 'Rented Out'
+                        ? 'bg-[#F0544F] text-white shadow-xs'
+                        : st === 'Under Inspection'
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'bg-[#000004] text-white shadow-xs'
+                      : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:bg-slate-50'
+                  }`}
+                >
+                  {st}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* TOP SECTION: Media Carousel with Responsive Aspect Ratio */}
         <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[380px] shrink-0 overflow-hidden bg-slate-900">
           <MediaCarousel media={listing.media} title={listing.title} />
+
+          {/* Rented Out Backdrop Overlay */}
+          {isRentedOut && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center p-4 text-center">
+              <span className="px-4 py-1.5 rounded-[8px] bg-[#F0544F] text-white text-sm font-extrabold uppercase tracking-widest shadow-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                RENTED OUT
+              </span>
+              <p className="text-white/80 text-xs mt-2 max-w-xs">
+                This property is taken. Auto-archiving from public feed in 3s...
+              </p>
+            </div>
+          )}
         </div>
 
         {/* MIDDLE SECTION: Descriptions Outside the Image (NO vertical scrolling into image container) */}
@@ -116,13 +283,26 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
             {/* 2. Large Pricing & Title */}
             <div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-[#000004] tracking-tight">
-                  {formatNaira(listing.fees.baseRent)}
-                </span>
-                <span className="text-[#70798C] text-xs font-medium">
-                  /{listing.fees.rentPeriod}
-                </span>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-[#000004] tracking-tight">
+                    {formatNaira(listing.fees.baseRent)}
+                  </span>
+                  <span className="text-[#70798C] text-xs font-medium">
+                    /{listing.fees.rentPeriod}
+                  </span>
+                </div>
+
+                {/* [Fees] Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setShowFeeDrawer(true)}
+                  className="px-2.5 py-1 rounded-[8px] bg-[#342A21]/10 hover:bg-[#342A21]/20 text-[#342A21] text-xs font-bold transition-colors cursor-pointer border border-[#342A21]/25 active:scale-95 flex items-center gap-1 shadow-2xs"
+                  title="View move-in fee breakdown"
+                >
+                  <Receipt className="w-3.5 h-3.5" />
+                  <span>[Fees]</span>
+                </button>
               </div>
 
               <h2 className="font-display text-sm sm:text-base font-bold text-[#000004] mt-0.5 line-clamp-1">
@@ -179,42 +359,121 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
         {/* 5. PINNED BOTTOM ACTION BAR: Always 100% visible on both mobile & desktop without any vertical scrolling */}
         <div className="px-3.5 py-2.5 sm:px-5 sm:py-3 bg-white border-t border-[#E5E7EB] shrink-0">
-          <button
-            onClick={() => {
-              if (onOpenBookingModal) {
-                onOpenBookingModal(listing);
-              } else {
-                setShowBookingModal(true);
-              }
-            }}
-            className={`w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center shadow-sm transition-all active:scale-[0.99] cursor-pointer ${
-              activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT'
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                : activeBooking?.status === 'QUEUED'
-                ? 'bg-[#F0544F] hover:bg-[#d9433e] text-white'
-                : activeBooking?.status === 'REQUEST_SUBMITTED'
-                ? 'bg-[#342A21] hover:bg-[#251E17] text-white'
-                : 'bg-[#000004] hover:bg-[#1f2937] text-white'
-            }`}
-          >
-            <span className="truncate">
-              {(activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT') && 'View Inspection Pass (Contact Revealed)'}
-              {activeBooking?.status === 'QUEUED' && `Standby Queue (#${activeBooking.queuePosition})`}
-              {activeBooking?.status === 'REQUEST_SUBMITTED' && 'Awaiting Agent Confirmation'}
-              {!activeBooking && 'Book Inspection'}
-            </span>
-          </button>
+          {isConfirmed ? (
+            <button
+              type="button"
+              onClick={() => setShowUnlockedContact(true)}
+              className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99] cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
+              <span>Inspection Confirmed • View Lister Contact</span>
+            </button>
+          ) : isRentedOut ? (
+            <button
+              type="button"
+              disabled
+              className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-[#F0544F]/15 text-[#F0544F] border border-[#F0544F]/30 cursor-not-allowed"
+            >
+              <AlertCircle className="w-4 h-4" />
+              <span>Rented Out / No Longer Vacant</span>
+            </button>
+          ) : isUnderInspection ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenBookingModal) {
+                  onOpenBookingModal(listing);
+                } else {
+                  setShowBookingModal(true);
+                }
+              }}
+              className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 bg-amber-50 text-amber-800 border border-amber-300 hover:bg-amber-100 transition-colors cursor-pointer"
+            >
+              <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Under Inspection • Standby Only</span>
+            </button>
+          ) : activeBooking?.status === 'REQUEST_SUBMITTED' ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onOpenBookingModal) {
+                    onOpenBookingModal(listing);
+                  } else {
+                    setShowBookingModal(true);
+                  }
+                }}
+                className="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.99] cursor-pointer bg-[#342A21] hover:bg-[#251E17] text-white"
+              >
+                <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Awaiting Lister Approval</span>
+              </button>
+              {onSimulateAgentAccept && (
+                <button
+                  type="button"
+                  onClick={() => onSimulateAgentAccept(activeBooking.id)}
+                  className="shrink-0 py-2.5 sm:py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+                  title="Simulate Lister Approval (Instant Free Contact Unlock)"
+                >
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Lister Accept</span>
+                </button>
+              )}
+            </div>
+          ) : activeBooking?.status === 'QUEUED' ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenBookingModal) {
+                  onOpenBookingModal(listing);
+                } else {
+                  setShowBookingModal(true);
+                }
+              }}
+              className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.99] cursor-pointer bg-[#F0544F] hover:bg-[#d9433e] text-white"
+            >
+              <AlertCircle className="w-4 h-4" />
+              <span>Standby Queue (#{activeBooking.queuePosition})</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (onOpenBookingModal) {
+                  onOpenBookingModal(listing);
+                } else {
+                  setShowBookingModal(true);
+                }
+              }}
+              className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.99] cursor-pointer bg-[#000004] hover:bg-[#1f2937] text-white"
+            >
+              <span>Book Inspection</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Drawers & Modals */}
-      <FeeBreakdownDrawer
+      <FeeBreakdownSheet
         isOpen={showFeeDrawer}
         onClose={() => setShowFeeDrawer(false)}
         fees={listing.fees}
         title={listing.title}
-        neighborhood={listing.neighborhood}
-        city={listing.city}
+        onProceedToBooking={() => {
+          if (onOpenBookingModal) {
+            onOpenBookingModal(listing);
+          } else {
+            setShowBookingModal(true);
+          }
+        }}
+      />
+
+      <ReportListingModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        propertyId={listing.id}
+        propertyTitle={listing.title}
+        onSubmitReport={handleReportSubmitted}
       />
 
       <InspectionBookingModal
@@ -230,6 +489,23 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         }}
         onSimulateAgentAccept={onSimulateAgentAccept}
       />
+
+      {activeBooking && (
+        <UnlockedContactSheet
+          isOpen={showUnlockedContact}
+          onClose={() => setShowUnlockedContact(false)}
+          listing={listing}
+          booking={activeBooking}
+        />
+      )}
+
+      {/* Quick Success Toast for Feedback / Reporting */}
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-3 rounded-[12px] bg-[#000004] text-white shadow-2xl text-xs sm:text-sm font-medium animate-slide-up border border-white/10 max-w-[90vw]">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 };

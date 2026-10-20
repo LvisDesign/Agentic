@@ -17,12 +17,55 @@ export interface AdvertStory {
   description: string;
   location: string;
   price?: string;
-  ctaText: string;
+  ctaText?: string;
+  websiteUrl?: string;
+  actionType?: 'website' | 'contact' | 'property';
   whatsappNumber?: string;
   phone?: string;
   isVerified: boolean;
   propertyId?: string;
 }
+
+export interface AdvertCtaConfig {
+  label: string;
+  type: 'website' | 'contact' | 'property';
+  destinationHint: string;
+}
+
+export const getAdvertCtaConfig = (ad: AdvertStory): AdvertCtaConfig => {
+  // 1. Organization or influencer website link
+  if (ad.actionType === 'website' || (ad.websiteUrl && !ad.propertyId)) {
+    let domain = '';
+    if (ad.websiteUrl) {
+      try {
+        domain = new URL(ad.websiteUrl).hostname.replace(/^www\./, '');
+      } catch {
+        domain = ad.websiteUrl.replace(/^https?:\/\//, '').split('/')[0];
+      }
+    }
+    return {
+      label: ad.ctaText && ad.ctaText !== 'Learn More' ? ad.ctaText : 'Visit Website',
+      type: 'website',
+      destinationHint: domain || 'Organization Link',
+    };
+  }
+
+  // 2. Direct rental listing on platform
+  if (ad.actionType === 'property' || ad.propertyId) {
+    return {
+      label: ad.ctaText && ad.ctaText !== 'Learn More' ? ad.ctaText : 'View Property',
+      type: 'property',
+      destinationHint: 'Verified Listing',
+    };
+  }
+
+  // 3. Direct Contact / Inquiries
+  return {
+    label: ad.ctaText && ad.ctaText !== 'Learn More' ? ad.ctaText : 'Contact Us',
+    type: 'contact',
+    destinationHint: ad.whatsappNumber ? 'WhatsApp & Calls' : 'Direct Inquiry',
+  };
+};
 
 export const MOCK_ADVERT_STORIES: AdvertStory[] = [
   {
@@ -44,7 +87,8 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     description: 'Executive 2-Bedroom Serviced Flat with 24/7 Band A Electricity, dedicated transformer & treated borehole. 100% verified move-in package with transparent regional lease guarantee.\n\nWater heater in all rooms, private balcony with serene view of government reserve.',
     location: 'GRA Phase 2 (Behind Govt House), Asaba',
     price: '₦1,800,000 /yr',
-    ctaText: 'Inspect Property',
+    ctaText: 'View Property',
+    actionType: 'property',
     whatsappNumber: '2348034928172',
     phone: '0803 492 8172',
     isVerified: true,
@@ -69,7 +113,8 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     description: 'Moving into a new flat? We handle delicate furniture dismantling, bubble wrapping, truck transit & reassembly.\n\nZero breakage guarantee with uniformed trusted crew. Available 7 days a week across Delta State.',
     location: 'Warri, Effurun, Asaba & Sapele',
     price: 'From ₦35,000 /trip',
-    ctaText: 'Chat on WhatsApp',
+    ctaText: 'Contact Us',
+    actionType: 'contact',
     whatsappNumber: '2348129841029',
     phone: '0812 984 1029',
     isVerified: true,
@@ -93,7 +138,9 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     description: 'Special 3.5kVA & 5kVA solar backup systems tailored for tenant apartments in Asaba, Warri, and Sapele.\n\nPowers your fridge, fans, TV, and work laptops. Seamless installation with flexible monthly financing options.',
     location: 'Asaba, Warri & Sapele Hubs',
     price: 'From ₦25,000 /mo',
-    ctaText: 'Get Free Quote',
+    ctaText: 'Visit Website',
+    actionType: 'website',
+    websiteUrl: 'https://deltagreenenergy.ng',
     whatsappNumber: '2348034928172',
     phone: '0803 492 8172',
     isVerified: true,
@@ -117,7 +164,8 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     description: 'Located in private Palm Grove corridor 3 minutes from Shoprite. Tight security, flood-free paved compound, prepaid meter & water heater in all rooms.\n\nDirect key handoff with zero middleman fee.',
     location: 'Airport Road / Effurun, Warri',
     price: '₦2,200,000 /yr',
-    ctaText: 'View Listing',
+    ctaText: 'View Property',
+    actionType: 'property',
     whatsappNumber: '2348129841029',
     phone: '0812 984 1029',
     isVerified: true,
@@ -142,7 +190,8 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     description: 'Moving into an apartment that needs a fresh look? We offer premium Italian wash coat paints, 3D wall panels, and sleek gypsum POP.\n\nFast 48-hour room turnarounds with clean finish guarantee.',
     location: 'Delta Wide Coverage',
     price: 'Free Consultation',
-    ctaText: 'Contact Artisan',
+    ctaText: 'Contact Us',
+    actionType: 'contact',
     whatsappNumber: '2348056712390',
     phone: '0805 671 2390',
     isVerified: true,
@@ -166,7 +215,9 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     description: 'Top-choice executive student self-contain lodge with 24/7 solar study lighting, private balcony, treated borehole & 24hr security personnel.',
     location: 'DELSU Campus 3 Gate / Ekrejeta, Abraka',
     price: '₦450,000 /yr',
-    ctaText: 'Reserve Room',
+    ctaText: 'Visit Website',
+    actionType: 'website',
+    websiteUrl: 'https://delsulodges.com',
     whatsappNumber: '2349071239845',
     phone: '0907 123 9845',
     isVerified: true,
@@ -191,7 +242,8 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     description: 'High-end furnished duplex in prestigious Amukpe residential layout. Automated gate, standby 30kVA generator, smart lock & private rooftop lounge.',
     location: 'Amukpe GRA, Sapele',
     price: '₦3,500,000 /yr',
-    ctaText: 'Chat on WhatsApp',
+    ctaText: 'View Property',
+    actionType: 'property',
     whatsappNumber: '2348034928172',
     phone: '0803 492 8172',
     isVerified: true,
@@ -216,7 +268,8 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     description: 'Freshly painted 2-bedroom flat with Gerard stone-coated roof, personal prepaid meter, solid security doors & dedicated water storage tower.',
     location: 'Otovwodo / Afiesere Road, Ughelli',
     price: '₦850,000 /yr',
-    ctaText: 'Book Inspection',
+    ctaText: 'View Property',
+    actionType: 'property',
     whatsappNumber: '2348056712390',
     phone: '0805 671 2390',
     isVerified: true,

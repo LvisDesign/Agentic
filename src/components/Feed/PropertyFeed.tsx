@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { PropertyListing, BookingRecord } from '../../types/marketplace';
+import { PropertyListing, BookingRecord, ListingAvailability } from '../../types/marketplace';
 import { PropertyCard } from './PropertyCard';
 import { MapPin, SearchX, RefreshCcw } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
@@ -13,6 +13,8 @@ interface PropertyFeedProps {
   onUpdateBooking: (booking: BookingRecord) => void;
   onSimulateAgentAccept?: (bookingId: string) => void;
   onOpenBookingModal?: (listing: PropertyListing) => void;
+  onUpdateAvailability?: (listingId: string, status: ListingAvailability) => void;
+  onConfirmFreshness?: (listingId: string) => void;
   onResetFilters: () => void;
   adverts?: AdvertStory[];
   onSelectAdvert?: (ad: AdvertStory) => void;
@@ -27,6 +29,8 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
   onUpdateBooking,
   onSimulateAgentAccept,
   onOpenBookingModal,
+  onUpdateAvailability,
+  onConfirmFreshness,
   onResetFilters,
   adverts,
   onSelectAdvert,
@@ -136,6 +140,8 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
               onUpdateBooking={onUpdateBooking}
               onSimulateAgentAccept={onSimulateAgentAccept}
               onOpenBookingModal={onOpenBookingModal}
+              onUpdateAvailability={onUpdateAvailability}
+              onConfirmFreshness={onConfirmFreshness}
               index={index}
               totalCount={listings.length}
             />

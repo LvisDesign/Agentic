@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { INITIAL_LISTINGS } from './data/mockListings';
-import { PropertyListing, BookingRecord, UserRole, UserProfile } from './types/marketplace';
+import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability } from './types/marketplace';
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge } from './utils/pwa';
 import { saveRegisteredUser } from './utils/userRegistry';
@@ -15,9 +15,10 @@ import { MyPassesModal } from './components/Pass/MyPassesModal';
 import { UserProfileModal } from './components/Profile/UserProfileModal';
 import { InspectionBookingModal } from './components/Booking/InspectionBookingModal';
 import { MOCK_ADVERT_STORIES, AdvertStory } from './data/mockAdverts';
-import { AdvertStoryModal } from './components/Feed/AdvertStoryModal';
 import { PostAdModal } from './components/Feed/PostAdModal';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
+import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
+import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
 
 // Initial User Profile (Tenant / Non-Agent)
 const INITIAL_USER: UserProfile = {
@@ -138,6 +139,8 @@ export function App() {
   });
 
   const [activeModalListing, setActiveModalListing] = useState<PropertyListing | null>(null);
+  const [pushNotification, setPushNotification] = useState<PushNotificationData | null>(null);
+  const [unlockedSheetData, setUnlockedSheetData] = useState<{ listing: PropertyListing; booking: BookingRecord } | null>(null);
 
   // Synchronize dynamic home-screen badge count with active inspection passes
   useEffect(() => {
@@ -157,19 +160,69 @@ export function App() {
   const [signupInitialRole, setSignupInitialRole] = useState<'seeker' | 'agent'>('seeker');
   const [signupInitialMode, setSignupInitialMode] = useState<'signup' | 'login'>('signup');
 
-  // Advert stories state
+  // Sponsored adverts state
   const [adverts, setAdverts] = useState<AdvertStory[]>(MOCK_ADVERT_STORIES);
-  const [selectedStoryAd, setSelectedStoryAd] = useState<AdvertStory | null>(null);
   const [isPostAdOpen, setIsPostAdOpen] = useState(false);
 
   const handleAddAdvert = (newAd: AdvertStory) => {
     setAdverts((prev) => [newAd, ...prev]);
   };
 
-  // Smart Location & Word-Similarity Filter Logic
+  const handleSelectAdvert = (ad: AdvertStory) => {
+    // 1. External organization / influencer link
+    if (ad.actionType === 'website' || (ad.websiteUrl && !ad.propertyId)) {
+      if (ad.websiteUrl) {
+        window.open(ad.websiteUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    }
+
+    // 2. Direct property listing on platform
+    if (ad.propertyId) {
+      const prop = listings.find((l) => l.id === ad.propertyId);
+      if (prop) {
+        handleOpenBooking(prop);
+        return;
+      }
+    }
+
+    // 3. Direct WhatsApp chat
+    if (ad.whatsappNumber) {
+      const message = encodeURIComponent(
+        `Hello, I saw your verified advert "${ad.headline}" on DeltaRent. I would like to make an inquiry.`
+      );
+      window.open(`https://wa.me/${ad.whatsappNumber}?text=${message}`, '_blank');
+      return;
+    }
+
+    // 4. Phone
+    if (ad.phone) {
+      window.open(`tel:${ad.phone.replace(/\s+/g, '')}`, '_self');
+      return;
+    }
+
+    // 5. Fallback link
+    if (ad.websiteUrl) {
+      window.open(ad.websiteUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Helper: Check if listing freshness is unconfirmed (> 48 hours)
+  const isFreshnessUnconfirmed = (lastConfirmedAt?: string) => {
+    if (!lastConfirmedAt) return true;
+    const confirmedTime = new Date(lastConfirmedAt).getTime();
+    const now = new Date('2026-10-19T23:24:27+01:00').getTime();
+    return (now - confirmedTime) > 48 * 60 * 60 * 1000;
+  };
+
+  // Smart Location & Word-Similarity Filter Logic with 48-Hour Proof-of-Life Ranking
   const filteredListings = useMemo(() => {
-    return listings.filter((item) => {
-      // Dynamic location matching (checks state, city, agent-posted neighborhood, address, and word similarity)
+    const list = listings.filter((item) => {
+      // 1. Auto-archive: hide rented out / archived listings from public feed
+      if (item.isArchived) {
+        return false;
+      }
+      // 2. Dynamic location matching (checks state, city, neighborhood, address)
       if (!matchesLocation(item, selectedCity, selectedState)) {
         return false;
       }
@@ -181,7 +234,43 @@ export function App() {
       }
       return true;
     });
+
+    // 3. 48-Hour Proof-of-Life Demotion: listings with unconfirmed freshness are demoted down the feed order
+    return list.sort((a, b) => {
+      const aUnconfirmed = isFreshnessUnconfirmed(a.lastConfirmedAt);
+      const bUnconfirmed = isFreshnessUnconfirmed(b.lastConfirmedAt);
+      if (aUnconfirmed && !bUnconfirmed) return 1;
+      if (!aUnconfirmed && bUnconfirmed) return -1;
+      return 0;
+    });
   }, [listings, selectedCity, selectedState, selectedType, maxRent]);
+
+  // Handler: Update listing availability status (Available, Under Inspection, Rented Out)
+  const handleUpdateListingAvailability = (listingId: string, status: ListingAvailability) => {
+    setListings((prev) =>
+      prev.map((item) => (item.id === listingId ? { ...item, availabilityStatus: status } : item))
+    );
+
+    // If marked as Rented Out, auto-archive/hide from public feed within 3 seconds
+    if (status === 'Rented Out') {
+      setTimeout(() => {
+        setListings((prev) =>
+          prev.map((item) => (item.id === listingId ? { ...item, isArchived: true } : item))
+        );
+      }, 3000);
+    }
+  };
+
+  // Handler: Refresh 48-hour proof-of-life heartbeat
+  const handleConfirmListingFreshness = (listingId: string) => {
+    setListings((prev) =>
+      prev.map((item) =>
+        item.id === listingId
+          ? { ...item, lastConfirmedAt: new Date().toISOString() }
+          : item
+      )
+    );
+  };
 
   // Handler: Book an inspection slot
   const handleBookSlot = (newBooking: BookingRecord) => {
@@ -233,20 +322,45 @@ export function App() {
     );
   };
 
-  // Handler: Agent accepts a booking
+  // Handler: Lister accepts a booking (Free instant contact unlock & push notification)
   const handleAcceptBooking = (bookingId: string) => {
+    const targetBooking = bookings.find((b) => b.id === bookingId);
+    if (!targetBooking) return;
+
+    const targetListing = listings.find((p) => p.id === targetBooking.propertyId);
+    if (!targetListing) return;
+
+    // Concurrency Rule: Lister can accept an applicant ONLY if requested slot has active capacity (< 5 bookings)
+    const targetSlot = targetListing.inspectionSlots.find((s) => s.id === targetBooking.slotId);
+    if (targetSlot && targetSlot.bookedCount >= 5 && targetBooking.status === 'QUEUED') {
+      alert('Concurrency limit reached: This slot already has 5 confirmed applicants. An applicant must cancel before a standby applicant can be admitted.');
+      return;
+    }
+
+    const updatedBooking: BookingRecord = {
+      ...targetBooking,
+      status: 'CONFIRMED_UNLOCKED',
+      confirmedAt: new Date().toISOString(),
+    };
+
     setBookings((prev) =>
-      prev.map((b) => {
-        if (b.id === bookingId) {
-          return {
-            ...b,
-            status: 'CONFIRMED_UNLOCKED',
-            confirmedAt: new Date().toISOString(),
-          };
-        }
-        return b;
-      })
+      prev.map((b) => (b.id === bookingId ? updatedBooking : b))
     );
+
+    // Trigger instant PWA Web Push notification simulation
+    const listerName = targetListing.agent.fullName || 'Chief Oghenetega Macaulay';
+    const startTime = targetBooking.slotTimeWindow.includes('–')
+      ? targetBooking.slotTimeWindow.split('–')[0].trim()
+      : targetBooking.slotTimeWindow.includes('-')
+      ? targetBooking.slotTimeWindow.split('-')[0].trim()
+      : '2:00 PM';
+
+    setPushNotification({
+      title: 'Inspection Approved!',
+      body: `${listerName} confirmed your inspection for tomorrow at ${startTime}. Tap to view contact details.`,
+      listing: targetListing,
+      booking: updatedBooking,
+    });
   };
 
   // Handler: Agent declines a slot -> Automatically promotes next queued applicant!
@@ -483,9 +597,8 @@ export function App() {
               totalFiltered={filteredListings.length}
               listings={listings}
               adverts={adverts}
-              onSelectAdvert={(ad) => setSelectedStoryAd(ad)}
+              onSelectAdvert={handleSelectAdvert}
               onOpenPostAd={() => setIsPostAdOpen(true)}
-              activeStoryId={selectedStoryAd?.id}
             />
 
             {/* Responsive Layout: Desktop features Sponsored Ads on left; mobile features in-feed sponsored carousel as tenants scroll down */}
@@ -493,9 +606,8 @@ export function App() {
               {/* Desktop Left Side Sponsored Ads */}
               <DesktopAdvertSidebar
                 adverts={adverts}
-                onSelectAdvert={(ad) => setSelectedStoryAd(ad)}
+                onSelectAdvert={handleSelectAdvert}
                 onOpenPostAd={() => setIsPostAdOpen(true)}
-                activeStoryId={selectedStoryAd?.id}
               />
 
               {/* Main Property Rental Continuous Feed */}
@@ -507,11 +619,12 @@ export function App() {
                   onUpdateBooking={handleUpdateBooking}
                   onSimulateAgentAccept={handleAcceptBooking}
                   onOpenBookingModal={handleOpenBooking}
+                  onUpdateAvailability={handleUpdateListingAvailability}
+                  onConfirmFreshness={handleConfirmListingFreshness}
                   onResetFilters={handleResetFilters}
                   adverts={adverts}
-                  onSelectAdvert={(ad) => setSelectedStoryAd(ad)}
+                  onSelectAdvert={handleSelectAdvert}
                   onOpenPostAd={() => setIsPostAdOpen(true)}
-                  activeStoryId={selectedStoryAd?.id}
                 />
               </div>
             </div>
@@ -527,6 +640,8 @@ export function App() {
             onAcceptBooking={handleAcceptBooking}
             onRejectBooking={handleRejectBooking}
             onListingCreated={handleListingCreated}
+            onUpdateAvailability={handleUpdateListingAvailability}
+            onConfirmFreshness={handleConfirmListingFreshness}
             onSwitchToSeeker={() => {
               setCurrentRole('seeker');
               setUserView('feed');
@@ -593,28 +708,32 @@ export function App() {
         />
       )}
 
-      {/* 4. Advert Stories & Submission Modals */}
-      {selectedStoryAd && (
-        <AdvertStoryModal
-          isOpen={Boolean(selectedStoryAd)}
-          onClose={() => setSelectedStoryAd(null)}
-          adverts={adverts}
-          initialAdvertId={selectedStoryAd.id}
-          onNavigateToProperty={(propertyId) => {
-            setSelectedStoryAd(null);
-            const prop = listings.find((l) => l.id === propertyId);
-            if (prop) {
-              handleOpenBooking(prop);
-            }
-          }}
-        />
-      )}
 
       <PostAdModal
         isOpen={isPostAdOpen}
         onClose={() => setIsPostAdOpen(false)}
         onAddAdvert={handleAddAdvert}
       />
+
+      {/* 4. Instant PWA Web Push Notification Banner Simulation */}
+      <PushNotificationBanner
+        notification={pushNotification}
+        onDismiss={() => setPushNotification(null)}
+        onClickNotification={(data) => {
+          setPushNotification(null);
+          setUnlockedSheetData({ listing: data.listing, booking: data.booking });
+        }}
+      />
+
+      {/* 5. Global Free Instant Unlocked Contact Sheet */}
+      {unlockedSheetData && (
+        <UnlockedContactSheet
+          isOpen={Boolean(unlockedSheetData)}
+          onClose={() => setUnlockedSheetData(null)}
+          listing={unlockedSheetData.listing}
+          booking={unlockedSheetData.booking}
+        />
+      )}
     </div>
   );
 }

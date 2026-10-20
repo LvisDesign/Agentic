@@ -47,9 +47,11 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
     fees: {
       baseRent: 1800000,
       rentPeriod: 'per annum',
-      cautionFee: 150000,
-      legalAndAgencyFee: 360000, // 10% legal + 10% agency
-      serviceCharge: 180000,     // Estate security, waste, borehole power
+      cautionFee: 200000,
+      legalAndAgencyFee: 360000,
+      legalFee: 180000,
+      agencyFee: 180000,
+      serviceCharge: 130000,
       totalMoveInPackage: 2490000
     },
     inspectionFee: 2500,
@@ -103,7 +105,9 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
     ],
     inspectionDays: ['Monday', 'Wednesday', 'Friday', 'Saturday'],
     tags: ['GRA Asaba', 'Band A Light', 'Serviced', 'Borehole', 'POP Ceilings'],
-    createdAt: '2026-10-14T08:00:00Z'
+    createdAt: '2026-10-14T08:00:00Z',
+    availabilityStatus: 'Available',
+    lastConfirmedAt: '2026-10-19T14:00:00Z',
   },
   {
     id: 'prop-warri-02',
@@ -194,7 +198,9 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
     ],
     inspectionDays: ['Tuesday', 'Thursday', 'Saturday'],
     tags: ['Airport Rd', 'Shoprite Vicinity', 'Corporate Standard', '24/7 Power'],
-    createdAt: '2026-10-13T11:20:00Z'
+    createdAt: '2026-10-13T11:20:00Z',
+    availabilityStatus: 'Available',
+    lastConfirmedAt: '2026-10-19T10:00:00Z',
   },
   {
     id: 'prop-abraka-03',
@@ -275,7 +281,9 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
     ],
     inspectionDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
     tags: ['DELSU Campus 3', 'Solar Light 24/7', 'Student Friendly', 'High Security'],
-    createdAt: '2026-10-15T09:15:00Z'
+    createdAt: '2026-10-15T09:15:00Z',
+    availabilityStatus: 'Available',
+    lastConfirmedAt: '2026-10-18T18:00:00Z',
   },
   {
     id: 'prop-ughelli-04',
@@ -353,7 +361,9 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
     ],
     inspectionDays: ['Wednesday', 'Saturday'],
     tags: ['Otovwodo', 'Individual Prepaid Meter', 'Family Friendly'],
-    createdAt: '2026-10-12T14:40:00Z'
+    createdAt: '2026-10-12T14:40:00Z',
+    availabilityStatus: 'Available',
+    lastConfirmedAt: '2026-10-16T10:00:00Z',
   },
   {
     id: 'prop-sapele-05',

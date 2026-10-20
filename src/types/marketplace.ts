@@ -87,6 +87,8 @@ export interface FeeBreakdown {
   rentPeriod: 'per annum' | 'per month';
   cautionFee: number;        // Refundable security deposit
   legalAndAgencyFee: number; // Agreement & Commission
+  legalFee?: number;         // Agreement drafting fee
+  agencyFee?: number;        // Agency commission
   serviceCharge: number;     // Security, waste disposal, borehole power
   totalMoveInPackage: number;
 }
@@ -100,13 +102,16 @@ export interface InspectionSlot {
   waitlistCount: number;
 }
 
+export type ListingAvailability = 'Available' | 'Under Inspection' | 'Rented Out';
+
 export type BookingStatus = 
   | 'IDLE'
   | 'REQUEST_SUBMITTED'           // Count < 5, booked directly, waiting for agent
   | 'QUEUED'                      // Count == 5, placed on standby queue with position
   | 'ACCEPTED_PENDING_PAYMENT'    // Agent approved, ready to pay micro-clearance fee
+  | 'APPROVED_CONFIRMED'          // Instant free unlock when Lister accepts
   | 'PAYMENT_PROCESSING'
-  | 'CONFIRMED_UNLOCKED'          // Paid! Contact, address, and QR pass revealed
+  | 'CONFIRMED_UNLOCKED'          // Unlocked! Contact, address, and QR pass revealed
   | 'REJECTED_BY_AGENT'
   | 'CANCELLED';
 
@@ -171,6 +176,9 @@ export interface PropertyListing {
   inspectionDays: string[]; // e.g. ["Mon", "Wed", "Sat"]
   tags: string[];
   createdAt: string;
+  availabilityStatus?: ListingAvailability;
+  lastConfirmedAt?: string;
+  isArchived?: boolean;
 }
 
 export type UserRole = 'seeker' | 'agent';

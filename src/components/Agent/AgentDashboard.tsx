@@ -15,7 +15,7 @@ import {
   Phone,
   MessageSquare
 } from 'lucide-react';
-import { PropertyListing, BookingRecord, AgentProfile, UserProfile } from '../../types/marketplace';
+import { PropertyListing, BookingRecord, AgentProfile, UserProfile, ListingAvailability } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { CreateListingModal } from './CreateListingModal';
 
@@ -26,6 +26,8 @@ interface AgentDashboardProps {
   onAcceptBooking: (bookingId: string) => void;
   onRejectBooking: (bookingId: string) => void;
   onListingCreated: (listing: PropertyListing) => void;
+  onUpdateAvailability?: (listingId: string, status: ListingAvailability) => void;
+  onConfirmFreshness?: (listingId: string) => void;
   onSwitchToSeeker?: () => void;
 }
 
@@ -36,10 +38,13 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   onAcceptBooking,
   onRejectBooking,
   onListingCreated,
+  onUpdateAvailability,
+  onConfirmFreshness,
   onSwitchToSeeker,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'requests' | 'listings'>('requests');
+  const [dashboardToast, setDashboardToast] = useState<string | null>(null);
 
   // Active Agent Profile
   const defaultAgent = listings[0]?.agent || {
@@ -261,21 +266,38 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button
-                          onClick={() => onAcceptBooking(b.id)}
-                          className="flex-1 sm:flex-none py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          Accept Booking
-                        </button>
-                        <button
-                          onClick={() => onRejectBooking(b.id)}
-                          className="py-2 px-3 rounded-lg border border-[#E5E7EB] hover:bg-slate-100 text-xs font-medium text-[#70798C] transition-colors"
-                        >
-                          Decline
-                        </button>
-                      </div>
+                      {/* Check slot capacity (< 5 bookings) */}
+                      {(() => {
+                        const targetSlot = property.inspectionSlots.find((s) => s.id === b.slotId);
+                        const isSlotFull = targetSlot ? targetSlot.bookedCount >= 5 : false;
+
+                        return (
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            {isSlotFull ? (
+                              <div className="text-right">
+                                <span className="px-2.5 py-1 rounded-[6px] bg-[#F0544F]/10 text-[#F0544F] border border-[#F0544F]/30 text-xs font-bold block mb-0.5">
+                                  5/5 Capped
+                                </span>
+                                <span className="text-[10px] text-[#70798C] block">Concurrency cap reached</span>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => onAcceptBooking(b.id)}
+                                className="flex-1 sm:flex-none py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer"
+                              >
+                                <CheckCircle className="w-3.5 h-3.5" />
+                                Accept Request
+                              </button>
+                            )}
+                            <button
+                              onClick={() => onRejectBooking(b.id)}
+                              className="py-2 px-3 rounded-lg border border-[#E5E7EB] hover:bg-slate-100 text-xs font-medium text-[#70798C] transition-colors cursor-pointer"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
@@ -388,50 +410,153 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
       {activeTab === 'listings' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {listings.map((prop) => (
-              <div
-                key={prop.id}
-                className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-xs flex flex-col"
-              >
-                <div className="h-44 relative">
-                  <img
-                    src={prop.media[0]?.url}
-                    alt={prop.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium">
-                    {prop.city}, Delta
-                  </div>
-                  <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-white font-display text-sm font-bold">
-                    {formatNaira(prop.fees.baseRent)}/{prop.fees.rentPeriod}
-                  </div>
-                </div>
+            {listings.map((prop) => {
+              const isRentedOut = prop.availabilityStatus === 'Rented Out';
+                const isStale = (() => {
+                  if (!prop.lastConfirmedAt) return true;
+                  const diff = (new Date('2026-10-19T23:24:27+01:00').getTime() - new Date(prop.lastConfirmedAt).getTime()) / (1000 * 60 * 60);
+                  return diff > 48;
+                })();
 
-                <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
-                  <div>
-                    <h4 className="font-bold text-sm text-[#000004] line-clamp-1">
-                      {prop.title}
-                    </h4>
-                    <p className="text-xs text-[#70798C] line-clamp-1">
-                      {prop.neighborhood} • {prop.propertyType}
-                    </p>
-                  </div>
+                return (
+                  <div
+                    key={prop.id}
+                    className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-xs flex flex-col"
+                  >
+                    <div className="h-44 relative">
+                      <img
+                        src={prop.media[0]?.url}
+                        alt={prop.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium">
+                        {prop.city}, Delta
+                      </div>
+                      <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-white font-display text-sm font-bold">
+                        {formatNaira(prop.fees.baseRent)}/{prop.fees.rentPeriod}
+                      </div>
 
-                  <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between text-xs">
-                    <span className="text-[#70798C]">
-                      {prop.inspectionSlots.length} Time Slots
-                    </span>
-                    <button
-                      onClick={onSwitchToSeeker}
-                      className="text-[#342A21] hover:underline font-semibold flex items-center gap-1"
-                    >
-                      <span>View in Feed</span>
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </button>
+                      {/* Rented Out Backdrop Overlay */}
+                      {isRentedOut && (
+                        <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center p-3 text-center">
+                          <span className="px-3 py-1 rounded-[6px] bg-[#F0544F] text-white text-xs font-extrabold tracking-wider shadow-lg flex items-center gap-1.5">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            RENTED OUT
+                          </span>
+                          <span className="text-white/80 text-[10px] mt-1">
+                            Auto-archiving from feed in 3s...
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <h4 className="font-bold text-sm text-[#000004] line-clamp-1">
+                            {prop.title}
+                          </h4>
+                          {isRentedOut ? (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-extrabold bg-[#F0544F] text-white shrink-0">
+                              RENTED OUT
+                            </span>
+                          ) : prop.availabilityStatus === 'Under Inspection' ? (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500 text-white shrink-0">
+                              Under Inspection
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-600 text-white shrink-0">
+                              Available
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[#70798C] line-clamp-1">
+                          {prop.neighborhood} • {prop.propertyType}
+                        </p>
+                      </div>
+
+                      {/* 1-Tap Status Selector */}
+                      <div className="pt-2 border-t border-[#E5E7EB] space-y-2">
+                        <div className="flex items-center justify-between text-xs flex-wrap gap-1">
+                          <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider">
+                            Status:
+                          </span>
+                          <div className="flex items-center gap-1">
+                            {(['Available', 'Under Inspection', 'Rented Out'] as ListingAvailability[]).map((st) => (
+                              <button
+                                key={st}
+                                type="button"
+                                onClick={() => {
+                                  if (onUpdateAvailability) {
+                                    onUpdateAvailability(prop.id, st);
+                                    if (st === 'Rented Out') {
+                                      setDashboardToast('Listing marked as Rented Out. Hiding from public feed in 3s...');
+                                      setTimeout(() => setDashboardToast(null), 3500);
+                                    }
+                                  }
+                                }}
+                                className={`px-2 py-0.5 rounded-[6px] text-[10px] font-bold transition-all cursor-pointer ${
+                                  prop.availabilityStatus === st || (!prop.availabilityStatus && st === 'Available')
+                                    ? st === 'Rented Out'
+                                      ? 'bg-[#F0544F] text-white shadow-2xs'
+                                      : st === 'Under Inspection'
+                                      ? 'bg-amber-500 text-white shadow-2xs'
+                                      : 'bg-[#000004] text-white shadow-2xs'
+                                    : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:bg-slate-50'
+                                }`}
+                              >
+                                {st}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 48-Hour Proof-of-Life Status & Refresh Button */}
+                        <div className="flex items-center justify-between text-[11px] p-2 rounded-[8px] bg-[#FCF9F5] border border-[rgba(112,121,140,0.22)]">
+                          {isStale ? (
+                            <span className="text-amber-800 font-medium flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                              Unconfirmed (&gt;48 hrs)
+                            </span>
+                          ) : (
+                            <span className="text-emerald-700 font-medium flex items-center gap-1">
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              Freshness verified (&lt;48h)
+                            </span>
+                          )}
+
+                          {onConfirmFreshness && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onConfirmFreshness(prop.id);
+                                setDashboardToast('Listing vacancy confirmed! Ranking restored to top.');
+                                setTimeout(() => setDashboardToast(null), 3000);
+                              }}
+                              className="px-2 py-0.5 rounded-[6px] bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-[10px] transition-colors cursor-pointer shadow-2xs"
+                            >
+                              Confirm Still Vacant
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between text-xs">
+                        <span className="text-[#70798C]">
+                          {prop.inspectionSlots.length} Time Slots
+                        </span>
+                        <button
+                          onClick={onSwitchToSeeker}
+                          className="text-[#342A21] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>View in Feed</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
           </div>
         </div>
       )}
@@ -442,6 +567,14 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         onClose={() => setShowCreateModal(false)}
         onListingCreated={onListingCreated}
       />
+
+      {/* Floating Status Toast */}
+      {dashboardToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-3 rounded-[12px] bg-[#000004] text-white shadow-2xl text-xs sm:text-sm font-medium animate-slide-up border border-white/10 max-w-[90vw]">
+          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{dashboardToast}</span>
+        </div>
+      )}
     </div>
   );
 };

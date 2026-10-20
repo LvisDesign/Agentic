@@ -431,8 +431,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             <X className="w-4 h-4" />
           </button>
 
-          {/* App icon rounded badge with primary color (#275DAD) */}
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#275DAD] text-white flex items-center justify-center mx-auto shadow-lg shadow-[#275DAD]/25 ring-4 ring-[#275DAD]/10 transition-transform">
+          {/* App icon rounded badge with primary color (#000004) */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#000004] text-white flex items-center justify-center mx-auto shadow-lg shadow-black/25 ring-4 ring-black/10 transition-transform">
             {installStatus === 'installed' ? (
               <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-300 animate-bounce" />
             ) : (
@@ -458,13 +458,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           {installStatus !== 'installed' && installStatus !== 'ios_guide' && (
             <div className="grid grid-cols-2 gap-2 text-left pt-1">
               <div className="p-2.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex items-center gap-2">
-                <div className="w-5 h-5 rounded-md bg-[#275DAD]/10 text-[#275DAD] flex items-center justify-center shrink-0">
+                <div className="w-5 h-5 rounded-md bg-[#342A21]/10 text-[#342A21] flex items-center justify-center shrink-0">
                   <Check className="w-3 h-3" />
                 </div>
                 <span className="text-[11px] font-semibold text-[#000004]">Instant Lister alerts</span>
               </div>
               <div className="p-2.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex items-center gap-2">
-                <div className="w-5 h-5 rounded-md bg-[#275DAD]/10 text-[#275DAD] flex items-center justify-center shrink-0">
+                <div className="w-5 h-5 rounded-md bg-[#342A21]/10 text-[#342A21] flex items-center justify-center shrink-0">
                   <Check className="w-3 h-3" />
                 </div>
                 <span className="text-[11px] font-semibold text-[#000004]">Zero APK downloads</span>
@@ -477,12 +477,12 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             <div className="p-4 rounded-2xl bg-[#FCF9F5] border border-[rgba(112,121,140,0.22)] text-left space-y-2.5 animate-fade-in text-xs">
               <p className="font-bold text-[#000004] text-center">To install on iOS Safari:</p>
               <div className="flex items-center gap-2.5 text-[#342A21]">
-                <span className="w-6 h-6 rounded-full bg-[#275DAD] text-white font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
-                <span>Tap the <strong>Share</strong> button <Share2 className="w-3.5 h-3.5 inline text-[#275DAD] mx-0.5" /> in Safari's bottom bar.</span>
+                <span className="w-6 h-6 rounded-full bg-[#000004] text-white font-bold text-[10px] flex items-center justify-center shrink-0">1</span>
+                <span>Tap the <strong>Share</strong> button <Share2 className="w-3.5 h-3.5 inline text-[#342A21] mx-0.5" /> in Safari's bottom bar.</span>
               </div>
               <div className="flex items-center gap-2.5 text-[#342A21]">
-                <span className="w-6 h-6 rounded-full bg-[#275DAD] text-white font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
-                <span>Scroll down and tap <strong>Add to Home Screen</strong> <PlusSquare className="w-3.5 h-3.5 inline text-[#275DAD] mx-0.5" />.</span>
+                <span className="w-6 h-6 rounded-full bg-[#000004] text-white font-bold text-[10px] flex items-center justify-center shrink-0">2</span>
+                <span>Scroll down and tap <strong>Add to Home Screen</strong> <PlusSquare className="w-3.5 h-3.5 inline text-[#342A21] mx-0.5" />.</span>
               </div>
             </div>
           )}
@@ -494,7 +494,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 type="button"
                 onClick={handleTriggerInstall}
                 disabled={installStatus === 'installing'}
-                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#275DAD] hover:bg-[#1f4b8c] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-[0.99]"
+                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-[0.99]"
               >
                 <Download className="w-4 h-4" />
                 <span>{installStatus === 'installing' ? 'Adding to Home Screen...' : 'Add to Home Screen'}</span>
@@ -505,7 +505,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               <button
                 type="button"
                 onClick={handleFinishSignup}
-                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#275DAD] hover:bg-[#1f4b8c] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
               >
                 <span>Got It, Continue to Feed</span>
                 <ArrowRight className="w-4 h-4" />
