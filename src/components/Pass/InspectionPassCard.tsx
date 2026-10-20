@@ -110,19 +110,19 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
           </div>
 
           {/* Prominent Phone Number Display & Copy Button */}
-          <div className="p-3 rounded-xl bg-[#342A21]/5 border border-[#342A21]/15 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#70798C] block">
+          <div className="p-3 rounded-xl bg-[#342A21]/5 border border-[#342A21]/15 flex items-center justify-between gap-2 overflow-hidden">
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#70798C] block truncate">
                 Agent Direct Phone Number
               </span>
-              <span className="font-mono text-base sm:text-lg font-bold text-[#000004]">
+              <span className="font-mono text-base sm:text-lg font-bold text-[#000004] truncate block">
                 {formattedPhone}
               </span>
             </div>
             <button
               type="button"
               onClick={handleCopyPhone}
-              className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer shrink-0 whitespace-nowrap"
               title="Copy phone number"
             >
               {copiedPhone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#342A21]" />}

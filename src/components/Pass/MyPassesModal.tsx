@@ -67,43 +67,43 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                 return (
                   <div
                     key={b.id}
-                    className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+                    className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs overflow-hidden"
                   >
-                    <div className="space-y-1.5 flex-1 min-w-0">
+                    <div className="space-y-1.5 flex-1 min-w-0 pr-0 sm:pr-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-sm text-[#000004]">
+                        <span className="font-bold text-sm text-[#000004] truncate">
                           {listing.title}
                         </span>
-                        <span className="text-xs text-[#70798C]">({listing.city})</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">
+                        <span className="text-xs text-[#70798C] shrink-0">({listing.city})</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shrink-0">
                           CONFIRMED
                         </span>
                       </div>
 
                       <div className="text-xs text-[#70798C] flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5 text-[#342A21]" />
+                        <Calendar className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
                         <span>{b.slotDate}</span>
                         <span>•</span>
-                        <Clock className="w-3.5 h-3.5 text-[#342A21]" />
+                        <Clock className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
                         <span>{b.slotTimeWindow}</span>
                       </div>
 
                       <div className="text-xs pt-0.5 flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-800">
+                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-800 shrink-0">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           Inspection Confirmed
                         </span>
                         <span className="text-[#70798C]">•</span>
-                        <span className="text-[#70798C]">
+                        <span className="text-[#70798C] truncate">
                           Agent: <strong className="text-[#000004]">{listing.agent.fullName}</strong> ({formatNigerianPhone(rawPhone)})
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
                       <a
                         href={`tel:${rawPhone.replace(/[^0-9+]/g, '')}`}
-                        className="py-2 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs"
+                        className="flex-1 sm:flex-none py-2 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap"
                         title="Call Agent"
                       >
                         <Phone className="w-3.5 h-3.5 text-emerald-400" />
@@ -113,7 +113,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                       <button
                         type="button"
                         onClick={(e) => handleCopyPhone(b.id, rawPhone, e)}
-                        className="py-2 px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                        className="flex-1 sm:flex-none py-2 px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap"
                         title="Copy phone number"
                       >
                         {copiedPhoneId === b.id ? (
@@ -134,7 +134,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                           onClose();
                           onOpenBookingModal(listing);
                         }}
-                        className="py-2 px-3.5 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-900 text-xs font-bold transition-colors shadow-xs cursor-pointer"
+                        className="flex-1 sm:flex-none py-2 px-3.5 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-900 text-xs font-bold transition-colors shadow-xs cursor-pointer whitespace-nowrap"
                       >
                         View Pass
                       </button>
@@ -150,40 +150,40 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                     b.status === 'QUEUED'
                       ? 'border-[#F0544F]/30 bg-[#F0544F]/5'
                       : 'border-[#342A21]/30 bg-[#342A21]/5'
-                  } flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3`}
+                  } flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 overflow-hidden`}
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-[#000004]">
+                  <div className="space-y-1 flex-1 min-w-0 pr-0 sm:pr-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-bold text-sm text-[#000004] truncate">
                         {listing.title}
                       </span>
-                      <span className="text-xs text-[#70798C]">({listing.city})</span>
+                      <span className="text-xs text-[#70798C] shrink-0">({listing.city})</span>
                     </div>
 
                     <div className="text-xs text-[#70798C] flex items-center gap-2">
-                      <Calendar className="w-3.5 h-3.5 text-[#342A21]" />
+                      <Calendar className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
                       <span>{b.slotDate}</span>
                       <span>•</span>
-                      <Clock className="w-3.5 h-3.5 text-[#342A21]" />
+                      <Clock className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
                       <span>{b.slotTimeWindow}</span>
                     </div>
 
                     <div className="pt-1">
                       {b.status === 'QUEUED' && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#F0544F]">
-                          <AlertCircle className="w-3.5 h-3.5" />
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           Standby Queue Position #{b.queuePosition} (Hourly Cap Reached)
                         </span>
                       )}
                       {b.status === 'REQUEST_SUBMITTED' && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#342A21]">
-                          <Clock className="w-3.5 h-3.5" />
+                          <Clock className="w-3.5 h-3.5 shrink-0" />
                           Awaiting Agent Confirmation • Contact Details Protected
                         </span>
                       )}
                       {b.status === 'ACCEPTED_PENDING_PAYMENT' && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           Booking Confirmed • Contact Details Revealed
                         </span>
                       )}
@@ -195,7 +195,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                       onClose();
                       onOpenBookingModal(listing);
                     }}
-                    className="py-2 px-4 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors shadow-xs"
+                    className="w-full sm:w-auto shrink-0 py-2 px-4 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors shadow-xs whitespace-nowrap cursor-pointer mt-2 sm:mt-0"
                   >
                     View Status Details
                   </button>

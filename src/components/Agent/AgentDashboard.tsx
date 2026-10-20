@@ -145,19 +145,19 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-16 pb-20 px-4 sm:px-6 max-w-5xl mx-auto">
       {/* Top Banner / Agent Identity */}
       <div className="bg-white rounded-2xl p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
           <img
             src={agentProfile.avatarUrl}
             alt={agentProfile.fullName}
-            className="w-16 h-16 rounded-full object-cover border-2 border-[#342A21]"
+            className="w-16 h-16 rounded-full object-cover border-2 border-[#342A21] shrink-0"
           />
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="font-display text-2xl font-bold text-[#000004]">
+              <h1 className="font-display text-2xl font-bold text-[#000004] truncate">
                 {agentProfile.fullName}
               </h1>
             </div>
-            <p className="text-xs text-[#70798C] mt-0.5">
+            <p className="text-xs text-[#70798C] mt-0.5 truncate">
               {agentProfile.agencyName} • CAC: {agentProfile.cacNumber} •{' '}
               {agentProfile.reviewCount > 0 ? (
                 <span>Rating {agentProfile.rating}★ ({agentProfile.reviewCount} reviews)</span>
@@ -173,7 +173,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
           <button
             onClick={() => setShowCreateModal(true)}
             className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-colors"
@@ -327,24 +327,24 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   return (
                     <div
                       key={b.id}
-                      className="p-4 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                      className="p-4 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 overflow-hidden"
                     >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                      <div className="space-y-1.5 flex-1 min-w-0 pr-0 md:pr-4">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold text-sm text-[#000004]">
                             {b.applicantName}
                           </span>
-                          <span className="text-xs text-[#70798C]">({b.applicantPhone})</span>
-                          <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-[#342A21]/15 text-[#342A21]">
+                          <span className="text-xs text-[#70798C] font-mono">({b.applicantPhone})</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#342A21]/10 text-[#342A21] border border-[#342A21]/15 shrink-0">
                             Booking ID: {b.id}
                           </span>
                         </div>
-                        <div className="text-xs text-[#70798C]">
-                          Property: <strong className="text-[#000004]">{property.title}</strong>
+                        <div className="text-xs text-[#70798C] line-clamp-2 break-words" title={property.title}>
+                          Property: <strong className="text-[#000004] font-semibold">{property.title}</strong>
                         </div>
-                        <div className="text-xs text-[#342A21] font-medium flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          Date & Time: {b.slotDate}, {b.slotTimeWindow}
+                        <div className="text-xs text-[#342A21] font-medium flex items-center gap-1.5 pt-0.5">
+                          <Clock className="w-3.5 h-3.5 shrink-0 text-[#342A21]" />
+                          <span>Date & Time: <strong>{b.slotDate}, {b.slotTimeWindow}</strong></span>
                         </div>
                       </div>
 
@@ -354,9 +354,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         const isSlotFull = targetSlot ? targetSlot.bookedCount >= 5 : false;
 
                         return (
-                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <div className="flex items-center gap-2 w-full md:w-auto shrink-0 justify-end pt-1 md:pt-0 border-t md:border-t-0 border-[#E5E7EB]/60">
                             {isSlotFull ? (
-                              <div className="text-right">
+                              <div className="text-left md:text-right">
                                 <span className="px-2.5 py-1 rounded-[6px] bg-[#F0544F]/10 text-[#F0544F] border border-[#F0544F]/30 text-xs font-bold block mb-0.5">
                                   5/5 Capped
                                 </span>
@@ -365,15 +365,15 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                             ) : (
                               <button
                                 onClick={() => onAcceptBooking(b.id)}
-                                className="flex-1 sm:flex-none py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer"
+                                className="flex-1 md:flex-initial py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
                               >
-                                <CheckCircle className="w-3.5 h-3.5" />
-                                Accept Request
+                                <CheckCircle className="w-4 h-4 shrink-0" />
+                                <span>Accept Request</span>
                               </button>
                             )}
                             <button
                               onClick={() => onRejectBooking(b.id)}
-                              className="py-2 px-3 rounded-lg border border-[#E5E7EB] hover:bg-slate-100 text-xs font-medium text-[#70798C] transition-colors cursor-pointer"
+                              className="py-2.5 px-3.5 rounded-xl border border-[#E5E7EB] hover:bg-slate-100 text-xs font-semibold text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer shrink-0 whitespace-nowrap bg-white shadow-2xs"
                             >
                               Decline
                             </button>
@@ -414,25 +414,25 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                 {queuedRequests.map((b) => (
                   <div
                     key={b.id}
-                    className="p-4 rounded-xl border border-[#F0544F]/20 bg-[#F0544F]/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                    className="p-4 rounded-xl border border-[#F0544F]/20 bg-[#F0544F]/5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 overflow-hidden"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full bg-[#F0544F] text-white text-[11px] font-bold">
+                    <div className="space-y-1 flex-1 min-w-0 pr-0 md:pr-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full bg-[#F0544F] text-white text-[11px] font-bold shrink-0">
                           Waiting List #{b.queuePosition || 1}
                         </span>
-                        <span className="font-bold text-sm text-[#000004]">
+                        <span className="font-bold text-sm text-[#000004] truncate">
                           {b.applicantName}
                         </span>
                       </div>
-                      <div className="text-xs text-[#70798C] mt-1">
+                      <div className="text-xs text-[#70798C] mt-1 truncate">
                         Requested Time: {b.slotDate}, {b.slotTimeWindow}
                       </div>
                     </div>
 
                     <button
                       onClick={() => onAcceptBooking(b.id)}
-                      className="w-full sm:w-auto py-2 px-4 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors"
+                      className="w-full md:w-auto shrink-0 py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors whitespace-nowrap cursor-pointer mt-1 md:mt-0"
                     >
                       Accept Early
                     </button>
@@ -460,21 +460,21 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                 {acceptedOrPaid.map((b) => (
                   <div
                     key={b.id}
-                    className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 flex items-center justify-between text-xs"
+                    className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs overflow-hidden"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#000004]">{b.applicantName}</span>
-                        <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-emerald-600 text-white">
+                    <div className="space-y-1 flex-1 min-w-0 pr-0 sm:pr-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-bold text-[#000004] truncate">{b.applicantName}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-600 text-white shrink-0">
                           CONFIRMED
                         </span>
                       </div>
-                      <div className="text-[#70798C] mt-0.5">
+                      <div className="text-[#70798C] mt-0.5 truncate">
                         Booking ID: <span className="font-mono text-[#000004] font-medium">{b.id}</span> • {b.slotDate}, {b.slotTimeWindow}
                       </div>
                     </div>
 
-                    <div className="text-right">
+                    <div className="text-left sm:text-right shrink-0">
                       <div className="font-display text-sm font-bold text-emerald-600">
                         CONFIRMED
                       </div>
@@ -687,11 +687,11 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       </div>
 
                       <div className="pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between text-xs flex-wrap gap-2">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             type="button"
                             onClick={() => setEditingListing(prop)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80 shadow-2xs active:scale-95"
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80 shadow-2xs active:scale-95 whitespace-nowrap"
                             title="Edit property details, rent price, media, and inspection slots"
                           >
                             <Edit3 className="w-3.5 h-3.5 text-slate-700" />
@@ -700,7 +700,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                           <button
                             type="button"
                             onClick={() => setListingToDelete(prop)}
-                            className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200 shadow-2xs active:scale-95"
+                            className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200 shadow-2xs active:scale-95 whitespace-nowrap"
                             title="Permanently delete this property listing"
                           >
                             <Trash2 className="w-3.5 h-3.5 text-rose-600" />
@@ -708,14 +708,14 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                           </button>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                          <span className="text-[#70798C] text-[11px]">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-[#70798C] text-[11px] whitespace-nowrap">
                             {prop.inspectionSlots.length} Slots
                           </span>
                           <button
                             type="button"
                             onClick={onSwitchToSeeker}
-                            className="text-[#342A21] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                            className="text-[#342A21] hover:underline font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
                           >
                             <span>View in Feed</span>
                             <ArrowUpRight className="w-3.5 h-3.5" />
