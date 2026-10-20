@@ -77,44 +77,42 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
           return sanitizeListingMedia(item, idx);
         });
 
-        // Merge cloud listings with platform verified listings (if not already in cloud)
-        const cloudIds = new Set(cloudListings.map((l) => l.id));
-        const platformMissing = INITIAL_LISTINGS.filter((p) => !cloudIds.has(p.id));
+        // Only return real listings created by agents (exclude any mock/demo listings)
+        const realCloudListings = cloudListings.filter(
+          (l) => !INITIAL_LISTINGS.some((m) => m.id === l.id)
+        );
 
-        const combined = [...cloudListings, ...platformMissing];
         // Cache in localStorage
         try {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(combined));
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(realCloudListings));
         } catch (e) {}
 
-        return combined;
+        return realCloudListings;
       }
     } catch (err) {
       console.warn('[DeltaRent Supabase] Failed to fetch cloud listings:', err);
     }
   }
 
-  // Fallback: Local storage + platform initial listings
+  // Fallback: Local storage (strictly real agent listings, no demo listings)
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
         const customAgentListings = parsed
-          .filter((item: PropertyListing) => item.id && (item.id.startsWith('prop-agent-') || !INITIAL_LISTINGS.some((init) => init.id === item.id)))
+          .filter((item: PropertyListing) => 
+            item.id && 
+            !INITIAL_LISTINGS.some((init) => init.id === item.id)
+          )
           .map((item: PropertyListing, idx: number) => sanitizeListingMedia(item, idx));
 
-        const platformIds = new Set(INITIAL_LISTINGS.map((l) => l.id));
-        const otherCustomListings = parsed.filter((item: PropertyListing) =>
-          !item.id.startsWith('prop-agent-') && !platformIds.has(item.id)
-        );
-
-        return [...customAgentListings, ...INITIAL_LISTINGS, ...otherCustomListings];
+        return customAgentListings;
       }
     } catch (e) {}
   }
 
-  return INITIAL_LISTINGS;
+  return [];
 }
 
 /**

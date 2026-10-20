@@ -136,20 +136,14 @@ export function App() {
               };
             });
 
-          // Any other non-platform custom listings
-          const platformIds = new Set(INITIAL_LISTINGS.map((l) => l.id));
-          const otherCustomListings = parsed.filter((item: PropertyListing) =>
-            !item.id.startsWith('prop-agent-') && !platformIds.has(item.id)
-          );
-
-          // Always return platform verified listings combined with custom agent listings
-          return [...customAgentListings, ...INITIAL_LISTINGS, ...otherCustomListings];
+          // Only return real listings created by agents (exclude all mock/demo listings)
+          return customAgentListings;
         }
       } catch (e) {
         console.error('Failed to parse saved listings', e);
       }
     }
-    return INITIAL_LISTINGS;
+    return [];
   });
 
   const [bookings, setBookings] = useState<BookingRecord[]>(() => {
