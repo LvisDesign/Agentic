@@ -109,7 +109,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   };
 
   // Filter listings and bookings for this specific agent (or show all if demo admin)
-  const agentListings = isDemoAdmin
+  const agentListings = (isDemoAdmin
     ? listings
     : listings.filter((l) => {
         if (!currentUser) return false;
@@ -117,7 +117,8 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         if (currentUser.phone && l.agent?.phone && l.agent.phone.replace(/\s+/g, '') === currentUser.phone.replace(/\s+/g, '')) return true;
         if (currentUser.fullName && l.agent?.fullName && l.agent.fullName.toLowerCase() === currentUser.fullName.toLowerCase()) return true;
         return false;
-      });
+      })
+  ).filter((l) => l.availabilityStatus !== 'Deleted');
 
   const agentBookings = isDemoAdmin
     ? bookings

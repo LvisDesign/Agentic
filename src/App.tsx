@@ -21,7 +21,7 @@ import { PostAdModal } from './components/Feed/PostAdModal';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
-import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness } from './services/listingService';
+import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
 import { fetchAllBookings, saveNewBooking, updateBookingStatus } from './services/bookingService';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from './utils/supabaseClient';
 
@@ -110,8 +110,14 @@ export function App() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Keep custom agent listings created on this device, and sanitize any expired blob URLs
+          const deletedIds = getDeletedListingIds();
           const customAgentListings = parsed
-            .filter((item: PropertyListing) => item.id && item.id.startsWith('prop-agent-'))
+            .filter((item: PropertyListing) => 
+              item.id && 
+              !deletedIds.has(item.id) &&
+              item.availabilityStatus !== 'Deleted' &&
+              item.id.startsWith('prop-agent-')
+            )
             .map((item: PropertyListing, idx: number) => {
               const sanitizedMedia = (item.media || []).map((m, mIdx) => {
                 const isBlob = typeof m.url === 'string' && m.url.startsWith('blob:');
@@ -417,8 +423,8 @@ export function App() {
   // Smart Location & Word-Similarity Filter Logic with 48-Hour Proof-of-Life Ranking
   const filteredListings = useMemo(() => {
     const list = listings.filter((item) => {
-      // 1. Auto-archive: hide rented out / archived listings from public feed
-      if (item.isArchived) {
+      // 1. Auto-archive: hide rented out, deleted, or archived listings from public feed
+      if (item.isArchived || item.availabilityStatus === 'Deleted') {
         return false;
       }
       // 2. Dynamic location matching (checks state, city, neighborhood, address)
@@ -619,6 +625,7 @@ export function App() {
 
   // Handler: Delete listing permanently
   const handleDeleteListing = async (listingId: string) => {
+    recordDeletedListingId(listingId);
     setListings((prev) => prev.filter((l) => l.id !== listingId));
     await deleteListing(listingId);
   };

@@ -93,6 +93,9 @@ create policy "Public can insert bookings" on public.bookings for insert with ch
 drop policy if exists "Public can update bookings" on public.bookings;
 create policy "Public can update bookings" on public.bookings for update using (true);
 
+drop policy if exists "Public can delete bookings" on public.bookings;
+create policy "Public can delete bookings" on public.bookings for delete using (true);
+
 -- 5. Enable Realtime Sync (idempotent, safe to re-run)
 do $$
 begin

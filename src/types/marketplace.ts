@@ -102,7 +102,7 @@ export interface InspectionSlot {
   waitlistCount: number;
 }
 
-export type ListingAvailability = 'Available' | 'Under Inspection' | 'Rented Out';
+export type ListingAvailability = 'Available' | 'Under Inspection' | 'Rented Out' | 'Deleted';
 
 export type BookingStatus = 
   | 'IDLE'

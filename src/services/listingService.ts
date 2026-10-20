@@ -4,6 +4,44 @@ import { INITIAL_LISTINGS } from '../data/mockListings';
 import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO, getBlobFromIDB, uploadMediaToSupabaseStorage } from '../utils/mediaStorage';
 
 const LOCAL_STORAGE_KEY = 'deltarent_listings';
+const DELETED_IDS_KEY = 'deltarent_deleted_listing_ids';
+
+/**
+ * Returns a Set of listing IDs that have been explicitly deleted on this device.
+ * Used as a tombstone guard to prevent deleted listings from returning upon page refreshes.
+ */
+export function getDeletedListingIds(): Set<string> {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(DELETED_IDS_KEY) : null;
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch (e) {}
+  return new Set<string>();
+}
+
+export function recordDeletedListingId(id: string): void {
+  try {
+    const set = getDeletedListingIds();
+    set.add(id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(Array.from(set)));
+    }
+  } catch (e) {}
+}
+
+export function unrecordDeletedListingId(id: string): void {
+  try {
+    const set = getDeletedListingIds();
+    if (set.has(id)) {
+      set.delete(id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(Array.from(set)));
+      }
+    }
+  } catch (e) {}
+}
 
 /**
  * Normalizes and sanitizes a listing item's media for cross-device consistency:
@@ -117,9 +155,14 @@ export async function syncLocalListingsToCloud(): Promise<void> {
     const localListings: PropertyListing[] = JSON.parse(saved);
     if (!Array.isArray(localListings) || localListings.length === 0) return;
 
-    // Filter to real agent listings (exclude any mock/demo listings)
+    const deletedIds = getDeletedListingIds();
+    // Filter to real agent listings (exclude any mock/demo listings and any deleted listings)
     const agentListings = localListings.filter(
-      (item) => item.id && (item.id.startsWith('prop-agent-') || !INITIAL_LISTINGS.some((m) => m.id === item.id))
+      (item) =>
+        item.id &&
+        !deletedIds.has(item.id) &&
+        item.availabilityStatus !== 'Deleted' &&
+        (item.id.startsWith('prop-agent-') || !INITIAL_LISTINGS.some((m) => m.id === item.id))
     );
     if (agentListings.length === 0) return;
 
@@ -230,41 +273,49 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
       }
 
       if (!error && Array.isArray(data)) {
-        const cloudListings: PropertyListing[] = data.map((row, idx) => {
-          const item: PropertyListing = {
-            id: row.id,
-            title: row.title,
-            state: row.state,
-            city: row.city,
-            neighborhood: row.neighborhood,
-            fullAddress: row.full_address || row.fullAddress,
-            propertyType: row.property_type || row.propertyType,
-            bedrooms: row.bedrooms,
-            bathrooms: row.bathrooms,
-            toilets: row.toilets,
-            isServiced: row.is_serviced ?? row.isServiced,
-            isFurnished: row.is_furnished ?? row.isFurnished,
-            electricityStatus: row.electricity_status || row.electricityStatus,
-            waterSupply: row.water_supply || row.waterSupply,
-            description: row.description,
-            media: row.media || [],
-            fees: row.fees,
-            inspectionFee: row.inspection_fee || row.inspectionFee || 0,
-            agent: row.agent,
-            inspectionSlots: row.inspection_slots || row.inspectionSlots || [],
-            inspectionDays: row.inspection_days || row.inspectionDays || [],
-            tags: row.tags || [],
-            addons: row.addons || [],
-            createdAt: row.created_at || row.createdAt || new Date().toISOString(),
-            availabilityStatus: row.availability_status || row.availabilityStatus || 'Available',
-            lastConfirmedAt: row.last_confirmed_at || row.lastConfirmedAt,
-          };
-          return sanitizeListingMedia(item, idx);
-        });
+        const deletedIds = getDeletedListingIds();
+        const cloudListings: PropertyListing[] = data
+          .filter((row) => {
+            const status = row.availability_status || row.availabilityStatus;
+            if (status === 'Deleted') return false;
+            if (deletedIds.has(row.id)) return false;
+            return true;
+          })
+          .map((row, idx) => {
+            const item: PropertyListing = {
+              id: row.id,
+              title: row.title,
+              state: row.state,
+              city: row.city,
+              neighborhood: row.neighborhood,
+              fullAddress: row.full_address || row.fullAddress,
+              propertyType: row.property_type || row.propertyType,
+              bedrooms: row.bedrooms,
+              bathrooms: row.bathrooms,
+              toilets: row.toilets,
+              isServiced: row.is_serviced ?? row.isServiced,
+              isFurnished: row.is_furnished ?? row.isFurnished,
+              electricityStatus: row.electricity_status || row.electricityStatus,
+              waterSupply: row.water_supply || row.waterSupply,
+              description: row.description,
+              media: row.media || [],
+              fees: row.fees,
+              inspectionFee: row.inspection_fee || row.inspectionFee || 0,
+              agent: row.agent,
+              inspectionSlots: row.inspection_slots || row.inspectionSlots || [],
+              inspectionDays: row.inspection_days || row.inspectionDays || [],
+              tags: row.tags || [],
+              addons: row.addons || [],
+              createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+              availabilityStatus: row.availability_status || row.availabilityStatus || 'Available',
+              lastConfirmedAt: row.last_confirmed_at || row.lastConfirmedAt,
+            };
+            return sanitizeListingMedia(item, idx);
+          });
 
-        // Only return real listings created by agents (exclude any mock/demo listings)
+        // Only return real listings created by agents (exclude any mock/demo listings and deleted listings)
         const realCloudListings = cloudListings.filter(
-          (l) => !INITIAL_LISTINGS.some((m) => m.id === l.id)
+          (l) => !INITIAL_LISTINGS.some((m) => m.id === l.id) && !deletedIds.has(l.id) && l.availabilityStatus !== 'Deleted'
         );
 
         // Check if any real listings have local video blobs on this machine waiting to upload
@@ -282,15 +333,18 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
     }
   }
 
-  // Fallback: Local storage (strictly real agent listings, no demo listings)
+  // Fallback: Local storage (strictly real agent listings, no demo listings, no deleted listings)
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        const deletedIds = getDeletedListingIds();
         const customAgentListings = parsed
           .filter((item: PropertyListing) => 
             item.id && 
+            !deletedIds.has(item.id) &&
+            item.availabilityStatus !== 'Deleted' &&
             !INITIAL_LISTINGS.some((init) => init.id === item.id)
           )
           .map((item: PropertyListing, idx: number) => sanitizeListingMedia(item, idx));
@@ -426,7 +480,79 @@ export async function confirmFreshness(listingId: string): Promise<void> {
  * Updates an existing listing in Supabase cloud database and locally
  */
 export async function updateListing(listing: PropertyListing): Promise<void> {
-  return saveNewListing(listing);
+  // If this listing was previously marked deleted, un-delete it
+  unrecordDeletedListingId(listing.id);
+
+  const sanitized = sanitizeListingMedia(listing);
+  const client = getSupabaseClient();
+
+  // 1. Update in Supabase if configured
+  if (isSupabaseConfigured() && client) {
+    try {
+      const row = {
+        title: sanitized.title,
+        state: sanitized.state,
+        city: sanitized.city,
+        neighborhood: sanitized.neighborhood,
+        full_address: sanitized.fullAddress,
+        property_type: sanitized.propertyType,
+        bedrooms: sanitized.bedrooms,
+        bathrooms: sanitized.bathrooms,
+        toilets: sanitized.toilets,
+        is_serviced: sanitized.isServiced,
+        is_furnished: sanitized.isFurnished,
+        electricity_status: sanitized.electricityStatus || null,
+        water_supply: sanitized.waterSupply || null,
+        description: sanitized.description,
+        media: sanitized.media,
+        fees: sanitized.fees,
+        inspection_fee: sanitized.inspectionFee,
+        agent: sanitized.agent,
+        inspection_slots: sanitized.inspectionSlots,
+        inspection_days: sanitized.inspectionDays,
+        tags: sanitized.tags || [],
+        addons: sanitized.addons || [],
+        availability_status: sanitized.availabilityStatus || 'Available',
+        last_confirmed_at: sanitized.lastConfirmedAt || new Date().toISOString(),
+      };
+
+      // Direct update in Supabase
+      const { data: updatedRows, error: updateError } = await client
+        .from('listings')
+        .update(row)
+        .eq('id', sanitized.id)
+        .select();
+
+      if (updateError || !updatedRows || updatedRows.length === 0) {
+        // Fallback to upsert if row wasn't present
+        await client.from('listings').upsert([
+          {
+            ...row,
+            id: sanitized.id,
+            created_at: sanitized.createdAt || new Date().toISOString(),
+          },
+        ]);
+      }
+      console.log('[DeltaRent Supabase] Listing updated in cloud database:', sanitized.id);
+    } catch (err) {
+      console.warn('[DeltaRent Supabase] Exception updating listing:', err);
+    }
+  }
+
+  // 2. Update local storage cache
+  try {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const existing: PropertyListing[] = saved ? JSON.parse(saved) : [];
+    const index = existing.findIndex((item) => item.id === sanitized.id);
+    let updated: PropertyListing[];
+    if (index >= 0) {
+      updated = [...existing];
+      updated[index] = sanitized;
+    } else {
+      updated = [sanitized, ...existing];
+    }
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+  } catch (e) {}
 }
 
 /**
@@ -436,23 +562,10 @@ export async function deleteListing(listingId: string): Promise<boolean> {
   const client = getSupabaseClient();
   let success = true;
 
-  // 1. Delete from Supabase cloud database
-  if (isSupabaseConfigured() && client) {
-    try {
-      const { error } = await client.from('listings').delete().eq('id', listingId);
-      if (error) {
-        console.error('[DeltaRent Supabase] Error deleting listing from database:', error.message);
-        success = false;
-      } else {
-        console.log('[DeltaRent Supabase] Listing permanently deleted from cloud database:', listingId);
-      }
-    } catch (err) {
-      console.warn('[DeltaRent Supabase] Exception deleting listing:', err);
-      success = false;
-    }
-  }
+  // 1. Immediately record in persistent tombstone set so browser refreshes NEVER restore it
+  recordDeletedListingId(listingId);
 
-  // 2. Remove from local storage cache
+  // 2. Remove from local storage cache immediately
   try {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (saved) {
@@ -461,6 +574,32 @@ export async function deleteListing(listingId: string): Promise<boolean> {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     }
   } catch (e) {}
+
+  // 3. Update Supabase with availability_status: 'Deleted' (Instant soft delete across all devices)
+  if (isSupabaseConfigured() && client) {
+    try {
+      await client
+        .from('listings')
+        .update({ availability_status: 'Deleted' })
+        .eq('id', listingId);
+      console.log('[DeltaRent Supabase] Listing marked as Deleted in cloud database:', listingId);
+    } catch (err) {
+      console.warn('[DeltaRent Supabase] Soft delete notice:', err);
+    }
+
+    // 4. Also attempt hard DELETE from Supabase database
+    try {
+      const { error } = await client.from('listings').delete().eq('id', listingId);
+      if (error) {
+        console.warn('[DeltaRent Supabase] Hard delete notice:', error.message);
+      } else {
+        console.log('[DeltaRent Supabase] Hard delete executed:', listingId);
+      }
+    } catch (err) {
+      console.warn('[DeltaRent Supabase] Exception deleting listing:', err);
+      success = false;
+    }
+  }
 
   return success;
 }
