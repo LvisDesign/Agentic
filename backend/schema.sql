@@ -1,5 +1,9 @@
--- DeltaRent Supabase Database Schema & Realtime Setup
--- Copy and paste this script into your Supabase project's SQL Editor (https://supabase.com/dashboard) and click RUN.
+-- ==============================================================================
+-- DELTARENT BACKEND DATABASE SCHEMA (SUPABASE POSTGRESQL)
+-- ==============================================================================
+-- Run this script in the Supabase SQL Editor (https://supabase.com/dashboard)
+-- It creates the database tables, security policies (RLS), and enables Realtime.
+-- ==============================================================================
 
 -- 1. Create Listings Table
 create table if not exists public.listings (
@@ -31,10 +35,15 @@ create table if not exists public.listings (
   last_confirmed_at timestamp with time zone default timezone('utc'::text, now())
 );
 
+-- Index for fast location and rent queries
+create index if not exists idx_listings_city on public.listings (city);
+create index if not exists idx_listings_status on public.listings (availability_status);
+create index if not exists idx_listings_created on public.listings (created_at desc);
+
 -- 2. Create Bookings Table
 create table if not exists public.bookings (
   id text primary key,
-  property_id text not null,
+  property_id text not null references public.listings(id) on delete cascade,
   slot_id text,
   slot_time_window text,
   slot_date text,
@@ -50,11 +59,14 @@ create table if not exists public.bookings (
   confirmed_at timestamp with time zone
 );
 
+create index if not exists idx_bookings_prop on public.bookings (property_id);
+create index if not exists idx_bookings_status on public.bookings (status);
+
 -- 3. Enable Row Level Security (RLS)
 alter table public.listings enable row level security;
 alter table public.bookings enable row level security;
 
--- 4. Create Public Access Policies (Allows read, create, and update from web clients)
+-- 4. Public Access Policies
 drop policy if exists "Public can read listings" on public.listings;
 create policy "Public can read listings" on public.listings for select using (true);
 
@@ -73,6 +85,6 @@ create policy "Public can insert bookings" on public.bookings for insert with ch
 drop policy if exists "Public can update bookings" on public.bookings;
 create policy "Public can update bookings" on public.bookings for update using (true);
 
--- 5. Enable Supabase Realtime broadcast for instant updates
+-- 5. Enable Realtime Sync
 alter publication supabase_realtime add table public.listings;
 alter publication supabase_realtime add table public.bookings;
