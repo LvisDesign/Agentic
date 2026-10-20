@@ -46,6 +46,14 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'requests' | 'listings'>('requests');
   const [dashboardToast, setDashboardToast] = useState<string | null>(null);
 
+  // Check if current user is an admin / platform manager
+  const isDemoAdmin = Boolean(
+    currentUser?.isAdmin ||
+    currentUser?.isDemoAdmin ||
+    currentUser?.email === 'admin@deltarent.ng' ||
+    (currentUser?.id === 'DT-AGT-9012' && currentUser?.fullName === 'Victor Ossai')
+  );
+
   // Active Agent Profile
   const defaultAgent = listings[0]?.agent || {
     id: 'agent-chief-oghene',
@@ -65,35 +73,50 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   const agentProfile: AgentProfile = (currentUser?.isAgent && currentUser.fullName) ? {
     id: currentUser.id || 'agent-active',
     fullName: currentUser.fullName,
-    agencyName: currentUser.agencyName || 'Apex Real Estate Ltd',
+    agencyName: currentUser.agencyName || 'Independent Real Estate Partner',
     isVerified: true,
-    cacNumber: currentUser.cacNumber || 'RC-1849204',
-    rating: 4.9,
-    reviewCount: 42,
-    completedInspections: 138,
+    cacNumber: currentUser.cacNumber || 'VERIFIED-REG',
+    rating: isDemoAdmin ? 4.9 : 5.0,
+    reviewCount: isDemoAdmin ? 42 : 0,
+    completedInspections: isDemoAdmin ? 138 : 0,
     responseTime: 'Responds within 10 mins',
-    phone: currentUser.phone || '0803 555 1234',
-    whatsapp: currentUser.whatsapp || currentUser.phone || '2348035551234',
+    phone: currentUser.phone || (isDemoAdmin ? '0803 555 1234' : ''),
+    whatsapp: currentUser.whatsapp || currentUser.phone || (isDemoAdmin ? '2348035551234' : ''),
     avatarUrl: currentUser.avatarUrl || defaultAgent.avatarUrl,
   } : {
     ...defaultAgent,
     avatarUrl: currentUser?.avatarUrl || defaultAgent.avatarUrl,
   };
 
-  // Compute metrics
-  const totalRevenue = bookings
-    .filter((b) => b.status === 'CONFIRMED_UNLOCKED')
-    .reduce((acc, curr) => acc + curr.inspectionFeeAmount, 85000); // 85k baseline + live confirmed
+  // Filter listings and bookings for this specific agent (or show all if demo admin)
+  const agentListings = isDemoAdmin
+    ? listings
+    : listings.filter((l) => {
+        if (!currentUser) return false;
+        if (l.agent?.id && currentUser.id && l.agent.id === currentUser.id) return true;
+        if (currentUser.phone && l.agent?.phone && l.agent.phone.replace(/\s+/g, '') === currentUser.phone.replace(/\s+/g, '')) return true;
+        if (currentUser.fullName && l.agent?.fullName && l.agent.fullName.toLowerCase() === currentUser.fullName.toLowerCase()) return true;
+        return false;
+      });
 
-  const pendingRequests = bookings.filter(
+  const agentBookings = isDemoAdmin
+    ? bookings
+    : bookings.filter((b) => agentListings.some((l) => l.id === b.propertyId));
+
+  // Compute metrics
+  const totalRevenue = agentBookings
+    .filter((b) => b.status === 'CONFIRMED_UNLOCKED')
+    .reduce((acc, curr) => acc + curr.inspectionFeeAmount, isDemoAdmin ? 85000 : 0);
+
+  const pendingRequests = agentBookings.filter(
     (b) => b.status === 'REQUEST_SUBMITTED'
   );
 
-  const queuedRequests = bookings.filter(
+  const queuedRequests = agentBookings.filter(
     (b) => b.status === 'QUEUED'
   );
 
-  const acceptedOrPaid = bookings.filter(
+  const acceptedOrPaid = agentBookings.filter(
     (b) => b.status === 'ACCEPTED_PENDING_PAYMENT' || b.status === 'CONFIRMED_UNLOCKED'
   );
 
@@ -114,7 +137,12 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               </h1>
             </div>
             <p className="text-xs text-[#70798C] mt-0.5">
-              {agentProfile.agencyName} • CAC: {agentProfile.cacNumber} • Rating {agentProfile.rating}★
+              {agentProfile.agencyName} • CAC: {agentProfile.cacNumber} •{' '}
+              {agentProfile.reviewCount > 0 ? (
+                <span>Rating {agentProfile.rating}★ ({agentProfile.reviewCount} reviews)</span>
+              ) : (
+                <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">New Verified Partner</span>
+              )}
             </p>
             <div className="flex items-center gap-2 mt-2 text-xs text-[#70798C]">
               <span className="font-mono text-[#000004] font-semibold">{formatNigerianPhone(agentProfile.phone)}</span>
@@ -145,7 +173,11 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {agentProfile.completedInspections + acceptedOrPaid.length}
           </div>
-          <span className="text-[10px] text-emerald-600 font-medium">Total inspections scheduled</span>
+          <span className="text-[10px] text-emerald-600 font-medium">
+            {agentProfile.completedInspections === 0 && acceptedOrPaid.length === 0
+              ? 'No inspections yet'
+              : 'Total inspections scheduled'}
+          </span>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
@@ -156,7 +188,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {pendingRequests.length}
           </div>
-          <span className="text-[10px] text-[#70798C]">Waiting for your reply</span>
+          <span className="text-[10px] text-[#70798C]">
+            {pendingRequests.length === 0 ? 'All caught up' : 'Waiting for your reply'}
+          </span>
         </div>
 
         <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
@@ -176,9 +210,11 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             <Building className="w-4 h-4 text-[#342A21]" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
-            {listings.length}
+            {agentListings.length}
           </div>
-          <span className="text-[10px] text-[#70798C]">Live on platform</span>
+          <span className="text-[10px] text-[#70798C]">
+            {agentListings.length === 0 ? 'No listings yet' : 'Live on platform'}
+          </span>
         </div>
       </div>
 
@@ -202,21 +238,46 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('listings')}
-          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
+          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${
             activeTab === 'listings'
               ? 'border-[#000004] text-[#000004]'
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
           }`}
         >
-          <span>My Properties ({listings.length})</span>
+          <span>My Properties ({agentListings.length})</span>
         </button>
       </div>
 
       {/* TAB 1: INSPECTION QUEUE & REQUESTS */}
       {activeTab === 'requests' && (
         <div className="space-y-6">
-          {/* Section: Pending Direct Booking Requests */}
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs">
+          {agentListings.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-[#E5E7EB] p-8 sm:p-12 shadow-xs text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200/60 text-[#342A21] flex items-center justify-center mx-auto shadow-xs">
+                <Building className="w-8 h-8 text-[#342A21]" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="font-display text-lg font-bold text-[#000004]">
+                  No Inspection Requests Yet
+                </h3>
+                <p className="text-xs text-[#70798C] leading-relaxed">
+                  Welcome, <strong>{agentProfile.fullName}</strong>! You haven't added any properties yet. Once you publish your available apartments or houses in Delta State, house seekers will book verified inspection slots and requests will appear here.
+                </p>
+              </div>
+              <div className="pt-2">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Your First Property</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Section: Pending Direct Booking Requests */}
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-display text-base font-bold text-[#000004]">
@@ -403,14 +464,40 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               </div>
             )}
           </div>
+            </>
+          )}
         </div>
       )}
 
       {/* TAB 2: MY LISTINGS */}
       {activeTab === 'listings' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {listings.map((prop) => {
+          {agentListings.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-[#E5E7EB] p-10 sm:p-14 shadow-xs text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200 text-[#70798C] flex items-center justify-center mx-auto">
+                <Building className="w-8 h-8 text-[#000004]" />
+              </div>
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="font-display text-lg font-bold text-[#000004]">
+                  You Haven't Listed Any Properties Yet
+                </h3>
+                <p className="text-xs text-[#70798C] leading-relaxed">
+                  Start listing your flats, self-contains, or houses across Delta State. Verified listings appear live on the video feed and search immediately.
+                </p>
+              </div>
+              <div className="pt-2">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Your First Property</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {agentListings.map((prop) => {
               const isRentedOut = prop.availabilityStatus === 'Rented Out';
                 const isStale = (() => {
                   if (!prop.lastConfirmedAt) return true;
@@ -557,15 +644,21 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   </div>
                 );
               })}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Create Listing Modal */}
       <CreateListingModal
         isOpen={showCreateModal}
+        currentUser={currentUser}
         onClose={() => setShowCreateModal(false)}
-        onListingCreated={onListingCreated}
+        onListingCreated={(newListing) => {
+          onListingCreated(newListing);
+          setDashboardToast(`Property "${newListing.title}" added to your listings!`);
+          setTimeout(() => setDashboardToast(null), 3000);
+        }}
       />
 
       {/* Floating Status Toast */}

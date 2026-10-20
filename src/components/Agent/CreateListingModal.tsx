@@ -11,7 +11,7 @@ import {
   Clock,
   Trash2
 } from 'lucide-react';
-import { PropertyListing, DeltaCity, PropertyType, NigerianState } from '../../types/marketplace';
+import { PropertyListing, DeltaCity, PropertyType, NigerianState, UserProfile } from '../../types/marketplace';
 import { formatNaira, formatCurrencyInput, parseCurrencyInput } from '../../utils/formatters';
 import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
@@ -66,6 +66,7 @@ const PROPERTY_TYPE_OPTIONS: DropdownOption[] = [
 
 interface CreateListingModalProps {
   isOpen: boolean;
+  currentUser?: UserProfile;
   onClose: () => void;
   onListingCreated: (newListing: PropertyListing) => void;
 }
@@ -106,13 +107,17 @@ const DEFAULT_SAMPLE_MEDIA: MediaItemDraft[] = [
 
 export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   isOpen,
+  currentUser,
   onClose,
   onListingCreated,
 }) => {
   // Form State
+  const initialCity = ((currentUser?.operatingCity || currentUser?.city || 'Asaba') as DeltaCity);
   const [title, setTitle] = useState('');
-  const [selectedState, setSelectedState] = useState<NigerianState>('Delta State');
-  const [city, setCity] = useState<DeltaCity>('Asaba');
+  const [selectedState, setSelectedState] = useState<NigerianState>(
+    (currentUser?.operatingState as NigerianState) || 'Delta State'
+  );
+  const [city, setCity] = useState<DeltaCity>(initialCity);
   const [neighborhood, setNeighborhood] = useState('');
   const [propertyType, setPropertyType] = useState<PropertyType>('2-Bedroom Flat');
   const [bedrooms, setBedrooms] = useState(2);
@@ -220,18 +225,18 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       },
       inspectionFee: 0,
       agent: {
-        id: 'agent-chief-oghene',
-        fullName: 'Chief Oghenetega Macaulay',
-        agencyName: 'Delta Heritage Realty Ltd',
+        id: currentUser?.id || 'agent-chief-oghene',
+        fullName: currentUser?.fullName || 'Chief Oghenetega Macaulay',
+        agencyName: currentUser?.agencyName || 'Delta Heritage Realty Ltd',
         isVerified: true,
-        cacNumber: 'RC-1849204',
-        rating: 4.9,
-        reviewCount: 43,
-        completedInspections: 139,
+        cacNumber: currentUser?.cacNumber || 'RC-1849204',
+        rating: 5.0,
+        reviewCount: 0,
+        completedInspections: 0,
         responseTime: 'Responds within 10 mins',
-        phone: '08034928172',
-        whatsapp: '2348034928172',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+        phone: currentUser?.phone || '08034928172',
+        whatsapp: currentUser?.whatsapp || currentUser?.phone || '2348034928172',
+        avatarUrl: currentUser?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
       },
       inspectionSlots: timeSlots.map((window, idx) => ({
         id: `slot-new-${idx}-${Date.now().toString().slice(-4)}`,

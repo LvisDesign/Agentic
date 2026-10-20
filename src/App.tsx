@@ -83,8 +83,47 @@ const INITIAL_BOOKINGS: BookingRecord[] = [
 ];
 
 export function App() {
-  const [listings, setListings] = useState<PropertyListing[]>(INITIAL_LISTINGS);
-  const [bookings, setBookings] = useState<BookingRecord[]>(INITIAL_BOOKINGS);
+  const [listings, setListings] = useState<PropertyListing[]>(() => {
+    const saved = localStorage.getItem('deltarent_listings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        // fallback
+      }
+    }
+    return INITIAL_LISTINGS;
+  });
+
+  const [bookings, setBookings] = useState<BookingRecord[]>(() => {
+    const saved = localStorage.getItem('deltarent_bookings');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        // fallback
+      }
+    }
+    return INITIAL_BOOKINGS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('deltarent_listings', JSON.stringify(listings));
+    } catch (e) {
+      // ignore
+    }
+  }, [listings]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('deltarent_bookings', JSON.stringify(bookings));
+    } catch (e) {
+      // ignore
+    }
+  }, [bookings]);
 
   // User Authentication State (Persisted in localStorage)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {

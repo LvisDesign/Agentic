@@ -126,6 +126,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [agentEmail, setAgentEmail] = useState('');
   const [agentState, setAgentState] = useState('Delta State');
   const [agentCity, setAgentCity] = useState('Asaba');
+  const [agentCitySelection, setAgentCitySelection] = useState('Asaba');
+  const [customAgentCity, setCustomAgentCity] = useState('');
   const [agentCac, setAgentCac] = useState('');
 
   // Login Form Fields
@@ -272,6 +274,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
     setDuplicateError(null);
 
+    const resolvedCity = agentState === 'Delta State'
+      ? (agentCitySelection === 'Others' ? (customAgentCity.trim() || 'Others') : (agentCitySelection || agentCity || 'Asaba'))
+      : (agentCity.trim() || 'Asaba');
+
     const finalWhatsapp = sameAsPhone ? agentPhone.trim() : (agentWhatsapp.trim() || agentPhone.trim());
 
     const updated: UserProfile = {
@@ -284,9 +290,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       whatsapp: finalWhatsapp,
       email: agentEmail.trim() || undefined,
       operatingState: agentState,
-      operatingCity: agentCity,
+      operatingCity: resolvedCity,
       state: agentState,
-      city: agentCity,
+      city: resolvedCity,
       cacNumber: agentCac.trim() || 'VERIFIED-REG',
       isVerifiedTenant: false,
       isAgent: true,
@@ -341,7 +347,12 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
 
     // Demo fallback
+    const isSystemAdmin =
+      query.toLowerCase().includes('admin') ||
+      query === 'admin@deltarent.ng';
+
     const isAgentLogin =
+      isSystemAdmin ||
       loginRole === 'agent' ||
       query === '0803 555 1234' ||
       query.toLowerCase().includes('agent') ||
@@ -350,13 +361,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     const updated: UserProfile = isAgentLogin
       ? {
-          id: 'DT-AGT-9012',
-          fullName: 'Victor Ossai',
-          agencyName: 'Apex Real Estate Ltd',
+          id: isSystemAdmin ? 'DT-ADMIN-001' : 'DT-AGT-9012',
+          fullName: isSystemAdmin ? 'Platform Administrator' : 'Victor Ossai',
+          agencyName: isSystemAdmin ? 'DeltaRent Administration' : 'Apex Real Estate Ltd',
           agentType: 'agency',
           phone: query.includes('@') ? '0803 555 1234' : query,
           whatsapp: '0803 555 1234',
-          email: query.includes('@') ? query : 'victor@apexrealty.ng',
+          email: query.includes('@') ? query : (isSystemAdmin ? 'admin@deltarent.ng' : 'victor@apexrealty.ng'),
           operatingState: 'Delta State',
           operatingCity: 'Asaba',
           state: 'Delta State',
@@ -364,6 +375,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           cacNumber: 'RC-1849204',
           isVerifiedTenant: false,
           isAgent: true,
+          isAdmin: isSystemAdmin,
+          isDemoAdmin: true,
           savedListingIds: [],
         }
       : {
@@ -1096,17 +1109,72 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                    Operating City / Towns <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Asaba, Warri, Okpanam"
-                    value={agentCity}
-                    onChange={(e) => setAgentCity(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[11px] font-bold text-[#000004]">
+                      Operating City / Towns <span className="text-rose-500">*</span>
+                    </label>
+                    {agentState === 'Delta State' && agentCitySelection !== 'Others' && (
+                      <span className="text-[10px] text-[#70798C] font-semibold">
+                        {agentCitySelection}, Delta
+                      </span>
+                    )}
+                  </div>
+                  {agentState === 'Delta State' ? (
+                    <div className="space-y-2">
+                      <CustomDropdown
+                        options={[
+                          ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
+                          {
+                            value: 'Others',
+                            label: 'Others (Enter City Manually)',
+                            subtitle: 'If your town or community is not listed above',
+                            badge: 'Manual Entry',
+                          },
+                        ]}
+                        value={agentCitySelection}
+                        onChange={(val) => {
+                          setAgentCitySelection(val);
+                          if (val !== 'Others') {
+                            setAgentCity(val);
+                          } else {
+                            setAgentCity(customAgentCity || '');
+                          }
+                        }}
+                        headerTitle="Delta State Cities & Towns"
+                        placeholder="Select City / Town"
+                        icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                        variant="form"
+                        allowCustomInput={true}
+                      />
+                      {agentCitySelection === 'Others' && (
+                        <div className="animate-fade-in">
+                          <label className="block text-[10px] font-bold text-[#70798C] mb-1">
+                            Enter Your City / Town Name <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Effurun, Oghara, Jesse, Kwale"
+                            value={customAgentCity}
+                            onChange={(e) => {
+                              setCustomAgentCity(e.target.value);
+                              setAgentCity(e.target.value);
+                            }}
+                            className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none bg-amber-50/20 focus:bg-white"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Ikeja, Benin City, Port Harcourt"
+                      value={agentCity}
+                      onChange={(e) => setAgentCity(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
+                    />
+                  )}
                 </div>
               </div>
 

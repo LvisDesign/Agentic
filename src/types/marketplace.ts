@@ -203,6 +203,8 @@ export interface UserProfile {
   operatingCity?: string;
   agentType?: 'agency' | 'individual' | 'landlord';
   savedListingIds: string[];
+  isAdmin?: boolean;
+  isDemoAdmin?: boolean;
   createdAt?: string;
   lastProfileEditAt?: string;
 }
