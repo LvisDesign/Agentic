@@ -1,20 +1,40 @@
 import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 import { PropertyListing, ListingAvailability } from '../types/marketplace';
 import { INITIAL_LISTINGS } from '../data/mockListings';
-import { FALLBACK_PROPERTY_IMAGES } from '../utils/mediaStorage';
+import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO } from '../utils/mediaStorage';
 
 const LOCAL_STORAGE_KEY = 'deltarent_listings';
 
 /**
- * Normalizes and sanitizes a listing item
+ * Normalizes and sanitizes a listing item's media for cross-device consistency:
+ * - Videos always receive a verified, playable streaming video URL (never an image Data URL).
+ * - Captured poster snapshots are preserved so listings display their authentic property photo.
  */
 export function sanitizeListingMedia(item: PropertyListing, index: number = 0): PropertyListing {
   const sanitizedMedia = (item.media || []).map((m, mIdx) => {
+    // 1. Video items: guarantee URL is a valid, playable video stream and NEVER a JPEG Data URL
+    if (m.type === 'video') {
+      const isInvalidVideo = 
+        !m.url || 
+        m.url.startsWith('blob:') || 
+        m.url.startsWith('data:image/') || 
+        m.url.includes('mixkit.co');
+
+      return {
+        ...m,
+        type: 'video' as const,
+        url: isInvalidVideo ? DEFAULT_WALKTHROUGH_VIDEO : m.url,
+        poster: m.poster || FALLBACK_PROPERTY_IMAGES[(index + mIdx) % FALLBACK_PROPERTY_IMAGES.length],
+      };
+    }
+
+    // 2. Image items: resolve ephemeral blobs to poster snapshot or fallback image
     const isBlob = typeof m.url === 'string' && m.url.startsWith('blob:');
     if (isBlob) {
       const fallback = FALLBACK_PROPERTY_IMAGES[(index + mIdx) % FALLBACK_PROPERTY_IMAGES.length];
       return {
         ...m,
+        type: 'image' as const,
         url: m.poster || fallback,
         poster: m.poster || fallback,
       };

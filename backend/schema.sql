@@ -111,3 +111,32 @@ begin
     alter publication supabase_realtime add table public.bookings;
   end if;
 end $$;
+
+-- 6. Storage Bucket for Property Walkthrough Videos and Photos
+-- Enables agents to upload authentic HD walkthrough videos and photos directly to Supabase CDN
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'property-media',
+  'property-media',
+  true,
+  52428800, -- 50MB max file size
+  array['video/mp4', 'video/webm', 'video/quicktime', 'image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set 
+  public = true,
+  file_size_limit = 52428800,
+  allowed_mime_types = array['video/mp4', 'video/webm', 'video/quicktime', 'image/jpeg', 'image/png', 'image/webp'];
+
+-- Storage Security Policies for property-media bucket
+drop policy if exists "Public Media Access" on storage.objects;
+create policy "Public Media Access" on storage.objects for select using (bucket_id = 'property-media');
+
+drop policy if exists "Public Media Upload" on storage.objects;
+create policy "Public Media Upload" on storage.objects for insert with check (bucket_id = 'property-media');
+
+drop policy if exists "Public Media Update" on storage.objects;
+create policy "Public Media Update" on storage.objects for update using (bucket_id = 'property-media');
+
+drop policy if exists "Public Media Delete" on storage.objects;
+create policy "Public Media Delete" on storage.objects for delete using (bucket_id = 'property-media');
+

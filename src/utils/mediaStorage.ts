@@ -1,10 +1,12 @@
+import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
+
 /**
  * DeltaRent Persistent Media Storage Utility
- * Uses IndexedDB for reliable client-side storage of large photos & videos,
- * combined with automatic client-side canvas compression for crisp, lightweight image Data URLs.
+ * Uses Supabase Cloud Storage for high-speed cross-device video/photo CDN hosting,
+ * with IndexedDB client backup and client-side canvas compression for crisp, lightweight image Data URLs.
  * 
  * Prevents ephemeral blob URL expirations, localStorage 5MB quota errors,
- * and broken media playback across page refreshes.
+ * and broken media playback across page refreshes and different devices (mobile vs desktop).
  */
 
 const DB_NAME = 'DeltaRentMediaDB';
@@ -23,7 +25,9 @@ export const FALLBACK_PROPERTY_IMAGES = [
 ];
 
 export const DEFAULT_FALLBACK_IMAGE = FALLBACK_PROPERTY_IMAGES[0];
-export const DEFAULT_WALKTHROUGH_VIDEO = 'https://assets.mixkit.co/videos/preview/mixkit-modern-apartment-living-room-interior-39744-large.mp4';
+// Self-hosted MP4 walkthrough video hosted directly within the application (100% reliable, zero CORS/403 errors)
+export const DEFAULT_WALKTHROUGH_VIDEO = '/videos/property-walkthrough.mp4';
+export const EXTERNAL_WALKTHROUGH_BACKUP = 'https://assets.codepen.io/6093409/river.mp4';
 
 // Open or initialize the IndexedDB instance
 function openDB(): Promise<IDBDatabase> {
@@ -237,32 +241,72 @@ export interface ProcessedMedia {
 }
 
 /**
+ * Uploads media file (video or photo) directly to Supabase Storage bucket 'property-media'
+ * If the bucket is available, returns the permanent public CDN streaming URL.
+ */
+export async function uploadMediaToSupabaseStorage(file: File): Promise<string | null> {
+  const client = getSupabaseClient();
+  if (!client || !isSupabaseConfigured()) return null;
+
+  try {
+    const ext = file.name.split('.').pop() || (file.type.startsWith('video/') ? 'mp4' : 'jpg');
+    const cleanFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filePath = `listings/${Date.now()}-${Math.random().toString(36).substring(2, 7)}-${cleanFileName}`;
+
+    const { data, error } = await client.storage.from('property-media').upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: file.type || (file.type.startsWith('video/') ? 'video/mp4' : 'image/jpeg'),
+    });
+
+    if (error) {
+      console.warn('[DeltaRent Supabase Storage] Upload notice:', error.message);
+      return null;
+    }
+
+    if (data?.path) {
+      const { data: pubData } = client.storage.from('property-media').getPublicUrl(data.path);
+      if (pubData && pubData.publicUrl) {
+        console.log('[DeltaRent Supabase Storage] Successfully uploaded to cloud CDN:', pubData.publicUrl);
+        return pubData.publicUrl;
+      }
+    }
+  } catch (err) {
+    console.warn('[DeltaRent Supabase Storage] Upload exception:', err);
+  }
+  return null;
+}
+
+/**
  * Main ingestion handler for uploaded files:
- * 1. For images: compress to permanent base64 Data URL and back up in IndexedDB.
- * 2. For videos: save blob in IndexedDB, generate snapshot poster, create live session object URL.
+ * 1. For images: compress to lightweight base64 Data URL and back up in IndexedDB + cloud storage if available.
+ * 2. For videos: capture crisp poster snapshot frame, upload to Supabase cloud CDN if available, and back up in IndexedDB.
  */
 export async function processUploadedFile(file: File, index: number): Promise<ProcessedMedia> {
   const isVideo = file.type.startsWith('video/');
   const id = `media-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 7)}`;
   const caption = file.name.replace(/\.[^/.]+$/, '');
 
+  // Attempt upload to Supabase Storage for universal cross-device playback
+  const cloudUrl = await uploadMediaToSupabaseStorage(file);
+
   if (isVideo) {
     // Generate poster snapshot frame first
     const poster = await captureVideoPoster(file);
-    // Store video in IndexedDB
+    // Store video in IndexedDB for instant local playback
     await storeBlobInIDB(id, file, { type: 'video', name: file.name });
-    // Live object URL for current session
-    const objectUrl = URL.createObjectURL(file);
+    // Live object URL for current session or cloud streaming URL
+    const localUrl = URL.createObjectURL(file);
 
     return {
       id,
       type: 'video',
-      url: objectUrl,
+      url: cloudUrl || localUrl,
       poster,
       caption,
     };
   } else {
-    // Compress image to lightweight Data URL
+    // Compress image to lightweight Data URL (persists in DB, loads fast on all screens)
     const dataUrl = await compressImageToDataUrl(file);
     // Store in IndexedDB
     await storeBlobInIDB(id, file, { type: 'image', name: file.name });
@@ -270,7 +314,7 @@ export async function processUploadedFile(file: File, index: number): Promise<Pr
     return {
       id,
       type: 'image',
-      url: dataUrl,
+      url: cloudUrl || dataUrl,
       caption,
     };
   }
@@ -278,11 +322,23 @@ export async function processUploadedFile(file: File, index: number): Promise<Pr
 
 /**
  * Ensures media item URLs are valid and active.
- * If a blob URL has expired, attempts to reconstitute it from IndexedDB or falls back gracefully.
+ * Guarantees videos always resolve to a playable video stream and never to an image Data URL.
  */
 export async function rehydrateMediaItem(item: { id?: string; type: 'image' | 'video'; url: string; poster?: string }): Promise<string> {
-  // If it's already a Data URL or an external / asset path, it's valid
-  if (item.url.startsWith('data:') || item.url.startsWith('/') || item.url.startsWith('http://') || item.url.startsWith('https://')) {
+  // If it's a video: ensure it is not an image data URL or mixkit
+  if (item.type === 'video') {
+    if (!item.url || item.url.startsWith('data:image/') || item.url.includes('mixkit.co')) {
+      return DEFAULT_WALKTHROUGH_VIDEO;
+    }
+  }
+
+  // If it's already an external / asset path, it's valid
+  if (item.url.startsWith('/') || item.url.startsWith('http://') || item.url.startsWith('https://')) {
+    return item.url;
+  }
+
+  // If it's a data: URL for an image
+  if (item.type === 'image' && item.url.startsWith('data:image/')) {
     return item.url;
   }
 
@@ -296,7 +352,7 @@ export async function rehydrateMediaItem(item: { id?: string; type: 'image' | 'v
 
   // Fallback
   if (item.type === 'video') {
-    return item.poster || DEFAULT_WALKTHROUGH_VIDEO;
+    return DEFAULT_WALKTHROUGH_VIDEO;
   }
   return DEFAULT_FALLBACK_IMAGE;
 }

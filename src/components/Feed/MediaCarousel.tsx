@@ -23,6 +23,15 @@ interface CarouselVideoItemProps {
   isInView: boolean;
 }
 
+function resolveVideoSource(src?: string): string {
+  if (!src || typeof src !== 'string') return DEFAULT_WALKTHROUGH_VIDEO;
+  // If it's a static image Data URL, it cannot be decoded as a video stream
+  if (src.startsWith('data:image/')) return DEFAULT_WALKTHROUGH_VIDEO;
+  // If it points to the blocked mixkit domain which returns 403 Forbidden
+  if (src.includes('mixkit.co')) return DEFAULT_WALKTHROUGH_VIDEO;
+  return src;
+}
+
 /**
  * Dedicated Video item that plays automatically when scrolled into the viewport
  * and pauses when scrolled away or navigated to another slide.
@@ -38,12 +47,12 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [videoSource, setVideoSource] = useState(url);
+  const [videoSource, setVideoSource] = useState(() => resolveVideoSource(url));
   const isInitialMount = useRef(true);
 
   // Synchronize URL changes
   useEffect(() => {
-    setVideoSource(url);
+    setVideoSource(resolveVideoSource(url));
     setHasError(false);
   }, [url]);
 
@@ -83,7 +92,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
         video.pause();
       }
     }
-  }, [isInView, isActive, hasError]);
+  }, [isInView, isActive, hasError, videoSource]);
 
   // Synchronize native volume and mute changes with state
   const handleVolumeChange = () => {
@@ -94,7 +103,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   };
 
   // Toggle mute state directly
-  const toggleMute = (e: React.MouseEvent) => {
+  const toggleMute = (e: React.MouseEvent | React.TouchEvent) => {
     e.stopPropagation();
     e.preventDefault();
     const video = videoRef.current;
@@ -102,10 +111,22 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
 
     const nextMuted = !video.muted;
     video.muted = nextMuted;
-    if (!nextMuted && video.volume === 0) {
-      video.volume = 1;
+    if (!nextMuted) {
+      if (video.volume === 0) video.volume = 1;
+      video.play().catch(() => {});
     }
     setIsMuted(nextMuted);
+  };
+
+  // Toggle play/pause when user clicks the video area
+  const handleVideoClick = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
   };
 
   // Pause playback when the user switches browser tabs or minimizes window
@@ -131,10 +152,13 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
 
   const handleVideoError = () => {
     console.warn('[DeltaRent Video] Video source failed to play:', videoSource);
-    // If the URL was an ephemeral blob from another session, fall back to verified sample video
-    if (videoSource.startsWith('blob:')) {
+    // If the failed source is not the local default walkthrough video, seamlessly fall back!
+    if (videoSource !== DEFAULT_WALKTHROUGH_VIDEO) {
+      console.log('[DeltaRent Video] Automatically falling back to verified local walkthrough video');
       setVideoSource(DEFAULT_WALKTHROUGH_VIDEO);
+      setHasError(false);
     } else {
+      // If even the default failed, show the fallback UI
       setHasError(true);
     }
   };
@@ -161,8 +185,13 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
             onClick={() => {
               setHasError(false);
               setVideoSource(DEFAULT_WALKTHROUGH_VIDEO);
+              setTimeout(() => {
+                if (videoRef.current) {
+                  videoRef.current.play().catch(() => {});
+                }
+              }, 60);
             }}
-            className="mt-3 px-3 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-[11px] font-semibold flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
+            className="mt-3 px-3.5 py-1.5 rounded-full bg-white/20 hover:bg-white/30 text-white text-[11px] font-semibold flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
             <span>Play Walkthrough Tour</span>
@@ -173,13 +202,15 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   }
 
   return (
-    <div className="relative w-full h-full bg-slate-950">
+    <div 
+      className="relative w-full h-full bg-slate-950 cursor-pointer"
+      onClick={handleVideoClick}
+    >
       <video
         ref={videoRef}
         src={videoSource}
         poster={poster || DEFAULT_FALLBACK_IMAGE}
         className="w-full h-full object-cover"
-        controls
         muted={isMuted}
         loop
         playsInline
@@ -199,6 +230,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
       <button
         type="button"
         onClick={toggleMute}
+        onTouchEnd={toggleMute}
         onMouseDown={(e) => e.stopPropagation()}
         aria-label={isMuted ? 'Unmute video audio' : 'Mute video audio'}
         className="absolute top-2.5 right-2.5 z-25 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/65 hover:bg-black/85 text-white backdrop-blur-md border border-white/20 shadow-md transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95 group/sound"
