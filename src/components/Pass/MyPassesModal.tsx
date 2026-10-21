@@ -67,18 +67,19 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                 return (
                   <div
                     key={b.id}
-                    className="p-4 rounded-xl border border-emerald-300 bg-emerald-50/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs overflow-hidden"
+                    className="p-3.5 sm:p-4 rounded-xl border border-emerald-300 bg-emerald-50/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 shadow-xs overflow-hidden"
                   >
-                    <div className="space-y-1.5 flex-1 min-w-0 pr-0 sm:pr-3">
+                    <div className="space-y-1.5 flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-sm text-[#000004] truncate">
-                          {listing.title}
-                        </span>
-                        <span className="text-xs text-[#70798C] shrink-0">({listing.city})</span>
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shrink-0">
                           CONFIRMED
                         </span>
+                        <span className="text-xs text-[#70798C] shrink-0 font-medium">({listing.city})</span>
                       </div>
+
+                      <h4 className="font-bold text-sm sm:text-base text-[#000004] line-clamp-2 break-words leading-snug">
+                        {listing.title}
+                      </h4>
 
                       <div className="text-xs text-[#70798C] flex items-center gap-2">
                         <Calendar className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
@@ -100,30 +101,30 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
+                    <div className="grid grid-cols-3 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-emerald-200/60">
                       <a
                         href={`tel:${rawPhone.replace(/[^0-9+]/g, '')}`}
-                        className="flex-1 sm:flex-none py-2 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap"
+                        className="w-full sm:w-auto py-2 sm:py-2 px-2 sm:px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs whitespace-nowrap"
                         title="Call Agent"
                       >
-                        <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                        <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                         <span>Call</span>
                       </a>
 
                       <button
                         type="button"
                         onClick={(e) => handleCopyPhone(b.id, rawPhone, e)}
-                        className="flex-1 sm:flex-none py-2 px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap"
+                        className="w-full sm:w-auto py-2 sm:py-2 px-2 sm:px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] transition-colors flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs cursor-pointer whitespace-nowrap"
                         title="Copy phone number"
                       >
                         {copiedPhoneId === b.id ? (
                           <>
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                             <span className="text-emerald-700">Copied!</span>
                           </>
                         ) : (
                           <>
-                            <Copy className="w-3.5 h-3.5 text-[#342A21]" />
+                            <Copy className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
                             <span>Copy</span>
                           </>
                         )}
@@ -134,7 +135,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                           onClose();
                           onOpenBookingModal(listing);
                         }}
-                        className="flex-1 sm:flex-none py-2 px-3.5 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-900 text-xs font-bold transition-colors shadow-xs cursor-pointer whitespace-nowrap"
+                        className="w-full sm:w-auto py-2 sm:py-2 px-2 sm:px-3.5 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-900 text-xs font-bold transition-colors shadow-xs cursor-pointer text-center whitespace-nowrap"
                       >
                         View Pass
                       </button>
@@ -146,19 +147,20 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
               return (
                 <div
                   key={b.id}
-                  className={`p-4 rounded-xl border ${
+                  className={`p-3.5 sm:p-4 rounded-xl border ${
                     b.status === 'QUEUED'
                       ? 'border-[#F0544F]/30 bg-[#F0544F]/5'
                       : 'border-[#342A21]/30 bg-[#342A21]/5'
-                  } flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 overflow-hidden`}
+                  } flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 overflow-hidden`}
                 >
-                  <div className="space-y-1 flex-1 min-w-0 pr-0 sm:pr-3">
+                  <div className="space-y-1.5 flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-sm text-[#000004] truncate">
-                        {listing.title}
-                      </span>
-                      <span className="text-xs text-[#70798C] shrink-0">({listing.city})</span>
+                      <span className="text-xs text-[#70798C] font-semibold shrink-0">({listing.city})</span>
                     </div>
+
+                    <h4 className="font-bold text-sm sm:text-base text-[#000004] line-clamp-2 break-words leading-snug">
+                      {listing.title}
+                    </h4>
 
                     <div className="text-xs text-[#70798C] flex items-center gap-2">
                       <Calendar className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
@@ -168,7 +170,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                       <span>{b.slotTimeWindow}</span>
                     </div>
 
-                    <div className="pt-1">
+                    <div className="pt-0.5">
                       {b.status === 'QUEUED' && (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#F0544F]">
                           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
@@ -196,15 +198,17 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onOpenBookingModal(listing);
-                    }}
-                    className="w-full sm:w-auto shrink-0 py-2 px-4 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors shadow-xs whitespace-nowrap cursor-pointer mt-2 sm:mt-0"
-                  >
-                    View Status Details
-                  </button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]">
+                    <button
+                      onClick={() => {
+                        onClose();
+                        onOpenBookingModal(listing);
+                      }}
+                      className="w-full sm:w-auto py-2.5 px-4 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors shadow-xs whitespace-nowrap cursor-pointer text-center"
+                    >
+                      View Status Details
+                    </button>
+                  </div>
                 </div>
               );
             })

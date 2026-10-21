@@ -73,7 +73,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const savedListings = listings.filter((l) => savedPropertyIds.includes(l.id));
 
   return (
-    <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-20 pb-20 px-4 sm:px-6 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-20 pb-20 px-3.5 sm:px-6 max-w-5xl mx-auto">
       {/* 1. Top Banner / User Identity */}
       <div className="bg-white rounded-2xl p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -233,65 +233,65 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       )}
 
       {/* 3. KPI Cards Grid (Matches Agent Dashboard 4-card structure) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
-        <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Confirmed Inspections</span>
-            <CalendarCheck className="w-4 h-4 text-emerald-600" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mb-6">
+        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
+            <span className="truncate">Confirmed</span>
+            <CalendarCheck className="w-4 h-4 text-emerald-600 shrink-0" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {confirmedPasses.length}
           </div>
-          <span className="text-[10px] text-emerald-600 font-medium">
-            100% Free Micro-Clearance
+          <span className="text-[10px] text-emerald-600 font-medium truncate mt-0.5">
+            Free Micro-Clearance
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Pending Approvals</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
+            <span className="truncate">Pending</span>
+            <Clock className="w-4 h-4 text-amber-500 shrink-0" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {pendingRequests.length}
           </div>
-          <span className="text-[10px] text-[#70798C]">
-            Awaiting Agent Response
+          <span className="text-[10px] text-[#70798C] truncate mt-0.5">
+            Awaiting Agent
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Standby Queue</span>
-            <Users className="w-4 h-4 text-[#F0544F]" />
+        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
+            <span className="truncate">Waitlist</span>
+            <Users className="w-4 h-4 text-[#F0544F] shrink-0" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#F0544F] mt-1">
             {queuedRequests.length}
           </div>
-          <span className="text-[10px] text-[#F0544F]">
-            Auto-Promoting Waitlist
+          <span className="text-[10px] text-[#F0544F] truncate mt-0.5">
+            Auto-Promoting
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Agent Inventory</span>
-            <Building className="w-4 h-4 text-[#342A21]" />
+        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
+            <span className="truncate">Properties</span>
+            <Building className="w-4 h-4 text-[#342A21] shrink-0" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {listings.length}
           </div>
-          <span className="text-[10px] text-[#70798C]">
-            Uploaded by Verified Agents
+          <span className="text-[10px] text-[#70798C] truncate mt-0.5">
+            Verified Agents
           </span>
         </div>
       </div>
 
-      {/* 4. Tabs Navigation */}
-      <div className="flex items-center gap-2 border-b border-[#E5E7EB] mb-6">
+      {/* 4. Tabs Navigation (Horizontally scrollable on mobile without wrapping) */}
+      <div className="flex items-center gap-2 sm:gap-4 border-b border-[#E5E7EB] mb-6 overflow-x-auto scrollbar-none -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
         <button
           onClick={() => setActiveTab('passes')}
-          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${
+          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
             activeTab === 'passes'
               ? 'border-[#000004] text-[#000004]'
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
@@ -307,7 +307,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('inventory')}
-          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${
+          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
             activeTab === 'inventory'
               ? 'border-[#000004] text-[#000004]'
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
@@ -318,7 +318,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('saved')}
-          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${
+          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
             activeTab === 'saved'
               ? 'border-[#000004] text-[#000004]'
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
@@ -333,23 +333,23 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       {activeTab === 'passes' && (
         <div className="space-y-6">
           {/* Confirmed Passes Section */}
-          <div className="bg-white rounded-2xl border border-emerald-200 p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+          <div className="bg-white rounded-2xl border border-emerald-200 p-3.5 sm:p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-display text-base font-bold text-[#000004] flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                  Confirmed & Unlocked Inspection Passes
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <span>Confirmed & Unlocked Inspection Passes</span>
                 </h3>
-                <p className="text-xs text-[#70798C]">
+                <p className="text-xs text-[#70798C] mt-0.5 leading-relaxed">
                   Direct agent dispatch confirmed. Agent direct phone number unlocked — call directly or copy number to coordinate.
                 </p>
               </div>
               <button
                 onClick={onOpenMyPasses}
-                className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 cursor-pointer shrink-0 self-start sm:self-auto"
               >
                 <span>View All Inspections ({confirmedPasses.length})</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
+                <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
               </button>
             </div>
 
@@ -374,13 +374,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   return (
                     <div
                       key={b.id}
-                      className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 overflow-hidden"
+                      className="p-3.5 sm:p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5 overflow-hidden"
                     >
-                      <div className="space-y-1.5 flex-1 min-w-0 pr-0 md:pr-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-bold text-sm text-[#000004] truncate">
-                            {property.title}
-                          </span>
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shrink-0">
                             CONFIRMED & UNLOCKED
                           </span>
@@ -388,12 +385,18 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                             Pass: {b.id}
                           </span>
                         </div>
-                        <div className="text-xs text-[#70798C] flex items-center gap-2 truncate">
+
+                        <h4 className="font-bold text-sm sm:text-base text-[#000004] line-clamp-2 break-words leading-snug">
+                          {property.title}
+                        </h4>
+
+                        <div className="text-xs text-[#70798C] flex items-center gap-1.5 min-w-0">
                           <MapPin className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
-                          <span className="truncate">Landmark / Area: <strong className="text-[#000004]">{property.neighborhood}, {property.city}</strong></span>
+                          <span className="truncate">Area: <strong className="text-[#000004]">{property.neighborhood}, {property.city}</strong></span>
                         </div>
-                        <div className="text-xs text-[#70798C] flex flex-wrap items-center gap-3">
-                          <span className="flex items-center gap-1 text-[#342A21] font-medium shrink-0">
+
+                        <div className="text-xs text-[#70798C] flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="flex items-center gap-1 text-[#342A21] font-semibold shrink-0">
                             <Clock className="w-3.5 h-3.5 shrink-0" />
                             {b.slotDate} at {b.slotTimeWindow}
                           </span>
@@ -404,51 +407,51 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2 w-full md:w-auto shrink-0 mt-2 md:mt-0">
+                      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-emerald-100">
                         <a
                           href={`tel:${rawPhone.replace(/[^0-9+]/g, '')}`}
-                          className="flex-1 sm:flex-none py-2 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs"
+                          className="w-full sm:w-auto py-2.5 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap min-w-0"
                           title="Call Agent Directly"
                         >
-                          <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Call Agent</span>
+                          <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span className="truncate">Call Agent</span>
+                        </a>
+
+                        <a
+                          href={`https://wa.me/${property.agent.whatsapp}?text=Hello%20${encodeURIComponent(property.agent.fullName)},%20I%20have%20a%20confirmed%20inspection%20pass%20(${b.id})%20for%20${encodeURIComponent(property.title)}.`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="w-full sm:w-auto py-2.5 px-3 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-xs font-semibold text-emerald-800 transition-colors flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap min-w-0"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="truncate">WhatsApp</span>
                         </a>
 
                         <button
                           type="button"
                           onClick={() => handleCopyPhone(b.id, rawPhone)}
-                          className="flex-1 sm:flex-none py-2 px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                          className="w-full sm:w-auto py-2.5 px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap min-w-0"
                           title="Copy phone number"
                         >
                           {copiedPhoneId === b.id ? (
                             <>
-                              <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              <span className="text-emerald-700">Copied!</span>
+                              <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                              <span className="text-emerald-700 truncate">Copied!</span>
                             </>
                           ) : (
                             <>
-                              <Copy className="w-3.5 h-3.5 text-[#342A21]" />
-                              <span>Copy Number</span>
+                              <Copy className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
+                              <span className="truncate">Copy Phone</span>
                             </>
                           )}
                         </button>
 
                         <button
                           onClick={onOpenMyPasses}
-                          className="flex-1 sm:flex-none py-2 px-3 rounded-lg border border-[#342A21]/30 bg-[#342A21]/5 hover:bg-[#342A21]/10 text-xs font-bold text-[#342A21] transition-colors cursor-pointer"
+                          className="w-full sm:w-auto py-2.5 px-3 rounded-lg border border-[#342A21]/30 bg-[#342A21]/5 hover:bg-[#342A21]/10 text-xs font-bold text-[#342A21] transition-colors cursor-pointer whitespace-nowrap min-w-0 flex items-center justify-center"
                         >
-                          View Pass
+                          <span className="truncate">View Pass</span>
                         </button>
-
-                        <a
-                          href={`https://wa.me/${property.agent.whatsapp}?text=Hello%20${encodeURIComponent(property.agent.fullName)},%20I%20have%20a%20confirmed%20inspection%20pass%20(${b.id})%20for%20${encodeURIComponent(property.title)}.`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="py-2 px-3 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-xs font-semibold text-emerald-800 transition-colors flex items-center justify-center gap-1"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>WhatsApp</span>
-                        </a>
                       </div>
                     </div>
                   );
@@ -458,17 +461,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           </div>
 
           {/* Pending Inspection Requests Section */}
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 sm:p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-display text-base font-bold text-[#000004]">
                   Pending Booking Requests (Awaiting Agent Acceptance)
                 </h3>
-                <p className="text-xs text-[#70798C]">
+                <p className="text-xs text-[#70798C] mt-0.5 leading-relaxed">
                   Your request has been submitted directly to the verified agent. Once accepted, full details unlock instantly.
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21]">
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21] shrink-0 self-start sm:self-auto">
                 {pendingRequests.length} Pending
               </span>
             </div>
@@ -484,17 +487,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   return (
                     <div
                       key={b.id}
-                      className="p-4 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 overflow-hidden"
+                      className="p-3.5 sm:p-4 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 overflow-hidden"
                     >
-                      <div className="space-y-1 flex-1 min-w-0 pr-0 sm:pr-3">
+                      <div className="space-y-1.5 flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-bold text-sm text-[#000004] truncate">
-                            {property.title}
-                          </span>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 shrink-0">
                             Awaiting Agent
                           </span>
                         </div>
+                        <h4 className="font-bold text-sm sm:text-base text-[#000004] line-clamp-2 break-words leading-snug">
+                          {property.title}
+                        </h4>
                         <div className="text-xs text-[#70798C] truncate">
                           Assigned Agent: <strong className="text-[#000004]">{property.agent.fullName}</strong> ({property.agent.agencyName})
                         </div>
@@ -504,10 +507,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 mt-2 sm:mt-0">
+                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]">
                         <button
                           onClick={() => onCancelBooking(b.id)}
-                          className="flex-1 sm:flex-none py-2 px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-slate-100 text-xs font-semibold text-rose-600 transition-colors cursor-pointer whitespace-nowrap"
+                          className="w-full sm:w-auto py-2.5 px-3.5 rounded-lg border border-rose-200 bg-white hover:bg-rose-50 text-xs font-semibold text-rose-600 transition-colors cursor-pointer text-center whitespace-nowrap"
                         >
                           Cancel Request
                         </button>
@@ -520,17 +523,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           </div>
 
           {/* Standby Waitlist Queue (5/5 Limit Reached) */}
-          <div className="bg-white rounded-2xl border border-[#F0544F]/30 p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
+          <div className="bg-white rounded-2xl border border-[#F0544F]/30 p-3.5 sm:p-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
+              <div className="min-w-0 flex-1">
                 <h3 className="font-display text-base font-bold text-[#000004]">
                   My Standby Waitlist Queue
                 </h3>
-                <p className="text-xs text-[#70798C]">
+                <p className="text-xs text-[#70798C] mt-0.5 leading-relaxed">
                   Agent window currently at maximum 5/5 capacity. If an applicant cancels, your position advances automatically.
                 </p>
               </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#F0544F]/10 text-[#F0544F]">
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#F0544F]/10 text-[#F0544F] shrink-0 self-start sm:self-auto">
                 {queuedRequests.length} on Waitlist
               </span>
             </div>
@@ -546,28 +549,30 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   return (
                     <div
                       key={b.id}
-                      className="p-4 rounded-xl border border-[#F0544F]/20 bg-[#F0544F]/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 overflow-hidden"
+                      className="p-3.5 sm:p-4 rounded-xl border border-[#F0544F]/20 bg-[#F0544F]/5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3.5 overflow-hidden"
                     >
-                      <div className="space-y-1 flex-1 min-w-0 pr-0 sm:pr-3">
+                      <div className="space-y-1.5 flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="px-2 py-0.5 rounded-full bg-[#F0544F] text-white text-[11px] font-bold shrink-0">
                             Queue Position #{b.queuePosition || 1}
                           </span>
-                          <span className="font-bold text-sm text-[#000004] truncate">
-                            {property.title}
-                          </span>
                         </div>
-                        <div className="text-xs text-[#70798C] mt-1 truncate">
+                        <h4 className="font-bold text-sm sm:text-base text-[#000004] line-clamp-2 break-words leading-snug">
+                          {property.title}
+                        </h4>
+                        <div className="text-xs text-[#70798C] truncate">
                           Locked Window: {b.slotDate} • {b.slotTimeWindow} • Agent: {property.agent.fullName}
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => onCancelBooking(b.id)}
-                        className="w-full sm:w-auto shrink-0 py-2 px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-slate-100 text-xs font-semibold text-[#70798C] transition-colors cursor-pointer whitespace-nowrap mt-2 sm:mt-0"
-                      >
-                        Leave Queue
-                      </button>
+                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#F0544F]/20">
+                        <button
+                          onClick={() => onCancelBooking(b.id)}
+                          className="w-full sm:w-auto py-2.5 px-3.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-slate-100 text-xs font-semibold text-[#70798C] transition-colors cursor-pointer text-center whitespace-nowrap"
+                        >
+                          Leave Queue
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -580,16 +585,16 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       {/* TAB 2: AGENT RENTAL INVENTORY */}
       {activeTab === 'inventory' && (
         <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-[#342A21]/5 border border-[#342A21]/15 flex items-center justify-between text-xs">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-[#342A21]/5 border border-[#342A21]/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 text-xs">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#342A21]" />
-              <span className="text-[#000004] font-medium">
+              <ShieldCheck className="w-4 h-4 text-[#342A21] shrink-0" />
+              <span className="text-[#000004] font-medium leading-relaxed">
                 Browsing <strong>{listings.length} verified apartments</strong> uploaded by registered Delta State agents.
               </span>
             </div>
             <button
               onClick={onSwitchToFeed}
-              className="text-[#342A21] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-[#342A21] font-bold hover:underline flex items-center gap-1 cursor-pointer shrink-0 whitespace-nowrap"
             >
               <span>Switch to Snap Feed View</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -637,9 +642,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                  <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
                     <div>
-                      <h4 className="font-bold text-sm text-[#000004] line-clamp-1">
+                      <h4 className="font-bold text-sm text-[#000004] line-clamp-2 break-words leading-snug">
                         {prop.title}
                       </h4>
                       <p className="text-xs text-[#70798C] line-clamp-1 mt-0.5">
@@ -648,32 +653,32 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     </div>
 
                     {/* Agent attribution banner */}
-                    <div className="p-2.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="p-2.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] flex items-center justify-between gap-2 overflow-hidden">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         <img
                           src={prop.agent.avatarUrl}
                           alt={prop.agent.fullName}
-                          className="w-6 h-6 rounded-full object-cover border border-[#342A21]"
+                          className="w-6 h-6 rounded-full object-cover border border-[#342A21] shrink-0"
                         />
-                        <div className="text-[11px]">
+                        <div className="text-[11px] min-w-0 flex-1 truncate">
                           <span className="font-bold text-[#000004]">{prop.agent.fullName}</span>
                           <span className="text-[#70798C] ml-1">({prop.agent.agencyName})</span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded shrink-0">
                         {prop.agent.rating}★
                       </span>
                     </div>
 
-                    <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between text-xs flex-wrap gap-2">
+                    <div className="pt-2.5 border-t border-[#E5E7EB] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 text-xs">
                       <span className="text-[#70798C] text-[11px] whitespace-nowrap">
                         {prop.inspectionSlots.length} Slots Available
                       </span>
 
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
                           onClick={() => onOpenBookingModal(prop)}
-                          className="py-1.5 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap"
+                          className="w-full sm:w-auto py-2 sm:py-1.5 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap text-center"
                         >
                           <Calendar className="w-3.5 h-3.5" />
                           <span>{userHasBooking ? 'Manage Booking' : 'Book Free Slot'}</span>
@@ -692,7 +697,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       {activeTab === 'saved' && (
         <div className="space-y-4">
           {savedListings.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-[#E5E7EB]">
+            <div className="p-8 sm:p-12 text-center bg-white rounded-2xl border border-dashed border-[#E5E7EB]">
               <Bookmark className="w-8 h-8 text-[#70798C]/60 mx-auto mb-2" />
               <h4 className="font-bold text-sm text-[#000004]">No saved apartments yet</h4>
               <p className="text-xs text-[#70798C] mt-1 max-w-sm mx-auto">
@@ -700,7 +705,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </p>
               <button
                 onClick={() => setActiveTab('inventory')}
-                className="mt-3 py-2 px-4 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] cursor-pointer"
+                className="mt-3 py-2.5 px-4 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] cursor-pointer"
               >
                 Browse Agent Apartments
               </button>
@@ -735,27 +740,27 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
+                  <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2">
                     <div>
-                      <h4 className="font-bold text-sm text-[#000004] line-clamp-1">
+                      <h4 className="font-bold text-sm text-[#000004] line-clamp-2 break-words leading-snug">
                         {prop.title}
                       </h4>
-                      <p className="text-xs text-[#70798C]">
+                      <p className="text-xs text-[#70798C] mt-0.5 line-clamp-1">
                         Uploaded by {prop.agent.fullName} • {prop.neighborhood}
                       </p>
                     </div>
 
-                    <div className="pt-2 border-t border-[#E5E7EB] flex items-center justify-between">
+                    <div className="pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between gap-2">
                       <button
                         onClick={() => onToggleSaveProperty(prop.id)}
-                        className="text-xs text-rose-600 hover:underline cursor-pointer"
+                        className="text-xs text-rose-600 hover:underline cursor-pointer font-medium"
                       >
                         Remove
                       </button>
 
                       <button
                         onClick={() => onOpenBookingModal(prop)}
-                        className="py-1.5 px-3 rounded-lg bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] cursor-pointer"
+                        className="py-2 sm:py-1.5 px-3.5 rounded-lg bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] cursor-pointer whitespace-nowrap"
                       >
                         Book Inspection
                       </button>

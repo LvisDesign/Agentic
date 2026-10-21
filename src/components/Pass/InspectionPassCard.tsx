@@ -60,15 +60,15 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
         <h3 className="font-display text-xl sm:text-2xl font-bold mt-2 text-white">
           Agent Contact Revealed
         </h3>
-        <p className="text-xs text-white/80 mt-1 line-clamp-1">
+        <p className="text-xs text-white/80 mt-1 line-clamp-2 break-words">
           {listing.agent.fullName} has accepted your inspection request. Connect directly to coordinate your showing.
         </p>
       </div>
 
-      <div className="p-5 space-y-4">
+      <div className="p-4 sm:p-5 space-y-4">
         {/* Inspection Schedule & Property Overview */}
-        <div className="p-4 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] space-y-2">
-          <div className="flex items-center justify-between">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-1">
             <span className="text-xs font-bold uppercase tracking-wider text-[#70798C] flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-[#342A21]" />
               Confirmed Window
@@ -77,29 +77,29 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
               {booking.slotDate} • {booking.slotTimeWindow}
             </span>
           </div>
-          <div className="text-sm font-bold text-[#000004] line-clamp-1 pt-1">
+          <div className="text-sm font-bold text-[#000004] line-clamp-2 break-words pt-1">
             {listing.title}
           </div>
           <div className="text-xs text-[#70798C] flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
-            <span>Landmark / Area: <strong>{listing.neighborhood}, {listing.city}</strong></span>
+            <span className="line-clamp-1">Landmark / Area: <strong>{listing.neighborhood}, {listing.city}</strong></span>
           </div>
         </div>
 
         {/* Revealed Agent Contact Box */}
-        <div className="p-4 rounded-2xl bg-white border-2 border-[#342A21]/20 shadow-sm space-y-3.5">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-white border-2 border-[#342A21]/20 shadow-sm space-y-3.5">
           <div className="flex items-center gap-3">
             <img
               src={listing.agent.avatarUrl}
               alt={listing.agent.fullName}
-              className="w-13 h-13 rounded-full object-cover border-2 border-[#342A21]"
+              className="w-12 h-12 sm:w-13 sm:h-13 rounded-full object-cover border-2 border-[#342A21] shrink-0"
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm sm:text-base text-[#000004] truncate">
                   {listing.agent.fullName}
                 </span>
-                <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold shrink-0">
                   Verified
                 </span>
               </div>
@@ -110,7 +110,7 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
           </div>
 
           {/* Prominent Phone Number Display & Copy Button */}
-          <div className="p-3 rounded-xl bg-[#342A21]/5 border border-[#342A21]/15 flex items-center justify-between gap-2 overflow-hidden">
+          <div className="p-3 rounded-xl bg-[#342A21]/5 border border-[#342A21]/15 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 overflow-hidden">
             <div className="min-w-0 flex-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#70798C] block truncate">
                 Agent Direct Phone Number
@@ -122,7 +122,7 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
             <button
               type="button"
               onClick={handleCopyPhone}
-              className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer shrink-0 whitespace-nowrap"
+              className="w-full sm:w-auto px-3 py-2 sm:py-1.5 rounded-lg bg-white border border-[#E5E7EB] hover:bg-[#FCF9F5] text-xs font-semibold text-[#000004] flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer shrink-0 whitespace-nowrap"
               title="Copy phone number"
             >
               {copiedPhone ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#342A21]" />}

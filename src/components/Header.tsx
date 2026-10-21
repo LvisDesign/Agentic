@@ -87,30 +87,30 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Center / Right: Squircle Navigation Island */}
         <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-[22px] bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs">
-          {/* TAB 1: User Dashboard (Only rendered for non-agents / seekers when authenticated) */}
+          {/* TAB 1: User Dashboard (Only rendered for non-agents / seekers / tenants when authenticated) */}
           {isAuthenticated && currentRole !== 'agent' && !currentUser.isAgent && (
             <button
               onClick={() => {
-                onChangeRole('seeker');
+                onChangeRole('tenant');
                 onChangeUserView('dashboard');
               }}
               className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-                currentRole === 'seeker' && userView === 'dashboard'
+                (currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard'
                   ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
                   : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
               }`}
               aria-label="User Dashboard"
               title="User Dashboard"
             >
-              <LayoutDashboard className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'seeker' && userView === 'dashboard' ? 'text-white' : ''}`} />
+              <LayoutDashboard className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${(currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard' ? 'text-white' : ''}`} />
               
               {/* Desktop Label */}
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
                 My Dashboard
               </span>
 
-              {currentRole === 'seeker' && userView === 'dashboard' && (
-                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+              {(currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard' && (
+                <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
               )}
 
               {/* Mobile Tooltip */}
@@ -123,26 +123,26 @@ export const Header: React.FC<HeaderProps> = ({
           {/* TAB 2: Seeker Live Snap Feed */}
           <button
             onClick={() => {
-              onChangeRole('seeker');
+              onChangeRole('tenant');
               onChangeUserView('feed');
             }}
             className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-              (currentRole === 'seeker' && userView === 'feed') || !isAuthenticated
+              ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || !isAuthenticated
                 ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
             }`}
             aria-label="Explore"
             title="Explore"
           >
-            <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${(currentRole === 'seeker' && userView === 'feed') || !isAuthenticated ? 'text-white' : ''}`} />
+            <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || !isAuthenticated ? 'text-white' : ''}`} />
             
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
               Explore
             </span>
 
-            {((currentRole === 'seeker' && userView === 'feed') || !isAuthenticated) && (
-              <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+            {(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || !isAuthenticated) && (
+              <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
             )}
 
             {/* Mobile Tooltip */}
@@ -206,7 +206,7 @@ export const Header: React.FC<HeaderProps> = ({
                 Agent Portal
               </span>
               {currentRole === 'agent' && (
-                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+                <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
               )}
             </button>
           )}

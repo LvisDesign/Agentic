@@ -144,18 +144,18 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   );
 
   return (
-    <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-16 pb-20 px-4 sm:px-6 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-16 pb-20 px-3.5 sm:px-6 max-w-5xl mx-auto">
       {/* Top Banner / Agent Identity */}
-      <div className="bg-white rounded-2xl p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4 min-w-0 flex-1">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
           <img
             src={agentProfile.avatarUrl}
             alt={agentProfile.fullName}
-            className="w-16 h-16 rounded-full object-cover border-2 border-[#342A21] shrink-0"
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-[#342A21] shrink-0"
           />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="font-display text-2xl font-bold text-[#000004] truncate">
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-[#000004] truncate">
                 {agentProfile.fullName}
               </h1>
             </div>
@@ -167,7 +167,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                 <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">New Verified Partner</span>
               )}
             </p>
-            <div className="flex items-center gap-2 mt-2 text-xs text-[#70798C]">
+            <div className="flex items-center gap-2 mt-1.5 sm:mt-2 text-xs text-[#70798C] flex-wrap">
               <span className="font-mono text-[#000004] font-semibold">{formatNigerianPhone(agentProfile.phone)}</span>
               <span>•</span>
               <span className="text-emerald-600 font-medium">Online & Available</span>
@@ -175,10 +175,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-colors"
+            className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Property</span>
@@ -187,65 +187,65 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-6">
-        <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Booked Inspections</span>
-            <CalendarCheck className="w-4 h-4 text-[#342A21]" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mb-6">
+        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0">
+          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
+            <span className="truncate">Booked Inspections</span>
+            <CalendarCheck className="w-4 h-4 text-[#342A21] shrink-0" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {agentProfile.completedInspections + acceptedOrPaid.length}
           </div>
-          <span className="text-[10px] text-emerald-600 font-medium">
+          <span className="text-[10px] text-emerald-600 font-medium block truncate mt-0.5">
             {agentProfile.completedInspections === 0 && acceptedOrPaid.length === 0
               ? 'No inspections yet'
-              : 'Total inspections scheduled'}
+              : 'Total scheduled'}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Pending Requests</span>
-            <Clock className="w-4 h-4 text-amber-500" />
+        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0">
+          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
+            <span className="truncate">Pending Requests</span>
+            <Clock className="w-4 h-4 text-amber-500 shrink-0" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {pendingRequests.length}
           </div>
-          <span className="text-[10px] text-[#70798C]">
-            {pendingRequests.length === 0 ? 'All caught up' : 'Waiting for your reply'}
+          <span className="text-[10px] text-[#70798C] block truncate mt-0.5">
+            {pendingRequests.length === 0 ? 'All caught up' : 'Waiting for reply'}
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>Waiting List</span>
-            <Users className="w-4 h-4 text-[#F0544F]" />
+        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0">
+          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
+            <span className="truncate">Waiting List</span>
+            <Users className="w-4 h-4 text-[#F0544F] shrink-0" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#F0544F] mt-1">
             {queuedRequests.length}
           </div>
-          <span className="text-[10px] text-[#F0544F]">Max 5 people per time slot</span>
+          <span className="text-[10px] text-[#F0544F] block truncate mt-0.5">Max 5 per time slot</span>
         </div>
 
-        <div className="p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs">
-          <div className="flex items-center justify-between text-xs text-[#70798C]">
-            <span>My Listed Houses</span>
-            <Building className="w-4 h-4 text-[#342A21]" />
+        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0">
+          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
+            <span className="truncate">My Listed Houses</span>
+            <Building className="w-4 h-4 text-[#342A21] shrink-0" />
           </div>
           <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
             {agentListings.length}
           </div>
-          <span className="text-[10px] text-[#70798C]">
+          <span className="text-[10px] text-[#70798C] block truncate mt-0.5">
             {agentListings.length === 0 ? 'No listings yet' : 'Live on platform'}
           </span>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#E5E7EB] mb-6">
+      {/* Tabs (Horizontally scrollable on mobile) */}
+      <div className="flex items-center gap-2 border-b border-[#E5E7EB] mb-6 overflow-x-auto scrollbar-none -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
         <button
           onClick={() => setActiveTab('requests')}
-          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors ${
+          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'requests'
               ? 'border-[#000004] text-[#000004]'
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
@@ -261,7 +261,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
 
         <button
           onClick={() => setActiveTab('listings')}
-          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors cursor-pointer ${
+          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-2 transition-colors shrink-0 whitespace-nowrap cursor-pointer ${
             activeTab === 'listings'
               ? 'border-[#000004] text-[#000004]'
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
@@ -300,193 +300,195 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           ) : (
             <>
               {/* Section: Pending Direct Booking Requests */}
-              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-display text-base font-bold text-[#000004]">
-                  New Inspection Requests
-                </h3>
-                <p className="text-xs text-[#70798C]">
-                  Each time slot takes a maximum of 5 people so you don't get crowded or stressed.
-                </p>
-              </div>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21]">
-                {pendingRequests.length} Pending
-              </span>
-            </div>
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 sm:p-5 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display text-base font-bold text-[#000004]">
+                      New Inspection Requests
+                    </h3>
+                    <p className="text-xs text-[#70798C] mt-0.5 leading-relaxed">
+                      Each time slot takes a maximum of 5 people so you don't get crowded or stressed.
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#342A21]/10 text-[#342A21] shrink-0 self-start sm:self-auto">
+                    {pendingRequests.length} Pending
+                  </span>
+                </div>
 
-            {pendingRequests.length === 0 ? (
-              <div className="p-8 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB]">
-                <Clock className="w-8 h-8 text-[#70798C]/60 mx-auto mb-2" />
-                <p className="text-[11px] text-[#70798C] mt-1">
-                  When tenants book an inspection, their requests will appear here immediately.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {pendingRequests.map((b) => {
-                  const property = listings.find((p) => p.id === b.propertyId) || listings[0];
-                  return (
-                    <div
-                      key={b.id}
-                      className="p-4 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] flex flex-col md:flex-row items-start md:items-center justify-between gap-4 overflow-hidden"
-                    >
-                      <div className="space-y-1.5 flex-1 min-w-0 pr-0 md:pr-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-bold text-sm text-[#000004]">
-                            {b.applicantName}
-                          </span>
-                          <span className="text-xs text-[#70798C] font-mono">({b.applicantPhone})</span>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#342A21]/10 text-[#342A21] border border-[#342A21]/15 shrink-0">
-                            Booking ID: {b.id}
-                          </span>
-                        </div>
-                        <div className="text-xs text-[#70798C] line-clamp-2 break-words" title={property.title}>
-                          Property: <strong className="text-[#000004] font-semibold">{property.title}</strong>
-                        </div>
-                        <div className="text-xs text-[#342A21] font-medium flex items-center gap-1.5 pt-0.5">
-                          <Clock className="w-3.5 h-3.5 shrink-0 text-[#342A21]" />
-                          <span>Date & Time: <strong>{b.slotDate}, {b.slotTimeWindow}</strong></span>
-                        </div>
-                      </div>
-
-                      {/* Check slot capacity (< 5 bookings) */}
-                      {(() => {
-                        const targetSlot = property.inspectionSlots.find((s) => s.id === b.slotId);
-                        const isSlotFull = targetSlot ? targetSlot.bookedCount >= 5 : false;
-
-                        return (
-                          <div className="flex items-center gap-2 w-full md:w-auto shrink-0 justify-end pt-1 md:pt-0 border-t md:border-t-0 border-[#E5E7EB]/60">
-                            {isSlotFull ? (
-                              <div className="text-left md:text-right">
-                                <span className="px-2.5 py-1 rounded-[6px] bg-[#F0544F]/10 text-[#F0544F] border border-[#F0544F]/30 text-xs font-bold block mb-0.5">
-                                  5/5 Capped
-                                </span>
-                                <span className="text-[10px] text-[#70798C] block">Concurrency cap reached</span>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => onAcceptBooking(b.id)}
-                                className="flex-1 md:flex-initial py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
-                              >
-                                <CheckCircle className="w-4 h-4 shrink-0" />
-                                <span>Accept Request</span>
-                              </button>
-                            )}
-                            <button
-                              onClick={() => onRejectBooking(b.id)}
-                              className="py-2.5 px-3.5 rounded-xl border border-[#E5E7EB] hover:bg-slate-100 text-xs font-semibold text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer shrink-0 whitespace-nowrap bg-white shadow-2xs"
-                            >
-                              Decline
-                            </button>
+                {pendingRequests.length === 0 ? (
+                  <div className="p-8 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB]">
+                    <Clock className="w-8 h-8 text-[#70798C]/60 mx-auto mb-2" />
+                    <p className="text-[11px] text-[#70798C] mt-1">
+                      When tenants book an inspection, their requests will appear here immediately.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingRequests.map((b) => {
+                      const property = listings.find((p) => p.id === b.propertyId) || listings[0];
+                      return (
+                        <div
+                          key={b.id}
+                          className="p-3.5 sm:p-4 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 overflow-hidden"
+                        >
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-sm text-[#000004]">
+                                {b.applicantName}
+                              </span>
+                              <span className="text-xs text-[#70798C] font-mono">({b.applicantPhone})</span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#342A21]/10 text-[#342A21] border border-[#342A21]/15 shrink-0">
+                                Booking ID: {b.id}
+                              </span>
+                            </div>
+                            <div className="text-xs text-[#70798C] line-clamp-2 break-words" title={property.title}>
+                              Property: <strong className="text-[#000004] font-semibold">{property.title}</strong>
+                            </div>
+                            <div className="text-xs text-[#342A21] font-medium flex items-center gap-1.5 pt-0.5">
+                              <Clock className="w-3.5 h-3.5 shrink-0 text-[#342A21]" />
+                              <span>Date & Time: <strong>{b.slotDate}, {b.slotTimeWindow}</strong></span>
+                            </div>
                           </div>
-                        );
-                      })()}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
 
-          {/* Section: Standby Waitlist Queue (5/5 Limit Reached) */}
-          <div className="bg-white rounded-2xl border border-[#F0544F]/30 p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-display text-base font-bold text-[#000004]">
-                  Waiting List (Time Slot Full: 5/5)
+                          {/* Check slot capacity (< 5 bookings) */}
+                          {(() => {
+                            const targetSlot = property.inspectionSlots.find((s) => s.id === b.slotId);
+                            const isSlotFull = targetSlot ? targetSlot.bookedCount >= 5 : false;
+
+                            return (
+                              <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full md:w-auto shrink-0 pt-2.5 md:pt-0 border-t md:border-t-0 border-[#E5E7EB]/60">
+                                {isSlotFull ? (
+                                  <div className="col-span-2 sm:col-span-1 text-left md:text-right">
+                                    <span className="px-2.5 py-1 rounded-[6px] bg-[#F0544F]/10 text-[#F0544F] border border-[#F0544F]/30 text-xs font-bold block mb-0.5">
+                                      5/5 Capped
+                                    </span>
+                                    <span className="text-[10px] text-[#70798C] block">Concurrency cap reached</span>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => onAcceptBooking(b.id)}
+                                    className="w-full sm:w-auto py-2.5 px-3 sm:px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap"
+                                  >
+                                    <CheckCircle className="w-4 h-4 shrink-0" />
+                                    <span>Accept Request</span>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => onRejectBooking(b.id)}
+                                  className="w-full sm:w-auto py-2.5 px-3 sm:px-3.5 rounded-xl border border-[#E5E7EB] hover:bg-slate-100 text-xs font-semibold text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer shrink-0 whitespace-nowrap bg-white shadow-2xs text-center"
+                                >
+                                  Decline
+                                </button>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Section: Standby Waitlist Queue (5/5 Limit Reached) */}
+              <div className="bg-white rounded-2xl border border-[#F0544F]/30 p-3.5 sm:p-5 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display text-base font-bold text-[#000004]">
+                      Waiting List (Time Slot Full: 5/5)
+                    </h3>
+                    <p className="text-xs text-[#70798C] mt-0.5 leading-relaxed">
+                      People waiting for an open space if someone cancels. They get added automatically in line.
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#F0544F]/10 text-[#F0544F] shrink-0 self-start sm:self-auto">
+                    {queuedRequests.length} on Waiting List
+                  </span>
+                </div>
+
+                {queuedRequests.length === 0 ? (
+                  <div className="p-6 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB]">
+                    <p className="text-xs text-[#70798C]">
+                      Nobody is on the waiting list right now.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {queuedRequests.map((b) => (
+                      <div
+                        key={b.id}
+                        className="p-3.5 sm:p-4 rounded-xl border border-[#F0544F]/20 bg-[#F0544F]/5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3.5 overflow-hidden"
+                      >
+                        <div className="space-y-1.5 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-full bg-[#F0544F] text-white text-[11px] font-bold shrink-0">
+                              Waiting List #{b.queuePosition || 1}
+                            </span>
+                            <span className="font-bold text-sm text-[#000004]">
+                              {b.applicantName}
+                            </span>
+                          </div>
+                          <div className="text-xs text-[#70798C] truncate">
+                            Requested Time: {b.slotDate}, {b.slotTimeWindow}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full md:w-auto shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#F0544F]/20">
+                          <button
+                            onClick={() => onAcceptBooking(b.id)}
+                            className="w-full md:w-auto py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors whitespace-nowrap cursor-pointer text-center"
+                          >
+                            Accept Early
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Section: Confirmed Inspection Passes */}
+              <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 sm:p-5 shadow-xs">
+                <h3 className="font-display text-base font-bold text-[#000004] mb-1">
+                  Confirmed Inspections
                 </h3>
-                <p className="text-xs text-[#70798C]">
-                  People waiting for an open space if someone cancels. They get added automatically in line.
+                <p className="text-xs text-[#70798C] mb-4">
+                  These tenants have booked their inspection. They have your phone number to call you.
                 </p>
-              </div>
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#F0544F]/10 text-[#F0544F]">
-                {queuedRequests.length} on Waiting List
-              </span>
-            </div>
 
-            {queuedRequests.length === 0 ? (
-              <div className="p-6 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB]">
-                <p className="text-xs text-[#70798C]">
-                  Nobody is on the waiting list right now.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {queuedRequests.map((b) => (
-                  <div
-                    key={b.id}
-                    className="p-4 rounded-xl border border-[#F0544F]/20 bg-[#F0544F]/5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 overflow-hidden"
-                  >
-                    <div className="space-y-1 flex-1 min-w-0 pr-0 md:pr-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full bg-[#F0544F] text-white text-[11px] font-bold shrink-0">
-                          Waiting List #{b.queuePosition || 1}
-                        </span>
-                        <span className="font-bold text-sm text-[#000004] truncate">
-                          {b.applicantName}
-                        </span>
-                      </div>
-                      <div className="text-xs text-[#70798C] mt-1 truncate">
-                        Requested Time: {b.slotDate}, {b.slotTimeWindow}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => onAcceptBooking(b.id)}
-                      className="w-full md:w-auto shrink-0 py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors whitespace-nowrap cursor-pointer mt-1 md:mt-0"
-                    >
-                      Accept Early
-                    </button>
+                {acceptedOrPaid.length === 0 ? (
+                  <div className="p-6 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB] text-xs text-[#70798C]">
+                    No confirmed inspections yet. Once you accept a request, it will show here.
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {acceptedOrPaid.map((b) => (
+                      <div
+                        key={b.id}
+                        className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs overflow-hidden"
+                      >
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-[#000004] line-clamp-1 break-words">{b.applicantName}</span>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-600 text-white shrink-0">
+                              CONFIRMED
+                            </span>
+                          </div>
+                          <div className="text-[#70798C] mt-0.5 truncate">
+                            Booking ID: <span className="font-mono text-[#000004] font-medium">{b.id}</span> • {b.slotDate}, {b.slotTimeWindow}
+                          </div>
+                        </div>
 
-          {/* Section: Confirmed Inspection Passes */}
-          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-xs">
-            <h3 className="font-display text-base font-bold text-[#000004] mb-1">
-              Confirmed Inspections
-            </h3>
-            <p className="text-xs text-[#70798C] mb-4">
-              These tenants have booked their inspection. They have your phone number to call you.
-            </p>
-
-            {acceptedOrPaid.length === 0 ? (
-              <div className="p-6 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB] text-xs text-[#70798C]">
-                No confirmed inspections yet. Once you accept a request, it will show here.
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {acceptedOrPaid.map((b) => (
-                  <div
-                    key={b.id}
-                    className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs overflow-hidden"
-                  >
-                    <div className="space-y-1 flex-1 min-w-0 pr-0 sm:pr-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-[#000004] truncate">{b.applicantName}</span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-600 text-white shrink-0">
-                          CONFIRMED
-                        </span>
+                        <div className="text-left sm:text-right shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-emerald-200/60">
+                          <div className="font-display text-sm font-bold text-emerald-600">
+                            CONFIRMED
+                          </div>
+                          <div className="text-[10px] text-[#70798C]">Tenant</div>
+                        </div>
                       </div>
-                      <div className="text-[#70798C] mt-0.5 truncate">
-                        Booking ID: <span className="font-mono text-[#000004] font-medium">{b.id}</span> • {b.slotDate}, {b.slotTimeWindow}
-                      </div>
-                    </div>
-
-                    <div className="text-left sm:text-right shrink-0">
-                      <div className="font-display text-sm font-bold text-emerald-600">
-                        CONFIRMED
-                      </div>
-                      <div className="text-[10px] text-[#70798C]">Tenant</div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
             </>
           )}
         </div>
@@ -585,10 +587,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       )}
                     </div>
 
-                    <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
                       <div>
-                        <div className="flex items-center justify-between gap-1 mb-0.5">
-                          <h4 className="font-bold text-sm text-[#000004] line-clamp-1">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <h4 className="font-bold text-sm text-[#000004] line-clamp-2 break-words flex-1 leading-snug">
                             {prop.title}
                           </h4>
                           {isRentedOut ? (
@@ -624,11 +626,11 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
 
                       {/* 1-Tap Status Selector */}
                       <div className="pt-2 border-t border-[#E5E7EB] space-y-2">
-                        <div className="flex items-center justify-between text-xs flex-wrap gap-1">
-                          <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                          <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider shrink-0">
                             Status:
                           </span>
-                          <div className="flex items-center gap-1">
+                          <div className="grid grid-cols-3 sm:flex items-center gap-1 w-full sm:w-auto">
                             {(['Available', 'Under Inspection', 'Rented Out'] as ListingAvailability[]).map((st) => (
                               <button
                                 key={st}
@@ -642,7 +644,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                                     }
                                   }
                                 }}
-                                className={`px-2 py-0.5 rounded-[6px] text-[10px] font-bold transition-all cursor-pointer ${
+                                className={`w-full sm:w-auto text-center px-1.5 sm:px-2 py-1 sm:py-0.5 rounded-[6px] text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
                                   prop.availabilityStatus === st || (!prop.availabilityStatus && st === 'Available')
                                     ? st === 'Rented Out'
                                       ? 'bg-[#F0544F] text-white shadow-2xs'
@@ -659,7 +661,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         </div>
 
                         {/* 48-Hour Proof-of-Life Status & Refresh Button */}
-                        <div className="flex items-center justify-between text-[11px] p-2 rounded-[8px] bg-[#FCF9F5] border border-[rgba(112,121,140,0.22)]">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] p-2.5 rounded-[8px] bg-[#FCF9F5] border border-[rgba(112,121,140,0.22)]">
                           {isStale ? (
                             <span className="text-amber-800 font-medium flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
@@ -680,7 +682,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                                 setDashboardToast('Listing vacancy confirmed! Ranking restored to top.');
                                 setTimeout(() => setDashboardToast(null), 3000);
                               }}
-                              className="px-2 py-0.5 rounded-[6px] bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-[10px] transition-colors cursor-pointer shadow-2xs"
+                              className="w-full sm:w-auto text-center px-2 py-1 sm:py-0.5 rounded-[6px] bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-[10px] transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
                             >
                               Confirm Still Vacant
                             </button>
@@ -688,12 +690,12 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between text-xs flex-wrap gap-2">
-                        <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="pt-2.5 border-t border-[#E5E7EB] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                        <div className="grid grid-cols-2 sm:flex items-center gap-1.5 w-full sm:w-auto">
                           <button
                             type="button"
                             onClick={() => setEditingListing(prop)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80 shadow-2xs active:scale-95 whitespace-nowrap"
+                            className="w-full sm:w-auto justify-center px-2.5 py-1.5 sm:py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80 shadow-2xs active:scale-95 whitespace-nowrap"
                             title="Edit property details, rent price, media, and inspection slots"
                           >
                             <Edit3 className="w-3.5 h-3.5 text-slate-700" />
@@ -702,7 +704,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                           <button
                             type="button"
                             onClick={() => setListingToDelete(prop)}
-                            className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200 shadow-2xs active:scale-95 whitespace-nowrap"
+                            className="w-full sm:w-auto justify-center px-2.5 py-1.5 sm:py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200 shadow-2xs active:scale-95 whitespace-nowrap"
                             title="Permanently delete this property listing"
                           >
                             <Trash2 className="w-3.5 h-3.5 text-rose-600" />
@@ -710,7 +712,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                           </button>
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]/60">
                           <span className="text-[#70798C] text-[11px] whitespace-nowrap">
                             {prop.inspectionSlots.length} Slots
                           </span>

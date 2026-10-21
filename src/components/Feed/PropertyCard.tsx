@@ -184,7 +184,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
         {/* 48-Hour Proof-of-Life Check Banner */}
         {isFreshnessUnconfirmed && (
-          <div className="px-3.5 py-1.5 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-2 shrink-0">
+          <div className="px-3.5 py-2 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-800">
               <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span>Availability Unconfirmed (&gt;48 hrs)</span>
@@ -197,7 +197,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                   setToastMessage('Listing freshness verified! Ranking refreshed.');
                   setTimeout(() => setToastMessage(null), 3000);
                 }}
-                className="px-2.5 py-1 rounded-[6px] bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold transition-colors cursor-pointer shadow-2xs"
+                className="w-full sm:w-auto text-center px-2.5 py-1.5 sm:py-1 rounded-[6px] bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
               >
                 Confirm listing is still vacant
               </button>
@@ -207,11 +207,11 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
         {/* Quick Agent Availability Controls (Management Bar) */}
         {showAgentControls && (
-          <div className="px-3.5 py-2 bg-[#FCF9F5] border-b border-[rgba(112,121,140,0.22)] flex items-center justify-between gap-2 shrink-0 text-xs flex-wrap animate-fade-in">
-            <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider">
+          <div className="px-3.5 py-2 bg-[#FCF9F5] border-b border-[rgba(112,121,140,0.22)] flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 text-xs animate-fade-in">
+            <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider shrink-0">
               Agent Availability:
             </span>
-            <div className="flex items-center gap-1.5">
+            <div className="grid grid-cols-3 sm:flex items-center gap-1.5 w-full sm:w-auto">
               {(['Available', 'Under Inspection', 'Rented Out'] as ListingAvailability[]).map((st) => (
                 <button
                   key={st}
@@ -225,7 +225,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                       }
                     }
                   }}
-                  className={`px-2.5 py-1 rounded-[6px] text-[10px] font-bold transition-all cursor-pointer ${
+                  className={`w-full sm:w-auto text-center px-2.5 py-1 rounded-[6px] text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
                     listing.availabilityStatus === st || (!listing.availabilityStatus && st === 'Available')
                       ? st === 'Rented Out'
                         ? 'bg-[#F0544F] text-white shadow-xs'
@@ -305,7 +305,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 </button>
               </div>
 
-              <h2 className="font-display text-sm sm:text-base font-bold text-[#000004] mt-0.5 line-clamp-1">
+              <h2 className="font-display text-sm sm:text-base font-bold text-[#000004] mt-0.5 line-clamp-2 break-words leading-snug">
                 {listing.title}
               </h2>
               <p className="text-[11px] sm:text-xs text-[#70798C] line-clamp-1 sm:line-clamp-2 mt-0.5 leading-relaxed">
