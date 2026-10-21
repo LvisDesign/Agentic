@@ -138,15 +138,15 @@ export const PWAInstallBanner: React.FC = () => {
       >
         <div className="bg-white rounded-2xl p-4 shadow-xl border border-[#E5E7EB] flex items-start gap-3.5 relative ring-1 ring-black/5">
           {/* App Icon */}
-          <div className="w-11 h-11 rounded-xl bg-[#000004] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-            <Smartphone className="w-5 h-5 text-white" />
+          <div className="w-11 h-11 rounded-xl bg-black overflow-hidden flex items-center justify-center shrink-0 shadow-sm mt-0.5 p-1 border border-black/10">
+            <img src="/icons/icon-192x192.png" alt="Setlla App Icon" className="w-full h-full object-contain rounded-lg" />
           </div>
 
           {/* Copy & Actions */}
           <div className="flex-1 min-w-0 pr-6">
             <div className="flex items-center gap-1.5">
               <span className="font-display font-bold text-sm text-[#000004]">
-                Install Platform App
+                Install Setlla App
               </span>
               <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#342A21]/10 text-[#342A21]">
                 Official App
@@ -201,8 +201,8 @@ export const PWAInstallBanner: React.FC = () => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#000004] text-white flex items-center justify-center shadow-xs">
-                  <Smartphone className="w-4.5 h-4.5" />
+                <div className="w-9 h-9 rounded-xl bg-black overflow-hidden flex items-center justify-center shadow-xs p-1 border border-black/10">
+                  <img src="/icons/icon-192x192.png" alt="Setlla" className="w-full h-full object-contain rounded-md" />
                 </div>
                 <div>
                   <h4 className="font-display font-bold text-sm text-[#000004]">

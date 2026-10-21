@@ -1,7 +1,7 @@
 // Service Worker for Setlla Progressive Web App (setlla.com)
 // Handles static caching, offline fallback, web push notifications, and app badging API
 
-const CACHE_NAME = 'setlla-pwa-v1';
+const CACHE_NAME = 'setlla-pwa-v2';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -9,6 +9,7 @@ const PRECACHE_ASSETS = [
   '/offline.html',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
+  '/icons/apple-touch-icon.png',
   '/icons/icon.svg',
 ];
 
