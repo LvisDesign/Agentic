@@ -480,11 +480,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           </button>
 
           {/* App icon rounded badge with primary color (#000004) */}
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#000004] text-white flex items-center justify-center mx-auto shadow-lg shadow-black/25 ring-4 ring-black/10 transition-transform">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-[#000004] text-white flex items-center justify-center mx-auto shadow-lg shadow-black/25 ring-4 ring-black/10 transition-transform p-3">
             {installStatus === 'installed' ? (
               <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-300 animate-bounce" />
             ) : (
-              <Building2 className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+              <img src="/images/setlla-logo-white.png" alt="Setlla" className="w-full h-auto object-contain" />
             )}
           </div>
 

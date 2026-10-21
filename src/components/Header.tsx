@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  Building2, 
   Hourglass, 
   ShieldCheck, 
   User, 
@@ -70,19 +69,25 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
         {/* Left: Brand Identity & Active User Role indicator */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-9 h-9 rounded-[14px] bg-[#000004] flex items-center justify-center text-white shadow-xs border border-white/20">
-            <Building2 className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-display font-bold text-base sm:text-lg text-[#000004] tracking-tight">
-                Setlla
-              </span>
-              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#342A21]/10 text-[#342A21] hidden xs:inline-block">
-                Delta State
-              </span>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              onChangeRole('tenant');
+              onChangeUserView('feed');
+            }}
+            className="flex items-center gap-2 focus:outline-none group cursor-pointer text-left"
+            title="Setlla - Direct Rentals & Inspections"
+            aria-label="Setlla Home"
+          >
+            <img 
+              src="/images/setlla-logo.png" 
+              alt="Setlla" 
+              className="h-8 sm:h-9 w-auto max-w-[125px] sm:max-w-[145px] object-contain transition-transform group-hover:scale-[1.02]" 
+            />
+            <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#F59E0B]/15 text-[#B45309] border border-[#F59E0B]/30 hidden xs:inline-block">
+              Delta State
+            </span>
+          </button>
         </div>
 
         {/* Center / Right: Squircle Navigation Island */}
