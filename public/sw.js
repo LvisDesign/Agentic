@@ -164,7 +164,7 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const title = data.title || 'Inspection Accepted by Lister';
+  const title = data.title || 'Inspection Accepted by Agent';
   const options = {
     body: data.body || 'Your physical apartment inspection pass has been confirmed with direct agent phone coordinates.',
     icon: data.icon || '/icons/icon-192x192.png',

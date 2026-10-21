@@ -56,7 +56,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showUnlockedContact, setShowUnlockedContact] = useState(false);
-  const [showListerControls, setShowListerControls] = useState(false);
+  const [showAgentControls, setShowAgentControls] = useState(false);
   const [isReported, setIsReported] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedShare, setCopiedShare] = useState(false);
@@ -129,16 +129,16 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               </span>
             )}
 
-            {/* Quick Lister Status Toggle Trigger */}
+            {/* Quick Agent Status Toggle Trigger */}
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setShowListerControls(!showListerControls);
+                setShowAgentControls(!showAgentControls);
               }}
               aria-label="Toggle agent controls"
               className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
-                showListerControls 
+                showAgentControls 
                   ? 'bg-[#000004] text-white border-[#000004]' 
                   : 'bg-[#FCF9F5] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#000004] border-[#E5E7EB]'
               }`}
@@ -206,7 +206,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         )}
 
         {/* Quick Agent Availability Controls (Management Bar) */}
-        {showListerControls && (
+        {showAgentControls && (
           <div className="px-3.5 py-2 bg-[#FCF9F5] border-b border-[rgba(112,121,140,0.22)] flex items-center justify-between gap-2 shrink-0 text-xs flex-wrap animate-fade-in">
             <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider">
               Agent Availability:

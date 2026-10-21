@@ -109,7 +109,7 @@ export type BookingStatus =
   | 'REQUEST_SUBMITTED'           // Count < 5, booked directly, waiting for agent
   | 'QUEUED'                      // Count == 5, placed on standby queue with position
   | 'ACCEPTED_PENDING_PAYMENT'    // Agent approved, ready to pay micro-clearance fee
-  | 'APPROVED_CONFIRMED'          // Instant free unlock when Lister accepts
+  | 'APPROVED_CONFIRMED'          // Instant free unlock when Agent accepts
   | 'PAYMENT_PROCESSING'
   | 'CONFIRMED_UNLOCKED'          // Unlocked! Contact, address, and QR pass revealed
   | 'REJECTED_BY_AGENT'
