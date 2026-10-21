@@ -182,9 +182,12 @@ export interface PropertyListing {
   availabilityStatus?: ListingAvailability;
   lastConfirmedAt?: string;
   isArchived?: boolean;
+  isFeatured?: boolean;
+  isFlagged?: boolean;
+  flagReason?: string;
 }
 
-export type UserRole = 'tenant' | 'seeker' | 'agent';
+export type UserRole = 'tenant' | 'seeker' | 'agent' | 'admin';
 
 export interface UserProfile {
   id: string;
@@ -207,8 +210,38 @@ export interface UserProfile {
   agentType?: 'agency' | 'individual' | 'landlord';
   savedListingIds: string[];
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
   isDemoAdmin?: boolean;
+  isSuspended?: boolean;
+  suspensionReason?: string;
+  kycStatus?: 'not_submitted' | 'pending' | 'verified' | 'rejected';
+  kycDocuments?: {
+    idCardUrl?: string;
+    cacCertificateUrl?: string;
+    ninNumber?: string;
+    submittedAt?: string;
+  };
   createdAt?: string;
   lastProfileEditAt?: string;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  action: string;
+  targetType: 'agent' | 'tenant' | 'listing' | 'booking' | 'system';
+  targetId: string;
+  targetName: string;
+  adminName: string;
+  details?: string;
+  timestamp: string;
+}
+
+export interface PlatformSettings {
+  defaultInspectionFee: number;
+  maxQueueLimitPerSlot: number;
+  maintenanceMode: boolean;
+  emergencyAnnouncement?: string;
+  emergencyAnnouncementActive?: boolean;
+  autoApproveVerifiedAgentListings?: boolean;
 }
 

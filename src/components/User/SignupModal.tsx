@@ -20,7 +20,7 @@ import {
   AlertCircle,
   AlertTriangle
 } from 'lucide-react';
-import { DeltaCity, UserProfile } from '../../types/marketplace';
+import { DeltaCity, UserProfile, UserRole } from '../../types/marketplace';
 import { StateDropdown } from '../UI/StateDropdown';
 import { CustomDropdown } from '../UI/CustomDropdown';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
@@ -79,7 +79,7 @@ interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserProfile;
-  onUpdateUser: (updatedUser: UserProfile, role?: 'seeker' | 'agent') => void;
+  onUpdateUser: (updatedUser: UserProfile, role?: UserRole) => void;
   onSkip?: () => void;
   initialRole?: 'seeker' | 'agent';
   initialMode?: 'signup' | 'login';
@@ -400,8 +400,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           fullName: isSystemAdmin ? 'Platform Administrator' : 'Victor Ossai',
           agencyName: isSystemAdmin ? 'Setlla Administration' : 'Apex Real Estate Ltd',
           agentType: 'agency',
-          phone: query.includes('@') ? '0803 555 1234' : query,
-          whatsapp: '0803 555 1234',
+          phone: query.includes('@') ? (isSystemAdmin ? '0800 000 0001' : '0803 555 1234') : query,
+          whatsapp: isSystemAdmin ? '0800 000 0001' : '0803 555 1234',
           email: query.includes('@') ? query : (isSystemAdmin ? 'admin@setlla.com' : 'victor@apexrealty.ng'),
           operatingState: 'Delta State',
           operatingCity: 'Asaba',
@@ -409,8 +409,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           city: 'Asaba',
           cacNumber: 'RC-1849204',
           isVerifiedTenant: false,
-          isAgent: true,
+          isAgent: !isSystemAdmin,
           isAdmin: isSystemAdmin,
+          isSuperAdmin: isSystemAdmin,
           isDemoAdmin: true,
           savedListingIds: [],
         }
@@ -429,14 +430,16 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     setSuccessMessage({
       title: `Welcome back, ${updated.fullName}!`,
-      subtitle: isAgentLogin
+      subtitle: isSystemAdmin
+        ? 'Signed in as Super Admin. Opening master control console...'
+        : isAgentLogin
         ? 'Signed in as Agent. Loading your listings and inspection requests...'
         : 'Signed in as Tenant. Your saved inspections and passes are ready!',
     });
     setIsSuccess(true);
 
     setTimeout(() => {
-      onUpdateUser(updated, isAgentLogin ? 'agent' : 'seeker');
+      onUpdateUser(updated, isSystemAdmin ? 'admin' : isAgentLogin ? 'agent' : 'seeker');
       setIsSuccess(false);
       onClose();
     }, 1000);
@@ -450,6 +453,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   const handleFillDemoAgent = () => {
     setLoginPhoneOrEmail('0803 555 1234');
+    setLoginRole('agent');
+  };
+
+  const handleFillDemoAdmin = () => {
+    setLoginPhoneOrEmail('admin@setlla.com');
     setLoginRole('agent');
   };
 
@@ -777,6 +785,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       className="py-1 px-2.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-950 font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
                     >
                       🏢 Agent
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleFillDemoAdmin}
+                      className="py-1 px-2.5 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-950 font-bold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                    >
+                      🛡️ Super Admin
                     </button>
                   </div>
                 </div>

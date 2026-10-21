@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { INITIAL_LISTINGS } from './data/mockListings';
-import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability } from './types/marketplace';
+import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability, PlatformSettings } from './types/marketplace';
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge } from './utils/pwa';
 import { saveRegisteredUser, isBookingForUser, getMyDeviceBookingIds, recordMyDeviceBookingId, clearMyDeviceBookingIds, getNotifiedBookingIds, recordNotifiedBookingId, getNotifiedDeclinedBookingIds, recordNotifiedDeclinedBookingId, getNotifiedAgentBookingIds, recordNotifiedAgentBookingId } from './utils/userRegistry';
@@ -21,6 +21,8 @@ import { PostAdModal } from './components/Feed/PostAdModal';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
+import { SuperAdminDashboard } from './components/Admin/SuperAdminDashboard';
+import { getPlatformSettings } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
 import { fetchAllBookings, saveNewBooking, updateBookingStatus } from './services/bookingService';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from './utils/supabaseClient';
@@ -115,16 +117,19 @@ interface InitialNavState {
  * Preserves the exact view the user or agent was on (Explore, Agent Portal, Dashboard, Passes)
  * so every page refresh stays on the same page instead of resetting.
  */
-function resolveInitialNavState(isUserAgent: boolean): InitialNavState {
+function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = false): InitialNavState {
   if (typeof window === 'undefined') {
-    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+    return { role: isUserAdmin ? 'admin' : isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
   }
 
   const hash = window.location.hash.toLowerCase();
   const savedRole = (localStorage.getItem('setlla_active_role') || localStorage.getItem('deltarent_active_role')) as UserRole | null;
   const savedView = (localStorage.getItem('setlla_active_view') || localStorage.getItem('deltarent_active_view')) as ('dashboard' | 'feed') | null;
 
-  // 1. Explicit Hash Routing (e.g. #/agent, #/dashboard, #/explore, #/inspections)
+  // 1. Explicit Hash Routing (e.g. #/admin, #/agent, #/dashboard, #/explore, #/inspections)
+  if (hash.includes('admin')) {
+    return { role: 'admin', view: 'feed', openPasses: false };
+  }
   if (hash.includes('agent')) {
     if (isUserAgent) {
       return { role: 'agent', view: 'feed', openPasses: false };
@@ -141,6 +146,9 @@ function resolveInitialNavState(isUserAgent: boolean): InitialNavState {
   }
 
   // 2. LocalStorage Persistence (Preserves active page across normal F5 / page reloads)
+  if (savedRole === 'admin') {
+    return { role: 'admin', view: 'feed', openPasses: false };
+  }
   if (savedRole === 'agent' && isUserAgent) {
     return { role: 'agent', view: 'feed', openPasses: false };
   }
@@ -149,6 +157,9 @@ function resolveInitialNavState(isUserAgent: boolean): InitialNavState {
   }
 
   // 3. Fallback defaults:
+  if (isUserAdmin) {
+    return { role: 'admin', view: 'feed', openPasses: false };
+  }
   if (isUserAgent) {
     return { role: 'agent', view: 'feed', openPasses: false };
   }
@@ -295,19 +306,25 @@ export function App() {
   // Ensures refreshing keeps users on their current page (Explore, Agent Portal, Dashboard, Passes)
   const initialNav = useMemo(() => {
     let isAgent = false;
+    let isAdmin = false;
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     if (isAuth) {
       const savedUser = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
       if (savedUser) {
-        try { isAgent = Boolean(JSON.parse(savedUser).isAgent); } catch (_) {}
+        try {
+          const parsed = JSON.parse(savedUser);
+          isAgent = Boolean(parsed.isAgent);
+          isAdmin = Boolean(parsed.isAdmin || parsed.isSuperAdmin);
+        } catch (_) {}
       }
     }
-    return resolveInitialNavState(isAgent);
+    return resolveInitialNavState(isAgent, isAdmin);
   }, []);
 
   const [currentRole, setCurrentRole] = useState<UserRole>(initialNav.role);
   const [userView, setUserView] = useState<'dashboard' | 'feed'>(initialNav.view);
   const [isMyPassesOpen, setIsMyPassesOpen] = useState(initialNav.openPasses);
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(() => getPlatformSettings());
 
   // 1. Keep active view & role in sync with localStorage and URL Hash on every navigation
   useEffect(() => {
@@ -316,7 +333,14 @@ export function App() {
       localStorage.setItem('setlla_active_view', userView);
     } catch (_) {}
 
-    const targetHash = currentRole === 'agent' ? '#/agent' : userView === 'dashboard' ? '#/dashboard' : '#/explore';
+    const targetHash = currentRole === 'admin'
+      ? '#/admin'
+      : currentRole === 'agent'
+      ? '#/agent'
+      : userView === 'dashboard'
+      ? '#/dashboard'
+      : '#/explore';
+
     if (window.location.hash !== targetHash) {
       history.replaceState(null, '', targetHash);
     }
@@ -326,7 +350,9 @@ export function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.toLowerCase();
-      if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
+      if (hash.includes('admin')) {
+        setCurrentRole('admin');
+      } else if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
         setCurrentRole('agent');
       } else if (hash.includes('dashboard')) {
         setCurrentRole('tenant');
@@ -1316,7 +1342,7 @@ export function App() {
   };
 
   // Handler: Update current user from signup/login modal
-  const handleUpdateUser = (updatedUser: UserProfile, role?: 'seeker' | 'agent') => {
+  const handleUpdateUser = (updatedUser: UserProfile, role?: UserRole) => {
     saveRegisteredUser(updatedUser);
     setCurrentUser(updatedUser);
     setIsAuthenticated(true);
@@ -1328,7 +1354,10 @@ export function App() {
       setSavedPropertyIds(updatedUser.savedListingIds);
     }
 
-    if (role === 'agent' || updatedUser.isAgent) {
+    if (role === 'admin' || updatedUser.isAdmin || updatedUser.isSuperAdmin) {
+      setCurrentRole('admin');
+      setPendingBookingListing(null);
+    } else if (role === 'agent' || updatedUser.isAgent) {
       setCurrentRole('agent');
       setPendingBookingListing(null);
     } else {
@@ -1388,8 +1417,39 @@ export function App() {
         onOpenAgentSignup={handleOpenAgentSignup}
       />
 
+      {/* Platform Emergency Announcement Banner */}
+      {platformSettings.emergencyAnnouncementActive && platformSettings.emergencyAnnouncement && (
+        <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-600 text-white px-4 py-2.5 text-xs font-bold text-center shadow-xs flex items-center justify-center gap-2 border-b border-amber-800 z-40">
+          <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping shrink-0" />
+          <span>{platformSettings.emergencyAnnouncement}</span>
+        </div>
+      )}
+
       {/* 2. Main Content Area */}
-      {(currentRole === 'tenant' || currentRole === 'seeker') ? (
+      {currentRole === 'admin' ? (
+        /* Super Admin Control Center */
+        <main className="flex-1 w-full">
+          <SuperAdminDashboard
+            currentUser={currentUser}
+            listings={listings}
+            bookings={bookings}
+            onUpdateListingAvailability={handleUpdateListingAvailability}
+            onDeleteListing={handleDeleteListing}
+            onAcceptBooking={handleAcceptBooking}
+            onRejectBooking={handleRejectBooking}
+            onUpdateListing={handleListingUpdated}
+            onSwitchToExplore={() => {
+              setCurrentRole('tenant');
+              setUserView('feed');
+            }}
+            onSwitchToAgent={() => setCurrentRole('agent')}
+            onSwitchToTenant={() => {
+              setCurrentRole('tenant');
+              setUserView('dashboard');
+            }}
+          />
+        </main>
+      ) : (currentRole === 'tenant' || currentRole === 'seeker') ? (
         userView === 'dashboard' && isAuthenticated ? (
           /* Tenant / User Dashboard: Strictly for authenticated users */
           <main className="flex-1 w-full">

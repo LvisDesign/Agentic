@@ -2,6 +2,7 @@ import React from 'react';
 import { 
   Hourglass, 
   ShieldCheck, 
+  ShieldAlert,
   User, 
   Compass, 
   LayoutDashboard, 
@@ -211,6 +212,28 @@ export const Header: React.FC<HeaderProps> = ({
                 Agent Portal
               </span>
               {currentRole === 'agent' && (
+                <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+              )}
+            </button>
+          )}
+
+          {/* TAB 4.5: Super Admin Console (Rendered when user is Admin or currentRole === 'admin') */}
+          {(currentUser.isAdmin || currentUser.isSuperAdmin || currentRole === 'admin') && (
+            <button
+              onClick={() => onChangeRole('admin')}
+              className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
+                currentRole === 'admin'
+                  ? 'bg-gradient-to-r from-[#000004] to-[#1f2937] text-white shadow-md border-2 border-amber-400/50 ring-2 ring-amber-400/20 z-10 scale-[1.03]'
+                  : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 hover:shadow-xs'
+              }`}
+              aria-label="Super Admin Console"
+              title="Super Admin Console"
+            >
+              <ShieldAlert className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'admin' ? 'text-amber-400' : 'text-amber-700'}`} />
+              <span className="hidden md:inline font-bold text-xs whitespace-nowrap">
+                Super Admin
+              </span>
+              {currentRole === 'admin' && (
                 <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
               )}
             </button>

@@ -4,6 +4,21 @@ import { isLocalUrl } from './environment';
 // Default seeded accounts for instant marketplace testing
 export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
   {
+    id: 'DT-ADMIN-001',
+    fullName: 'Platform Administrator',
+    email: 'admin@setlla.com',
+    phone: '0800 000 0001',
+    state: 'Delta State',
+    city: 'Asaba',
+    isVerifiedTenant: false,
+    isAgent: false,
+    isAdmin: true,
+    isSuperAdmin: true,
+    isDemoAdmin: true,
+    savedListingIds: [],
+    createdAt: '2026-09-01T08:00:00.000Z',
+  },
+  {
     id: 'DT-USR-8492',
     fullName: 'Chinedu Okafor',
     email: 'chinedu.okafor@gmail.com',
@@ -33,8 +48,79 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     cacNumber: 'RC-1849204',
     isVerifiedTenant: false,
     isAgent: true,
+    kycStatus: 'verified',
+    kycDocuments: {
+      ninNumber: 'NIN-8910-***-2011',
+      cacCertificateUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
+      submittedAt: '2026-09-15T12:00:00.000Z',
+    },
     savedListingIds: [],
     createdAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'DT-AGT-1021',
+    fullName: 'Chief Oghenetega Macaulay',
+    agencyName: 'Delta Heritage Realty Ltd',
+    agentType: 'agency',
+    phone: '0803 492 8172',
+    whatsapp: '2348034928172',
+    email: 'oghene@deltaheritage.ng',
+    operatingState: 'Delta State',
+    operatingCity: 'Asaba',
+    state: 'Delta State',
+    city: 'Asaba',
+    cacNumber: 'RC-2910482',
+    isVerifiedTenant: false,
+    isAgent: true,
+    kycStatus: 'verified',
+    kycDocuments: {
+      ninNumber: 'NIN-1029-***-4821',
+      cacCertificateUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
+      submittedAt: '2026-09-10T10:30:00.000Z',
+    },
+    savedListingIds: [],
+    createdAt: '2026-09-10T10:00:00.000Z',
+  },
+  {
+    id: 'DT-AGT-2044',
+    fullName: 'Barrister Emeka Danladi',
+    agencyName: 'Prime Crest Properties',
+    agentType: 'agency',
+    phone: '0812 491 0294',
+    whatsapp: '2348124910294',
+    email: 'emeka@primecrest.ng',
+    operatingState: 'Delta State',
+    operatingCity: 'Warri',
+    state: 'Delta State',
+    city: 'Warri',
+    cacNumber: 'RC-3918201',
+    isVerifiedTenant: false,
+    isAgent: true,
+    kycStatus: 'pending',
+    kycDocuments: {
+      ninNumber: 'NIN-5521-***-9018',
+      submittedAt: '2026-10-18T14:20:00.000Z',
+    },
+    savedListingIds: [],
+    createdAt: '2026-10-18T14:00:00.000Z',
+  },
+  {
+    id: 'DT-AGT-3055',
+    fullName: 'Ngozi Blessing Eze',
+    agencyName: 'Campus Nest Agencies',
+    agentType: 'individual',
+    phone: '0816 772 1902',
+    whatsapp: '2348167721902',
+    email: 'ngozi@campusnest.ng',
+    operatingState: 'Delta State',
+    operatingCity: 'Abraka',
+    state: 'Delta State',
+    city: 'Abraka',
+    isVerifiedTenant: false,
+    isAgent: true,
+    kycStatus: 'verified',
+    savedListingIds: [],
+    createdAt: '2026-09-25T11:00:00.000Z',
   },
   {
     id: 'DT-WRI-3918',
@@ -47,6 +133,19 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     isAgent: false,
     savedListingIds: ['prop-warri-02'],
     createdAt: '2026-10-01T10:00:00.000Z',
+  },
+  {
+    id: 'DT-USR-5520',
+    fullName: 'Blessing Okon',
+    phone: '0802 334 1122',
+    email: 'blessing.okon@yahoo.com',
+    state: 'Delta State',
+    city: 'Abraka',
+    preferredPropertyType: 'Single Room',
+    isVerifiedTenant: false,
+    isAgent: false,
+    savedListingIds: [],
+    createdAt: '2026-10-15T09:00:00.000Z',
   },
 ];
 
@@ -91,7 +190,16 @@ export function normalizeEmail(email?: string): string {
   return email.trim().toLowerCase();
 }
 
-const DEMO_USER_IDS = new Set(['DT-USR-8492', 'DT-AGT-9012', 'DT-WRI-3918', 'DT-ADMIN-001']);
+const DEMO_USER_IDS = new Set([
+  'DT-USR-8492',
+  'DT-AGT-9012',
+  'DT-WRI-3918',
+  'DT-ADMIN-001',
+  'DT-AGT-1021',
+  'DT-AGT-2044',
+  'DT-AGT-3055',
+  'DT-USR-5520',
+]);
 
 /**
  * Retrieves all registered users from storage and defaults.
@@ -176,6 +284,38 @@ export function saveRegisteredUser(user: UserProfile): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(allUsers));
   } catch (err) {
     console.error('[UserRegistry] Failed to save user to registry:', err);
+  }
+}
+
+/**
+ * Super Admin function: forces an update to any user record in the registry.
+ */
+export function adminUpdateUser(user: UserProfile): void {
+  if (typeof window === 'undefined' || !user) return;
+  const allUsers = getRegisteredUsers();
+  const existingIndex = allUsers.findIndex((u) => u.id === user.id);
+  if (existingIndex >= 0) {
+    allUsers[existingIndex] = { ...allUsers[existingIndex], ...user };
+  } else {
+    allUsers.push(user);
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allUsers));
+  } catch (err) {
+    console.error('[UserRegistry] Failed to admin update user:', err);
+  }
+}
+
+/**
+ * Super Admin function: removes a user from the registry.
+ */
+export function deleteUserFromRegistry(userId: string): void {
+  if (typeof window === 'undefined' || !userId) return;
+  const allUsers = getRegisteredUsers().filter((u) => u.id !== userId);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(allUsers));
+  } catch (err) {
+    console.error('[UserRegistry] Failed to delete user from registry:', err);
   }
 }
 

@@ -146,3 +146,102 @@ create policy "Public Media Update" on storage.objects for update using (bucket_
 drop policy if exists "Public Media Delete" on storage.objects;
 create policy "Public Media Delete" on storage.objects for delete using (bucket_id = 'property-media');
 
+-- 7. Platform Users & Super Admin Roles Table
+create table if not exists public.platform_users (
+  id text primary key,
+  full_name text not null,
+  phone text not null,
+  email text,
+  state text default 'Delta State',
+  city text default 'Asaba',
+  preferred_property_type text,
+  budget numeric default 0,
+  nin text,
+  is_verified_tenant boolean default false,
+  is_agent boolean default false,
+  agency_name text,
+  cac_number text,
+  whatsapp text,
+  operating_state text default 'Delta State',
+  operating_city text default 'Asaba',
+  agent_type text default 'agency',
+  is_admin boolean default false,
+  is_super_admin boolean default false,
+  is_suspended boolean default false,
+  suspension_reason text,
+  kyc_status text default 'not_submitted',
+  kyc_documents jsonb default '{}'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create index if not exists idx_users_phone on public.platform_users (phone);
+create index if not exists idx_users_role on public.platform_users (is_agent, is_admin);
+
+-- 8. Admin Audit Trail Table
+create table if not exists public.admin_audit_logs (
+  id text primary key,
+  action text not null,
+  target_type text not null,
+  target_id text not null,
+  target_name text not null,
+  admin_name text not null default 'Platform Administrator',
+  details text,
+  created_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create index if not exists idx_audit_time on public.admin_audit_logs (created_at desc);
+
+-- 9. Platform Global Settings Table
+create table if not exists public.platform_settings (
+  id text primary key default 'global_config',
+  default_inspection_fee numeric default 2500,
+  max_queue_limit_per_slot integer default 5,
+  maintenance_mode boolean default false,
+  emergency_announcement text,
+  emergency_announcement_active boolean default false,
+  auto_approve_verified_agent_listings boolean default true,
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+-- 10. Enable RLS and Realtime for Admin Tables
+alter table public.platform_users enable row level security;
+alter table public.admin_audit_logs enable row level security;
+alter table public.platform_settings enable row level security;
+
+grant all on table public.platform_users to anon, authenticated;
+grant all on table public.admin_audit_logs to anon, authenticated;
+grant all on table public.platform_settings to anon, authenticated;
+
+drop policy if exists "Public access platform_users" on public.platform_users;
+create policy "Public access platform_users" on public.platform_users for all using (true) with check (true);
+
+drop policy if exists "Public access admin_audit_logs" on public.admin_audit_logs;
+create policy "Public access admin_audit_logs" on public.admin_audit_logs for all using (true) with check (true);
+
+drop policy if exists "Public access platform_settings" on public.platform_settings;
+create policy "Public access platform_settings" on public.platform_settings for all using (true) with check (true);
+
+-- Enable Realtime for admin audit logs and users
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' 
+    and schemaname = 'public' 
+    and tablename = 'platform_users'
+  ) then
+    alter publication supabase_realtime add table public.platform_users;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' 
+    and schemaname = 'public' 
+    and tablename = 'admin_audit_logs'
+  ) then
+    alter publication supabase_realtime add table public.admin_audit_logs;
+  end if;
+end $$;
+
+

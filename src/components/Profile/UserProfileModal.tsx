@@ -1010,6 +1010,51 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
           ) : null}
 
+          {/* Super Admin Console Access */}
+          {(currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.email === 'admin@setlla.com') ? (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-xs text-[#000004]">Super Admin Authority</div>
+                  <div className="text-[11px] text-amber-900">
+                    Master control over agents, tenants, listings & escrow
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  onChangeRole('admin');
+                  onClose();
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+              >
+                Admin Console
+              </button>
+            </div>
+          ) : (
+            <div className="p-3 rounded-2xl bg-slate-50 border border-[#E5E7EB] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-[#70798C]" />
+                <span className="text-[11px] text-[#70798C]">Platform Administration</span>
+              </div>
+              <button
+                onClick={() => {
+                  if (onUpdateProfile) {
+                    onUpdateProfile({ ...currentUser, isAdmin: true, isSuperAdmin: true });
+                  }
+                  onChangeRole('admin');
+                  onClose();
+                }}
+                className="text-[11px] font-bold text-amber-700 hover:text-amber-800 hover:underline cursor-pointer"
+              >
+                Access Admin Mode
+              </button>
+            </div>
+          )}
+
           {/* Collapsible Architecture Guide */}
           <div className="border border-[#E5E7EB] rounded-2xl overflow-hidden">
             <button
