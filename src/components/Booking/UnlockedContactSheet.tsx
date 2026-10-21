@@ -51,9 +51,9 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
   }
 
   // Pre-filled WhatsApp message as requested in specifications
-  const listerShortName = listing.agent.fullName.includes('Macaulay') 
+  const agentShortName = listing.agent.fullName.includes('Macaulay') 
     ? 'Chief Macaulay' 
-    : listing.agent.fullName.split(' ')[0] || 'Lister';
+    : listing.agent.fullName.split(' ')[0] || 'Agent';
 
   const startTime = booking.slotTimeWindow.includes('–')
     ? booking.slotTimeWindow.split('–')[0].trim()
@@ -62,7 +62,7 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
     : booking.slotTimeWindow;
 
   const whatsappMessage = encodeURIComponent(
-    `Hello ${listerShortName}, I booked an inspection for your ${listing.propertyType} in ${listing.neighborhood}, ${listing.city} via the platform for ${booking.slotDate} at ${startTime}.`
+    `Hello ${agentShortName}, I booked an inspection for your ${listing.propertyType} in ${listing.neighborhood}, ${listing.city} via the platform for ${booking.slotDate} at ${startTime}.`
   );
 
   const whatsappUrl = `https://wa.me/${intlNumber}?text=${whatsappMessage}`;
@@ -114,7 +114,7 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
               </span>
             </div>
             <h3 className="font-display font-serif text-lg sm:text-xl font-bold text-[#000004] leading-tight">
-              Lister Contact Unlocked
+              Agent Contact Unlocked
             </h3>
             <p className="text-xs text-[#70798C] truncate mt-0.5" title={listing.title}>
               {listing.neighborhood}, {listing.city}
@@ -154,7 +154,7 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
             </div>
           </div>
 
-          {/* Lister Identity Card */}
+          {/* Agent Identity Card */}
           <div className="p-4 rounded-[12px] bg-white border border-[rgba(112,121,140,0.22)] shadow-2xs">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
@@ -175,11 +175,11 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
                       {listing.agent.fullName}
                     </h4>
                     <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[#342A21]/10 text-[#342A21]">
-                      Verified Lister
+                      Verified Agent
                     </span>
                   </div>
                   <p className="text-xs text-[#70798C] truncate">
-                    {listing.agent.agencyName || 'Independent Property Lister'}
+                    {listing.agent.agencyName || 'Independent Property Agent'}
                   </p>
                   <p className="text-[11px] text-emerald-700 font-medium mt-0.5">
                     • {listing.agent.responseTime || 'Usually responds in <15 mins'}

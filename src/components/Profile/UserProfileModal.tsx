@@ -224,7 +224,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     setAppBadge(1);
 
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Inspection Accepted by Lister', {
+      new Notification('Inspection Accepted by Agent', {
         body: 'Your apartment inspection pass for Asaba 2-Bedroom Flat is confirmed. Agent contact coordinates unlocked!',
         icon: '/icons/icon-192x192.png',
         badge: '/icons/icon-192x192.png',
@@ -371,14 +371,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 ) : (
                   <>
                     <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    Account Type: Tenant / Seeker
+                    Account Type: Tenant
                   </>
                 )}
               </span>
             </div>
             <p className="text-[11px] text-[#70798C] leading-relaxed">
               {isAgent
-                ? 'You have full access to list apartments across Delta State, set inspection time slots, accept inspection bookings, and connect directly with verified house seekers.'
+                ? 'You have full access to list apartments across Delta State, set inspection time slots, accept inspection bookings, and connect directly with verified tenants.'
                 : 'You have full, unrestricted access to browse apartments uploaded by verified Delta State agents and book as many inspections as you want. Only agents are restricted to 5 bookings per window so your time is never wasted.'}
             </p>
           </div>
@@ -859,7 +859,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </div>
                 <div>
                   <h5 className="font-bold text-xs text-[#000004]">Mobile Alerts & Notifications</h5>
-                  <p className="text-[11px] text-[#70798C]">Push updates for inspection slots & lister updates</p>
+                  <p className="text-[11px] text-[#70798C]">Push updates for inspection slots & agent updates</p>
                 </div>
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -912,7 +912,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       </span>
                     </div>
                     <p className="text-[11px] text-[#70798C] mt-0.5">
-                      Fast mobile access, instant Lister alerts & inspection updates
+                      Fast mobile access, instant Agent alerts & inspection updates
                     </p>
                   </div>
                 </div>
@@ -971,18 +971,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <div>
                   <div className="font-bold text-xs text-[#000004]">Agent Portal Active</div>
                   <div className="text-[11px] text-[#70798C]">
-                    Preview platform in Seeker View
+                    Preview platform in Tenant View
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => {
-                  onChangeRole('seeker');
+                  onChangeRole('tenant');
                   onClose();
                 }}
                 className="px-3 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-[11px] font-bold transition-colors cursor-pointer shadow-xs"
               >
-                Switch to Seeker View
+                Switch to Tenant View
               </button>
             </div>
           ) : isAgent ? (
@@ -992,7 +992,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div>
-                  <div className="font-bold text-xs text-[#000004]">Seeker View Active</div>
+                  <div className="font-bold text-xs text-[#000004]">Tenant View Active</div>
                   <div className="text-[11px] text-[#70798C]">
                     Return to your Agent Portal
                   </div>

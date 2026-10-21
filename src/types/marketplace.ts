@@ -184,7 +184,7 @@ export interface PropertyListing {
   isArchived?: boolean;
 }
 
-export type UserRole = 'seeker' | 'agent';
+export type UserRole = 'tenant' | 'seeker' | 'agent';
 
 export interface UserProfile {
   id: string;

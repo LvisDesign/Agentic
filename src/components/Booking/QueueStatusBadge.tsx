@@ -26,7 +26,7 @@ export const QueueStatusBadge: React.FC<QueueStatusBadgeProps> = ({
             ? 'px-3.5 py-1.5 text-sm'
             : 'px-2.5 py-1 text-xs'
         } bg-[#F0544F]/10 text-[#F0544F] border border-[#F0544F]/30 animate-pulse-subtle`}
-        title="Agent window at max capacity (5 seekers max to protect your time)"
+        title="Agent window at max capacity (5 tenants max to protect your time)"
       >
         <AlertCircle className="w-3.5 h-3.5 shrink-0 text-[#F0544F]" />
         <span>Agent Slot Full (5/5)</span>

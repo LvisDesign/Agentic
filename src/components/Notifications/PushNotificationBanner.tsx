@@ -3,7 +3,7 @@ import { BellRing, CheckCircle2, ChevronRight, X, Building2, Sparkles, AlertCirc
 import { PropertyListing, BookingRecord } from '../../types/marketplace';
 import { triggerDeviceVibration, playNotificationSound } from '../../utils/realtimeNotifications';
 
-export type NotificationType = 'inspection_request' | 'inspection_confirmed' | 'new_listing' | 'listing_updated' | 'general';
+export type NotificationType = 'inspection_request' | 'inspection_confirmed' | 'inspection_declined' | 'new_listing' | 'listing_updated' | 'general';
 
 export interface PushNotificationData {
   title: string;
@@ -66,6 +66,10 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     badgeLabel = 'Inspection Confirmed';
     badgeColor = 'text-emerald-400';
     if (!notification.actionText) actionLabel = 'Tap to view unlocked contact details';
+  } else if (notifType === 'inspection_declined') {
+    badgeLabel = 'Inspection Declined';
+    badgeColor = 'text-rose-400';
+    if (!notification.actionText) actionLabel = 'Tap to explore available properties';
   } else if (notifType === 'new_listing') {
     badgeLabel = 'New Verified Property';
     badgeColor = 'text-sky-400';
@@ -93,6 +97,8 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
             <Building2 className="w-5 h-5 text-sky-400" />
           ) : notifType === 'inspection_confirmed' ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-400 animate-pulse" />
+          ) : notifType === 'inspection_declined' ? (
+            <AlertCircle className="w-5 h-5 text-rose-400" />
           ) : (
             <Sparkles className="w-5 h-5 text-amber-300" />
           )}
@@ -119,10 +125,11 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
             {notification.body}
           </p>
 
-          <div className="mt-2 flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300">
+          <div className={`mt-2 flex items-center gap-1 text-[11px] font-bold ${notifType === 'inspection_declined' ? 'text-rose-400 hover:text-rose-300' : 'text-emerald-400 hover:text-emerald-300'}`}>
             <span>{actionLabel}</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </div>
+
         </div>
 
         {/* Dismiss Button */}

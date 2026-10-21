@@ -203,7 +203,7 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
                   Agent Window Full (5/5 Limit)
                 </h4>
                 <p className="text-xs text-[#70798C] mt-1 max-w-sm mx-auto leading-relaxed">
-                  To ensure agents don't overcrowd showings or waste house seekers' time, this agent is restricted to 5 bookings for {activeBooking.slotTimeWindow}. You are locked in as standby applicant <span className="font-bold text-[#000004]">#{activeBooking.queuePosition || 1}</span>.
+                  To ensure agents don't overcrowd showings or waste tenants' time, this agent is restricted to 5 bookings for {activeBooking.slotTimeWindow}. You are locked in as standby applicant <span className="font-bold text-[#000004]">#{activeBooking.queuePosition || 1}</span>.
                 </p>
               </div>
 
@@ -289,6 +289,44 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
                   Request Dispatched to {listing.agent.fullName}
                 </span>
                 <span>Direct SMS confirmation pending</span>
+              </div>
+            </div>
+          )}
+
+          {/* STATE 5: REQUEST DECLINED BY AGENT */}
+          {activeBooking && activeBooking.status === 'REJECTED_BY_AGENT' && (
+            <div className="p-5 rounded-2xl bg-white border border-rose-200 shadow-md space-y-4 text-center">
+              <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+                <AlertCircle className="w-7 h-7" />
+              </div>
+
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full">
+                  Inspection Request Declined
+                </span>
+                <h4 className="font-display text-xl font-bold text-[#000004] mt-2">
+                  Agent Unavailable for this Window
+                </h4>
+                <p className="text-xs text-[#70798C] mt-1 max-w-sm mx-auto">
+                  {listing.agent.fullName} was unable to accept your inspection request for <span className="font-bold text-[#000004]">{activeBooking.slotTimeWindow}</span>.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] text-left text-xs space-y-1.5">
+                <div className="text-xs font-semibold text-[#000004]">What you can do:</div>
+                <p className="text-[#70798C] text-[11px] leading-relaxed">
+                  You can browse other available properties in {listing.city} or choose another inspection window when available.
+                </p>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                >
+                  Explore Other Properties
+                </button>
               </div>
             </div>
           )}

@@ -344,6 +344,65 @@ export function recordNotifiedBookingId(id: string): void {
   } catch (_) {}
 }
 
+const NOTIFIED_DECLINED_STORAGE_KEY = 'deltarent_notified_declined_bookings';
+
+/**
+ * Returns a Set of declined booking IDs that have already triggered a notification to the tenant.
+ */
+export function getNotifiedDeclinedBookingIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(NOTIFIED_DECLINED_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch (_) {}
+  return new Set();
+}
+
+/**
+ * Marks a declined booking ID as notified.
+ */
+export function recordNotifiedDeclinedBookingId(id: string): void {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    const set = getNotifiedDeclinedBookingIds();
+    set.add(id);
+    localStorage.setItem(NOTIFIED_DECLINED_STORAGE_KEY, JSON.stringify(Array.from(set)));
+  } catch (_) {}
+}
+
+const NOTIFIED_AGENT_REQUESTS_STORAGE_KEY = 'deltarent_notified_agent_requests';
+
+/**
+ * Returns a Set of incoming booking request IDs that have already triggered an alert to the agent.
+ */
+export function getNotifiedAgentBookingIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(NOTIFIED_AGENT_REQUESTS_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch (_) {}
+  return new Set();
+}
+
+/**
+ * Marks an incoming booking request ID as notified for the agent.
+ */
+export function recordNotifiedAgentBookingId(id: string): void {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    const set = getNotifiedAgentBookingIds();
+    set.add(id);
+    localStorage.setItem(NOTIFIED_AGENT_REQUESTS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+  } catch (_) {}
+}
+
+
 
 /**
  * Determines whether a given booking belongs strictly to the specified user/tenant.

@@ -136,13 +136,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 e.stopPropagation();
                 setShowListerControls(!showListerControls);
               }}
-              aria-label="Toggle lister controls"
+              aria-label="Toggle agent controls"
               className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
                 showListerControls 
                   ? 'bg-[#000004] text-white border-[#000004]' 
                   : 'bg-[#FCF9F5] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#000004] border-[#E5E7EB]'
               }`}
-              title="Lister status & proof-of-life controls"
+              title="Agent status & proof-of-life controls"
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
             </button>
@@ -205,11 +205,11 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
         )}
 
-        {/* Quick Lister Availability Controls (Management Bar) */}
+        {/* Quick Agent Availability Controls (Management Bar) */}
         {showListerControls && (
           <div className="px-3.5 py-2 bg-[#FCF9F5] border-b border-[rgba(112,121,140,0.22)] flex items-center justify-between gap-2 shrink-0 text-xs flex-wrap animate-fade-in">
             <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider">
-              Lister Availability:
+              Agent Availability:
             </span>
             <div className="flex items-center gap-1.5">
               {(['Available', 'Under Inspection', 'Rented Out'] as ListingAvailability[]).map((st) => (
@@ -380,7 +380,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99] cursor-pointer bg-emerald-600 hover:bg-emerald-700 text-white"
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-200 shrink-0" />
-              <span>Inspection Confirmed • View Lister Contact</span>
+              <span>Inspection Confirmed • View Agent Contact</span>
             </button>
           ) : isRentedOut ? (
             <button
@@ -420,17 +420,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 className="flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.99] cursor-pointer bg-[#342A21] hover:bg-[#251E17] text-white"
               >
                 <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>Awaiting Lister Approval</span>
+                <span>Awaiting Agent Approval</span>
               </button>
               {onSimulateAgentAccept && (
                 <button
                   type="button"
                   onClick={() => onSimulateAgentAccept(activeBooking.id)}
                   className="shrink-0 py-2.5 sm:py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
-                  title="Simulate Lister Approval (Instant Free Contact Unlock)"
+                  title="Simulate Agent Approval (Instant Free Contact Unlock)"
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Lister Accept</span>
+                  <span className="hidden sm:inline">Agent Accept</span>
                 </button>
               )}
             </div>

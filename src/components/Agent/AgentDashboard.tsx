@@ -39,6 +39,7 @@ interface AgentDashboardProps {
   onUpdateAvailability?: (listingId: string, status: ListingAvailability) => void;
   onConfirmFreshness?: (listingId: string) => void;
   onSwitchToSeeker?: () => void;
+  onSwitchToTenant?: () => void;
 }
 
 export const AgentDashboard: React.FC<AgentDashboardProps> = ({
@@ -53,6 +54,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   onUpdateAvailability,
   onConfirmFreshness,
   onSwitchToSeeker,
+  onSwitchToTenant,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
@@ -282,7 +284,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   No Inspection Requests Yet
                 </h3>
                 <p className="text-xs text-[#70798C] leading-relaxed">
-                  Welcome, <strong>{agentProfile.fullName}</strong>! You haven't added any properties yet. Once you publish your available apartments or houses in Delta State, house seekers will book verified inspection slots and requests will appear here.
+                  Welcome, <strong>{agentProfile.fullName}</strong>! You haven't added any properties yet. Once you publish your available apartments or houses in Delta State, tenants will book verified inspection slots and requests will appear here.
                 </p>
               </div>
               <div className="pt-2">
@@ -317,7 +319,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               <div className="p-8 text-center bg-[#FCF9F5] rounded-xl border border-dashed border-[#E5E7EB]">
                 <Clock className="w-8 h-8 text-[#70798C]/60 mx-auto mb-2" />
                 <p className="text-[11px] text-[#70798C] mt-1">
-                  When house seekers book an inspection, their requests will appear here immediately.
+                  When tenants book an inspection, their requests will appear here immediately.
                 </p>
               </div>
             ) : (
@@ -448,7 +450,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               Confirmed Inspections
             </h3>
             <p className="text-xs text-[#70798C] mb-4">
-              These house seekers have booked their inspection. They have your phone number to call you.
+              These tenants have booked their inspection. They have your phone number to call you.
             </p>
 
             {acceptedOrPaid.length === 0 ? (
@@ -478,7 +480,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       <div className="font-display text-sm font-bold text-emerald-600">
                         CONFIRMED
                       </div>
-                      <div className="text-[10px] text-[#70798C]">House Seeker</div>
+                      <div className="text-[10px] text-[#70798C]">Tenant</div>
                     </div>
                   </div>
                 ))}
@@ -714,7 +716,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                           </span>
                           <button
                             type="button"
-                            onClick={onSwitchToSeeker}
+                            onClick={onSwitchToTenant || onSwitchToSeeker}
                             className="text-[#342A21] hover:underline font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
                           >
                             <span>View in Feed</span>

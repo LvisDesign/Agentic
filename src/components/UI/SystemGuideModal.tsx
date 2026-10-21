@@ -78,7 +78,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
                 </span>
               </h4>
               <p className="text-[#70798C] mt-1 leading-relaxed">
-                Tenants can book as many property inspections as they want. Only <strong>agents are restricted to 5 bookings per time window</strong> to ensure agents don't overcrowd showings or waste the valuable time of tenants and house seekers.
+                Tenants can book as many property inspections as they want. Only <strong>agents are restricted to 5 bookings per time window</strong> to ensure agents don't overcrowd showings or waste the valuable time of tenants.
               </p>
             </div>
           </div>
@@ -108,7 +108,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
                 100% Free & Unlimited Bookings for Tenants
               </h4>
               <p className="text-[#70798C] mt-1 leading-relaxed">
-                House seekers reserve physical property inspection slots completely free of charge with zero booking fees and no quota limits. The 5-seeker cap is strictly enforced on agents to prevent crowded showings and schedule delays.
+                Tenants reserve physical property inspection slots completely free of charge with zero booking fees and no quota limits. The 5-tenant cap is strictly enforced on agents to prevent crowded showings and schedule delays.
               </p>
             </div>
           </div>

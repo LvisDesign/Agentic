@@ -187,6 +187,12 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                           Booking Confirmed • Contact Details Revealed
                         </span>
                       )}
+                      {b.status === 'REJECTED_BY_AGENT' && (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          Inspection Request Declined by Agent
+                        </span>
+                      )}
                     </div>
                   </div>
 

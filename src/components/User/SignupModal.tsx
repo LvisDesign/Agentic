@@ -497,7 +497,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             <p className="font-body text-xs sm:text-sm text-[#70798C] leading-relaxed max-w-sm mx-auto">
               {installStatus === 'installed'
                 ? 'Your registration is complete. Redirecting to your DeltaRent property feed...'
-                : 'Get fast mobile access, instant Lister notifications, and inspection booking updates without downloading any APK.'}
+                : 'Get fast mobile access, instant Agent notifications, and inspection booking updates without downloading any APK.'}
             </p>
           </div>
 
@@ -508,7 +508,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 <div className="w-5 h-5 rounded-md bg-[#342A21]/10 text-[#342A21] flex items-center justify-center shrink-0">
                   <Check className="w-3 h-3" />
                 </div>
-                <span className="text-[11px] font-semibold text-[#000004]">Instant Lister alerts</span>
+                <span className="text-[11px] font-semibold text-[#000004]">Instant Agent alerts</span>
               </div>
               <div className="p-2.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex items-center gap-2">
                 <div className="w-5 h-5 rounded-md bg-[#342A21]/10 text-[#342A21] flex items-center justify-center shrink-0">
@@ -607,7 +607,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     ? 'Sign In'
                     : activeRoleTab === 'seeker'
                       ? 'Tenant Registration'
-                      : 'Agent / Landlord Registration'}
+                      : 'Agent Registration'}
                 </h3>
               </div>
               <p className="text-xs text-[#70798C]">
@@ -660,7 +660,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           </button>
         </div>
 
-        {/* 2. ROLE SWITCH TABS: House Seeker vs Agent (ONLY shown during Create Account) */}
+        {/* 2. ROLE SWITCH TABS: Tenant vs Agent (ONLY shown during Create Account) */}
         {authMode === 'signup' && (
           <div className="p-2 sm:px-5 sm:pt-3 sm:pb-2 bg-[#FCF9F5]/60 border-b border-[#E5E7EB]">
             <div className="grid grid-cols-2 p-1 bg-slate-200/70 rounded-2xl gap-1">
@@ -677,7 +677,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 }`}
               >
                 <User className={`w-3.5 h-3.5 ${activeRoleTab === 'seeker' ? 'text-emerald-600' : ''}`} />
-                <span>House Seeker (Tenant)</span>
+                <span>Tenant</span>
               </button>
 
               <button
@@ -693,7 +693,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 }`}
               >
                 <Building2 className={`w-3.5 h-3.5 ${activeRoleTab === 'agent' ? 'text-amber-600' : ''}`} />
-                <span>Agent / Landlord</span>
+                <span>Agent</span>
               </button>
             </div>
           </div>

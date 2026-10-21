@@ -3,7 +3,7 @@ import { INITIAL_LISTINGS } from './data/mockListings';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability } from './types/marketplace';
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge } from './utils/pwa';
-import { saveRegisteredUser, isBookingForUser, getMyDeviceBookingIds, recordMyDeviceBookingId, clearMyDeviceBookingIds, getNotifiedBookingIds, recordNotifiedBookingId } from './utils/userRegistry';
+import { saveRegisteredUser, isBookingForUser, getMyDeviceBookingIds, recordMyDeviceBookingId, clearMyDeviceBookingIds, getNotifiedBookingIds, recordNotifiedBookingId, getNotifiedDeclinedBookingIds, recordNotifiedDeclinedBookingId, getNotifiedAgentBookingIds, recordNotifiedAgentBookingId } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
@@ -117,7 +117,7 @@ interface InitialNavState {
  */
 function resolveInitialNavState(isUserAgent: boolean): InitialNavState {
   if (typeof window === 'undefined') {
-    return { role: isUserAgent ? 'agent' : 'seeker', view: 'feed', openPasses: false };
+    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
   }
 
   const hash = window.location.hash.toLowerCase();
@@ -131,28 +131,28 @@ function resolveInitialNavState(isUserAgent: boolean): InitialNavState {
     }
   }
   if (hash.includes('dashboard')) {
-    return { role: 'seeker', view: 'dashboard', openPasses: false };
+    return { role: 'tenant', view: 'dashboard', openPasses: false };
   }
   if (hash.includes('explore') || hash.includes('feed')) {
-    return { role: 'seeker', view: 'feed', openPasses: false };
+    return { role: 'tenant', view: 'feed', openPasses: false };
   }
   if (hash.includes('inspections') || hash.includes('passes')) {
-    return { role: 'seeker', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
+    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
   }
 
   // 2. LocalStorage Persistence (Preserves active page across normal F5 / page reloads)
   if (savedRole === 'agent' && isUserAgent) {
     return { role: 'agent', view: 'feed', openPasses: false };
   }
-  if (savedRole === 'seeker') {
-    return { role: 'seeker', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
+  if (savedRole === 'seeker' || savedRole === 'tenant') {
+    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
   }
 
   // 3. Fallback defaults:
   if (isUserAgent) {
     return { role: 'agent', view: 'feed', openPasses: false };
   }
-  return { role: 'seeker', view: 'feed', openPasses: false };
+  return { role: 'tenant', view: 'feed', openPasses: false };
 }
 
 export function App() {
@@ -327,12 +327,12 @@ export function App() {
       if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
         setCurrentRole('agent');
       } else if (hash.includes('dashboard')) {
-        setCurrentRole('seeker');
+        setCurrentRole('tenant');
         setUserView('dashboard');
       } else if (hash.includes('inspections') || hash.includes('passes')) {
         setIsMyPassesOpen(true);
       } else if (hash.includes('explore') || hash.includes('feed')) {
-        setCurrentRole('seeker');
+        setCurrentRole('tenant');
         setUserView('feed');
       }
     };
@@ -441,7 +441,10 @@ export function App() {
         setBookings((prev) => [event.booking!, ...prev.filter((b) => b.id !== event.booking!.id)]);
 
         const targetListing = event.listing || listings.find((p) => p.id === event.booking!.propertyId);
-        if (currentUser.isAgent && currentUser.phone !== event.booking.applicantPhone) {
+        const isMyListing = !targetListing || targetListing.agent.id === currentUser.id || targetListing.agent.phone === currentUser.phone || currentUser.isAdmin;
+
+        if (currentUser.isAgent && currentUser.phone !== event.booking.applicantPhone && isMyListing) {
+          recordNotifiedAgentBookingId(event.booking.id);
           const title = targetListing ? targetListing.title : 'your listing';
           setPushNotification({
             title: '🔔 New Inspection Request!',
@@ -455,7 +458,7 @@ export function App() {
             },
           });
           showDeviceNotification('🔔 New Inspection Request!', {
-            body: `${event.booking.applicantName} requested inspection for "${title}".`,
+            body: `${event.booking.applicantName} requested inspection for "${title}" (${event.booking.slotTimeWindow}).`,
           });
           playNotificationSound('alert');
         }
@@ -467,7 +470,7 @@ export function App() {
 
         if (isApplicant && !currentUser.isAgent) {
           recordNotifiedBookingId(event.booking.id);
-          const agentName = targetListing?.agent.fullName || 'The Lister';
+          const agentName = targetListing?.agent.fullName || 'The Agent';
           setPushNotification({
             title: '🎉 Inspection Approved!',
             body: `${agentName} confirmed your inspection for "${targetListing?.title || 'the property'}". Contact details unlocked!`,
@@ -491,6 +494,43 @@ export function App() {
           });
           playNotificationSound('success');
         }
+      } else if (event.type === 'BOOKING_REJECTED' && (event.booking || event.bookingId)) {
+        const rejectedId = event.booking?.id || event.bookingId;
+        const rejectedBooking: BookingRecord | undefined = event.booking || bookings.find((b) => b.id === rejectedId);
+        const targetListing = event.listing || (rejectedBooking ? listings.find((p) => p.id === rejectedBooking.propertyId) : undefined);
+
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === rejectedId
+              ? { ...b, status: 'REJECTED_BY_AGENT' as const }
+              : b
+          )
+        );
+
+        const isApplicant = rejectedBooking ? isBookingForUser(rejectedBooking, currentUser, myDeviceBookingIds) : false;
+
+        if (isApplicant && !currentUser.isAgent && rejectedId) {
+          recordNotifiedDeclinedBookingId(rejectedId);
+          const agentName = targetListing?.agent.fullName || 'The Agent';
+          const propTitle = targetListing?.title || 'the property';
+
+          setPushNotification({
+            title: '❌ Inspection Request Declined',
+            body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
+            type: 'inspection_declined',
+            listing: targetListing,
+            booking: rejectedBooking,
+            actionText: 'Tap to explore other properties',
+            onAction: () => {
+              setCurrentRole('tenant');
+              setUserView('feed');
+            },
+          });
+          showDeviceNotification('❌ Inspection Request Declined', {
+            body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
+          });
+          playNotificationSound('alert');
+        }
       } else if (event.type === 'LISTING_CREATED' && event.listing) {
         setListings((prev) => [event.listing!, ...prev.filter((l) => l.id !== event.listing!.id)]);
         if (!currentUser.isAgent) {
@@ -501,7 +541,7 @@ export function App() {
             listing: event.listing,
             actionText: 'Tap to view in Explore feed',
             onAction: () => {
-              setCurrentRole('seeker');
+              setCurrentRole('tenant');
               setUserView('feed');
             },
           });
@@ -540,7 +580,7 @@ export function App() {
                     type: 'new_listing',
                     actionText: 'Tap to view in Explore',
                     onAction: () => {
-                      setCurrentRole('seeker');
+                      setCurrentRole('tenant');
                       setUserView('feed');
                     },
                   });
@@ -561,6 +601,7 @@ export function App() {
 
               if (payload.eventType === 'INSERT' && payload.new) {
                 const newBookingRow = payload.new as any;
+                const bookingId = newBookingRow.id;
                 const applicantName = newBookingRow.applicant_name || newBookingRow.applicantName || 'Applicant';
                 const applicantPhone = newBookingRow.applicant_phone || newBookingRow.applicantPhone;
                 const propId = newBookingRow.property_id || newBookingRow.propertyId;
@@ -570,21 +611,26 @@ export function App() {
                 const isMe = currentUser.phone && applicantPhone &&
                   currentUser.phone.replace(/[^0-9]/g, '').slice(-10) === applicantPhone.replace(/[^0-9]/g, '').slice(-10);
 
-                if (currentUser.isAgent && !isMe) {
-                  const propTitle = targetListing?.title || 'your listed property';
-                  setPushNotification({
-                    title: '🔔 New Inspection Request!',
-                    body: `${applicantName} booked an inspection for "${propTitle}" (${slotTime}).`,
-                    type: 'inspection_request',
-                    actionText: 'Tap to review in Agent Portal',
-                    onAction: () => {
-                      setCurrentRole('agent');
-                    },
-                  });
-                  showDeviceNotification('🔔 New Inspection Request!', {
-                    body: `${applicantName} booked "${propTitle}" (${slotTime}).`,
-                  });
-                  playNotificationSound('alert');
+                const isMyListing = !targetListing || targetListing.agent.id === currentUser.id || targetListing.agent.phone === currentUser.phone || currentUser.isAdmin;
+
+                if (currentUser.isAgent && !isMe && isMyListing && bookingId) {
+                  if (!getNotifiedAgentBookingIds().has(bookingId)) {
+                    recordNotifiedAgentBookingId(bookingId);
+                    const propTitle = targetListing?.title || 'your listed property';
+                    setPushNotification({
+                      title: '🔔 New Inspection Request!',
+                      body: `${applicantName} booked an inspection for "${propTitle}" (${slotTime}).`,
+                      type: 'inspection_request',
+                      actionText: 'Tap to review in Agent Portal',
+                      onAction: () => {
+                        setCurrentRole('agent');
+                      },
+                    });
+                    showDeviceNotification('🔔 New Inspection Request!', {
+                      body: `${applicantName} booked "${propTitle}" (${slotTime}).`,
+                    });
+                    playNotificationSound('alert');
+                  }
                 }
               } else if (payload.eventType === 'UPDATE' && payload.new) {
                 const updatedRow = payload.new as any;
@@ -610,32 +656,57 @@ export function App() {
                 const isMe = isBookingForUser(bookingRecord, currentUser, myDeviceBookingIds);
 
                 if (isMe && !currentUser.isAgent && (status === 'CONFIRMED_UNLOCKED' || status === 'APPROVED_CONFIRMED')) {
-                  recordNotifiedBookingId(bookingRecord.id);
-                  const agentName = targetListing?.agent.fullName || 'Agent';
-                  const propTitle = targetListing?.title || 'the property';
+                  if (!getNotifiedBookingIds().has(bookingRecord.id)) {
+                    recordNotifiedBookingId(bookingRecord.id);
+                    const agentName = targetListing?.agent.fullName || 'The Agent';
+                    const propTitle = targetListing?.title || 'the property';
 
-                  setPushNotification({
-                    title: '🎉 Inspection Approved!',
-                    body: `${agentName} confirmed your inspection for "${propTitle}". Contact details unlocked!`,
-                    type: 'inspection_confirmed',
-                    listing: targetListing,
-                    booking: bookingRecord,
-                    actionText: 'Tap to view unlocked contact',
-                    onAction: () => {
-                      if (targetListing) {
-                        setUnlockedSheetData({ listing: targetListing, booking: bookingRecord });
-                      }
-                    },
-                  });
-                  showDeviceNotification('🎉 Inspection Approved!', {
-                    body: `${agentName} confirmed your inspection. Contact details unlocked!`,
-                    onClick: () => {
-                      if (targetListing) {
-                        setUnlockedSheetData({ listing: targetListing, booking: bookingRecord });
-                      }
-                    },
-                  });
-                  playNotificationSound('success');
+                    setPushNotification({
+                      title: '🎉 Inspection Approved!',
+                      body: `${agentName} confirmed your inspection for "${propTitle}". Contact details unlocked!`,
+                      type: 'inspection_confirmed',
+                      listing: targetListing,
+                      booking: bookingRecord,
+                      actionText: 'Tap to view unlocked contact',
+                      onAction: () => {
+                        if (targetListing) {
+                          setUnlockedSheetData({ listing: targetListing, booking: bookingRecord });
+                        }
+                      },
+                    });
+                    showDeviceNotification('🎉 Inspection Approved!', {
+                      body: `${agentName} confirmed your inspection. Contact details unlocked!`,
+                      onClick: () => {
+                        if (targetListing) {
+                          setUnlockedSheetData({ listing: targetListing, booking: bookingRecord });
+                        }
+                      },
+                    });
+                    playNotificationSound('success');
+                  }
+                } else if (isMe && !currentUser.isAgent && status === 'REJECTED_BY_AGENT') {
+                  if (!getNotifiedDeclinedBookingIds().has(bookingRecord.id)) {
+                    recordNotifiedDeclinedBookingId(bookingRecord.id);
+                    const agentName = targetListing?.agent.fullName || 'The Agent';
+                    const propTitle = targetListing?.title || 'the property';
+
+                    setPushNotification({
+                      title: '❌ Inspection Request Declined',
+                      body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
+                      type: 'inspection_declined',
+                      listing: targetListing,
+                      booking: bookingRecord,
+                      actionText: 'Tap to explore other properties',
+                      onAction: () => {
+                        setCurrentRole('tenant');
+                        setUserView('feed');
+                      },
+                    });
+                    showDeviceNotification('❌ Inspection Request Declined', {
+                      body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
+                    });
+                    playNotificationSound('alert');
+                  }
                 }
               }
             });
@@ -685,7 +756,7 @@ export function App() {
       recordNotifiedBookingId(unnotifiedConfirmedBooking.id);
 
       const targetListing = listings.find((p) => p.id === unnotifiedConfirmedBooking.propertyId);
-      const agentName = targetListing?.agent.fullName || 'The Lister';
+      const agentName = targetListing?.agent.fullName || 'The Agent';
       const propTitle = targetListing?.title || 'the property';
 
       setPushNotification({
@@ -713,6 +784,88 @@ export function App() {
       });
     }
   }, [userBookings, listings, currentUser]);
+
+  // Persistent Tenant Decline Notification Trigger:
+  // Ensures applying tenants are notified if an agent declined their request while offline or away
+  useEffect(() => {
+    if (!currentUser || currentUser.isAgent) return;
+
+    const notifiedDeclined = getNotifiedDeclinedBookingIds();
+    const unnotifiedDeclinedBooking = userBookings.find(
+      (b) => b.status === 'REJECTED_BY_AGENT' && !notifiedDeclined.has(b.id)
+    );
+
+    if (unnotifiedDeclinedBooking) {
+      recordNotifiedDeclinedBookingId(unnotifiedDeclinedBooking.id);
+
+      const targetListing = listings.find((p) => p.id === unnotifiedDeclinedBooking.propertyId);
+      const agentName = targetListing?.agent.fullName || 'The Agent';
+      const propTitle = targetListing?.title || 'the property';
+
+      setPushNotification({
+        title: '❌ Inspection Request Declined',
+        body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
+        type: 'inspection_declined',
+        listing: targetListing,
+        booking: unnotifiedDeclinedBooking,
+        actionText: 'Tap to explore other properties',
+        onAction: () => {
+          setCurrentRole('tenant');
+          setUserView('feed');
+        },
+      });
+
+      playNotificationSound('alert');
+      showDeviceNotification('❌ Inspection Request Declined', {
+        body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
+      });
+    }
+  }, [userBookings, listings, currentUser]);
+
+  // Persistent Agent Booking Request Notification Trigger:
+  // Guarantees agents receive a pop-up alert & sound for pending booking requests even if their app was closed
+  useEffect(() => {
+    if (!currentUser || !currentUser.isAgent) return;
+
+    const notifiedAgentRequests = getNotifiedAgentBookingIds();
+    const agentListingIds = new Set(
+      listings
+        .filter((l) => l.agent.id === currentUser.id || l.agent.phone === currentUser.phone || currentUser.isAdmin)
+        .map((l) => l.id)
+    );
+
+    const unnotifiedBooking = bookings.find(
+      (b) =>
+        (b.status === 'REQUEST_SUBMITTED' || b.status === 'QUEUED') &&
+        agentListingIds.has(b.propertyId) &&
+        !notifiedAgentRequests.has(b.id) &&
+        b.applicantPhone !== currentUser.phone
+    );
+
+    if (unnotifiedBooking) {
+      recordNotifiedAgentBookingId(unnotifiedBooking.id);
+
+      const targetListing = listings.find((p) => p.id === unnotifiedBooking.propertyId);
+      const propTitle = targetListing?.title || 'your listing';
+
+      setPushNotification({
+        title: '🔔 New Inspection Request!',
+        body: `${unnotifiedBooking.applicantName} requested inspection for "${propTitle}" (${unnotifiedBooking.slotTimeWindow}).`,
+        type: 'inspection_request',
+        listing: targetListing,
+        booking: unnotifiedBooking,
+        actionText: 'Tap to review in Agent Portal',
+        onAction: () => {
+          setCurrentRole('agent');
+        },
+      });
+
+      playNotificationSound('alert');
+      showDeviceNotification('🔔 New Inspection Request!', {
+        body: `${unnotifiedBooking.applicantName} requested inspection for "${propTitle}".`,
+      });
+    }
+  }, [bookings, listings, currentUser]);
 
   // Authentication gating & resume booking state
   const [pendingBookingListing, setPendingBookingListing] = useState<PropertyListing | null>(null);
@@ -922,7 +1075,7 @@ export function App() {
     );
   };
 
-  // Handler: Lister accepts a booking (Free instant contact unlock & push notification)
+  // Handler: Agent accepts a booking (Free instant contact unlock & push notification)
   const handleAcceptBooking = (bookingId: string) => {
     const targetBooking = bookings.find((b) => b.id === bookingId);
     if (!targetBooking) return;
@@ -930,7 +1083,7 @@ export function App() {
     const targetListing = listings.find((p) => p.id === targetBooking.propertyId);
     if (!targetListing) return;
 
-    // Concurrency Rule: Lister can accept an applicant ONLY if requested slot has active capacity (< 5 bookings)
+    // Concurrency Rule: Agent can accept an applicant ONLY if requested slot has active capacity (< 5 bookings)
     const targetSlot = targetListing.inspectionSlots.find((s) => s.id === targetBooking.slotId);
     if (targetSlot && targetSlot.bookedCount >= 5 && targetBooking.status === 'QUEUED') {
       alert('Concurrency limit reached: This slot already has 5 confirmed applicants. An applicant must cancel before a standby applicant can be admitted.');
@@ -965,35 +1118,64 @@ export function App() {
     }
   };
 
-  // Handler: Agent declines a slot -> Automatically promotes next queued applicant!
+  // Handler: Agent declines a slot -> Notifies tenant with popup/sound and promotes next queued applicant if any!
   const handleRejectBooking = (bookingId: string) => {
     const targetBooking = bookings.find((b) => b.id === bookingId);
     if (!targetBooking) return;
+    const targetListing = listings.find((p) => p.id === targetBooking.propertyId);
+
+    const updatedRejectedBooking: BookingRecord = {
+      ...targetBooking,
+      status: 'REJECTED_BY_AGENT',
+    };
 
     updateBookingStatus(bookingId, 'REJECTED_BY_AGENT');
 
     broadcastRealtimeEvent('BOOKING_REJECTED', {
       bookingId,
+      booking: updatedRejectedBooking,
+      listing: targetListing,
       propertyId: targetBooking.propertyId,
     });
 
-    // Remove or cancel the target booking
-    const remainingBookings = bookings.filter((b) => b.id !== bookingId);
+    // Provide immediate feedback to the AGENT that they declined this applicant
+    if (currentUser.isAgent) {
+      setPushNotification({
+        title: 'Inspection Request Declined',
+        body: `You declined ${targetBooking.applicantName}'s inspection request for "${targetListing?.title || 'the property'}". Notification sent to tenant.`,
+        type: 'general',
+      });
+      playNotificationSound('info');
+    }
 
-    // Check if there is someone in the queue for this same slot
-    const queuedApplicant = remainingBookings.find(
-      (b) => b.propertyId === targetBooking.propertyId && b.slotId === targetBooking.slotId && b.status === 'QUEUED'
+    // Check if there is someone in the queue for this same slot to promote
+    const queuedApplicant = bookings.find(
+      (b) => b.propertyId === targetBooking.propertyId && b.slotId === targetBooking.slotId && b.status === 'QUEUED' && b.id !== bookingId
     );
 
+    let promotedBooking: BookingRecord | undefined;
     if (queuedApplicant) {
-      const updatedQueued = remainingBookings.map((b) => {
-        if (b.id === queuedApplicant.id) {
-          return {
-            ...b,
-            status: 'CONFIRMED_UNLOCKED' as const,
-            queuePosition: undefined,
-            confirmedAt: new Date().toISOString(),
-          };
+      promotedBooking = {
+        ...queuedApplicant,
+        status: 'CONFIRMED_UNLOCKED' as const,
+        queuePosition: undefined,
+        confirmedAt: new Date().toISOString(),
+      };
+      updateBookingStatus(queuedApplicant.id, 'CONFIRMED_UNLOCKED');
+      broadcastRealtimeEvent('BOOKING_ACCEPTED', {
+        booking: promotedBooking,
+        listing: targetListing,
+      });
+    }
+
+    // Keep the rejected booking in bookings with status REJECTED_BY_AGENT so the tenant can see the updated status
+    setBookings((prev) =>
+      prev.map((b) => {
+        if (b.id === bookingId) {
+          return updatedRejectedBooking;
+        }
+        if (promotedBooking && b.id === promotedBooking.id) {
+          return promotedBooking;
         }
         if (b.propertyId === targetBooking.propertyId && b.slotId === targetBooking.slotId && b.queuePosition && b.queuePosition > 1) {
           return {
@@ -1002,11 +1184,8 @@ export function App() {
           };
         }
         return b;
-      });
-      setBookings(updatedQueued);
-    } else {
-      setBookings(remainingBookings);
-    }
+      })
+    );
   };
 
   // Handler: Create listing from agent onboarding form
@@ -1114,7 +1293,7 @@ export function App() {
     clearMyDeviceBookingIds();
     setMyDeviceBookingIds(new Set());
     setCurrentUser(GUEST_USER);
-    setCurrentRole('seeker');
+    setCurrentRole('tenant');
     setSavedPropertyIds([]);
     setUserView('feed');
     window.location.hash = '#/explore';
@@ -1147,7 +1326,7 @@ export function App() {
       setCurrentRole('agent');
       setPendingBookingListing(null);
     } else {
-      setCurrentRole('seeker');
+      setCurrentRole('tenant');
       // If there was a pending booking attempt, smoothly open the inspection booking modal for them!
       if (pendingBookingListing) {
         const target = pendingBookingListing;
@@ -1167,8 +1346,8 @@ export function App() {
   };
 
   // Determine root container layout:
-  // Seeker Feed is viewport locked for snap reels; Seeker Dashboard and Agent Dashboard are naturally scrolling pages.
-  const isFeedView = currentRole === 'seeker' && (userView === 'feed' || !isAuthenticated);
+  // Tenant Feed is viewport locked for snap reels; Tenant Dashboard and Agent Dashboard are naturally scrolling pages.
+  const isFeedView = (currentRole === 'tenant' || currentRole === 'seeker') && (userView === 'feed' || !isAuthenticated);
 
   return (
     <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#342A21]/15 selection:text-[#342A21] ${
@@ -1204,9 +1383,9 @@ export function App() {
       />
 
       {/* 2. Main Content Area */}
-      {currentRole === 'seeker' ? (
+      {(currentRole === 'tenant' || currentRole === 'seeker') ? (
         userView === 'dashboard' && isAuthenticated ? (
-          /* Seeker / User Dashboard: Strictly for authenticated users */
+          /* Tenant / User Dashboard: Strictly for authenticated users */
           <main className="flex-1 w-full">
             <UserDashboard
               currentUser={currentUser}
@@ -1225,7 +1404,7 @@ export function App() {
             />
           </main>
         ) : (
-          /* Seeker Snap Feed View */
+          /* Tenant Snap Feed View */
           <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">
             {/* Snap-Feed Filter Bar with Squared Rounded-Edges Adverts Tray */}
             <FilterBar
@@ -1297,7 +1476,11 @@ export function App() {
             onUpdateAvailability={handleUpdateListingAvailability}
             onConfirmFreshness={handleConfirmListingFreshness}
             onSwitchToSeeker={() => {
-              setCurrentRole('seeker');
+              setCurrentRole('tenant');
+              setUserView('feed');
+            }}
+            onSwitchToTenant={() => {
+              setCurrentRole('tenant');
               setUserView('feed');
             }}
           />

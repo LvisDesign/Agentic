@@ -154,7 +154,7 @@ export const PWAInstallBanner: React.FC = () => {
             </div>
 
             <p className="text-xs text-[#70798C] mt-1 leading-relaxed">
-              Install our app to receive instant booking alerts and direct Lister updates on your phone.
+              Install our app to receive instant booking alerts and direct Agent updates on your phone.
             </p>
 
             <div className="flex items-center gap-2 mt-3">

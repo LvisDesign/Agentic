@@ -12,7 +12,7 @@ interface ReportListingModalProps {
 export const REPORT_REASONS = [
   'House already rented out / no longer vacant',
   'Pictures do not match the actual property',
-  'Lister quoted a different price',
+  'Agent quoted a different price',
   'Suspected fraudulent listing',
 ] as const;
 
