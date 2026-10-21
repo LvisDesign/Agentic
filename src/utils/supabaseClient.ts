@@ -14,8 +14,16 @@ export interface SupabaseConfig {
 }
 
 export const getSupabaseConfig = (): SupabaseConfig => {
-  const localUrl = (typeof window !== 'undefined' ? localStorage.getItem('deltarent_supabase_url') || '' : '').trim();
-  const localKey = (typeof window !== 'undefined' ? localStorage.getItem('deltarent_supabase_key') || '' : '').trim();
+  const localUrl = (
+    typeof window !== 'undefined'
+      ? localStorage.getItem('setlla_supabase_url') || localStorage.getItem('deltarent_supabase_url') || ''
+      : ''
+  ).trim();
+  const localKey = (
+    typeof window !== 'undefined'
+      ? localStorage.getItem('setlla_supabase_key') || localStorage.getItem('deltarent_supabase_key') || ''
+      : ''
+  ).trim();
 
   const url = localUrl || envUrl || DEFAULT_SUPABASE_URL;
   const key = localKey || envKey || DEFAULT_SUPABASE_KEY;
@@ -59,7 +67,7 @@ export function getSupabaseClient(): SupabaseClient | null {
     lastKey = config.key;
     return clientInstance;
   } catch (e) {
-    console.error('[DeltaRent Supabase] Failed to initialize client:', e);
+    console.error('[Setlla Supabase] Failed to initialize client:', e);
     return null;
   }
 }

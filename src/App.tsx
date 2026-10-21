@@ -121,8 +121,8 @@ function resolveInitialNavState(isUserAgent: boolean): InitialNavState {
   }
 
   const hash = window.location.hash.toLowerCase();
-  const savedRole = localStorage.getItem('deltarent_active_role') as UserRole | null;
-  const savedView = localStorage.getItem('deltarent_active_view') as ('dashboard' | 'feed') | null;
+  const savedRole = (localStorage.getItem('setlla_active_role') || localStorage.getItem('deltarent_active_role')) as UserRole | null;
+  const savedView = (localStorage.getItem('setlla_active_view') || localStorage.getItem('deltarent_active_view')) as ('dashboard' | 'feed') | null;
 
   // 1. Explicit Hash Routing (e.g. #/agent, #/dashboard, #/explore, #/inspections)
   if (hash.includes('agent')) {
@@ -157,7 +157,7 @@ function resolveInitialNavState(isUserAgent: boolean): InitialNavState {
 
 export function App() {
   const [listings, setListings] = useState<PropertyListing[]>(() => {
-    const saved = localStorage.getItem('deltarent_listings');
+    const saved = localStorage.getItem('setlla_listings') || localStorage.getItem('deltarent_listings');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -207,7 +207,7 @@ export function App() {
 
   const [bookings, setBookings] = useState<BookingRecord[]>(() => {
     const isLocal = isLocalUrl();
-    const saved = localStorage.getItem('deltarent_bookings');
+    const saved = localStorage.getItem('setlla_bookings') || localStorage.getItem('deltarent_bookings');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -228,7 +228,7 @@ export function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('deltarent_listings', JSON.stringify(listings));
+      localStorage.setItem('setlla_listings', JSON.stringify(listings));
     } catch (e) {
       // ignore
     }
@@ -236,7 +236,7 @@ export function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('deltarent_bookings', JSON.stringify(bookings));
+      localStorage.setItem('setlla_bookings', JSON.stringify(bookings));
     } catch (e) {
       // ignore
     }
@@ -245,14 +245,16 @@ export function App() {
   // User Authentication State (Persisted in localStorage)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const isLocal = isLocalUrl();
-    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
+    const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     if (!isLocal && isAuth) {
-      const saved = localStorage.getItem('deltarent_user');
+      const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012') {
+            localStorage.removeItem('setlla_auth');
             localStorage.removeItem('deltarent_auth');
+            localStorage.removeItem('setlla_user');
             localStorage.removeItem('deltarent_user');
             return false;
           }
@@ -264,8 +266,8 @@ export function App() {
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
     const isLocal = isLocalUrl();
-    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
-    const saved = localStorage.getItem('deltarent_user');
+    const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
+    const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
     if (isAuth && saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -293,9 +295,9 @@ export function App() {
   // Ensures refreshing keeps users on their current page (Explore, Agent Portal, Dashboard, Passes)
   const initialNav = useMemo(() => {
     let isAgent = false;
-    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
+    const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     if (isAuth) {
-      const savedUser = localStorage.getItem('deltarent_user');
+      const savedUser = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
       if (savedUser) {
         try { isAgent = Boolean(JSON.parse(savedUser).isAgent); } catch (_) {}
       }
@@ -310,8 +312,8 @@ export function App() {
   // 1. Keep active view & role in sync with localStorage and URL Hash on every navigation
   useEffect(() => {
     try {
-      localStorage.setItem('deltarent_active_role', currentRole);
-      localStorage.setItem('deltarent_active_view', userView);
+      localStorage.setItem('setlla_active_role', currentRole);
+      localStorage.setItem('setlla_active_view', userView);
     } catch (_) {}
 
     const targetHash = currentRole === 'agent' ? '#/agent' : userView === 'dashboard' ? '#/dashboard' : '#/explore';
@@ -356,7 +358,7 @@ export function App() {
         setBookings(fetchedBookings);
       }
     } catch (err) {
-      console.warn('[DeltaRent Sync] Real-time background refresh notice:', err);
+      console.warn('[Setlla Sync] Real-time background refresh notice:', err);
     }
   }, []);
 
@@ -396,9 +398,9 @@ export function App() {
   }, [syncLatestData]);
 
   const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(() => {
-    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
+    const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     if (!isAuth) return [];
-    const saved = localStorage.getItem('deltarent_user');
+    const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -420,8 +422,8 @@ export function App() {
 
   // For first-time visitors, open signup modal on arrival if they haven't skipped yet
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(() => {
-    const isAuth = localStorage.getItem('deltarent_auth') === 'true';
-    const hasSkipped = sessionStorage.getItem('deltarent_guest_skipped') === 'true';
+    const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
+    const hasSkipped = (sessionStorage.getItem('setlla_guest_skipped') || sessionStorage.getItem('deltarent_guest_skipped')) === 'true';
     return !isAuth && !hasSkipped;
   });
 
@@ -558,7 +560,7 @@ export function App() {
     const client = getSupabaseClient();
     if (isSupabaseConfigured() && client) {
       const channel = client
-        .channel('deltarent_realtime_db_sync')
+        .channel('setlla_realtime_db_sync')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'listings' },
@@ -876,7 +878,7 @@ export function App() {
   // Sponsored adverts state - Only seed demo ads on local development
   const [adverts, setAdverts] = useState<AdvertStory[]>(() => {
     const isLocal = isLocalUrl();
-    const saved = localStorage.getItem('deltarent_adverts');
+    const saved = localStorage.getItem('setlla_adverts') || localStorage.getItem('deltarent_adverts');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -895,7 +897,7 @@ export function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('deltarent_adverts', JSON.stringify(adverts));
+      localStorage.setItem('setlla_adverts', JSON.stringify(adverts));
     } catch (e) {}
   }, [adverts]);
 
@@ -926,7 +928,7 @@ export function App() {
     // 3. Direct WhatsApp chat
     if (ad.whatsappNumber) {
       const message = encodeURIComponent(
-        `Hello, I saw your verified advert "${ad.headline}" on DeltaRent. I would like to make an inquiry.`
+        `Hello, I saw your verified advert "${ad.headline}" on Setlla. I would like to make an inquiry.`
       );
       window.open(`https://wa.me/${ad.whatsappNumber}?text=${message}`, '_blank');
       return;
@@ -1277,7 +1279,7 @@ export function App() {
   };
 
   const handleSkipSignup = () => {
-    sessionStorage.setItem('deltarent_guest_skipped', 'true');
+    sessionStorage.setItem('setlla_guest_skipped', 'true');
     setIsSignupOpen(false);
     setSignupNotice(null);
     setPendingBookingListing(null);
@@ -1286,9 +1288,13 @@ export function App() {
 
   const handleSignOut = () => {
     setIsAuthenticated(false);
+    localStorage.removeItem('setlla_auth');
     localStorage.removeItem('deltarent_auth');
+    localStorage.removeItem('setlla_user');
     localStorage.removeItem('deltarent_user');
+    localStorage.removeItem('setlla_active_role');
     localStorage.removeItem('deltarent_active_role');
+    localStorage.removeItem('setlla_active_view');
     localStorage.removeItem('deltarent_active_view');
     clearMyDeviceBookingIds();
     setMyDeviceBookingIds(new Set());
@@ -1306,7 +1312,7 @@ export function App() {
     };
     saveRegisteredUser(updated);
     setCurrentUser(updated);
-    localStorage.setItem('deltarent_user', JSON.stringify(updated));
+    localStorage.setItem('setlla_user', JSON.stringify(updated));
   };
 
   // Handler: Update current user from signup/login modal
@@ -1314,8 +1320,8 @@ export function App() {
     saveRegisteredUser(updatedUser);
     setCurrentUser(updatedUser);
     setIsAuthenticated(true);
-    localStorage.setItem('deltarent_auth', 'true');
-    localStorage.setItem('deltarent_user', JSON.stringify(updatedUser));
+    localStorage.setItem('setlla_auth', 'true');
+    localStorage.setItem('setlla_user', JSON.stringify(updatedUser));
     setSignupNotice(null);
 
     if (updatedUser.savedListingIds) {

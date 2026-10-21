@@ -1,7 +1,13 @@
 import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 import { BookingRecord, BookingStatus } from '../types/marketplace';
 
-const LOCAL_STORAGE_KEY = 'deltarent_bookings';
+const LOCAL_STORAGE_KEY = 'setlla_bookings';
+const LEGACY_STORAGE_KEY = 'deltarent_bookings';
+
+function getLocalSavedBookings(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(LOCAL_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+}
 
 /**
  * Fetches inspection bookings from Supabase (or local storage fallback)
@@ -41,12 +47,12 @@ export async function fetchAllBookings(): Promise<BookingRecord[]> {
         return cloudBookings;
       }
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Failed fetching bookings from cloud:', err);
+      console.warn('[Setlla Supabase] Failed fetching bookings from cloud:', err);
     }
   }
 
   // Fallback: Local storage
-  const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+  const saved = getLocalSavedBookings();
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
@@ -83,12 +89,12 @@ export async function saveNewBooking(booking: BookingRecord): Promise<void> {
 
       await client.from('bookings').upsert([row]);
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Failed saving booking to cloud:', err);
+      console.warn('[Setlla Supabase] Failed saving booking to cloud:', err);
     }
   }
 
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = getLocalSavedBookings();
     const existing: BookingRecord[] = saved ? JSON.parse(saved) : [];
     const updated = [booking, ...existing.filter((b) => b.id !== booking.id)];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
@@ -109,12 +115,12 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
         .update({ status, confirmed_at: confirmedAt })
         .eq('id', bookingId);
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Failed updating booking status:', err);
+      console.warn('[Setlla Supabase] Failed updating booking status:', err);
     }
   }
 
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = getLocalSavedBookings();
     if (saved) {
       const existing: BookingRecord[] = JSON.parse(saved);
       const updated = existing.map((b) =>

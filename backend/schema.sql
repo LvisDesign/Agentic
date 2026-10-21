@@ -1,5 +1,5 @@
 -- ==============================================================================
--- DELTARENT BACKEND DATABASE SCHEMA (SUPABASE POSTGRESQL)
+-- SETLLA BACKEND DATABASE SCHEMA (SUPABASE POSTGRESQL) - setlla.com
 -- ==============================================================================
 -- Run this script in the Supabase SQL Editor (https://supabase.com/dashboard)
 -- It creates the database tables, security policies (RLS), and enables Realtime.

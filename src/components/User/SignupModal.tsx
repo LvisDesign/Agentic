@@ -383,6 +383,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     // Demo fallback (Local development only)
     const isSystemAdmin =
       query.toLowerCase().includes('admin') ||
+      query === 'admin@setlla.com' ||
       query === 'admin@deltarent.ng';
 
     const isAgentLogin =
@@ -397,11 +398,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       ? {
           id: isSystemAdmin ? 'DT-ADMIN-001' : 'DT-AGT-9012',
           fullName: isSystemAdmin ? 'Platform Administrator' : 'Victor Ossai',
-          agencyName: isSystemAdmin ? 'DeltaRent Administration' : 'Apex Real Estate Ltd',
+          agencyName: isSystemAdmin ? 'Setlla Administration' : 'Apex Real Estate Ltd',
           agentType: 'agency',
           phone: query.includes('@') ? '0803 555 1234' : query,
           whatsapp: '0803 555 1234',
-          email: query.includes('@') ? query : (isSystemAdmin ? 'admin@deltarent.ng' : 'victor@apexrealty.ng'),
+          email: query.includes('@') ? query : (isSystemAdmin ? 'admin@setlla.com' : 'victor@apexrealty.ng'),
           operatingState: 'Delta State',
           operatingCity: 'Asaba',
           state: 'Delta State',
@@ -496,7 +497,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             </h3>
             <p className="font-body text-xs sm:text-sm text-[#70798C] leading-relaxed max-w-sm mx-auto">
               {installStatus === 'installed'
-                ? 'Your registration is complete. Redirecting to your DeltaRent property feed...'
+                ? 'Your registration is complete. Redirecting to your Setlla property feed...'
                 : 'Get fast mobile access, instant Agent notifications, and inspection booking updates without downloading any APK.'}
             </p>
           </div>

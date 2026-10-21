@@ -127,10 +127,10 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
               <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <span className="font-bold text-[#000004] text-xs">
-                  Why Register as a DeltaRent Partner Agent?
+                  Why Register as a Setlla Partner Agent?
                 </span>
                 <p className="text-[11px] text-[#70798C] leading-relaxed">
-                  Tenants on DeltaRent have access to apartments uploaded exclusively by registered agents. As an agent, you can post apartments, set inspection time-slots, and receive direct tenant bookings.
+                  Tenants on Setlla have access to apartments uploaded exclusively by registered agents. As an agent, you can post apartments, set inspection time-slots, and receive direct tenant bookings.
                 </p>
               </div>
             </div>

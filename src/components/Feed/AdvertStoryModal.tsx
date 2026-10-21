@@ -85,7 +85,7 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
       onClose();
     } else if (activeAd.whatsappNumber) {
       const message = encodeURIComponent(
-        `Hello, I saw your verified advert "${activeAd.headline}" on DeltaRent. I would like to make an inquiry.`
+        `Hello, I saw your verified advert "${activeAd.headline}" on Setlla. I would like to make an inquiry.`
       );
       window.open(`https://wa.me/${activeAd.whatsappNumber}?text=${message}`, '_blank');
     }

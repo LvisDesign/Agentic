@@ -1,7 +1,7 @@
-// Service Worker for DeltaRent Progressive Web App
+// Service Worker for Setlla Progressive Web App (setlla.com)
 // Handles static caching, offline fallback, web push notifications, and app badging API
 
-const CACHE_NAME = 'deltarent-pwa-v5';
+const CACHE_NAME = 'setlla-pwa-v1';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -179,7 +179,7 @@ self.addEventListener('push', (event) => {
       { action: 'open_pass', title: 'View Pass' },
       { action: 'dismiss', title: 'Close' },
     ],
-    tag: data.tag || 'deltarent-inspection-alert',
+    tag: data.tag || 'setlla-inspection-alert',
     renotify: true,
   };
 

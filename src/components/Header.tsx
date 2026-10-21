@@ -59,7 +59,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const handleHeaderInstall = async () => {
     if (isIOS) {
-      alert("To install DeltaRent on iOS:\n1. Tap the Safari Share button (⎋)\n2. Tap 'Add to Home Screen' (➕)");
+      alert("To install Setlla on iOS:\n1. Tap the Safari Share button (⎋)\n2. Tap 'Add to Home Screen' (➕)");
       return;
     }
     await installApp();
@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-display font-bold text-base sm:text-lg text-[#000004] tracking-tight">
-                DeltaRent
+                Setlla
               </span>
               <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#342A21]/10 text-[#342A21] hidden xs:inline-block">
                 Delta State
@@ -280,7 +280,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={handleHeaderInstall}
               className="hidden lg:flex relative md:px-3 md:h-11 rounded-[18px] items-center justify-center gap-1.5 bg-[#342A21]/5 hover:bg-[#342A21]/10 text-[#342A21] border border-[#342A21]/20 transition-all duration-200 active:scale-95 group cursor-pointer shadow-2xs shrink-0"
               aria-label="Install App"
-              title="Install DeltaRent App (PWA)"
+              title="Install Setlla App (PWA)"
             >
               <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#342A21] shrink-0" />
               <span className="hidden md:inline font-bold text-xs whitespace-nowrap text-[#342A21]">

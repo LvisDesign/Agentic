@@ -1,12 +1,12 @@
 {
-  "name": "Platform Name [Temporary]",
-  "short_name": "Platform",
+  "name": "Setlla - Transparent Property Rentals",
+  "short_name": "Setlla",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FCF9F5",
   "theme_color": "#275DAD",
-  "description": "Direct accommodation and vacancy marketplace in Nigeria.",
+  "description": "Direct accommodation and vacancy marketplace in Nigeria at setlla.com.",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",

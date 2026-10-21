@@ -226,7 +226,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
     e.stopPropagation();
     const shareData = {
       title: ad.headline,
-      text: `${ad.headline} - Sponsored on DeltaRent`,
+      text: `${ad.headline} - Sponsored on Setlla`,
       url: window.location.href,
     };
 
@@ -237,7 +237,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
         // User dismissed share dialog
       }
     } else {
-      await navigator.clipboard.writeText(`${ad.headline} — Check it on DeltaRent: ${window.location.href}`);
+      await navigator.clipboard.writeText(`${ad.headline} — Check it on Setlla: ${window.location.href}`);
       showToast('Link copied to clipboard!');
     }
   };
@@ -265,7 +265,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
     // 3. Direct WhatsApp chat
     if (ad.whatsappNumber) {
       const text = encodeURIComponent(
-        `Hello ${ad.advertiserName}, I saw your sponsored advert "${ad.headline}" on DeltaRent.`
+        `Hello ${ad.advertiserName}, I saw your sponsored advert "${ad.headline}" on Setlla.`
       );
       window.open(`https://wa.me/${ad.whatsappNumber}?text=${text}`, '_blank');
       return;
@@ -508,7 +508,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                           onClick={(e) => {
                             e.stopPropagation();
                             const text = encodeURIComponent(
-                              `Hello ${ad.advertiserName}, I saw your sponsored advert "${ad.headline}" on DeltaRent.`
+                              `Hello ${ad.advertiserName}, I saw your sponsored advert "${ad.headline}" on Setlla.`
                             );
                             window.open(`https://wa.me/${ad.whatsappNumber}?text=${text}`, '_blank');
                           }}

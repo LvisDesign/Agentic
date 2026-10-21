@@ -113,7 +113,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
                 <Lock className="w-3 h-3 text-[#00C3F7]" />
               </div>
               <div className="text-[11px] text-white/50 truncate max-w-[200px]">
-                {merchantName || (agentName ? `DeltaRent • ${agentName}` : 'DeltaRent Ad Sponsorship')}
+                {merchantName || (agentName ? `Setlla • ${agentName}` : 'Setlla Ad Sponsorship')}
               </div>
             </div>
           </div>
@@ -128,7 +128,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
 
         {/* User Context Strip */}
         <div className="bg-[#FCF9F5] px-4 py-2 border-b border-[#E5E7EB] flex items-center justify-between text-xs text-[#70798C]">
-          <span className="truncate max-w-[200px]">{applicantEmail || 'partner@deltarent.ng'}</span>
+          <span className="truncate max-w-[200px]">{applicantEmail || 'partner@setlla.com'}</span>
           <span className="font-medium text-[#342A21]">{purposeTitle || 'Advert Placement Sponsorship'}</span>
         </div>
 
@@ -260,7 +260,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#70798C]">Beneficiary:</span>
-                  <span className="font-semibold text-[#000004]">DeltaRent Escrow Ltd</span>
+                  <span className="font-semibold text-[#000004]">Setlla Escrow Ltd</span>
                 </div>
               </div>
 

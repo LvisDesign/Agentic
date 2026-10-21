@@ -1,5 +1,5 @@
 /**
- * DeltaRent Real-Time Notification & Audio Alert Engine
+ * Setlla Real-Time Notification & Audio Alert Engine
  * Provides instant device notifications, audio chimes, and haptic feedback
  * across desktop and mobile devices without requiring third-party audio assets.
  */

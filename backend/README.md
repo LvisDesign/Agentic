@@ -1,12 +1,12 @@
-# DeltaRent Backend (Supabase)
+# Setlla Backend (Supabase) - setlla.com
 
-This directory contains the database schemas, seed data, and configuration for the **DeltaRent Realtime Backend**.
+This directory contains the database schemas, seed data, and configuration for the **Setlla Realtime Backend**.
 
 ---
 
 ## Architecture Overview
 
-DeltaRent uses **Supabase** (PostgreSQL + Realtime WebSockets + Row Level Security) as its cloud backend. 
+Setlla uses **Supabase** (PostgreSQL + Realtime WebSockets + Row Level Security) as its cloud backend. 
 
 - **Database:** PostgreSQL hosting property listings, inspection booking queues, and proof-of-life status.
 - **Realtime Sync:** Subscribes to table change events so when an agent lists a property on their computer, it immediately appears on a tenant's mobile phone without refreshing.

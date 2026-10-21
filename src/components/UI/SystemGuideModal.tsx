@@ -34,7 +34,7 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
             </div>
             <div>
               <h3 className="font-display text-lg font-bold text-[#000004]">
-                DeltaRent Architecture Guide
+                Setlla Architecture Guide
               </h3>
               <p className="text-xs text-[#70798C]">
                 How the Nigerian Property & Inspection Engine Works

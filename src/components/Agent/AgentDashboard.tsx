@@ -72,6 +72,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   const isDemoAdmin = Boolean(
     currentUser?.isAdmin ||
     currentUser?.isDemoAdmin ||
+    currentUser?.email === 'admin@setlla.com' ||
     currentUser?.email === 'admin@deltarent.ng' ||
     (currentUser?.id === 'DT-AGT-9012' && currentUser?.fullName === 'Victor Ossai')
   );
@@ -778,7 +779,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               </h3>
               <p className="text-xs text-[#70798C] leading-relaxed">
                 Are you sure you want to permanently delete <strong>"{listingToDelete.title}"</strong>? 
-                This will remove it from DeltaRent across all devices and cancel any pending inspections.
+                This will remove it from Setlla across all devices and cancel any pending inspections.
               </p>
             </div>
             <div className="flex items-center gap-3 pt-2">

@@ -50,7 +50,8 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
   },
 ];
 
-const STORAGE_KEY = 'deltarent_registered_users';
+const STORAGE_KEY = 'setlla_registered_users';
+const LEGACY_STORAGE_KEY = 'deltarent_registered_users';
 
 /**
  * Normalizes Nigerian mobile phone numbers for robust, format-agnostic comparison.
@@ -111,7 +112,7 @@ export function getRegisteredUsers(): UserProfile[] {
 
   // 2. Load from localStorage registered users registry
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
     if (raw) {
       const parsed: UserProfile[] = JSON.parse(raw);
       if (Array.isArray(parsed)) {
@@ -130,9 +131,9 @@ export function getRegisteredUsers(): UserProfile[] {
     console.warn('[UserRegistry] Failed to parse registered users:', err);
   }
 
-  // 3. Include currently active user from deltarent_user if present
+  // 3. Include currently active user from setlla_user / deltarent_user if present
   try {
-    const rawCurrent = localStorage.getItem('deltarent_user');
+    const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
     if (rawCurrent) {
       const current: UserProfile = JSON.parse(rawCurrent);
       if (current && current.id) {
@@ -276,7 +277,8 @@ export function findUserByCredential(query: string): UserProfile | null {
   return null;
 }
 
-const MY_BOOKINGS_STORAGE_KEY = 'deltarent_my_booking_ids';
+const MY_BOOKINGS_STORAGE_KEY = 'setlla_my_booking_ids';
+const LEGACY_MY_BOOKINGS_STORAGE_KEY = 'deltarent_my_booking_ids';
 
 /**
  * Returns a Set of booking IDs explicitly created on this browser / device.
@@ -284,7 +286,7 @@ const MY_BOOKINGS_STORAGE_KEY = 'deltarent_my_booking_ids';
 export function getMyDeviceBookingIds(): Set<string> {
   if (typeof window === 'undefined') return new Set();
   try {
-    const raw = localStorage.getItem(MY_BOOKINGS_STORAGE_KEY);
+    const raw = localStorage.getItem(MY_BOOKINGS_STORAGE_KEY) || localStorage.getItem(LEGACY_MY_BOOKINGS_STORAGE_KEY);
     if (raw) {
       const arr = JSON.parse(raw);
       if (Array.isArray(arr)) return new Set(arr);
@@ -312,10 +314,12 @@ export function clearMyDeviceBookingIds(): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(MY_BOOKINGS_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_MY_BOOKINGS_STORAGE_KEY);
   } catch (_) {}
 }
 
-const NOTIFIED_BOOKINGS_STORAGE_KEY = 'deltarent_notified_confirmed_bookings';
+const NOTIFIED_BOOKINGS_STORAGE_KEY = 'setlla_notified_confirmed_bookings';
+const LEGACY_NOTIFIED_BOOKINGS_STORAGE_KEY = 'deltarent_notified_confirmed_bookings';
 
 /**
  * Returns a Set of confirmed booking IDs that have already triggered a notification to the tenant.
@@ -323,7 +327,7 @@ const NOTIFIED_BOOKINGS_STORAGE_KEY = 'deltarent_notified_confirmed_bookings';
 export function getNotifiedBookingIds(): Set<string> {
   if (typeof window === 'undefined') return new Set();
   try {
-    const raw = localStorage.getItem(NOTIFIED_BOOKINGS_STORAGE_KEY);
+    const raw = localStorage.getItem(NOTIFIED_BOOKINGS_STORAGE_KEY) || localStorage.getItem(LEGACY_NOTIFIED_BOOKINGS_STORAGE_KEY);
     if (raw) {
       const arr = JSON.parse(raw);
       if (Array.isArray(arr)) return new Set(arr);
@@ -344,7 +348,8 @@ export function recordNotifiedBookingId(id: string): void {
   } catch (_) {}
 }
 
-const NOTIFIED_DECLINED_STORAGE_KEY = 'deltarent_notified_declined_bookings';
+const NOTIFIED_DECLINED_STORAGE_KEY = 'setlla_notified_declined_bookings';
+const LEGACY_NOTIFIED_DECLINED_STORAGE_KEY = 'deltarent_notified_declined_bookings';
 
 /**
  * Returns a Set of declined booking IDs that have already triggered a notification to the tenant.
@@ -352,7 +357,7 @@ const NOTIFIED_DECLINED_STORAGE_KEY = 'deltarent_notified_declined_bookings';
 export function getNotifiedDeclinedBookingIds(): Set<string> {
   if (typeof window === 'undefined') return new Set();
   try {
-    const raw = localStorage.getItem(NOTIFIED_DECLINED_STORAGE_KEY);
+    const raw = localStorage.getItem(NOTIFIED_DECLINED_STORAGE_KEY) || localStorage.getItem(LEGACY_NOTIFIED_DECLINED_STORAGE_KEY);
     if (raw) {
       const arr = JSON.parse(raw);
       if (Array.isArray(arr)) return new Set(arr);
@@ -373,7 +378,8 @@ export function recordNotifiedDeclinedBookingId(id: string): void {
   } catch (_) {}
 }
 
-const NOTIFIED_AGENT_REQUESTS_STORAGE_KEY = 'deltarent_notified_agent_requests';
+const NOTIFIED_AGENT_REQUESTS_STORAGE_KEY = 'setlla_notified_agent_requests';
+const LEGACY_NOTIFIED_AGENT_REQUESTS_STORAGE_KEY = 'deltarent_notified_agent_requests';
 
 /**
  * Returns a Set of incoming booking request IDs that have already triggered an alert to the agent.
@@ -381,7 +387,7 @@ const NOTIFIED_AGENT_REQUESTS_STORAGE_KEY = 'deltarent_notified_agent_requests';
 export function getNotifiedAgentBookingIds(): Set<string> {
   if (typeof window === 'undefined') return new Set();
   try {
-    const raw = localStorage.getItem(NOTIFIED_AGENT_REQUESTS_STORAGE_KEY);
+    const raw = localStorage.getItem(NOTIFIED_AGENT_REQUESTS_STORAGE_KEY) || localStorage.getItem(LEGACY_NOTIFIED_AGENT_REQUESTS_STORAGE_KEY);
     if (raw) {
       const arr = JSON.parse(raw);
       if (Array.isArray(arr)) return new Set(arr);

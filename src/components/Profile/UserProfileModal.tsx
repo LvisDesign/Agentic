@@ -228,7 +228,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         body: 'Your apartment inspection pass for Asaba 2-Bedroom Flat is confirmed. Agent contact coordinates unlocked!',
         icon: '/icons/icon-192x192.png',
         badge: '/icons/icon-192x192.png',
-        tag: 'deltarent-test-alert',
+        tag: 'setlla-test-alert',
       });
       setTestAlertSent(true);
       setTimeout(() => setTestAlertSent(false), 3000);
@@ -256,7 +256,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 {isAgent ? 'Agent Profile' : 'Tenant Profile'}
               </h3>
               <p className="text-xs text-[#70798C]">
-                {isAgent ? 'Delta State Partner Agent Account' : 'DeltaRent Member Account'}
+                {isAgent ? 'Delta State Partner Agent Account' : 'Setlla Member Account'}
               </p>
             </div>
           </div>
@@ -400,7 +400,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-white/80 leading-relaxed">
-                Register as a DeltaRent Partner Agent. Upload unlimited apartments across Delta State, set strict 5-capacity inspection time slots, and dispatch directly to tenants.
+                Register as a Setlla Partner Agent. Upload unlimited apartments across Delta State, set strict 5-capacity inspection time slots, and dispatch directly to tenants.
               </p>
               <button
                 onClick={() => {
@@ -906,7 +906,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </div>
                   <div>
                     <div className="font-bold text-xs text-[#000004] flex items-center gap-1.5">
-                      <span>Install DeltaRent App</span>
+                      <span>Install Setlla App</span>
                       <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#342A21]/10 text-[#342A21]">
                         PWA
                       </span>

@@ -1,4 +1,4 @@
-# DeltaRent — Transparent Property Rental Marketplace & Instant Inspection Engine
+# Setlla (setlla.com) — Transparent Property Rental Marketplace & Instant Inspection Engine
 > Mobile-first, production-ready web application for residential property rentals in **Delta State, Nigeria** (Asaba, Warri, Abraka, Ughelli, Sapele, Agbor, Oleh, Effurun) with clean expansion patterns for other Nigerian states.
 
 ---

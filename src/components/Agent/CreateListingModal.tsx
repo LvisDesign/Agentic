@@ -343,7 +343,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       isFurnished: false,
       electricityStatus: undefined,
       waterSupply: undefined,
-      description: `Newly published verified listing in ${neighborhood}, ${city}. Inspected and approved under DeltaRent fair regional tenancy standards.`,
+      description: `Newly published verified listing in ${neighborhood}, ${city}. Inspected and approved under Setlla fair regional tenancy standards.`,
       media: uploadedMedia.map((item, i) => ({
         id: item.id,
         type: item.type,

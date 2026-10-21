@@ -475,9 +475,9 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
         isOpen={showPaystackModal}
         onClose={() => setShowPaystackModal(false)}
         amount={advertCost}
-        applicantEmail="partner@deltarent.ng"
+        applicantEmail="partner@setlla.com"
         applicantName={advertiserName}
-        merchantName="DeltaRent Advert Sponsorship"
+        merchantName="Setlla Advert Sponsorship"
         purposeTitle={`${selectedPlan === 'weekly' ? '7-Day' : '30-Day'} Feed Advert Placement`}
         onSuccess={handlePaymentSuccess}
       />

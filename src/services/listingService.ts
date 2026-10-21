@@ -3,8 +3,15 @@ import { PropertyListing, ListingAvailability } from '../types/marketplace';
 import { INITIAL_LISTINGS } from '../data/mockListings';
 import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO, getBlobFromIDB, uploadMediaToSupabaseStorage } from '../utils/mediaStorage';
 
-const LOCAL_STORAGE_KEY = 'deltarent_listings';
-const DELETED_IDS_KEY = 'deltarent_deleted_listing_ids';
+const LOCAL_STORAGE_KEY = 'setlla_listings';
+const LEGACY_STORAGE_KEY = 'deltarent_listings';
+const DELETED_IDS_KEY = 'setlla_deleted_listing_ids';
+const LEGACY_DELETED_IDS_KEY = 'deltarent_deleted_listing_ids';
+
+function getLocalSavedListings(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(LOCAL_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+}
 
 /**
  * Returns a Set of listing IDs that have been explicitly deleted on this device.
@@ -12,7 +19,9 @@ const DELETED_IDS_KEY = 'deltarent_deleted_listing_ids';
  */
 export function getDeletedListingIds(): Set<string> {
   try {
-    const raw = typeof window !== 'undefined' ? localStorage.getItem(DELETED_IDS_KEY) : null;
+    const raw = typeof window !== 'undefined' 
+      ? (localStorage.getItem(DELETED_IDS_KEY) || localStorage.getItem(LEGACY_DELETED_IDS_KEY))
+      : null;
     if (raw) {
       const arr = JSON.parse(raw);
       if (Array.isArray(arr)) return new Set(arr);
@@ -111,7 +120,7 @@ export async function forceSyncLocalListings(): Promise<ForceSyncResult> {
   }
 
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = getLocalSavedListings();
     if (!saved) {
       return { uploaded: 0, totalLocal: 0, error: 'No listings found in browser storage on this device.' };
     }
@@ -150,7 +159,7 @@ export async function syncLocalListingsToCloud(): Promise<void> {
   if (!isSupabaseConfigured() || !client) return;
 
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = getLocalSavedListings();
     if (!saved) return;
     const localListings: PropertyListing[] = JSON.parse(saved);
     if (!Array.isArray(localListings) || localListings.length === 0) return;
@@ -169,7 +178,7 @@ export async function syncLocalListingsToCloud(): Promise<void> {
     // Check which listings already exist in Supabase
     const { data: cloudData, error } = await client.from('listings').select('id');
     if (error) {
-      console.warn('[DeltaRent Supabase] Table check error (table may need creation):', error.message);
+      console.warn('[Setlla Supabase] Table check error (table may need creation):', error.message);
       return;
     }
 
@@ -177,13 +186,13 @@ export async function syncLocalListingsToCloud(): Promise<void> {
     const unuploaded = agentListings.filter((item) => !cloudIdSet.has(item.id));
 
     if (unuploaded.length > 0) {
-      console.log(`[DeltaRent Supabase] Syncing ${unuploaded.length} local listing(s) to cloud database...`);
+      console.log(`[Setlla Supabase] Syncing ${unuploaded.length} local listing(s) to cloud database...`);
       for (const item of unuploaded) {
         await saveNewListing(item);
       }
     }
   } catch (err) {
-    console.warn('[DeltaRent Supabase] Auto-sync error:', err);
+    console.warn('[Setlla Supabase] Auto-sync error:', err);
   }
 }
 
@@ -199,7 +208,7 @@ export async function syncLocalVideosToCloudStorage(listingsToCheck?: PropertyLi
   try {
     let listings = listingsToCheck;
     if (!listings) {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const saved = getLocalSavedListings();
       if (saved) {
         listings = JSON.parse(saved);
       }
@@ -219,7 +228,7 @@ export async function syncLocalVideosToCloudStorage(listingsToCheck?: PropertyLi
               if (blob) {
                 const cloudUrl = await uploadMediaToSupabaseStorage(blob, `walkthrough-${listing.id}.mp4`);
                 if (cloudUrl) {
-                  console.log(`[DeltaRent Media] Successfully uploaded agent video to cloud for listing ${listing.id}:`, cloudUrl);
+                  console.log(`[Setlla Media] Successfully uploaded agent video to cloud for listing ${listing.id}:`, cloudUrl);
                   listingMediaChanged = true;
                   return { ...m, url: cloudUrl };
                 }
@@ -236,7 +245,7 @@ export async function syncLocalVideosToCloudStorage(listingsToCheck?: PropertyLi
         await client.from('listings').update({ media: updatedMedia }).eq('id', listing.id);
         // Also update localStorage cache
         try {
-          const savedNow = localStorage.getItem(LOCAL_STORAGE_KEY);
+          const savedNow = getLocalSavedListings();
           if (savedNow) {
             const all: PropertyListing[] = JSON.parse(savedNow);
             const replaced = all.map((it) => (it.id === listing.id ? { ...it, media: updatedMedia } : it));
@@ -246,7 +255,7 @@ export async function syncLocalVideosToCloudStorage(listingsToCheck?: PropertyLi
       }
     }
   } catch (err) {
-    console.warn('[DeltaRent Media] Cloud video background sync notice:', err);
+    console.warn('[Setlla Media] Cloud video background sync notice:', err);
   }
 }
 
@@ -269,7 +278,7 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('[DeltaRent Supabase Error] Could not fetch listings from Supabase:', error.message);
+        console.error('[Setlla Supabase Error] Could not fetch listings from Supabase:', error.message);
       }
 
       if (!error && Array.isArray(data)) {
@@ -329,12 +338,12 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
         return realCloudListings;
       }
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Failed to fetch cloud listings:', err);
+      console.warn('[Setlla Supabase] Failed to fetch cloud listings:', err);
     }
   }
 
   // Fallback: Local storage (strictly real agent listings, no demo listings, no deleted listings)
-  const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+  const saved = getLocalSavedListings();
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
@@ -398,18 +407,18 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
 
       const { error } = await client.from('listings').upsert([row]);
       if (error) {
-        console.error('[DeltaRent Supabase] Error saving listing to database:', error);
+        console.error('[Setlla Supabase] Error saving listing to database:', error);
       } else {
-        console.log('[DeltaRent Supabase] Listing saved to cloud successfully:', sanitized.id);
+        console.log('[Setlla Supabase] Listing saved to cloud successfully:', sanitized.id);
       }
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Network exception saving listing:', err);
+      console.warn('[Setlla Supabase] Network exception saving listing:', err);
     }
   }
 
   // Also update local cache
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = getLocalSavedListings();
     const existing: PropertyListing[] = saved ? JSON.parse(saved) : [];
     const updated = [sanitized, ...existing.filter((item) => item.id !== sanitized.id)];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
@@ -428,12 +437,12 @@ export async function updateAvailability(listingId: string, status: ListingAvail
         .update({ availability_status: status })
         .eq('id', listingId);
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Failed updating availability:', err);
+      console.warn('[Setlla Supabase] Failed updating availability:', err);
     }
   }
 
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = getLocalSavedListings();
     if (saved) {
       const existing: PropertyListing[] = JSON.parse(saved);
       const updated = existing.map((item) =>
@@ -458,12 +467,12 @@ export async function confirmFreshness(listingId: string): Promise<void> {
         .update({ last_confirmed_at: now, availability_status: 'Available' })
         .eq('id', listingId);
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Failed confirming freshness:', err);
+      console.warn('[Setlla Supabase] Failed confirming freshness:', err);
     }
   }
 
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = getLocalSavedListings();
     if (saved) {
       const existing: PropertyListing[] = JSON.parse(saved);
       const updated = existing.map((item) =>
@@ -533,15 +542,15 @@ export async function updateListing(listing: PropertyListing): Promise<void> {
           },
         ]);
       }
-      console.log('[DeltaRent Supabase] Listing updated in cloud database:', sanitized.id);
+      console.log('[Setlla Supabase] Listing updated in cloud database:', sanitized.id);
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Exception updating listing:', err);
+      console.warn('[Setlla Supabase] Exception updating listing:', err);
     }
   }
 
   // 2. Update local storage cache
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = getLocalSavedListings();
     const existing: PropertyListing[] = saved ? JSON.parse(saved) : [];
     const index = existing.findIndex((item) => item.id === sanitized.id);
     let updated: PropertyListing[];
@@ -567,7 +576,7 @@ export async function deleteListing(listingId: string): Promise<boolean> {
 
   // 2. Remove from local storage cache immediately
   try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const saved = getLocalSavedListings();
     if (saved) {
       const existing: PropertyListing[] = JSON.parse(saved);
       const updated = existing.filter((item) => item.id !== listingId);
@@ -582,21 +591,21 @@ export async function deleteListing(listingId: string): Promise<boolean> {
         .from('listings')
         .update({ availability_status: 'Deleted' })
         .eq('id', listingId);
-      console.log('[DeltaRent Supabase] Listing marked as Deleted in cloud database:', listingId);
+      console.log('[Setlla Supabase] Listing marked as Deleted in cloud database:', listingId);
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Soft delete notice:', err);
+      console.warn('[Setlla Supabase] Soft delete notice:', err);
     }
 
     // 4. Also attempt hard DELETE from Supabase database
     try {
       const { error } = await client.from('listings').delete().eq('id', listingId);
       if (error) {
-        console.warn('[DeltaRent Supabase] Hard delete notice:', error.message);
+        console.warn('[Setlla Supabase] Hard delete notice:', error.message);
       } else {
-        console.log('[DeltaRent Supabase] Hard delete executed:', listingId);
+        console.log('[Setlla Supabase] Hard delete executed:', listingId);
       }
     } catch (err) {
-      console.warn('[DeltaRent Supabase] Exception deleting listing:', err);
+      console.warn('[Setlla Supabase] Exception deleting listing:', err);
       success = false;
     }
   }

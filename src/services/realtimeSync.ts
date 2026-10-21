@@ -22,9 +22,9 @@ export interface RealtimeEventPayload {
 
 // Generate an ephemeral device/session ID to prevent echoing back notifications to the sender device
 const LOCAL_DEVICE_ID = typeof window !== 'undefined'
-  ? (window.sessionStorage.getItem('deltarent_device_id') || (() => {
+  ? (window.sessionStorage.getItem('setlla_device_id') || window.sessionStorage.getItem('deltarent_device_id') || (() => {
       const id = 'dev_' + Math.random().toString(36).substring(2, 9);
-      try { window.sessionStorage.setItem('deltarent_device_id', id); } catch (_) {}
+      try { window.sessionStorage.setItem('setlla_device_id', id); } catch (_) {}
       return id;
     })())
   : 'dev_server';
@@ -33,7 +33,7 @@ const LOCAL_DEVICE_ID = typeof window !== 'undefined'
 let localBroadcastChannel: BroadcastChannel | null = null;
 if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
   try {
-    localBroadcastChannel = new BroadcastChannel('deltarent_live_channel');
+    localBroadcastChannel = new BroadcastChannel('setlla_live_channel');
   } catch (e) {
     // broadcast channel unsupported
   }
@@ -70,14 +70,14 @@ export async function broadcastRealtimeEvent(
   const client = getSupabaseClient();
   if (isSupabaseConfigured() && client) {
     try {
-      const channel = client.channel('deltarent_realtime_events');
+      const channel = client.channel('setlla_realtime_events');
       await channel.send({
         type: 'broadcast',
         event: 'app_update',
         payload,
       });
     } catch (err) {
-      console.warn('[DeltaRent Realtime] Broadcast send notice:', err);
+      console.warn('[Setlla Realtime] Broadcast send notice:', err);
     }
   }
 }
@@ -105,7 +105,7 @@ export function subscribeToRealtimeEvents(
   const client = getSupabaseClient();
   if (isSupabaseConfigured() && client) {
     try {
-      const channel = client.channel('deltarent_realtime_events');
+      const channel = client.channel('setlla_realtime_events');
       channel
         .on('broadcast', { event: 'app_update' }, ({ payload }) => {
           if (payload && payload.senderDeviceId !== LOCAL_DEVICE_ID) {
@@ -118,7 +118,7 @@ export function subscribeToRealtimeEvents(
         client.removeChannel(channel);
       });
     } catch (err) {
-      console.warn('[DeltaRent Realtime] Subscription notice:', err);
+      console.warn('[Setlla Realtime] Subscription notice:', err);
     }
   }
 

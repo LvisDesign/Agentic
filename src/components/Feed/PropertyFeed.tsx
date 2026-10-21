@@ -97,7 +97,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
             No Properties Listed Yet
           </h3>
           <p className="text-xs text-[#70798C] mt-1.5 max-w-sm leading-relaxed">
-            DeltaRent is live! Be the first verified agent or landlord to publish rentals and connect with tenants across Delta State.
+            Setlla is live! Be the first verified agent or landlord to publish rentals and connect with tenants across Delta State.
           </p>
           {onOpenBecomeAgent && (
             <button

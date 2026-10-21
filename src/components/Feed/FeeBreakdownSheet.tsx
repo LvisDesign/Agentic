@@ -177,7 +177,7 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
           <div className="p-3 rounded-[12px] bg-slate-50 border border-slate-200/80 flex items-start gap-2.5">
             <Info className="w-4 h-4 text-[#70798C] shrink-0 mt-0.5" />
             <p className="text-[11px] text-[#70798C] leading-relaxed">
-              DeltaRent policy forbids impromptu charges (such as unauthorized gate levies or unexpected agreement top-ups). All statutory items are locked to this schedule.
+              Setlla policy forbids impromptu charges (such as unauthorized gate levies or unexpected agreement top-ups). All statutory items are locked to this schedule.
             </p>
           </div>
         </div>

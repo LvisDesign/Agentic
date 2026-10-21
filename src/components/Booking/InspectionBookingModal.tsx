@@ -55,8 +55,8 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
       };
     }
     try {
-      const isAuth = localStorage.getItem('deltarent_auth') === 'true';
-      const saved = localStorage.getItem('deltarent_user');
+      const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
+      const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
       if (isAuth && saved) {
         const u = JSON.parse(saved);
         return {

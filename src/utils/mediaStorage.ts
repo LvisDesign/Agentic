@@ -1,7 +1,7 @@
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 
 /**
- * DeltaRent Persistent Media Storage Utility
+ * Setlla Persistent Media Storage Utility
  * Uses Supabase Cloud Storage for high-speed cross-device video/photo CDN hosting,
  * with IndexedDB client backup and client-side canvas compression for crisp, lightweight image Data URLs.
  * 
@@ -9,7 +9,8 @@ import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
  * and broken media playback across page refreshes and different devices (mobile vs desktop).
  */
 
-const DB_NAME = 'DeltaRentMediaDB';
+const DB_NAME = 'SetllaMediaDB';
+const LEGACY_DB_NAME = 'DeltaRentMediaDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'media_blobs';
 
@@ -30,13 +31,13 @@ export const DEFAULT_WALKTHROUGH_VIDEO = '/videos/property-walkthrough.mp4';
 export const EXTERNAL_WALKTHROUGH_BACKUP = 'https://assets.codepen.io/6093409/river.mp4';
 
 // Open or initialize the IndexedDB instance
-function openDB(): Promise<IDBDatabase> {
+function openDB(dbName = DB_NAME): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (typeof window === 'undefined' || !window.indexedDB) {
       return reject(new Error('IndexedDB not supported in this environment'));
     }
 
-    const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+    const request = window.indexedDB.open(dbName, DB_VERSION);
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -55,7 +56,7 @@ function openDB(): Promise<IDBDatabase> {
  */
 export async function storeBlobInIDB(id: string, blob: Blob, meta?: { type: 'image' | 'video'; name?: string }): Promise<void> {
   try {
-    const db = await openDB();
+    const db = await openDB(DB_NAME);
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
@@ -70,7 +71,7 @@ export async function storeBlobInIDB(id: string, blob: Blob, meta?: { type: 'ima
       tx.onerror = () => reject(tx.error);
     });
   } catch (err) {
-    console.warn('[DeltaRent Media] Could not store blob in IndexedDB:', err);
+    console.warn('[Setlla Media] Could not store blob in IndexedDB:', err);
   }
 }
 
@@ -78,23 +79,33 @@ export async function storeBlobInIDB(id: string, blob: Blob, meta?: { type: 'ima
  * Retrieves a binary Blob from IndexedDB by key
  */
 export async function getBlobFromIDB(id: string): Promise<Blob | null> {
+  const queryDB = async (dbName: string): Promise<Blob | null> => {
+    try {
+      const db = await openDB(dbName);
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(id);
+        req.onsuccess = () => {
+          if (req.result && req.result.blob) {
+            resolve(req.result.blob);
+          } else {
+            resolve(null);
+          }
+        };
+        req.onerror = () => reject(req.error);
+      });
+    } catch {
+      return null;
+    }
+  };
+
   try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      const store = tx.objectStore(STORE_NAME);
-      const req = store.get(id);
-      req.onsuccess = () => {
-        if (req.result && req.result.blob) {
-          resolve(req.result.blob);
-        } else {
-          resolve(null);
-        }
-      };
-      req.onerror = () => reject(req.error);
-    });
+    const blob = await queryDB(DB_NAME);
+    if (blob) return blob;
+    return await queryDB(LEGACY_DB_NAME);
   } catch (err) {
-    console.warn('[DeltaRent Media] Could not read blob from IndexedDB:', err);
+    console.warn('[Setlla Media] Could not read blob from IndexedDB:', err);
     return null;
   }
 }
@@ -261,19 +272,19 @@ export async function uploadMediaToSupabaseStorage(file: File | Blob, defaultNam
     });
 
     if (error) {
-      console.warn('[DeltaRent Supabase Storage] Upload notice:', error.message);
+      console.warn('[Setlla Supabase Storage] Upload notice:', error.message);
       return null;
     }
 
     if (data?.path) {
       const { data: pubData } = client.storage.from('property-media').getPublicUrl(data.path);
       if (pubData && pubData.publicUrl) {
-        console.log('[DeltaRent Supabase Storage] Successfully uploaded to cloud CDN:', pubData.publicUrl);
+        console.log('[Setlla Supabase Storage] Successfully uploaded to cloud CDN:', pubData.publicUrl);
         return pubData.publicUrl;
       }
     }
   } catch (err) {
-    console.warn('[DeltaRent Supabase Storage] Upload exception:', err);
+    console.warn('[Setlla Supabase Storage] Upload exception:', err);
   }
   return null;
 }

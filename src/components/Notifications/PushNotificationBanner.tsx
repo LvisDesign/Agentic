@@ -54,7 +54,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
   const notifType = notification.type || 'inspection_confirmed';
 
   // Determine badge styling and default action copy
-  let badgeLabel = 'DeltaRent Real-Time Alert';
+  let badgeLabel = 'Setlla Real-Time Alert';
   let badgeColor = 'text-emerald-400';
   let actionLabel = notification.actionText || 'Tap to view details';
 

@@ -60,11 +60,11 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
         if (blob && !isCancelled) {
           try {
             const localBlobUrl = URL.createObjectURL(blob);
-            console.log('[DeltaRent Video] Loaded authentic agent-uploaded video from local device cache:', id);
+            console.log('[Setlla Video] Loaded authentic agent-uploaded video from local device cache:', id);
             setVideoSource(localBlobUrl);
             setHasError(false);
           } catch (e) {
-            console.warn('[DeltaRent Video] Could not create local blob URL:', e);
+            console.warn('[Setlla Video] Could not create local blob URL:', e);
           }
         }
       }).catch(() => {});
@@ -178,10 +178,10 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   }, [isInView, isActive, hasError]);
 
   const handleVideoError = () => {
-    console.warn('[DeltaRent Video] Video source failed to play:', videoSource);
+    console.warn('[Setlla Video] Video source failed to play:', videoSource);
     // If the failed source is not the local default walkthrough video, seamlessly fall back!
     if (videoSource !== DEFAULT_WALKTHROUGH_VIDEO) {
-      console.log('[DeltaRent Video] Automatically falling back to verified local walkthrough video');
+      console.log('[Setlla Video] Automatically falling back to verified local walkthrough video');
       setVideoSource(DEFAULT_WALKTHROUGH_VIDEO);
       setHasError(false);
     } else {
