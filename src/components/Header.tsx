@@ -82,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({
             <img 
               src="/images/setlla-logo.png" 
               alt="Setlla" 
-              className="h-8 sm:h-9 w-auto max-w-[125px] sm:max-w-[145px] object-contain transition-transform group-hover:scale-[1.02]" 
+              className="h-[18px] sm:h-[20px] w-auto object-contain transition-transform group-hover:scale-[1.02]" 
             />
             <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#F59E0B]/15 text-[#B45309] border border-[#F59E0B]/30 hidden xs:inline-block">
               Delta State
