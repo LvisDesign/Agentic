@@ -16,7 +16,6 @@ import {
   AlertCircle,
   Clock,
   SlidersHorizontal,
-  Sparkles,
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, ListingAvailability } from '../../types/marketplace';
 import { formatNaira } from '../../utils/formatters';

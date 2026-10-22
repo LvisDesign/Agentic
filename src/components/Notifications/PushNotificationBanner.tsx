@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BellRing, CheckCircle2, ChevronRight, X, Building2, Sparkles, AlertCircle } from 'lucide-react';
+import { BellRing, CheckCircle2, ChevronRight, X, Building2, AlertCircle } from 'lucide-react';
 import { PropertyListing, BookingRecord } from '../../types/marketplace';
 import { triggerDeviceVibration, playNotificationSound } from '../../utils/realtimeNotifications';
 
@@ -100,7 +100,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
           ) : notifType === 'inspection_declined' ? (
             <AlertCircle className="w-5 h-5 text-rose-400" />
           ) : (
-            <Sparkles className="w-5 h-5 text-amber-300" />
+            <BellRing className="w-5 h-5 text-amber-300" />
           )}
         </div>
 

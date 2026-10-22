@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  ShieldCheck, 
-  ShieldAlert, 
   Lock, 
   Mail, 
   Phone, 
@@ -14,12 +12,8 @@ import {
   CheckCircle2, 
   AlertCircle, 
   RefreshCw, 
-  Sparkles, 
   Copy, 
   Check, 
-  ExternalLink,
-  Shield,
-  Zap,
   Globe
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -316,38 +310,32 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
   return (
     <div className="min-h-[calc(100dvh-4rem)] w-full bg-[#07090E] text-slate-100 flex flex-col justify-between relative overflow-hidden px-4 py-8 sm:py-12">
-      {/* Background Ambience & Lighting Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-gradient-to-b from-amber-500/10 via-amber-600/5 to-transparent blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -top-24 -left-24 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
-
       {/* Main Terminal Container */}
       <div className="w-full max-w-md mx-auto relative z-10 my-auto">
         {/* Terminal Header Identity */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0B0D14] to-[#151926] border border-amber-500/30 text-amber-400 shadow-xl shadow-amber-500/10 mb-3.5 relative group">
-            <ShieldCheck className="w-8 h-8 text-amber-400" />
-            <div className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#07090E] flex items-center justify-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          <div className="flex justify-center mb-4">
+            <div className="h-12 px-4 py-2 rounded-2xl bg-[#000004] border border-slate-800 shadow-md flex items-center justify-center">
+              <img src="/images/setlla-logo-white.png" alt="Setlla" className="h-6 w-auto object-contain" />
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-2 mb-1.5">
+          <div className="flex items-center justify-center gap-2 mb-1">
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
               Setlla Administrative Console
             </h1>
           </div>
           <p className="text-xs text-slate-400 max-w-xs mx-auto">
-            Authorized Super Admin Gateway • Delta State Escrow & Regulatory Authority
+            Super Admin Portal • Delta State Escrow & Housing Authority
           </p>
         </div>
 
-        {/* Security Alert Badge */}
-        <div className="mb-4 bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 flex items-center gap-2.5 text-left text-xs text-amber-300">
-          <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+        {/* Official Mailbox Notice */}
+        <div className="mb-4 bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center gap-2.5 text-left text-xs text-slate-300">
+          <Mail className="w-4 h-4 text-amber-400 shrink-0" />
           <div className="leading-tight">
-            <span className="font-bold">Official Admin Mailbox:</span> OTP passcodes are exclusively dispatched to{' '}
-            <span className="font-mono font-bold text-white underline decoration-amber-400 underline-offset-2">
+            <span className="font-bold text-white">Official Admin Mailbox:</span> OTP passcodes are dispatched to{' '}
+            <span className="font-mono font-bold text-amber-300">
               admin@setlla.com
             </span>
           </div>
@@ -478,7 +466,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   onClick={handleQuickFillMasterAdmin}
                   className="py-1 px-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-amber-300 font-semibold flex items-center gap-1.5 transition-all cursor-pointer text-[11px]"
                 >
-                  <Zap className="w-3 h-3 text-amber-400" />
+                  <Key className="w-3 h-3 text-amber-400" />
                   <span>Quick-fill Master Admin</span>
                 </button>
               </div>
@@ -598,7 +586,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-4 h-4" />
+                    <Mail className="w-4 h-4" />
                     <span>Generate & Send OTP to admin@setlla.com</span>
                   </>
                 )}
@@ -620,8 +608,8 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
               </button>
 
               <div className="text-center">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-2.5">
-                  <Mail className="w-6 h-6 animate-pulse" />
+                <div className="w-11 h-11 rounded-xl bg-slate-800 text-amber-400 flex items-center justify-center mx-auto mb-2.5">
+                  <Mail className="w-5 h-5" />
                 </div>
                 <h2 className="text-lg font-black text-white">
                   Enter 6-Digit Authorization Code

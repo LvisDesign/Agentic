@@ -1,7 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  ShieldAlert, 
-  ShieldCheck, 
   Users, 
   Building, 
   CalendarCheck, 
@@ -29,7 +27,6 @@ import {
   Check, 
   X, 
   Bell, 
-  Sparkles, 
   Layers, 
   Globe, 
   PieChart, 
@@ -47,7 +44,6 @@ import {
   MapPin,
   Clock,
   Send,
-  Zap,
   RotateCcw,
   LogOut
 } from 'lucide-react';
@@ -473,13 +469,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
       {/* 1. Super Admin Command Header */}
       <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#E5E7EB] shadow-xs mb-6 relative overflow-hidden">
-        {/* Subtle decorative gold badge in background */}
-        <div className="absolute -top-12 -right-12 w-48 h-48 bg-gradient-to-br from-amber-400/10 via-amber-500/5 to-transparent rounded-full blur-2xl pointer-events-none" />
-
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
           <div className="flex items-start sm:items-center gap-3.5">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#000004] to-[#1f2937] text-amber-400 flex items-center justify-center shrink-0 shadow-md border-2 border-white ring-2 ring-black/5">
-              <ShieldAlert className="w-7 h-7 sm:w-8 sm:h-8" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#000004] flex items-center justify-center shrink-0 shadow-md border border-slate-800 p-2.5">
+              <img src="/images/setlla-logo-white.png" alt="Setlla" className="w-full h-auto object-contain" />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -583,7 +576,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+            <UserCheck className="w-3.5 h-3.5 text-slate-400" />
             <span>Agents Control</span>
             <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[#000004] text-[10px]">
               {agentsList.length}
@@ -703,7 +696,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] shadow-xs relative overflow-hidden">
               <div className="flex items-center justify-between text-[#70798C] text-xs mb-2">
                 <span className="font-semibold uppercase tracking-wider text-[11px]">Active Agents Pool</span>
-                <ShieldCheck className="w-4 h-4 text-amber-500" />
+                <UserCheck className="w-4 h-4 text-[#70798C]" />
               </div>
               <div className="text-xl sm:text-2xl font-display font-black text-[#000004]">
                 {agentsList.length} Agents
@@ -958,7 +951,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                                   <span className="font-bold text-sm text-[#000004]">{agent.fullName}</span>
                                   {isVerified && (
                                     <span title="Verified Agent Partner">
-                                      <ShieldCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                     </span>
                                   )}
                                   {isSuspended && (
@@ -1044,7 +1037,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                                   </>
                                 ) : (
                                   <>
-                                    <ShieldCheck className="w-3 h-3 text-amber-400" />
+                                    <Check className="w-3 h-3 text-slate-400" />
                                     <span>Verify</span>
                                   </>
                                 )}
@@ -1243,7 +1236,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                                 className="py-1 px-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
                                 title="Issue Direct Inspection Pass"
                               >
-                                <Zap className="w-3 h-3" />
+                                <CalendarCheck className="w-3 h-3" />
                                 <span>Issue Pass</span>
                               </button>
 
@@ -1985,7 +1978,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 }}
                 className="py-2 px-4 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] transition-all cursor-pointer flex items-center gap-1.5"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                 <span>
                   {inspectingKycUser.kycStatus === 'verified' ? 'Revoke Verification' : 'Approve & Verify Agent'}
                 </span>
@@ -2169,7 +2162,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center">
-                  <Zap className="w-4 h-4" />
+                  <CalendarCheck className="w-4 h-4" />
                 </div>
                 <div>
                   <h4 className="font-display font-bold text-base text-[#000004]">Issue Direct Inspection Pass</h4>

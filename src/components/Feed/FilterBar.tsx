@@ -8,7 +8,6 @@ import {
   SlidersHorizontal,
   Check,
   Building,
-  Sparkles,
   Search
 } from 'lucide-react';
 import { DELTA_CITIES, ALL_NIGERIAN_STATES, PROPERTY_TYPES } from '../../data/mockListings';
@@ -266,7 +265,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               {postedAreas.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1 mb-2">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    <MapPin className="w-3.5 h-3.5 text-amber-600" />
                     <label className="text-xs font-bold uppercase tracking-wider text-[#70798C]">
                       Agent-Posted Areas in Delta
                     </label>

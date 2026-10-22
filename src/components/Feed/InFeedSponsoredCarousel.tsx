@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  Sparkles, 
   CheckCircle2, 
   ExternalLink, 
   Plus, 

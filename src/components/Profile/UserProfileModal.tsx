@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { 
   X, 
   User, 
-  ShieldCheck, 
   Mail, 
   Phone, 
   MapPin, 
@@ -25,7 +24,6 @@ import {
   Key,
   Clock,
   Check,
-  ShieldAlert,
   ArrowRight
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../../types/marketplace';
@@ -365,7 +363,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <span className="font-bold text-[#000004] text-xs flex items-center gap-1.5">
                 {isAgent ? (
                   <>
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                    <Building2 className="w-3.5 h-3.5 text-amber-600" />
                     Account Type: Partner Agent
                   </>
                 ) : (
@@ -409,7 +407,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 }}
                 className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
+                <Building2 className="w-3.5 h-3.5" />
                 <span>Apply to Become an Agent</span>
               </button>
             </div>
@@ -735,7 +733,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
                     <span className="text-[#70798C] flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#342A21]" /> CAC / Registration
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" /> CAC / Registration
                     </span>
                     <span className="font-semibold text-[#000004]">
                       {currentUser.cacNumber || 'RC-1849204'}
@@ -790,7 +788,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-xs py-1">
                     <span className="text-[#70798C] flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#342A21]" /> NIN / Identity
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" /> NIN / Identity
                     </span>
                     <span className="font-semibold text-[#000004]">
                       {currentUser.nin || 'NIN-2910-***-9021'}
@@ -989,7 +987,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center">
-                  <ShieldCheck className="w-4 h-4" />
+                  <Building2 className="w-4 h-4" />
                 </div>
                 <div>
                   <div className="font-bold text-xs text-[#000004]">Tenant View Active</div>
@@ -1015,7 +1013,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
-                  <ShieldAlert className="w-4 h-4" />
+                  <Lock className="w-4 h-4" />
                 </div>
                 <div>
                   <div className="font-bold text-xs text-[#000004]">Super Admin Authority</div>
@@ -1037,7 +1035,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           ) : (
             <div className="p-3 rounded-2xl bg-slate-50 border border-[#E5E7EB] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-[#70798C]" />
+                <Lock className="w-4 h-4 text-[#70798C]" />
                 <span className="text-[11px] text-[#70798C]">Platform Administration</span>
               </div>
               <button

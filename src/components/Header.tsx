@@ -1,14 +1,14 @@
 import React from 'react';
 import { 
   Hourglass, 
-  ShieldCheck, 
-  ShieldAlert,
+  Lock,
   User, 
   Compass, 
   LayoutDashboard, 
   CalendarCheck, 
   UserPlus, 
-  Download 
+  Download,
+  Briefcase
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 import { usePWA } from '../utils/pwa';
@@ -209,7 +209,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label="Agent Portal"
               title="Agent Portal"
             >
-              <ShieldCheck className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-amber-300' : 'text-[#70798C]'}`} />
+              <Briefcase className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-amber-300' : 'text-[#70798C]'}`} />
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
                 Agent Portal
               </span>
@@ -231,7 +231,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label="Super Admin Console"
               title="Super Admin Console"
             >
-              <ShieldAlert className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'admin' ? 'text-amber-400' : 'text-amber-700'}`} />
+              <Lock className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'admin' ? 'text-amber-400' : 'text-amber-700'}`} />
               <span className="hidden md:inline font-bold text-xs whitespace-nowrap">
                 Super Admin
               </span>
@@ -270,7 +270,7 @@ export const Header: React.FC<HeaderProps> = ({
             </>
           ) : currentRole === 'admin' && !isAdminAuthenticated ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-[14px] sm:rounded-[16px] bg-amber-500/10 border border-amber-500/30 text-amber-600 text-xs font-bold shrink-0">
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+              <Lock className="w-3.5 h-3.5 text-amber-500" />
               <span className="hidden sm:inline">Admin Portal</span>
             </div>
           ) : (

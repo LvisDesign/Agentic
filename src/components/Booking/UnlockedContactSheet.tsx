@@ -6,10 +6,8 @@ import {
   MapPin, 
   Calendar, 
   Clock, 
-  ShieldCheck, 
   Copy, 
   Check, 
-  Sparkles, 
   Navigation,
   FileCheck,
   CheckCircle2,
@@ -165,7 +163,7 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
                     className="w-12 h-12 rounded-full object-cover border border-[#342A21]/20"
                   />
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#342A21] text-white flex items-center justify-center ring-2 ring-white">
-                    <ShieldCheck className="w-3 h-3" />
+                    <CheckCircle2 className="w-3 h-3" />
                   </div>
                 </div>
 

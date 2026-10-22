@@ -16,7 +16,6 @@ import {
   Download,
   Share2,
   PlusSquare,
-  Sparkles,
   AlertCircle,
   AlertTriangle
 } from 'lucide-react';
