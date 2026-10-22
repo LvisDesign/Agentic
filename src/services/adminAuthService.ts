@@ -27,10 +27,10 @@ export interface AdminOTPRecord {
   targetUserData?: Partial<UserProfile>;
 }
 
-// Master default admin credentials
+// Master default admin credentials (Password disabled - OTP authentication only)
 const DEFAULT_MASTER_ADMIN: AdminCredential = {
   email: OFFICIAL_ADMIN_EMAIL,
-  passwordHash: 'SetllaAdmin2026!',
+  passwordHash: '', // Password authentication strictly disabled
   fullName: 'Platform Administrator',
   phone: '0800 000 0001',
   masterPin: '2026',
@@ -341,73 +341,17 @@ export function completeAdminRegistration(
 
 /**
  * Authenticates an admin using Email and Password.
+ * STRICTLY DISABLED: Passwords are fully disabled for Super Admin security.
+ * The ONLY permitted authentication method is real-time OTP dispatch to admin@setlla.com.
  */
 export function loginAdminWithPassword(
-  emailInput: string,
-  passwordInput: string
+  _emailInput: string,
+  _passwordInput: string
 ): { success: boolean; user?: UserProfile; error?: string } {
-  const email = emailInput.trim().toLowerCase();
-  const password = passwordInput.trim();
-
-  const creds = getAdminCredentials();
-  const match = creds.find((c) => c.email.toLowerCase() === email);
-
-  // Check default master fallback
-  const isMasterDefault =
-    email === OFFICIAL_ADMIN_EMAIL.toLowerCase() &&
-    (password === 'SetllaAdmin2026!' || password === 'admin' || password === 'admin123');
-
-  if (!match && !isMasterDefault) {
-    return {
-      success: false,
-      error: 'No administrator account found with this email address. Please check your credentials or create an account.',
-    };
-  }
-
-  if (match && match.passwordHash !== password && !isMasterDefault) {
-    return {
-      success: false,
-      error: 'Incorrect admin password. Please try again or use OTP verification.',
-    };
-  }
-
-  // Look up registered profile or construct default
-  const registeredUsers = getRegisteredUsers();
-  const foundUser = registeredUsers.find(
-    (u) => (u.isAdmin || u.isSuperAdmin) && u.email?.toLowerCase() === email
-  );
-
-  const activeAdmin: UserProfile = foundUser || {
-    id: 'DT-ADMIN-001',
-    fullName: match ? match.fullName : DEFAULT_SUPER_ADMIN_USER.fullName,
-    email: OFFICIAL_ADMIN_EMAIL,
-    phone: match ? match.phone : DEFAULT_SUPER_ADMIN_USER.phone,
-    state: 'Delta State',
-    city: 'Asaba',
-    isVerifiedTenant: false,
-    isAgent: false,
-    isAdmin: true,
-    isSuperAdmin: true,
-    savedListingIds: [],
-    createdAt: match ? match.createdAt : new Date().toISOString(),
+  return {
+    success: false,
+    error: 'Password authentication has been disabled. Super Admin access requires the one-time passcode (OTP) dispatched to admin@setlla.com.',
   };
-
-  // Set authenticated session
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(ADMIN_AUTH_KEY, 'true');
-    localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(activeAdmin));
-  }
-
-  recordAuditLog(
-    'ADMIN_LOGIN',
-    'system',
-    activeAdmin.id,
-    activeAdmin.fullName,
-    activeAdmin.fullName,
-    `Super Admin signed in successfully via ${email}.`
-  );
-
-  return { success: true, user: activeAdmin };
 }
 
 /**
