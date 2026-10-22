@@ -60,7 +60,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   const [createError, setCreateError] = useState<string | null>(null);
 
   // OTP Verification States
-  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '', '', '']);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(60);
@@ -173,7 +173,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
       setLoginError(result.error);
       return;
     }
-    setOtpDigits(['', '', '', '', '', '']);
+    setOtpDigits(['', '', '', '', '', '', '', '']);
     setStep('otp');
     setResendCooldown(60);
     setOtpError(null);
@@ -217,7 +217,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
         return;
       }
 
-      setOtpDigits(['', '', '', '', '', '']);
+      setOtpDigits(['', '', '', '', '', '', '', '']);
       setStep('otp');
       setResendCooldown(60);
       setOtpError(null);
@@ -232,51 +232,57 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     });
   };
 
-  // Handle OTP Input Change & Auto-Focus
+  // Handle OTP Input Change & Auto-Focus (Supports up to 8 digits)
   const handleDigitChange = (index: number, value: string) => {
-    const cleanChar = value.slice(-1).replace(/\D/g, '');
+    const cleanChar = value.slice(-1).replace(/[^0-9a-zA-Z]/g, '');
     const newDigits = [...otpDigits];
     newDigits[index] = cleanChar;
     setOtpDigits(newDigits);
     setOtpError(null);
 
-    // Auto move to next input if digit entered
-    if (cleanChar && index < 5) {
+    // Auto move to next input if character entered
+    if (cleanChar && index < 7) {
       digitInputRefs.current[index + 1]?.focus();
     }
 
-    // Auto verify if all 6 digits entered
+    // Auto verify if all 8 digits entered
     const completeCode = newDigits.join('');
-    if (completeCode.length === 6) {
+    if (completeCode.length === 8) {
       executeVerifyOTP(completeCode);
     }
   };
 
-  // Handle Backspace Key Navigation
+  // Handle Backspace Key Navigation & Enter to Submit
   const handleDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
       digitInputRefs.current[index - 1]?.focus();
     }
+    if (e.key === 'Enter') {
+      const code = otpDigits.join('');
+      if (code.length >= 6) {
+        executeVerifyOTP(code);
+      }
+    }
   };
 
-  // Handle Pasting Full 6-digit Code
+  // Handle Pasting Full Code (Supports 8 or 6 digits)
   const handleDigitPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const pastedData = e.clipboardData.getData('text').replace(/[^0-9a-zA-Z]/g, '').slice(0, 8);
     if (!pastedData) return;
 
-    const newDigits = [...otpDigits];
-    for (let i = 0; i < 6; i++) {
+    const newDigits = ['', '', '', '', '', '', '', ''];
+    for (let i = 0; i < pastedData.length; i++) {
       newDigits[i] = pastedData[i] || '';
     }
     setOtpDigits(newDigits);
     setOtpError(null);
 
-    if (pastedData.length === 6) {
-      digitInputRefs.current[5]?.focus();
+    if (pastedData.length >= 6) {
+      digitInputRefs.current[Math.min(pastedData.length - 1, 7)]?.focus();
       executeVerifyOTP(pastedData);
     } else {
-      digitInputRefs.current[Math.min(pastedData.length, 5)]?.focus();
+      digitInputRefs.current[pastedData.length]?.focus();
     }
   };
 
@@ -300,9 +306,9 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
   // Execute OTP Verification
   const executeVerifyOTP = async (codeToVerify?: string) => {
-    const code = codeToVerify || otpDigits.join('');
+    const code = (codeToVerify || otpDigits.join('')).trim();
     if (code.length < 6) {
-      setOtpError('Please enter the complete 6-digit verification code.');
+      setOtpError('Please enter the authorization code received at admin@setlla.com.');
       return;
     }
 
@@ -419,7 +425,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
               </h1>
               <p className="text-xs sm:text-sm text-[#70798C] mt-0.5">
                 {step === 'otp'
-                  ? 'Enter the 6-digit authorization code sent to admin@setlla.com'
+                  ? 'Enter the authorization code sent to admin@setlla.com'
                   : mode === 'login'
                     ? 'Sign in to access your platform dashboard and oversight tools'
                     : 'Welcome to Setlla — Let’s get started'}
@@ -746,29 +752,56 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   </div>
                 </div>
 
-                {/* 6 Digit Inputs */}
+                {/* 8-Digit OTP Inputs (4-4 Grouped with Visual Divider) */}
                 <div>
                   <label className="block text-center text-xs font-semibold text-[#70798C] mb-2.5">
-                    Input 6-Digit OTP Code
+                    Input OTP Verification Code
                   </label>
-                  <div className="flex items-center justify-center gap-2 sm:gap-2.5">
-                    {otpDigits.map((digit, idx) => (
-                      <input
-                        key={idx}
-                        ref={(el) => {
-                          digitInputRefs.current[idx] = el;
-                        }}
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={1}
-                        value={digit}
-                        onChange={(e) => handleDigitChange(idx, e.target.value)}
-                        onKeyDown={(e) => handleDigitKeyDown(idx, e)}
-                        onPaste={handleDigitPaste}
-                        className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-mono font-black text-[#000004] bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl focus:border-[#F95700] focus:ring-2 focus:ring-[#F95700]/15 focus:outline-none transition-all"
-                      />
-                    ))}
+                  <div className="flex items-center justify-center gap-1 sm:gap-2">
+                    {/* First 4 digits */}
+                    <div className="flex items-center gap-1 sm:gap-1.5">
+                      {[0, 1, 2, 3].map((idx) => (
+                        <input
+                          key={idx}
+                          ref={(el) => {
+                            digitInputRefs.current[idx] = el;
+                          }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={otpDigits[idx]}
+                          onChange={(e) => handleDigitChange(idx, e.target.value)}
+                          onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                          onPaste={handleDigitPaste}
+                          className="w-8 sm:w-10 h-11 sm:h-13 text-center text-base sm:text-lg font-mono font-black text-[#000004] bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl focus:border-[#F95700] focus:ring-2 focus:ring-[#F95700]/15 focus:outline-none transition-all"
+                        />
+                      ))}
+                    </div>
+
+                    {/* Divider Dash */}
+                    <span className="text-[#70798C] font-black text-sm sm:text-base select-none px-0.5">
+                      –
+                    </span>
+
+                    {/* Second 4 digits */}
+                    <div className="flex items-center gap-1 sm:gap-1.5">
+                      {[4, 5, 6, 7].map((idx) => (
+                        <input
+                          key={idx}
+                          ref={(el) => {
+                            digitInputRefs.current[idx] = el;
+                          }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={otpDigits[idx]}
+                          onChange={(e) => handleDigitChange(idx, e.target.value)}
+                          onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                          onPaste={handleDigitPaste}
+                          className="w-8 sm:w-10 h-11 sm:h-13 text-center text-base sm:text-lg font-mono font-black text-[#000004] bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl focus:border-[#F95700] focus:ring-2 focus:ring-[#F95700]/15 focus:outline-none transition-all"
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
 

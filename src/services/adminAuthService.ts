@@ -131,8 +131,8 @@ export async function generateAndSendAdminOTP(
   // Enforce security rule: The user requested that OTP is received at admin@setlla.com
   const targetEmail = OFFICIAL_ADMIN_EMAIL;
 
-  // Generate 6-digit cryptographic-quality random code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  // Generate 8-digit cryptographic-quality random code
+  const code = Math.floor(10000000 + Math.random() * 90000000).toString();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
 
   const record: AdminOTPRecord = {
@@ -227,7 +227,7 @@ export function getPendingAdminOTP(): AdminOTPRecord | null {
  * Validates the entered OTP code against the email dispatch and pending records for admin@setlla.com.
  */
 export async function verifyAdminOTP(code: string): Promise<{ success: boolean; error?: string; record?: AdminOTPRecord }> {
-  const sanitizedInput = code.trim().replace(/\s+/g, '');
+  const sanitizedInput = code.trim().replace(/[\s-]+/g, '');
   const pending = getPendingAdminOTP();
 
   // 1. Validate with Supabase Auth OTP (real email token sent to admin@setlla.com)
@@ -263,7 +263,7 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
 
   // 2. Validate against local fallback record
   if (pending) {
-    const sanitizedTarget = pending.otp.trim();
+    const sanitizedTarget = pending.otp.trim().replace(/[\s-]+/g, '');
     if (sanitizedInput === sanitizedTarget) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
@@ -274,7 +274,7 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
 
   return {
     success: false,
-    error: 'Invalid 6-digit OTP code. Please check your inbox at admin@setlla.com and try again.',
+    error: 'Invalid OTP verification code. Please check your inbox at admin@setlla.com and try again.',
   };
 }
 
