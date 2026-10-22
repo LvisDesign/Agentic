@@ -281,11 +281,9 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
       });
 
       if (mode === 'create-account') {
-        // Complete account registration
         const newAdmin = completeAdminRegistration(fullName, phone, password, masterPin);
         onSuccess(newAdmin);
       } else {
-        // Login verified via OTP
         const loginResult = loginAdminWithPassword(OFFICIAL_ADMIN_EMAIL, 'SetllaAdmin2026!');
         if (loginResult.success && loginResult.user) {
           onSuccess(loginResult.user);
@@ -309,449 +307,514 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   };
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] w-full bg-[#07090E] text-slate-100 flex flex-col justify-between relative overflow-hidden px-4 py-8 sm:py-12">
-      {/* Main Terminal Container */}
-      <div className="w-full max-w-md mx-auto relative z-10 my-auto">
-        {/* Terminal Header Identity */}
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-4">
-            <div className="h-12 px-4 py-2 rounded-2xl bg-[#000004] border border-slate-800 shadow-md flex items-center justify-center">
-              <img src="/images/setlla-logo-white.png" alt="Setlla" className="h-6 w-auto object-contain" />
+    <div className="min-h-[calc(100dvh-4rem)] w-full bg-[#FCF9F5] text-[#000004] flex items-center justify-center p-3 sm:p-6 md:p-8">
+      {/* Split Two-Column Card matching sample design */}
+      <div className="w-full max-w-4xl bg-white rounded-[28px] sm:rounded-[32px] shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col md:flex-row animate-scale-up">
+        
+        {/* LEFT COLUMN: Visual Brand Banner with Warm Vertical Glows (Desktop & Tablet) */}
+        <div className="hidden md:flex flex-col justify-between w-80 lg:w-96 bg-[#000004] text-white p-8 relative overflow-hidden shrink-0">
+          {/* Warm vertical gradient beams matching Image 1 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#E65100]/45 via-[#F95700]/15 to-transparent pointer-events-none" />
+          <div className="absolute -bottom-12 left-4 right-4 h-56 bg-gradient-to-t from-[#FF6D00]/55 via-[#E65100]/25 to-transparent blur-2xl pointer-events-none" />
+          <div className="absolute bottom-0 left-6 w-14 h-48 bg-gradient-to-t from-orange-500/40 via-amber-500/20 to-transparent blur-xl pointer-events-none" />
+          <div className="absolute bottom-0 left-24 w-16 h-60 bg-gradient-to-t from-amber-600/45 via-orange-600/25 to-transparent blur-xl pointer-events-none" />
+          <div className="absolute bottom-0 right-10 w-14 h-44 bg-gradient-to-t from-orange-500/35 via-amber-600/15 to-transparent blur-xl pointer-events-none" />
+
+          {/* Top Headline Section */}
+          <div className="relative z-10 space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold text-amber-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              <span>Super Admin Gateway</span>
             </div>
+
+            <h2 className="font-display text-2xl lg:text-3xl font-extrabold text-white leading-tight tracking-tight">
+              Direct oversight across Delta State rentals and escrow.
+            </h2>
+
+            <p className="text-xs text-white/70 leading-relaxed">
+              Super Admin authority over verified agents, tenant inspection passes, and platform governance.
+            </p>
           </div>
 
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Setlla Administrative Console
-            </h1>
-          </div>
-          <p className="text-xs text-slate-400 max-w-xs mx-auto">
-            Super Admin Portal • Delta State Escrow & Housing Authority
-          </p>
-        </div>
-
-        {/* Official Mailbox Notice */}
-        <div className="mb-4 bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center gap-2.5 text-left text-xs text-slate-300">
-          <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-          <div className="leading-tight">
-            <span className="font-bold text-white">Official Admin Mailbox:</span> OTP passcodes are dispatched to{' '}
-            <span className="font-mono font-bold text-amber-300">
-              admin@setlla.com
-            </span>
+          {/* Bottom Trust Hallmark */}
+          <div className="relative z-10 pt-8 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
+            <span>Setlla • Platform Authority</span>
+            <span>Delta State</span>
           </div>
         </div>
 
-        {/* Card Frame */}
-        <div className="bg-[#0D101A] border border-slate-800/90 rounded-3xl p-6 sm:p-7 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-          {/* Top Segmented Mode Switcher (Visible in 'form' step) */}
-          {step === 'form' && (
-            <div className="grid grid-cols-2 p-1 bg-[#07090E] border border-slate-800 rounded-2xl mb-6">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('login');
-                  setLoginError(null);
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  mode === 'login'
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>Admin Login</span>
-              </button>
+        {/* RIGHT COLUMN: Authentication Form (Responsive for Mobile & Desktop) */}
+        <div className="flex-1 flex flex-col justify-between p-6 sm:p-8 lg:p-10 bg-white overflow-y-auto max-h-[88vh]">
+          <div>
+            {/* Header: Brand Logo & Back to Live Marketplace */}
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <img 
+                  src="/images/setlla-logo.png" 
+                  alt="Setlla" 
+                  className="h-6 sm:h-7 w-auto object-contain" 
+                />
+              </div>
 
               <button
                 type="button"
-                onClick={() => {
-                  setMode('create-account');
-                  setCreateError(null);
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  mode === 'create-account'
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-sm'
-                    : 'text-slate-400 hover:text-white'
-                }`}
+                onClick={onSwitchToExplore}
+                className="text-xs text-[#70798C] hover:text-[#000004] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors py-1 px-2.5 rounded-lg hover:bg-slate-100"
               >
-                <User className="w-3.5 h-3.5" />
-                <span>Create Account</span>
+                <Globe className="w-3.5 h-3.5 text-amber-600" />
+                <span className="hidden sm:inline">Explore Feed</span>
               </button>
             </div>
-          )}
 
-          {/* STEP 1A: ADMIN LOGIN FORM */}
-          {step === 'form' && mode === 'login' && (
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                  Super Admin Email
-                </label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="admin@setlla.com"
-                    required
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#07090E] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/80 transition-all font-mono"
-                  />
-                </div>
-              </div>
+            {/* Title & Subtitle matching sample */}
+            <div className="mb-4">
+              <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#000004] tracking-tight">
+                {step === 'otp' 
+                  ? 'Verify Authorization'
+                  : mode === 'login' 
+                    ? 'Welcome back' 
+                    : 'Get Started'}
+              </h1>
+              <p className="text-xs sm:text-sm text-[#70798C] mt-1">
+                {step === 'otp'
+                  ? 'Enter the 6-digit authorization code sent to admin@setlla.com'
+                  : mode === 'login'
+                    ? 'Sign in to access your platform dashboard and oversight tools'
+                    : 'Welcome to Setlla — Let’s get started'}
+              </p>
+            </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-300">
-                    Master Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={handleRequestLoginOTP}
-                    className="text-[11px] text-amber-400 hover:underline font-semibold cursor-pointer"
-                  >
-                    Login with OTP instead?
-                  </button>
-                </div>
-                <div className="relative">
-                  <Key className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type={showLoginPassword ? 'text' : 'password'}
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Enter admin password"
-                    required
-                    className="w-full pl-10 pr-10 py-2.5 bg-[#07090E] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/80 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 p-1 cursor-pointer"
-                  >
-                    {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+            <div className="w-full h-px bg-[#E5E7EB] mb-5" />
 
-              {loginError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                  <span>{loginError}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loginLoading}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {loginLoading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Verifying Credentials...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Sign In to Super Admin Console</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-
-              {/* Quick Fill Demo Helper Button */}
-              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                <span>Testing on local/demo?</span>
+            {/* Segmented Pill Switcher (Matching Image 2) */}
+            {step === 'form' && (
+              <div className="p-1 bg-[#F4F5F7] rounded-2xl grid grid-cols-2 mb-5">
                 <button
                   type="button"
-                  onClick={handleQuickFillMasterAdmin}
-                  className="py-1 px-2.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-amber-300 font-semibold flex items-center gap-1.5 transition-all cursor-pointer text-[11px]"
+                  onClick={() => {
+                    setMode('login');
+                    setLoginError(null);
+                  }}
+                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    mode === 'login'
+                      ? 'bg-white text-[#000004] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#000004]'
+                  }`}
                 >
-                  <Key className="w-3 h-3 text-amber-400" />
-                  <span>Quick-fill Master Admin</span>
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Sign In</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('create-account');
+                    setCreateError(null);
+                  }}
+                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    mode === 'create-account'
+                      ? 'bg-white text-[#000004] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#000004]'
+                  }`}
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>Create Account</span>
                 </button>
               </div>
-            </form>
-          )}
+            )}
 
-          {/* STEP 1B: CREATE SUPER ADMIN ACCOUNT FORM */}
-          {step === 'form' && mode === 'create-account' && (
-            <form onSubmit={handleCreateAccountSubmit} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Full Legal Name <span className="text-amber-400">*</span>
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Chief Executive Admin"
-                    required
-                    className="w-full pl-10 pr-4 py-2 bg-[#07090E] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/80 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-bold text-slate-300">
-                    Official Admin Mailbox <span className="text-amber-400">*</span>
-                  </label>
-                  <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-                    Mandatory Target
-                  </span>
-                </div>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="email"
-                    value={adminEmail}
-                    readOnly
-                    className="w-full pl-10 pr-4 py-2 bg-[#07090E]/60 border border-slate-800 text-slate-300 rounded-xl text-sm font-mono cursor-not-allowed select-all"
-                  />
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  As requested, verification OTP is dispatched to <span className="text-white font-mono font-bold">admin@setlla.com</span>.
+            {/* Subhead instructions matching mobile sample */}
+            {step === 'form' && (
+              <div className="mb-4">
+                <h3 className="font-bold text-xs sm:text-sm text-[#000004]">
+                  {mode === 'login' ? 'Sign in to continue' : 'Admin registration'}
+                </h3>
+                <p className="text-xs text-[#70798C] mt-0.5">
+                  {mode === 'login' 
+                    ? 'Access your dashboard, verified partner agents, and store tools.' 
+                    : 'Verification OTP will be dispatched to the official mailbox: admin@setlla.com.'}
                 </p>
               </div>
+            )}
 
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">
-                  Direct Phone Number <span className="text-amber-400">*</span>
-                </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="0800 000 0001"
-                    required
-                    className="w-full pl-10 pr-4 py-2 bg-[#07090E] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/80 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* 1. SIGN IN FORM */}
+            {step === 'form' && mode === 'login' && (
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    Master Password <span className="text-amber-400">*</span>
+                  <label className="block text-xs font-semibold text-[#70798C] mb-1.5">
+                    Your email
                   </label>
                   <div className="relative">
+                    <Mail className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Min 6 chars"
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="admin@setlla.com"
                       required
-                      className="w-full px-3 py-2 bg-[#07090E] border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/80 transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-mono"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    Confirm Password <span className="text-amber-400">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-semibold text-[#70798C]">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleRequestLoginOTP}
+                      className="text-[11px] text-[#F95700] hover:underline font-semibold cursor-pointer"
+                    >
+                      Login with OTP instead?
+                    </button>
+                  </div>
                   <div className="relative">
+                    <Lock className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Re-enter password"
+                      type={showLoginPassword ? 'text' : 'password'}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="••••••••••••"
                       required
-                      className="w-full px-3 py-2 bg-[#07090E] border border-slate-800 rounded-xl text-xs sm:text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500/80 transition-all"
+                      className="w-full pl-10 pr-10 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer"
+                    >
+                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              {createError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                  <span>{createError}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={createLoading}
-                className="w-full mt-2 py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {createLoading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Dispatching OTP to admin@setlla.com...</span>
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-4 h-4" />
-                    <span>Generate & Send OTP to admin@setlla.com</span>
-                  </>
+                {loginError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <span>{loginError}</span>
+                  </div>
                 )}
-              </button>
-            </form>
-          )}
 
-          {/* STEP 2: OTP VERIFICATION VIEW */}
-          {step === 'otp' && (
-            <div className="space-y-5">
-              {/* Back to details button */}
-              <button
-                type="button"
-                onClick={() => setStep('form')}
-                className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Change details</span>
-              </button>
+                {/* Primary CTA Button (Matching vibrant orange from Image 1) */}
+                <button
+                  type="submit"
+                  disabled={loginLoading}
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                >
+                  {loginLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Sign In</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
 
-              <div className="text-center">
-                <div className="w-11 h-11 rounded-xl bg-slate-800 text-amber-400 flex items-center justify-center mx-auto mb-2.5">
-                  <Mail className="w-5 h-5" />
-                </div>
-                <h2 className="text-lg font-black text-white">
-                  Enter 6-Digit Authorization Code
-                </h2>
-                <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-                  A verification code has been dispatched to{' '}
-                  <span className="font-mono text-amber-300 font-bold">admin@setlla.com</span>.
-                </p>
-              </div>
-
-              {/* SIMULATED SETLLA SECURE MAILBOX DISPATCH CARD */}
-              <div className="bg-[#07090E] border border-amber-500/30 rounded-2xl p-3.5 relative overflow-hidden shadow-inner">
-                <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-2 mb-2.5 text-[11px]">
-                  <div className="flex items-center gap-1.5 text-slate-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>Live Mailbox Dispatch:</span>
-                    <span className="font-mono text-white font-bold">admin@setlla.com</span>
-                  </div>
-                  <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">
-                    Expires in 10m
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">
-                      Admin Verification OTP
-                    </div>
-                    <div className="text-xl font-black font-mono tracking-widest text-amber-400">
-                      {generatedOtp || '••••••'}
-                    </div>
-                  </div>
-
+                {/* Testing helper */}
+                <div className="pt-2 flex items-center justify-between text-xs text-[#70798C]">
+                  <span>Testing credentials?</span>
                   <button
                     type="button"
-                    onClick={handleAutoFillGeneratedOtp}
-                    className="py-1.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                    onClick={handleQuickFillMasterAdmin}
+                    className="py-1 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-semibold flex items-center gap-1.5 transition-all cursor-pointer text-[11px]"
                   >
-                    {copiedOtp ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Filled!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Auto-Fill Code</span>
-                      </>
-                    )}
+                    <Key className="w-3 h-3 text-[#F95700]" />
+                    <span>Fill Master Admin</span>
                   </button>
                 </div>
-              </div>
+              </form>
+            )}
 
-              {/* 6 Digit Inputs */}
-              <div>
-                <label className="block text-center text-xs font-bold text-slate-300 mb-2">
-                  Input 6-Digit OTP
-                </label>
-                <div className="flex items-center justify-center gap-2 sm:gap-2.5">
-                  {otpDigits.map((digit, idx) => (
+            {/* 2. CREATE ACCOUNT FORM */}
+            {step === 'form' && mode === 'create-account' && (
+              <form onSubmit={handleCreateAccountSubmit} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                    Full Name <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      key={idx}
-                      ref={(el) => {
-                        digitInputRefs.current[idx] = el;
-                      }}
                       type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleDigitChange(idx, e.target.value)}
-                      onKeyDown={(e) => handleDigitKeyDown(idx, e)}
-                      onPaste={handleDigitPaste}
-                      className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-mono font-black text-amber-400 bg-[#07090E] border border-slate-700 rounded-xl focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="e.g. Chief Executive Admin"
+                      required
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                     />
-                  ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-[#70798C]">
+                      Your email <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[10px] text-[#F95700] font-bold bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
+                      Mandatory Mailbox
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="email"
+                      value={adminEmail}
+                      readOnly
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#F4F5F7] border border-[#E5E7EB] text-[#70798C] rounded-xl text-sm font-mono cursor-not-allowed select-all"
+                    />
+                  </div>
+                  <p className="text-[11px] text-[#70798C] mt-1">
+                    Verification OTP will be dispatched to <span className="font-mono font-bold text-[#000004]">admin@setlla.com</span>.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                    Phone Number <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="0800 000 0001"
+                      required
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                      Create new password <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        required
+                        className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                      Confirm password <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        required
+                        className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {createError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <span>{createError}</span>
+                  </div>
+                )}
+
+                {/* Primary CTA Button (Matching Image 1: "Create new account") */}
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="w-full mt-2 py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                >
+                  {createLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Sending OTP to admin@setlla.com...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Create new account</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* 3. STEP 2: OTP VERIFICATION VIEW */}
+            {step === 'otp' && (
+              <div className="space-y-5">
+                <button
+                  type="button"
+                  onClick={() => setStep('form')}
+                  className="inline-flex items-center gap-1.5 text-xs text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back to details</span>
+                </button>
+
+                {/* Live Mailbox Preview Card */}
+                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl p-4 relative overflow-hidden shadow-xs">
+                  <div className="flex items-center justify-between gap-2 border-b border-[#E5E7EB] pb-2 mb-3 text-xs">
+                    <div className="flex items-center gap-1.5 text-[#70798C]">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>Mailbox Dispatch:</span>
+                      <span className="font-mono text-[#000004] font-bold">admin@setlla.com</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full bg-orange-100 text-[#E65100] text-[10px] font-bold">
+                      Expires in 10m
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-[10px] text-[#70798C] uppercase tracking-wider font-bold">
+                        Verification Code
+                      </div>
+                      <div className="text-2xl font-black font-mono tracking-widest text-[#000004]">
+                        {generatedOtp || '••••••'}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAutoFillGeneratedOtp}
+                      className="py-2 px-3.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-xs"
+                    >
+                      {copiedOtp ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Filled!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Auto-Fill Code</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 6 Digit Inputs */}
+                <div>
+                  <label className="block text-center text-xs font-semibold text-[#70798C] mb-2.5">
+                    Input 6-Digit OTP Code
+                  </label>
+                  <div className="flex items-center justify-center gap-2 sm:gap-2.5">
+                    {otpDigits.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        ref={(el) => {
+                          digitInputRefs.current[idx] = el;
+                        }}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleDigitChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                        onPaste={handleDigitPaste}
+                        className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-mono font-black text-[#000004] bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl focus:border-[#F95700] focus:ring-2 focus:ring-[#F95700]/15 focus:outline-none transition-all"
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {otpError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <span>{otpError}</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  disabled={otpLoading || otpDigits.join('').length < 6}
+                  onClick={() => executeVerifyOTP()}
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {otpLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Authorizing Super Admin...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Authorize & Access Admin Console</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="text-center pt-2">
+                  {resendCooldown > 0 ? (
+                    <p className="text-xs text-[#70798C]">
+                      Resend code in{' '}
+                      <span className="text-[#000004] font-mono font-bold">{resendCooldown}s</span>
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResendOTP}
+                      className="text-xs text-[#F95700] hover:underline font-bold cursor-pointer"
+                    >
+                      Resend code to admin@setlla.com
+                    </button>
+                  )}
                 </div>
               </div>
+            )}
+          </div>
 
-              {otpError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                  <span>{otpError}</span>
-                </div>
-              )}
-
-              <button
-                type="button"
-                disabled={otpLoading || otpDigits.join('').length < 6}
-                onClick={() => executeVerifyOTP()}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {otpLoading ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Verifying Authorization...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Authorize & Access Admin Console</span>
-                  </>
-                )}
-              </button>
-
-              {/* Resend Controls */}
-              <div className="text-center pt-2">
-                {resendCooldown > 0 ? (
-                  <p className="text-xs text-slate-500">
-                    Resend code in{' '}
-                    <span className="text-amber-400 font-mono font-bold">{resendCooldown}s</span>
-                  </p>
-                ) : (
+          {/* Bottom Footer Switcher matching samples */}
+          {step === 'form' && (
+            <div className="pt-6 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-6">
+              {mode === 'login' ? (
+                <p>
+                  No account yet?{' '}
                   <button
                     type="button"
-                    onClick={handleResendOTP}
-                    className="text-xs text-amber-400 hover:text-amber-300 font-bold underline underline-offset-2 cursor-pointer"
+                    onClick={() => {
+                      setMode('create-account');
+                      setCreateError(null);
+                    }}
+                    className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
                   >
-                    Resend code to admin@setlla.com
+                    Create one
                   </button>
-                )}
-              </div>
+                </p>
+              ) : (
+                <p>
+                  Already have account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setLoginError(null);
+                    }}
+                    className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
+                  >
+                    Login
+                  </button>
+                </p>
+              )}
             </div>
           )}
         </div>
-
-        {/* Exit back to marketplace feed */}
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={onSwitchToExplore}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer py-1.5 px-3 rounded-xl hover:bg-slate-800/50"
-          >
-            <Globe className="w-3.5 h-3.5 text-amber-400" />
-            <span>Return to Public Marketplace Feed</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Footer Governance Tag */}
-      <div className="text-center text-[11px] text-slate-600 mt-6 relative z-10">
-        Setlla Real Estate Marketplace • Delta State Digital Registry & Housing Compliance System
       </div>
     </div>
   );

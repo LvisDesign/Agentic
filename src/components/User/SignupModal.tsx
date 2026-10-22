@@ -8,7 +8,8 @@ import {
   CheckCircle2, 
   Building2,
   ArrowRight,
-  ShieldCheck,
+  Lock,
+  FileText,
   CalendarCheck,
   LogIn,
   Check,
@@ -17,7 +18,8 @@ import {
   Share2,
   PlusSquare,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  Globe
 } from 'lucide-react';
 import { DeltaCity, UserProfile, UserRole } from '../../types/marketplace';
 import { StateDropdown } from '../UI/StateDropdown';
@@ -549,7 +551,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 type="button"
                 onClick={handleTriggerInstall}
                 disabled={installStatus === 'installing'}
-                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-[0.99]"
+                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#F95700] hover:bg-[#E65100] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-[0.99]"
               >
                 <Download className="w-4 h-4" />
                 <span>{installStatus === 'installing' ? 'Adding to Home Screen...' : 'Add to Home Screen'}</span>
@@ -560,7 +562,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               <button
                 type="button"
                 onClick={handleFinishSignup}
-                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#F95700] hover:bg-[#E65100] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
               >
                 <span>Got It, Continue to Feed</span>
                 <ArrowRight className="w-4 h-4" />
@@ -578,787 +580,854 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         </div>
       ) : (
         <div 
-          className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[92vh] animate-slide-up"
+          className="w-full max-w-4xl bg-white rounded-[28px] sm:rounded-[32px] shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col md:flex-row max-h-[92vh] animate-scale-up"
           onClick={(e) => e.stopPropagation()}
         >
-        {/* Notice Alert (When prompted by trying to book an inspection) */}
-        {notice && (
-          <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 flex items-center gap-2.5 text-amber-950">
-            <div className="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
-              <CalendarCheck className="w-4 h-4" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold leading-tight">{notice.title}</p>
-              <p className="text-[11px] text-amber-800 leading-tight mt-0.5 truncate sm:whitespace-normal">
-                {notice.message}
-              </p>
-            </div>
-          </div>
-        )}
+          {/* LEFT COLUMN: Visual Brand Banner with Warm Vertical Glows (Desktop & Tablet) */}
+          <div className="hidden md:flex flex-col justify-between w-80 lg:w-92 bg-[#000004] text-white p-8 relative overflow-hidden shrink-0">
+            {/* Warm vertical gradient beams matching Image 1 */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#E65100]/45 via-[#F95700]/15 to-transparent pointer-events-none" />
+            <div className="absolute -bottom-12 left-4 right-4 h-56 bg-gradient-to-t from-[#FF6D00]/55 via-[#E65100]/25 to-transparent blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-6 w-14 h-48 bg-gradient-to-t from-orange-500/40 via-amber-500/20 to-transparent blur-xl pointer-events-none" />
+            <div className="absolute bottom-0 left-24 w-16 h-60 bg-gradient-to-t from-amber-600/45 via-orange-600/25 to-transparent blur-xl pointer-events-none" />
+            <div className="absolute bottom-0 right-10 w-14 h-44 bg-gradient-to-t from-orange-500/35 via-amber-600/15 to-transparent blur-xl pointer-events-none" />
 
-        {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#000004] text-white flex items-center justify-center shadow-xs">
-              {authMode === 'login' ? (
-                <LogIn className="w-5 h-5 text-emerald-400" />
-              ) : activeRoleTab === 'seeker' ? (
-                <User className="w-5 h-5 text-emerald-400" />
-              ) : (
-                <Building2 className="w-5 h-5 text-amber-400" />
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-display text-lg font-bold text-[#000004]">
-                  {authMode === 'login'
-                    ? 'Sign In'
-                    : activeRoleTab === 'seeker'
-                      ? 'Tenant Registration'
-                      : 'Agent Registration'}
-                </h3>
-              </div>
-              <p className="text-xs text-[#70798C]">
-                {authMode === 'login'
-                  ? 'Enter your phone number or email to access your account'
-                  : activeRoleTab === 'seeker'
-                    ? 'Find, inspect, and secure apartments across Delta State'
-                    : 'List rentals and connect with verified tenants across Delta State'}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] flex items-center justify-center cursor-pointer transition-colors"
-            title="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* 1. PRIMARY MODE SWITCH: Sign In vs Create Account */}
-        <div className="px-5 pt-3 pb-0 flex border-b border-[#E5E7EB] bg-white">
-          <button
-            type="button"
-            onClick={() => {
-              setAuthMode('login');
-              setDuplicateError(null);
-            }}
-            className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all cursor-pointer ${
-              authMode === 'login'
-                ? 'border-[#000004] text-[#000004]'
-                : 'border-transparent text-[#70798C] hover:text-[#000004]'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAuthMode('signup');
-              setDuplicateError(null);
-            }}
-            className={`flex-1 pb-3 text-xs font-bold text-center border-b-2 transition-all cursor-pointer ${
-              authMode === 'signup'
-                ? 'border-[#000004] text-[#000004]'
-                : 'border-transparent text-[#70798C] hover:text-[#000004]'
-            }`}
-          >
-            Create Account
-          </button>
-        </div>
-
-        {/* 2. ROLE SWITCH TABS: Tenant vs Agent (ONLY shown during Create Account) */}
-        {authMode === 'signup' && (
-          <div className="p-2 sm:px-5 sm:pt-3 sm:pb-2 bg-[#FCF9F5]/60 border-b border-[#E5E7EB]">
-            <div className="grid grid-cols-2 p-1 bg-slate-200/70 rounded-2xl gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveRoleTab('seeker');
-                  setDuplicateError(null);
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  activeRoleTab === 'seeker'
-                    ? 'bg-white text-[#000004] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#000004]'
-                }`}
-              >
-                <User className={`w-3.5 h-3.5 ${activeRoleTab === 'seeker' ? 'text-emerald-600' : ''}`} />
-                <span>Tenant</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveRoleTab('agent');
-                  setDuplicateError(null);
-                }}
-                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  activeRoleTab === 'agent'
-                    ? 'bg-white text-[#000004] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#000004]'
-                }`}
-              >
-                <Building2 className={`w-3.5 h-3.5 ${activeRoleTab === 'agent' ? 'text-amber-600' : ''}`} />
-                <span>Agent</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 3. CONTENT AREA */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5 no-scrollbar">
-          {isSuccess ? (
-            <div className="py-10 px-4 text-center space-y-3.5 my-auto animate-fade-in">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm animate-bounce">
-                <CheckCircle2 className="w-10 h-10" />
-              </div>
-              <h4 className="font-display text-xl font-bold text-[#000004]">
-                {successMessage.title}
-              </h4>
-              <p className="text-xs text-[#70798C] max-w-sm mx-auto leading-relaxed">
-                {successMessage.subtitle}
-              </p>
-            </div>
-          ) : authMode === 'login' ? (
-            /* --- SIMPLE, CLEAN SIGN IN FORM --- */
-            <form onSubmit={handleLogin} className="space-y-4 py-2 text-xs">
-              {loginError && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px] flex items-start gap-2 animate-fade-in shadow-2xs">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-rose-950">{loginError}</p>
-                    <div className="mt-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAuthMode('signup');
-                          setLoginError(null);
-                        }}
-                        className="font-bold underline text-rose-900 hover:text-rose-700 cursor-pointer"
-                      >
-                        Create an account now →
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-bold text-[#000004] mb-1.5">
-                  Phone Number or Email Address <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-[#70798C] absolute left-3.5 top-3.5" />
-                  <input
-                    type="text"
-                    required
-                    autoFocus
-                    placeholder="0803 000 0000 or email@domain.com"
-                    value={loginPhoneOrEmail}
-                    onChange={(e) => {
-                      setLoginPhoneOrEmail(e.target.value);
-                      if (loginError) setLoginError(null);
-                    }}
-                    className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none shadow-xs transition-colors bg-white font-medium placeholder:text-slate-400"
-                  />
-                </div>
-              </div>
-
-              {/* Demo quick sign-in triggers - ONLY visible on local developer environment */}
-              {isLocalUrl() && (
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px]">
-                  <span className="text-[#70798C] font-medium">Quick Demo Test:</span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={handleFillDemoTenant}
-                      className="py-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[#000004] font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
-                    >
-                      👤 Tenant
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleFillDemoAgent}
-                      className="py-1 px-2.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-950 font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
-                    >
-                      🏢 Agent
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleFillDemoAdmin}
-                      className="py-1 px-2.5 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-950 font-bold text-[11px] transition-colors cursor-pointer shadow-2xs"
-                    >
-                      🛡️ Super Admin
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-1">
-                <button
-                  type="submit"
-                  className="w-full py-3 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99] cursor-pointer"
-                >
-                  <LogIn className="w-4 h-4 text-emerald-400" />
-                  <span>Sign In</span>
-                </button>
-              </div>
-
-              <div className="text-center pt-1 text-xs text-[#70798C]">
-                Don't have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setAuthMode('signup')}
-                  className="font-bold text-[#000004] hover:underline cursor-pointer"
-                >
-                  Create an account
-                </button>
-              </div>
-            </form>
-          ) : activeRoleTab === 'seeker' ? (
-            /* --- 1. FIRST-TIME TENANT SIGNUP FORM --- */
-            <form onSubmit={handleSeekerSignup} className="space-y-3.5 text-xs">
-              {/* Duplicate Account Alert Banner */}
-              {duplicateError && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-2 animate-fade-in shadow-xs">
-                  <div className="flex items-start gap-2.5">
-                    <div className="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
-                      <AlertTriangle className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h5 className="font-bold text-xs text-rose-900 leading-tight">Account Already Exists</h5>
-                      <p className="text-[11px] text-rose-800 leading-relaxed mt-0.5">
-                        {duplicateError.message} You cannot register twice with the same phone number or email address.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="pt-0.5 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
-                    >
-                      <LogIn className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Sign In With This Account</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Full Name */}
-              <div>
-                <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                  Full Name <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Enter your full name"
-                    value={seekerFullName}
-                    onChange={(e) => setSeekerFullName(e.target.value)}
-                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Phone Number */}
-              <div>
-                <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                  Phone Number <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <Phone className={`w-4 h-4 absolute left-3 top-2.5 transition-colors ${
-                    duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                      ? 'text-rose-600'
-                      : 'text-[#70798C]'
-                  }`} />
-                  <input
-                    type="tel"
-                    required
-                    placeholder="0803 000 0000"
-                    value={seekerPhone}
-                    onChange={(e) => {
-                      setSeekerPhone(e.target.value);
-                      if (duplicateError) setDuplicateError(null);
-                    }}
-                    className={`w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border text-xs text-[#000004] outline-none transition-all ${
-                      duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                        ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
-                        : 'border-[#E5E7EB] focus:border-[#000004]'
-                    }`}
-                  />
-                </div>
-                {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
-                  <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Phone number already registered. Please sign in instead.</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Email (Optional) */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-bold text-[#000004]">
-                    Email Address
-                  </label>
-                  <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.2 rounded">
-                    Optional
-                  </span>
-                </div>
-                <div className="relative">
-                  <Mail className={`w-4 h-4 absolute left-3 top-2.5 transition-colors ${
-                    duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                      ? 'text-rose-600'
-                      : 'text-[#70798C]'
-                  }`} />
-                  <input
-                    type="email"
-                    placeholder="name@email.com (optional)"
-                    value={seekerEmail}
-                    onChange={(e) => {
-                      setSeekerEmail(e.target.value);
-                      if (duplicateError) setDuplicateError(null);
-                    }}
-                    className={`w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border text-xs text-[#000004] outline-none transition-all ${
-                      duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                        ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
-                        : 'border-[#E5E7EB] focus:border-[#000004]'
-                    }`}
-                  />
-                </div>
-                {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                  <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>Email address already registered. Please sign in instead.</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Choose State looking for apartment with custom dropdown & greyed out states */}
-              <div>
-                <StateDropdown
-                  value={seekerState}
-                  onChange={(val) => setSeekerState(val)}
-                  label="Choose State Looking For Apartment"
-                  required
-                />
-              </div>
-
-              {/* If Delta State selected, provide city option */}
-              {seekerState === 'Delta State' && (
-                <div>
-                  <label className="block text-[11px] font-bold text-[#70798C] mb-1 flex items-center justify-between">
-                    <span>Preferred City in Delta State</span>
-                    {seekerCity ? (
-                      <span className="text-[10px] text-[#342A21] font-semibold">{seekerCity}, Delta</span>
-                    ) : null}
-                  </label>
-                  <CustomDropdown
-                    options={DELTA_CITY_OPTIONS}
-                    value={seekerCity}
-                    onChange={(c) => setSeekerCity(c)}
-                    headerTitle="Delta State Cities & Towns"
-                    placeholder="Select City / Town"
-                    icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
-                    variant="form"
-                    allowCustomInput={true}
-                  />
-                </div>
-              )}
-
-              {/* Quick Info Box */}
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-2 text-[11px] text-[#70798C]">
-                <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            {/* Top Headline Section */}
+            <div className="relative z-10 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold text-amber-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 <span>
-                  Signing up unlocks instant booking for verified inspection slots. No inspection fees are charged until your booking is officially accepted.
+                  {authMode === 'login' 
+                    ? 'Member Gateway' 
+                    : activeRoleTab === 'seeker' 
+                      ? 'Tenant Member Portal' 
+                      : 'Agent Partner Hub'}
                 </span>
               </div>
 
-              {/* Action Buttons */}
-              <div className="pt-2 space-y-2">
-                <button
-                  type="submit"
-                  className="w-full py-3 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-colors cursor-pointer"
-                >
-                  <span>Complete Signup & Unlock Inspections</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+              <h2 className="font-display text-2xl lg:text-3xl font-extrabold text-white leading-tight tracking-tight">
+                {authMode === 'signup' && activeRoleTab === 'agent'
+                  ? 'List verified rentals and close deals faster.'
+                  : 'Find, inspect, and secure verified apartments.'}
+              </h2>
 
-                <div className="text-center pt-1 text-xs text-[#70798C]">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setAuthMode('login')}
-                    className="font-bold text-[#000004] hover:underline cursor-pointer"
-                  >
-                    Sign in
-                  </button>
-                </div>
-              </div>
-            </form>
-          ) : (
-            /* --- 2. AGENT / LANDLORD SIGNUP FORM --- */
-            <form onSubmit={handleAgentSignup} className="space-y-3.5 text-xs">
-              {/* Duplicate Account Alert Banner */}
-              {duplicateError && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-2 animate-fade-in shadow-xs">
-                  <div className="flex items-start gap-2.5">
-                    <div className="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
-                      <AlertTriangle className="w-4 h-4" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h5 className="font-bold text-xs text-rose-900 leading-tight">Account Already Exists</h5>
-                      <p className="text-[11px] text-rose-800 leading-relaxed mt-0.5">
-                        {duplicateError.message} You cannot register twice with the same phone number or email address.
-                      </p>
-                    </div>
+              <p className="text-xs text-white/70 leading-relaxed">
+                {authMode === 'signup' && activeRoleTab === 'agent'
+                  ? 'Direct connection with serious pre-screened tenants across Delta State. Manage inspection slots and close leases with zero hassle.'
+                  : 'Direct access to video-verified apartments, scam-free inspections, and secure booking passes across Delta State.'}
+              </p>
+            </div>
+
+            {/* Bottom Trust Hallmark */}
+            <div className="relative z-10 pt-8 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
+              <span>Setlla • Verified Homes</span>
+              <span>Delta State</span>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: Authentication Form (Responsive for Mobile & Desktop) */}
+          <div className="flex-1 flex flex-col justify-between p-6 sm:p-8 lg:p-9 bg-white overflow-y-auto max-h-[92vh] no-scrollbar">
+            <div>
+              {/* Notice Banner (If triggered by attempting to book inspection) */}
+              {notice && (
+                <div className="mb-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-2.5 flex items-center gap-2.5 text-amber-950">
+                  <div className="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
+                    <CalendarCheck className="w-4 h-4" />
                   </div>
-                  <div className="pt-0.5 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
-                    >
-                      <LogIn className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Sign In With This Account</span>
-                    </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold leading-tight">{notice.title}</p>
+                    <p className="text-[11px] text-amber-800 leading-tight mt-0.5 truncate sm:whitespace-normal">
+                      {notice.message}
+                    </p>
                   </div>
                 </div>
               )}
-              {/* Account Type Selector */}
-              <div>
-                <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                  Agent / Listing Category <span className="text-rose-500">*</span>
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setAgentType('agency')}
-                    className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition-all ${
-                      agentType === 'agency'
-                        ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
-                        : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
-                    }`}
-                  >
-                    Agency / Firm
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAgentType('individual')}
-                    className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition-all ${
-                      agentType === 'individual'
-                        ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
-                        : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
-                    }`}
-                  >
-                    Realtor / Agent
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAgentType('landlord')}
-                    className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition-all ${
-                      agentType === 'landlord'
-                        ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
-                        : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
-                    }`}
-                  >
-                    Direct Landlord
-                  </button>
-                </div>
-              </div>
 
-              {/* Full Name & Agency Name */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                    Agent Full Name <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Victor Ossai"
-                      value={agentFullName}
-                      onChange={(e) => setAgentFullName(e.target.value)}
-                      className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                    Agency / Business Name <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Building2 className="w-4 h-4 text-[#70798C] absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Apex Real Estate Ltd"
-                      value={agencyName}
-                      onChange={(e) => setAgencyName(e.target.value)}
-                      className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Direct Phone & WhatsApp */}
-              <div className="space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                      Direct Phone Number <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Phone className={`w-4 h-4 absolute left-3 top-2.5 transition-colors ${
-                        duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                          ? 'text-rose-600'
-                          : 'text-[#70798C]'
-                      }`} />
-                      <input
-                        type="tel"
-                        required
-                        placeholder="0803 123 4567"
-                        value={agentPhone}
-                        onChange={(e) => handleAgentPhoneChange(e.target.value)}
-                        className={`w-full pl-9.5 pr-3 py-2 rounded-xl border text-xs text-[#000004] outline-none transition-all ${
-                          duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                            ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
-                            : 'border-[#E5E7EB] focus:border-[#000004]'
-                        }`}
-                      />
-                    </div>
-                    {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
-                      <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        <span>Phone number already registered. Please sign in instead.</span>
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-[#000004]">
-                        WhatsApp Number
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={sameAsPhone}
-                          onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
-                          className="w-3 h-3 rounded accent-[#000004]"
-                        />
-                        <span className="text-[10px] text-[#70798C] font-semibold">
-                          Same as phone
-                        </span>
-                      </label>
-                    </div>
-                    <input
-                      type="tel"
-                      disabled={sameAsPhone}
-                      placeholder={sameAsPhone ? (agentPhone || 'Synced with phone') : '0803 000 0000'}
-                      value={sameAsPhone ? agentPhone : agentWhatsapp}
-                      onChange={(e) => setAgentWhatsapp(e.target.value)}
-                      className={`w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs text-[#000004] outline-none ${
-                        sameAsPhone ? 'bg-slate-50 text-[#70798C]' : 'bg-white focus:border-[#000004]'
-                      }`}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Operating State & City */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <StateDropdown
-                    value={agentState}
-                    onChange={(val) => setAgentState(val)}
-                    label="Operating State"
-                    required
+              {/* Header Bar: Brand Logo & Close Button */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <img 
+                    src="/images/setlla-logo.png" 
+                    alt="Setlla" 
+                    className="h-6 sm:h-7 w-auto object-contain" 
                   />
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold text-[#000004]">
-                      Operating City / Towns <span className="text-rose-500">*</span>
-                    </label>
-                    {agentState === 'Delta State' && agentCitySelection && agentCitySelection !== 'Others' && (
-                      <span className="text-[10px] text-[#70798C] font-semibold">
-                        {agentCitySelection}, Delta
-                      </span>
-                    )}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] hover:text-[#000004] flex items-center justify-center cursor-pointer transition-colors"
+                  title="Close"
+                  aria-label="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Title & Subtitle matching sample */}
+              <div className="mb-4">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#000004] tracking-tight">
+                  {authMode === 'login' ? 'Welcome back' : 'Get Started'}
+                </h1>
+                <p className="text-xs sm:text-sm text-[#70798C] mt-1">
+                  {authMode === 'login'
+                    ? 'Sign in to manage your bookings, passes, and account'
+                    : 'Welcome to Setlla — Let’s get started'}
+                </p>
+              </div>
+
+              <div className="w-full h-px bg-[#E5E7EB] mb-4" />
+
+              {/* 1. Primary Segmented Pill Switcher (Matching Sample 2) */}
+              <div className="p-1 bg-[#F4F5F7] rounded-2xl grid grid-cols-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setDuplicateError(null);
+                  }}
+                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    authMode === 'login'
+                      ? 'bg-white text-[#000004] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#000004]'
+                  }`}
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Sign In</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setDuplicateError(null);
+                  }}
+                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    authMode === 'signup'
+                      ? 'bg-white text-[#000004] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#000004]'
+                  }`}
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>Create Account</span>
+                </button>
+              </div>
+
+              {/* 2. Secondary Role Switcher Pills: Tenant vs Agent (Shown during Create Account) */}
+              {authMode === 'signup' && (
+                <div className="p-1 bg-[#F4F5F7] rounded-2xl grid grid-cols-2 mb-4 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveRoleTab('seeker');
+                      setDuplicateError(null);
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      activeRoleTab === 'seeker'
+                        ? 'bg-white text-[#000004] shadow-xs'
+                        : 'text-[#70798C] hover:text-[#000004]'
+                    }`}
+                  >
+                    <User className={`w-3.5 h-3.5 ${activeRoleTab === 'seeker' ? 'text-[#F95700]' : ''}`} />
+                    <span>Tenant</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveRoleTab('agent');
+                      setDuplicateError(null);
+                    }}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      activeRoleTab === 'agent'
+                        ? 'bg-white text-[#000004] shadow-xs'
+                        : 'text-[#70798C] hover:text-[#000004]'
+                    }`}
+                  >
+                    <Building2 className={`w-3.5 h-3.5 ${activeRoleTab === 'agent' ? 'text-[#F95700]' : ''}`} />
+                    <span>Agent</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Subhead instructions matching mobile sample */}
+              <div className="mb-4">
+                <h3 className="font-bold text-xs sm:text-sm text-[#000004]">
+                  {authMode === 'login'
+                    ? 'Sign in to continue'
+                    : activeRoleTab === 'seeker'
+                      ? 'Tenant registration'
+                      : 'Agent partner registration'}
+                </h3>
+                <p className="text-xs text-[#70798C] mt-0.5">
+                  {authMode === 'login'
+                    ? 'Access your dashboard, verified passes, and saved listings.'
+                    : activeRoleTab === 'seeker'
+                      ? 'Unlock direct inspection passes and secure apartment bookings.'
+                      : 'List your verified properties and connect with tenants across Delta.'}
+                </p>
+              </div>
+
+              {/* Content Area */}
+              <div>
+                {isSuccess ? (
+                  <div className="py-10 px-4 text-center space-y-3.5 my-auto animate-fade-in">
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm animate-bounce">
+                      <CheckCircle2 className="w-10 h-10" />
+                    </div>
+                    <h4 className="font-display text-xl font-bold text-[#000004]">
+                      {successMessage.title}
+                    </h4>
+                    <p className="text-xs text-[#70798C] max-w-sm mx-auto leading-relaxed">
+                      {successMessage.subtitle}
+                    </p>
                   </div>
-                  {agentState === 'Delta State' ? (
-                    <div className="space-y-2">
-                      <CustomDropdown
-                        options={[
-                          ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
-                          {
-                            value: 'Others',
-                            label: 'Others (Enter City Manually)',
-                            subtitle: 'If your town or community is not listed above',
-                            badge: 'Manual Entry',
-                          },
-                        ]}
-                        value={agentCitySelection}
-                        onChange={(val) => {
-                          setAgentCitySelection(val);
-                          if (val !== 'Others') {
-                            setAgentCity(val);
-                          } else {
-                            setAgentCity(customAgentCity || '');
-                          }
-                        }}
-                        headerTitle="Delta State Cities & Towns"
-                        placeholder="Select City / Town"
-                        icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
-                        variant="form"
-                        allowCustomInput={true}
+                ) : authMode === 'login' ? (
+                  /* --- 1. SIGN IN FORM --- */
+                  <form onSubmit={handleLogin} className="space-y-4 py-1 text-xs">
+                    {loginError && (
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px] flex items-start gap-2 animate-fade-in shadow-2xs">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="font-semibold text-rose-950">{loginError}</p>
+                          <div className="mt-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAuthMode('signup');
+                                setLoginError(null);
+                              }}
+                              className="font-bold underline text-rose-900 hover:text-rose-700 cursor-pointer"
+                            >
+                              Create an account now →
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1.5">
+                        Your email or phone <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          required
+                          autoFocus
+                          placeholder="0803 000 0000 or email@domain.com"
+                          value={loginPhoneOrEmail}
+                          onChange={(e) => {
+                            setLoginPhoneOrEmail(e.target.value);
+                            if (loginError) setLoginError(null);
+                          }}
+                          className="w-full pl-10 pr-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Demo quick sign-in triggers - ONLY visible on local developer environment */}
+                    {isLocalUrl() && (
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px]">
+                        <span className="text-[#70798C] font-medium">Quick Demo Test:</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={handleFillDemoTenant}
+                            className="py-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[#000004] font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                          >
+                            👤 Tenant
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleFillDemoAgent}
+                            className="py-1 px-2.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-950 font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                          >
+                            🏢 Agent
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleFillDemoAdmin}
+                            className="py-1 px-2.5 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-950 font-bold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                          >
+                            🛡️ Admin
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-1">
+                      <button
+                        type="submit"
+                        className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                      >
+                        <span>Sign In</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </form>
+                ) : activeRoleTab === 'seeker' ? (
+                  /* --- 2. TENANT SIGNUP FORM --- */
+                  <form onSubmit={handleSeekerSignup} className="space-y-3.5 text-xs">
+                    {/* Duplicate Account Alert Banner */}
+                    {duplicateError && (
+                      <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-2 animate-fade-in shadow-xs">
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                            <AlertTriangle className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h5 className="font-bold text-xs text-rose-900 leading-tight">Account Already Exists</h5>
+                            <p className="text-[11px] text-rose-800 leading-relaxed mt-0.5">
+                              {duplicateError.message} You cannot register twice with the same phone number or email address.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="pt-0.5 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
+                            className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                          >
+                            <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Sign In With This Account</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Full Name */}
+                    <div>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                        Full Name <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <User className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Chinedu Okafor"
+                          value={seekerFullName}
+                          onChange={(e) => setSeekerFullName(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Phone Number */}
+                    <div>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                        Phone Number <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Phone className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                          duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                            ? 'text-rose-600'
+                            : 'text-[#70798C]'
+                        }`} />
+                        <input
+                          type="tel"
+                          required
+                          placeholder="0803 000 0000"
+                          value={seekerPhone}
+                          onChange={(e) => {
+                            setSeekerPhone(e.target.value);
+                            if (duplicateError) setDuplicateError(null);
+                          }}
+                          className={`w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                            duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                              ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                              : 'border-[#E5E7EB]'
+                          }`}
+                        />
+                      </div>
+                      {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                        <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Phone number already registered. Please sign in instead.</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Email (Optional) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-[#70798C]">
+                          Your email
+                        </label>
+                        <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.5 rounded">
+                          Optional
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <Mail className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                          duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                            ? 'text-rose-600'
+                            : 'text-[#70798C]'
+                        }`} />
+                        <input
+                          type="email"
+                          placeholder="name@email.com (optional)"
+                          value={seekerEmail}
+                          onChange={(e) => {
+                            setSeekerEmail(e.target.value);
+                            if (duplicateError) setDuplicateError(null);
+                          }}
+                          className={`w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                              ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                              : 'border-[#E5E7EB]'
+                          }`}
+                        />
+                      </div>
+                      {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                        <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Email address already registered. Please sign in instead.</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* State Dropdown */}
+                    <div>
+                      <StateDropdown
+                        value={seekerState}
+                        onChange={(val) => setSeekerState(val)}
+                        label="Choose State Looking For Apartment"
+                        required
                       />
-                      {agentCitySelection === 'Others' && (
-                        <div className="animate-fade-in">
-                          <label className="block text-[10px] font-bold text-[#70798C] mb-1">
-                            Enter Your City / Town Name <span className="text-rose-500">*</span>
-                          </label>
+                    </div>
+
+                    {/* If Delta State selected, provide city option */}
+                    {seekerState === 'Delta State' && (
+                      <div>
+                        <label className="block text-xs font-semibold text-[#70798C] mb-1 flex items-center justify-between">
+                          <span>Preferred City in Delta State</span>
+                          {seekerCity ? (
+                            <span className="text-[11px] text-[#342A21] font-semibold">{seekerCity}, Delta</span>
+                          ) : null}
+                        </label>
+                        <CustomDropdown
+                          options={DELTA_CITY_OPTIONS}
+                          value={seekerCity}
+                          onChange={(c) => setSeekerCity(c)}
+                          headerTitle="Delta State Cities & Towns"
+                          placeholder="Select City / Town"
+                          icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                          variant="form"
+                          allowCustomInput={true}
+                        />
+                      </div>
+                    )}
+
+                    {/* Quick Info Box */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-2 text-[11px] text-[#70798C]">
+                      <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>
+                        Signing up unlocks instant booking for verified inspection slots. No inspection fees are charged until your booking is officially accepted.
+                      </span>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                      >
+                        <span>Create new account</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  /* --- 3. AGENT SIGNUP FORM --- */
+                  <form onSubmit={handleAgentSignup} className="space-y-3.5 text-xs">
+                    {/* Duplicate Account Alert Banner */}
+                    {duplicateError && (
+                      <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-2 animate-fade-in shadow-xs">
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                            <AlertTriangle className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h5 className="font-bold text-xs text-rose-900 leading-tight">Account Already Exists</h5>
+                            <p className="text-[11px] text-rose-800 leading-relaxed mt-0.5">
+                              {duplicateError.message} You cannot register twice with the same phone number or email address.
+                            </p>
+                          </div>
+                        </div>
+                        <div className="pt-0.5 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
+                            className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                          >
+                            <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Sign In With This Account</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Account Type Selector */}
+                    <div>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                        Agent / Listing Category <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setAgentType('agency')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            agentType === 'agency'
+                              ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
+                              : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                          }`}
+                        >
+                          Agency / Firm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAgentType('individual')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            agentType === 'individual'
+                              ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
+                              : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                          }`}
+                        >
+                          Realtor / Agent
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAgentType('landlord')}
+                          className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                            agentType === 'landlord'
+                              ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
+                              : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                          }`}
+                        >
+                          Direct Landlord
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Full Name & Agency Name */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                          Agent Full Name <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="text"
                             required
-                            placeholder="e.g. Effurun, Oghara, Jesse, Kwale"
-                            value={customAgentCity}
-                            onChange={(e) => {
-                              setCustomAgentCity(e.target.value);
-                              setAgentCity(e.target.value);
-                            }}
-                            className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none bg-amber-50/20 focus:bg-white"
+                            placeholder="e.g. Victor Ossai"
+                            value={agentFullName}
+                            onChange={(e) => setAgentFullName(e.target.value)}
+                            className="w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                           />
                         </div>
-                      )}
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                          Agency / Business Name <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Building2 className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Apex Real Estate Ltd"
+                            value={agencyName}
+                            onChange={(e) => setAgencyName(e.target.value)}
+                            className="w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                          />
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Ikeja, Benin City, Port Harcourt"
-                      value={agentCity}
-                      onChange={(e) => setAgentCity(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
-                    />
-                  )}
-                </div>
+
+                    {/* Direct Phone & WhatsApp */}
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            Direct Phone Number <span className="text-rose-500">*</span>
+                          </label>
+                          <div className="relative">
+                            <Phone className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                                ? 'text-rose-600'
+                                : 'text-[#70798C]'
+                            }`} />
+                            <input
+                              type="tel"
+                              required
+                              placeholder="0803 123 4567"
+                              value={agentPhone}
+                              onChange={(e) => handleAgentPhoneChange(e.target.value)}
+                              className={`w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                                duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                                  ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                                  : 'border-[#E5E7EB]'
+                              }`}
+                            />
+                          </div>
+                          {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                            <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>Phone number already registered. Please sign in instead.</span>
+                            </p>
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-[#70798C]">
+                              WhatsApp Number
+                            </label>
+                            <label className="flex items-center gap-1 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={sameAsPhone}
+                                onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
+                                className="w-3.5 h-3.5 rounded accent-[#F95700]"
+                              />
+                              <span className="text-[10px] text-[#70798C] font-semibold">
+                                Same as phone
+                              </span>
+                            </label>
+                          </div>
+                          <input
+                            type="tel"
+                            disabled={sameAsPhone}
+                            placeholder={sameAsPhone ? (agentPhone || 'Synced with phone') : '0803 000 0000'}
+                            value={sameAsPhone ? agentPhone : agentWhatsapp}
+                            onChange={(e) => setAgentWhatsapp(e.target.value)}
+                            className={`w-full px-3.5 py-2.5 rounded-xl border text-sm text-[#000004] outline-none transition-all ${
+                              sameAsPhone 
+                                ? 'bg-slate-50 text-[#70798C] border-[#E5E7EB] cursor-not-allowed' 
+                                : 'bg-[#F9FAFB] border-[#E5E7EB] focus:bg-white focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Operating State & City */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <StateDropdown
+                          value={agentState}
+                          onChange={(val) => setAgentState(val)}
+                          label="Operating State"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-[#70798C]">
+                            Operating City / Towns <span className="text-rose-500">*</span>
+                          </label>
+                          {agentState === 'Delta State' && agentCitySelection && agentCitySelection !== 'Others' && (
+                            <span className="text-[11px] text-[#70798C] font-semibold">
+                              {agentCitySelection}, Delta
+                            </span>
+                          )}
+                        </div>
+                        {agentState === 'Delta State' ? (
+                          <div className="space-y-2">
+                            <CustomDropdown
+                              options={[
+                                ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
+                                {
+                                  value: 'Others',
+                                  label: 'Others (Enter City Manually)',
+                                  subtitle: 'If your town or community is not listed above',
+                                  badge: 'Manual Entry',
+                                },
+                              ]}
+                              value={agentCitySelection}
+                              onChange={(val) => {
+                                setAgentCitySelection(val);
+                                if (val !== 'Others') {
+                                  setAgentCity(val);
+                                } else {
+                                  setAgentCity(customAgentCity || '');
+                                }
+                              }}
+                              headerTitle="Delta State Cities & Towns"
+                              placeholder="Select City / Town"
+                              icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                              variant="form"
+                              allowCustomInput={true}
+                            />
+                            {agentCitySelection === 'Others' && (
+                              <div className="animate-fade-in">
+                                <label className="block text-[11px] font-semibold text-[#70798C] mb-1">
+                                  Enter Your City / Town Name <span className="text-rose-500">*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="e.g. Effurun, Oghara, Jesse, Kwale"
+                                  value={customAgentCity}
+                                  onChange={(e) => {
+                                    setCustomAgentCity(e.target.value);
+                                    setAgentCity(e.target.value);
+                                  }}
+                                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-sm text-[#000004] outline-none bg-amber-50/20 focus:bg-white"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Ikeja, Benin City, Port Harcourt"
+                            value={agentCity}
+                            onChange={(e) => setAgentCity(e.target.value)}
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Optional Email & CAC */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-[#70798C]">
+                            Email Address
+                          </label>
+                          <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.5 rounded">
+                            Optional
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <Mail className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                              ? 'text-rose-600'
+                              : 'text-[#70798C]'
+                          }`} />
+                          <input
+                            type="email"
+                            placeholder="agency@domain.com"
+                            value={agentEmail}
+                            onChange={(e) => {
+                              setAgentEmail(e.target.value);
+                              if (duplicateError) setDuplicateError(null);
+                            }}
+                            className={`w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                              duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                                : 'border-[#E5E7EB]'
+                            }`}
+                          />
+                        </div>
+                        {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                          <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>Email address already registered. Please sign in instead.</span>
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-[#70798C]">
+                            CAC / License No.
+                          </label>
+                          <span className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded font-semibold border border-amber-200">
+                            Verified Badge
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <FileText className="w-4 h-4 text-amber-600 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            placeholder="e.g. RC-182903 or Reg No."
+                            value={agentCac}
+                            onChange={(e) => setAgentCac(e.target.value)}
+                            className="w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Notice */}
+                    <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-start gap-2 text-[11px] text-amber-950">
+                      <Check className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                      <span>
+                        As an Agent, you will receive real-time inspection requests from pre-screened tenants directly in your Agent Portal.
+                      </span>
+                    </div>
+
+                    {/* Submit Button */}
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                      >
+                        <Building2 className="w-4 h-4" />
+                        <span>Register as Agent & Open Portal</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
+            </div>
 
-              {/* Optional Email & CAC */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold text-[#000004]">
-                      Email Address
-                    </label>
-                    <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.2 rounded">
-                      Optional
-                    </span>
-                  </div>
-                  <input
-                    type="email"
-                    placeholder="agency@domain.com"
-                    value={agentEmail}
-                    onChange={(e) => {
-                      setAgentEmail(e.target.value);
-                      if (duplicateError) setDuplicateError(null);
-                    }}
-                    className={`w-full px-3 py-2 rounded-xl border text-xs text-[#000004] outline-none transition-all ${
-                      duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                        ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
-                        : 'border-[#E5E7EB] focus:border-[#000004]'
-                    }`}
-                  />
-                  {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                    <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
-                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                      <span>Email address already registered. Please sign in instead.</span>
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] font-bold text-[#000004]">
-                      CAC / License No.
-                    </label>
-                    <span className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded font-semibold border border-amber-200">
-                      Verified Badge
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <ShieldCheck className="w-4 h-4 text-amber-600 absolute left-3 top-2.5" />
-                    <input
-                      type="text"
-                      placeholder="e.g. RC-182903 or Reg No."
-                      value={agentCac}
-                      onChange={(e) => setAgentCac(e.target.value)}
-                      className="w-full pl-9.5 pr-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs text-[#000004] outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Notice */}
-              <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-start gap-2 text-[11px] text-amber-950">
-                <Check className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <span>
-                  As an Agent, you will receive real-time inspection requests from pre-screened tenants directly in your Agent Portal.
-                </span>
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-2 space-y-2">
-                <button
-                  type="submit"
-                  className="w-full py-3 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-colors cursor-pointer"
-                >
-                  <Building2 className="w-4 h-4 text-amber-400" />
-                  <span>Register as Agent & Open Portal</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-
-                <div className="text-center pt-1 text-xs text-[#70798C]">
-                  Already have an account?{' '}
+            {/* Bottom Footer Switcher matching samples */}
+            <div className="pt-5 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-5 space-y-2">
+              {authMode === 'login' ? (
+                <p>
+                  No account yet?{' '}
                   <button
                     type="button"
-                    onClick={() => setAuthMode('login')}
-                    className="font-bold text-[#000004] hover:underline cursor-pointer"
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setLoginError(null);
+                    }}
+                    className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
                   >
-                    Sign in
+                    Create one
                   </button>
-                </div>
-              </div>
-            </form>
-          )}
-        </div>
+                </p>
+              ) : (
+                <p>
+                  Already have account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('login');
+                      setDuplicateError(null);
+                    }}
+                    className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
+                  >
+                    Login
+                  </button>
+                </p>
+              )}
 
-        {/* 4. FOOTER: Skip for Now CTA */}
-        <div className="px-5 py-3 bg-[#FCF9F5] border-t border-[#E5E7EB] flex flex-col sm:flex-row items-center justify-between gap-2.5">
-          <p className="text-[11px] text-[#70798C] text-center sm:text-left">
-            Just browsing? You can explore the live video feed without an account.
-          </p>
-          <button
-            type="button"
-            onClick={handleSkipClick}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-[#000004] border border-[#E5E7EB] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer shrink-0"
-          >
-            <span>Skip for now & explore feed</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#342A21]" />
-          </button>
+              <p className="text-[11px] text-[#70798C]/80">
+                Just browsing?{' '}
+                <button
+                  type="button"
+                  onClick={handleSkipClick}
+                  className="font-medium hover:text-[#000004] hover:underline cursor-pointer"
+                >
+                  Explore live feed →
+                </button>
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
     )}
     </div>
   );
