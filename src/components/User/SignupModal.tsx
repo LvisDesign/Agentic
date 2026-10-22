@@ -775,10 +775,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   /* --- 1. SIGN IN FORM --- */
                   <form onSubmit={handleLogin} className="space-y-4 py-1 text-xs">
                     {loginError && (
-                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px] flex items-start gap-2 animate-fade-in shadow-2xs">
-                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#F0544F] text-[11px] flex items-start gap-2 animate-fade-in shadow-2xs">
+                        <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <p className="font-semibold text-rose-950">{loginError}</p>
+                          <p className="font-semibold text-[#000004]">{loginError}</p>
                           <div className="mt-1">
                             <button
                               type="button"
@@ -786,7 +786,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 setAuthMode('signup');
                                 setLoginError(null);
                               }}
-                              className="font-bold underline text-rose-900 hover:text-rose-700 cursor-pointer"
+                              className="font-bold underline text-[#F0544F] hover:text-[#000004] cursor-pointer"
                             >
                               Create an account now →
                             </button>
@@ -797,7 +797,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1.5">
-                        Your email or phone <span className="text-rose-500">*</span>
+                        Your email or phone <span className="text-[#F0544F]">*</span>
                       </label>
                       <div className="relative">
                         <Phone className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -818,27 +818,27 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     {/* Demo quick sign-in triggers - ONLY visible on local developer environment */}
                     {isLocalUrl() && (
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px]">
+                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F4F5F7] border border-[#E5E7EB] text-[11px]">
                         <span className="text-[#70798C] font-medium">Quick Demo Test:</span>
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={handleFillDemoTenant}
-                            className="py-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-[#000004] font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                            className="py-1 px-2.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#F4F5F7] text-[#000004] font-semibold text-[11px] transition-colors cursor-pointer shadow-xs"
                           >
                             👤 Tenant
                           </button>
                           <button
                             type="button"
                             onClick={handleFillDemoAgent}
-                            className="py-1 px-2.5 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-950 font-semibold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                            className="py-1 px-2.5 rounded-lg border border-[#342A21]/20 bg-[#342A21]/5 hover:bg-[#342A21]/10 text-[#342A21] font-semibold text-[11px] transition-colors cursor-pointer shadow-xs"
                           >
                             🏢 Agent
                           </button>
                           <button
                             type="button"
                             onClick={handleFillDemoAdmin}
-                            className="py-1 px-2.5 rounded-lg border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-950 font-bold text-[11px] transition-colors cursor-pointer shadow-2xs"
+                            className="py-1 px-2.5 rounded-lg border border-[#000004]/20 bg-[#000004]/5 hover:bg-[#000004]/10 text-[#000004] font-bold text-[11px] transition-colors cursor-pointer shadow-xs"
                           >
                             🛡️ Admin
                           </button>
@@ -849,7 +849,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        className="w-full py-3.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                       >
                         <span>Sign In</span>
                         <ArrowRight className="w-4 h-4" />
@@ -1024,7 +1024,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full py-3 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        className="w-full py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                       >
                         <span>Create new account</span>
                         <ArrowRight className="w-4 h-4" />
@@ -1360,7 +1360,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full py-3 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        className="w-full py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                       >
                         <Building2 className="w-4 h-4" />
                         <span>Register as Agent & Open Portal</span>

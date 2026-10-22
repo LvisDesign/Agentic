@@ -493,11 +493,11 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   </div>
                 )}
 
-                {/* Primary CTA Button (Matching vibrant orange from Image 1) */}
+                {/* Primary CTA Button */}
                 <button
                   type="submit"
                   disabled={loginLoading}
-                  className="w-full py-3 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
                 >
                   {loginLoading ? (
                     <>
@@ -567,16 +567,11 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   </div>
                 </div>
 
-                {/* Email (with Mandatory Mailbox Badge) */}
+                {/* Email */}
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-semibold text-[#70798C]">
-                      Your email <span className="text-[#F0544F]">*</span>
-                    </label>
-                    <span className="text-[10px] text-[#F95700] font-bold bg-[#F95700]/10 px-2 py-0.5 rounded-full border border-[#F95700]/25">
-                      Mandatory Mailbox
-                    </span>
-                  </div>
+                  <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                    Your email <span className="text-[#F0544F]">*</span>
+                  </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
@@ -649,11 +644,11 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   </div>
                 )}
 
-                {/* Primary CTA Button (Matching Image 1: "Create new account") */}
+                {/* Primary CTA Button */}
                 <button
                   type="submit"
                   disabled={createLoading}
-                  className="w-full mt-1.5 py-3 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                  className="w-full mt-1.5 py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
                 >
                   {createLoading ? (
                     <>
@@ -762,7 +757,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   type="button"
                   disabled={otpLoading || otpDigits.join('').length < 6}
                   onClick={() => executeVerifyOTP()}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full py-3.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {otpLoading ? (
                     <>
