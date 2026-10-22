@@ -8,7 +8,8 @@ import {
   CalendarCheck, 
   UserPlus, 
   Download,
-  Briefcase
+  Briefcase,
+  LogOut
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 import { usePWA } from '../utils/pwa';
@@ -28,6 +29,7 @@ interface HeaderProps {
   isAuthenticated: boolean;
   isAdminAuthenticated?: boolean;
   onOpenAgentSignup?: () => void;
+  onAdminSignOut?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -45,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   isAuthenticated,
   isAdminAuthenticated = false,
   onOpenAgentSignup,
+  onAdminSignOut,
 }) => {
   const confirmedPassesCount = activeBookings.filter(
     (b) => b.status === 'CONFIRMED_UNLOCKED'
@@ -135,21 +138,21 @@ export const Header: React.FC<HeaderProps> = ({
               onChangeUserView('feed');
             }}
             className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-              ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || !isAuthenticated
+              ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin')
                 ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
             }`}
             aria-label="Explore"
             title="Explore"
           >
-            <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || !isAuthenticated ? 'text-white' : ''}`} />
+            <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin')) ? 'text-white' : ''}`} />
             
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
               Explore
             </span>
 
-            {(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || !isAuthenticated) && (
+            {(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin')) && (
               <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
             )}
 
@@ -220,7 +223,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* TAB 4.5: Super Admin Console (Rendered ONLY when authenticated as Admin) */}
-          {isAdminAuthenticated && (currentUser.isAdmin || currentUser.isSuperAdmin) && (
+          {(isAdminAuthenticated || currentRole === 'admin') && (
             <button
               onClick={() => onChangeRole('admin')}
               className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
@@ -241,8 +244,22 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* TAB 5: User Profile (when authenticated) or Sign In + Signup (when unauthenticated) */}
-          {!isAuthenticated ? (
+          {/* TAB 5: Admin Sign Out (when admin) OR User Profile (when authenticated user) OR Sign In + Signup (when unauthenticated guest) */}
+          {isAdminAuthenticated || currentRole === 'admin' ? (
+            onAdminSignOut ? (
+              <button
+                onClick={onAdminSignOut}
+                className="relative h-9 sm:h-10 md:h-11 px-2.5 sm:px-3.5 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all duration-200 active:scale-95 group cursor-pointer shadow-xs shrink-0"
+                aria-label="Sign Out"
+                title="Sign out of Super Admin Console"
+              >
+                <LogOut className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline font-bold text-xs whitespace-nowrap">
+                  Sign Out
+                </span>
+              </button>
+            ) : null
+          ) : !isAuthenticated ? (
             <>
               <button
                 onClick={onOpenLogin || onOpenSignup}
@@ -272,14 +289,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenProfile}
               className="relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group cursor-pointer shrink-0"
-              aria-label={currentRole === 'admin' ? 'Super Admin' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
-              title={currentRole === 'admin' ? 'Super Admin' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
+              aria-label={(currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
+              title={(currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
             >
-              {currentRole === 'admin' ? (
-                <div className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center shrink-0 shadow-xs">
-                  SA
-                </div>
-              ) : currentUser.avatarUrl ? (
+              {currentUser.avatarUrl ? (
                 <img
                   src={currentUser.avatarUrl}
                   alt={currentUser.fullName}
@@ -294,18 +307,18 @@ export const Header: React.FC<HeaderProps> = ({
                         .join('')
                         .slice(0, 2)
                         .toUpperCase()
-                    : 'SA'}
+                    : 'U'}
                 </div>
               )}
 
               {/* Desktop Label */}
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-                {currentRole === 'admin' ? 'Super Admin' : currentUser.fullName ? currentUser.fullName.split(' ')[0] : 'Admin'}
+                {currentUser.fullName ? currentUser.fullName.split(' ')[0] : 'Profile'}
               </span>
 
               {/* Mobile Tooltip */}
               <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-                {currentRole === 'admin' ? 'Super Admin' : (currentUser.isAgent || currentRole === 'agent') ? `Agent Portal (${currentUser.fullName})` : currentUser.fullName || 'Admin'}
+                {(currentUser.isAgent || currentRole === 'agent') ? `Agent Portal (${currentUser.fullName})` : currentUser.fullName || 'Profile'}
               </span>
             </button>
           )}

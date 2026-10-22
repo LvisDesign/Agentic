@@ -490,7 +490,7 @@ export function App() {
   // For first-time visitors, open signup modal on arrival if they haven't skipped yet (NEVER on admin side)
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(() => {
     const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
-    if (hash.includes('admin') || initialNav.role === 'admin') {
+    if (hash.includes('admin') || initialNav.role === 'admin' || isSuperAdminAuthenticated()) {
       return false;
     }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
@@ -500,11 +500,11 @@ export function App() {
 
   // Ensure signup modal is immediately dismissed whenever in Admin mode
   useEffect(() => {
-    if (currentRole === 'admin') {
+    if (currentRole === 'admin' || isAdminAuthenticated) {
       setIsSignupOpen(false);
       setSignupNotice(null);
     }
-  }, [currentRole]);
+  }, [currentRole, isAdminAuthenticated]);
 
   const [activeModalListing, setActiveModalListing] = useState<PropertyListing | null>(null);
   const [pushNotification, setPushNotification] = useState<PushNotificationData | null>(null);
@@ -1334,7 +1334,7 @@ export function App() {
   };
 
   const handleOpenSignup = () => {
-    if (isAuthenticated || currentRole === 'admin') return;
+    if (isAuthenticated || isAdminAuthenticated || currentRole === 'admin') return;
     setSignupNotice(null);
     setSignupInitialRole('seeker');
     setSignupInitialMode('signup');
@@ -1342,7 +1342,7 @@ export function App() {
   };
 
   const handleOpenLogin = () => {
-    if (isAuthenticated || currentRole === 'admin') return;
+    if (isAuthenticated || isAdminAuthenticated || currentRole === 'admin') return;
     setSignupNotice(null);
     setSignupInitialRole('seeker');
     setSignupInitialMode('login');
@@ -1350,7 +1350,7 @@ export function App() {
   };
 
   const handleOpenAgentSignup = () => {
-    if (isAuthenticated || currentRole === 'admin') return;
+    if (isAuthenticated || isAdminAuthenticated || currentRole === 'admin') return;
     setSignupNotice(null);
     setSignupInitialRole('agent');
     setSignupInitialMode('signup');
@@ -1537,13 +1537,14 @@ export function App() {
             }
             setIsProfileOpen(true);
           }}
-          currentUser={currentUser}
+          currentUser={isAdminAuthenticated && activeAdminUser ? activeAdminUser : currentUser}
           onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
           onOpenSignup={handleOpenSignup}
           onOpenLogin={handleOpenLogin}
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={isAuthenticated || isAdminAuthenticated}
           isAdminAuthenticated={isAdminAuthenticated}
           onOpenAgentSignup={handleOpenAgentSignup}
+          onAdminSignOut={handleAdminSignOut}
         />
       )}
 
