@@ -1,6 +1,7 @@
 import { UserProfile, AdminAuditLog } from '../types/marketplace';
 import { recordAuditLog } from './adminService';
 import { saveRegisteredUser, getRegisteredUsers } from '../utils/userRegistry';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 
 const ADMIN_AUTH_KEY = 'setlla_admin_auth';
 const ADMIN_USER_KEY = 'setlla_admin_user';
@@ -120,7 +121,7 @@ export function getActiveAdminUser(): UserProfile | null {
 
 /**
  * Generates and stores a 6-digit OTP specifically dispatched to admin@setlla.com.
- * Returns the generated OTP details for interactive delivery simulation.
+ * Real email dispatch is triggered via Supabase Auth service directly to the admin's inbox.
  */
 export function generateAndSendAdminOTP(
   email: string = OFFICIAL_ADMIN_EMAIL,
@@ -145,6 +146,15 @@ export function generateAndSendAdminOTP(
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(ADMIN_PENDING_OTP_KEY, JSON.stringify(record));
+    } catch (_) {}
+  }
+
+  // Dispatch real email to the official admin mailbox via Supabase Auth if available
+  if (isSupabaseConfigured()) {
+    try {
+      supabase.auth.signInWithOtp({ email: targetEmail }).catch((err) => {
+        console.warn('[Setlla Admin Auth] Notice sending email OTP:', err?.message || err);
+      });
     } catch (_) {}
   }
 
@@ -181,33 +191,44 @@ export function getPendingAdminOTP(): AdminOTPRecord | null {
 }
 
 /**
- * Validates the entered OTP code against the pending record for admin@setlla.com.
+ * Validates the entered OTP code against the email dispatch and pending records for admin@setlla.com.
  */
-export function verifyAdminOTP(code: string): { success: boolean; error?: string; record?: AdminOTPRecord } {
-  const pending = getPendingAdminOTP();
-  if (!pending) {
-    return {
-      success: false,
-      error: 'OTP has expired or no pending verification request found. Please request a new code.',
-    };
-  }
-
+export async function verifyAdminOTP(code: string): Promise<{ success: boolean; error?: string; record?: AdminOTPRecord }> {
   const sanitizedInput = code.trim().replace(/\s+/g, '');
-  const sanitizedTarget = pending.otp.trim();
+  const pending = getPendingAdminOTP();
 
-  if (sanitizedInput !== sanitizedTarget) {
-    return {
-      success: false,
-      error: 'Invalid 6-digit OTP code. Please check your inbox at admin@setlla.com and try again.',
-    };
+  // 1. Validate with Supabase Auth OTP (real email token sent to admin@setlla.com)
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: OFFICIAL_ADMIN_EMAIL,
+        token: sanitizedInput,
+        type: 'email',
+      });
+      if (!error && (data?.session || data?.user)) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
+        }
+        return { success: true, record: pending || undefined };
+      }
+    } catch (_) {}
   }
 
-  // Clear used OTP
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
+  // 2. Validate against local fallback record
+  if (pending) {
+    const sanitizedTarget = pending.otp.trim();
+    if (sanitizedInput === sanitizedTarget) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
+      }
+      return { success: true, record: pending };
+    }
   }
 
-  return { success: true, record: pending };
+  return {
+    success: false,
+    error: 'Invalid 6-digit OTP code. Please check your inbox at admin@setlla.com and try again.',
+  };
 }
 
 /**

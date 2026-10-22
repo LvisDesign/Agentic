@@ -12,7 +12,6 @@ import {
   CheckCircle2, 
   AlertCircle, 
   RefreshCw, 
-  Copy, 
   Check, 
   Globe
 } from 'lucide-react';
@@ -23,8 +22,7 @@ import {
   generateAndSendAdminOTP, 
   verifyAdminOTP, 
   completeAdminRegistration, 
-  loginAdminWithPassword,
-  getPendingAdminOTP
+  loginAdminWithPassword
 } from '../../services/adminAuthService';
 
 interface AdminAuthPortalProps {
@@ -62,22 +60,12 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
   // OTP Verification States
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
-  const [generatedOtp, setGeneratedOtp] = useState<string>('');
   const [otpError, setOtpError] = useState<string | null>(null);
   const [otpLoading, setOtpLoading] = useState(false);
-  const [copiedOtp, setCopiedOtp] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(60);
 
   // Input refs for auto-focusing OTP boxes
   const digitInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  // Check if there is an active pending OTP on mount
-  useEffect(() => {
-    const pending = getPendingAdminOTP();
-    if (pending) {
-      setGeneratedOtp(pending.otp);
-    }
-  }, []);
 
   // Resend OTP countdown timer
   useEffect(() => {
@@ -129,8 +117,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
   // Switch to OTP Passwordless Login
   const handleRequestLoginOTP = () => {
-    const { otp } = generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'login');
-    setGeneratedOtp(otp);
+    generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'login');
     setOtpDigits(['', '', '', '', '', '']);
     setStep('otp');
     setResendCooldown(60);
@@ -167,12 +154,11 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
     setTimeout(() => {
       // Dispatches OTP strictly to admin@setlla.com as required
-      const { otp } = generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'create_account', {
+      generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'create_account', {
         fullName,
         phone,
       });
 
-      setGeneratedOtp(otp);
       setOtpDigits(['', '', '', '', '', '']);
       setCreateLoading(false);
       setStep('otp');
@@ -234,30 +220,19 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     }
   };
 
-  // Quick auto-fill helper for testing
-  const handleAutoFillGeneratedOtp = () => {
-    if (!generatedOtp) return;
-    const digits = generatedOtp.split('');
-    setOtpDigits(digits);
-    setCopiedOtp(true);
-    setTimeout(() => setCopiedOtp(false), 2000);
-    executeVerifyOTP(generatedOtp);
-  };
-
   // Resend OTP to admin@setlla.com
   const handleResendOTP = () => {
     if (resendCooldown > 0) return;
-    const { otp } = generateAndSendAdminOTP(
+    generateAndSendAdminOTP(
       OFFICIAL_ADMIN_EMAIL,
       mode === 'create-account' ? 'create_account' : 'login'
     );
-    setGeneratedOtp(otp);
     setResendCooldown(60);
     setOtpError(null);
   };
 
   // Execute OTP Verification
-  const executeVerifyOTP = (codeToVerify?: string) => {
+  const executeVerifyOTP = async (codeToVerify?: string) => {
     const code = codeToVerify || otpDigits.join('');
     if (code.length < 6) {
       setOtpError('Please enter the complete 6-digit verification code.');
@@ -265,8 +240,9 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     }
 
     setOtpLoading(true);
-    setTimeout(() => {
-      const verifyResult = verifyAdminOTP(code);
+    setOtpError(null);
+    try {
+      const verifyResult = await verifyAdminOTP(code);
       setOtpLoading(false);
 
       if (!verifyResult.success) {
@@ -304,7 +280,10 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
           });
         }
       }
-    }, 500);
+    } catch (err: any) {
+      setOtpLoading(false);
+      setOtpError(err?.message || 'Verification failed. Please try again.');
+    }
   };
 
   return (
@@ -677,46 +656,27 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   <span>Back to details</span>
                 </button>
 
-                {/* Live Mailbox Preview Card */}
+                {/* Security Mailbox Delivery Notice (No OTP revealed on screen) */}
                 <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl p-4 relative overflow-hidden shadow-xs">
-                  <div className="flex items-center justify-between gap-2 border-b border-[#E5E7EB] pb-2 mb-3 text-xs">
-                    <div className="flex items-center gap-1.5 text-[#70798C]">
-                      <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-                      <span>Mailbox Dispatch:</span>
-                      <span className="font-mono text-[#000004] font-bold">admin@setlla.com</span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#342A21]/5 text-[#342A21] flex items-center justify-center shrink-0 border border-[#342A21]/15">
+                      <Mail className="w-4 h-4 text-[#F95700]" />
                     </div>
-                    <span className="px-2 py-0.5 rounded-full bg-[#F95700]/15 text-[#F95700] text-[10px] font-bold">
-                      Expires in 10m
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-[10px] text-[#70798C] uppercase tracking-wider font-bold">
-                        Verification Code
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-[#000004]">
+                          Code Sent to Official Mailbox
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] text-[10px] font-semibold border border-[#342A21]/15">
+                          Expires in 10m
+                        </span>
                       </div>
-                      <div className="text-2xl font-black font-mono tracking-widest text-[#000004]">
-                        {generatedOtp || '••••••'}
-                      </div>
+                      <p className="text-xs text-[#70798C] mt-1 leading-relaxed">
+                        A secure 6-digit authorization code has been dispatched to{' '}
+                        <span className="font-mono font-bold text-[#000004]">admin@setlla.com</span>.
+                        Please check your email inbox (or spam folder) and enter the code below to complete verification.
+                      </p>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={handleAutoFillGeneratedOtp}
-                      className="py-2 px-3.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-xs"
-                    >
-                      {copiedOtp ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-[#10B981]" />
-                          <span>Filled!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>Auto-Fill Code</span>
-                        </>
-                      )}
-                    </button>
                   </div>
                 </div>
 
