@@ -26,6 +26,7 @@ interface HeaderProps {
   onOpenSignup: () => void;
   onOpenLogin?: () => void;
   isAuthenticated: boolean;
+  isAdminAuthenticated?: boolean;
   onOpenAgentSignup?: () => void;
 }
 
@@ -42,6 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSignup,
   onOpenLogin,
   isAuthenticated,
+  isAdminAuthenticated = false,
   onOpenAgentSignup,
 }) => {
   const confirmedPassesCount = activeBookings.filter(
@@ -266,6 +268,11 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </button>
             </>
+          ) : currentRole === 'admin' && !isAdminAuthenticated ? (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-[14px] sm:rounded-[16px] bg-amber-500/10 border border-amber-500/30 text-amber-600 text-xs font-bold shrink-0">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden sm:inline">Admin Portal</span>
+            </div>
           ) : (
             <button
               onClick={onOpenProfile}

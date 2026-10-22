@@ -48,7 +48,8 @@ import {
   Clock,
   Send,
   Zap,
-  RotateCcw
+  RotateCcw,
+  LogOut
 } from 'lucide-react';
 import { 
   PropertyListing, 
@@ -85,6 +86,7 @@ interface SuperAdminDashboardProps {
   onSwitchToExplore: () => void;
   onSwitchToAgent?: () => void;
   onSwitchToTenant?: () => void;
+  onSignOut?: () => void;
 }
 
 type AdminTab = 
@@ -109,6 +111,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   onSwitchToExplore,
   onSwitchToAgent,
   onSwitchToTenant,
+  onSignOut,
 }) => {
   // Navigation State
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
@@ -521,6 +524,16 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               <Globe className="w-3.5 h-3.5 text-amber-400" />
               <span>View Live Marketplace</span>
             </button>
+            {onSignOut && (
+              <button
+                onClick={onSignOut}
+                className="py-2.5 px-3.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                title="Sign out of Super Admin Console"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            )}
           </div>
         </div>
 

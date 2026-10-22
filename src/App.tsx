@@ -22,6 +22,13 @@ import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
 import { SuperAdminDashboard } from './components/Admin/SuperAdminDashboard';
+import { AdminAuthPortal } from './components/Admin/AdminAuthPortal';
+import { 
+  isSuperAdminAuthenticated, 
+  getActiveAdminUser, 
+  logoutAdminSession, 
+  DEFAULT_SUPER_ADMIN_USER 
+} from './services/adminAuthService';
 import { getPlatformSettings } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
 import { fetchAllBookings, saveNewBooking, updateBookingStatus } from './services/bookingService';
@@ -270,12 +277,21 @@ export function App() {
     }
   }, [bookings]);
 
+  // Super Admin Authentication State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    return isSuperAdminAuthenticated();
+  });
+
+  const [activeAdminUser, setActiveAdminUser] = useState<UserProfile | null>(() => {
+    return getActiveAdminUser();
+  });
+
   // User Authentication State (Persisted in localStorage)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const isLocal = isLocalUrl();
     const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
     if (hash.includes('admin')) {
-      return true;
+      return isSuperAdminAuthenticated();
     }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     if (!isLocal && isAuth) {
@@ -300,7 +316,7 @@ export function App() {
     const isLocal = isLocalUrl();
     const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
     if (hash.includes('admin')) {
-      return ADMIN_USER;
+      return getActiveAdminUser() || ADMIN_USER;
     }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
@@ -1349,7 +1365,23 @@ export function App() {
     setUserView('feed');
   };
 
+  const handleAdminAuthSuccess = (admin: UserProfile) => {
+    setIsAdminAuthenticated(true);
+    setActiveAdminUser(admin);
+    setCurrentUser(admin);
+    setCurrentRole('admin');
+  };
+
+  const handleAdminSignOut = () => {
+    logoutAdminSession();
+    setIsAdminAuthenticated(false);
+    setActiveAdminUser(null);
+  };
+
   const handleSignOut = () => {
+    logoutAdminSession();
+    setIsAdminAuthenticated(false);
+    setActiveAdminUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('setlla_auth');
     localStorage.removeItem('deltarent_auth');
@@ -1451,6 +1483,7 @@ export function App() {
         onOpenSignup={handleOpenSignup}
         onOpenLogin={handleOpenLogin}
         isAuthenticated={isAuthenticated}
+        isAdminAuthenticated={isAdminAuthenticated}
         onOpenAgentSignup={handleOpenAgentSignup}
       />
 
@@ -1464,28 +1497,41 @@ export function App() {
 
       {/* 2. Main Content Area */}
       {currentRole === 'admin' ? (
-        /* Super Admin Control Center */
-        <main className="flex-1 w-full">
-          <SuperAdminDashboard
-            currentUser={currentUser}
-            listings={listings}
-            bookings={bookings}
-            onUpdateListingAvailability={handleUpdateListingAvailability}
-            onDeleteListing={handleDeleteListing}
-            onAcceptBooking={handleAcceptBooking}
-            onRejectBooking={handleRejectBooking}
-            onUpdateListing={handleListingUpdated}
-            onSwitchToExplore={() => {
-              setCurrentRole('tenant');
-              setUserView('feed');
-            }}
-            onSwitchToAgent={() => setCurrentRole('agent')}
-            onSwitchToTenant={() => {
-              setCurrentRole('tenant');
-              setUserView('dashboard');
-            }}
-          />
-        </main>
+        /* Super Admin Control Center or Admin Authentication Portal */
+        isAdminAuthenticated ? (
+          <main className="flex-1 w-full">
+            <SuperAdminDashboard
+              currentUser={activeAdminUser || currentUser}
+              listings={listings}
+              bookings={bookings}
+              onUpdateListingAvailability={handleUpdateListingAvailability}
+              onDeleteListing={handleDeleteListing}
+              onAcceptBooking={handleAcceptBooking}
+              onRejectBooking={handleRejectBooking}
+              onUpdateListing={handleListingUpdated}
+              onSwitchToExplore={() => {
+                setCurrentRole('tenant');
+                setUserView('feed');
+              }}
+              onSwitchToAgent={() => setCurrentRole('agent')}
+              onSwitchToTenant={() => {
+                setCurrentRole('tenant');
+                setUserView('dashboard');
+              }}
+              onSignOut={handleAdminSignOut}
+            />
+          </main>
+        ) : (
+          <main className="flex-1 w-full">
+            <AdminAuthPortal
+              onSuccess={handleAdminAuthSuccess}
+              onSwitchToExplore={() => {
+                setCurrentRole('tenant');
+                setUserView('feed');
+              }}
+            />
+          </main>
+        )
       ) : (currentRole === 'tenant' || currentRole === 'seeker') ? (
         userView === 'dashboard' && isAuthenticated ? (
           /* Tenant / User Dashboard: Strictly for authenticated users */
