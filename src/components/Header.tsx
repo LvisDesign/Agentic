@@ -99,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Center / Right: Squircle Navigation Island */}
         <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-[22px] bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs">
           {/* TAB 1: User Dashboard (Only rendered for non-agents / seekers / tenants when authenticated) */}
-          {isAuthenticated && currentRole !== 'agent' && !currentUser.isAgent && (
+          {isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin' && currentRole !== 'agent' && !currentUser.isAgent && (
             <button
               onClick={() => {
                 onChangeRole('tenant');
@@ -163,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* TAB 3: Inspections (CalendarCheck with Badge) - Only rendered for seekers/tenants when authenticated */}
-          {isAuthenticated && currentRole !== 'agent' && !currentUser.isAgent && (
+          {isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin' && currentRole !== 'agent' && !currentUser.isAgent && (
             <button
               onClick={onOpenMyPasses}
               className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3.5 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
@@ -201,7 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* TAB 4: Agent Management Portal (Only visible when logged in as an Agent) */}
-          {isAuthenticated && (currentRole === 'agent' || currentUser.isAgent) && (
+          {isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin' && (currentRole === 'agent' || currentUser.isAgent) && (
             <button
               onClick={() => onChangeRole('agent')}
               className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
@@ -246,19 +246,20 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* TAB 5: Admin Sign Out (when admin) OR User Profile (when authenticated user) OR Sign In + Signup (when unauthenticated guest) */}
           {isAdminAuthenticated || currentRole === 'admin' ? (
-            onAdminSignOut ? (
-              <button
-                onClick={onAdminSignOut}
-                className="relative h-9 sm:h-10 md:h-11 px-2.5 sm:px-3.5 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all duration-200 active:scale-95 group cursor-pointer shadow-xs shrink-0"
-                aria-label="Sign Out"
-                title="Sign out of Super Admin Console"
-              >
-                <LogOut className="w-3.5 h-3.5 shrink-0" />
-                <span className="hidden sm:inline font-bold text-xs whitespace-nowrap">
-                  Sign Out
-                </span>
-              </button>
-            ) : null
+            <button
+              type="button"
+              onClick={() => {
+                if (onAdminSignOut) onAdminSignOut();
+              }}
+              className="relative h-9 sm:h-10 md:h-11 px-3 sm:px-4 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 hover:text-rose-800 border border-rose-200 hover:border-rose-300 transition-all duration-200 active:scale-95 group cursor-pointer shadow-xs shrink-0 font-bold"
+              aria-label="Sign Out"
+              title="Sign out of Super Admin Console"
+            >
+              <LogOut className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-translate-x-0.5 text-rose-600" />
+              <span className="font-bold text-xs whitespace-nowrap">
+                Sign Out
+              </span>
+            </button>
           ) : !isAuthenticated ? (
             <>
               <button

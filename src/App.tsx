@@ -1434,6 +1434,17 @@ export function App() {
     logoutAdminSession();
     setIsAdminAuthenticated(false);
     setActiveAdminUser(null);
+    if (isSupabaseConfigured()) {
+      try {
+        supabase.auth.signOut().catch(() => {});
+      } catch (_) {}
+    }
+    setCurrentUser(GUEST_USER);
+    setCurrentRole('tenant');
+    setUserView('feed');
+    if (typeof window !== 'undefined') {
+      window.location.hash = '#/explore';
+    }
   };
 
   const handleSignOut = () => {
