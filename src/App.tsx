@@ -1365,12 +1365,70 @@ export function App() {
     setUserView('feed');
   };
 
-  const handleAdminAuthSuccess = (admin: UserProfile) => {
+  const handleAdminAuthSuccess = useCallback((admin: UserProfile) => {
     setIsAdminAuthenticated(true);
     setActiveAdminUser(admin);
     setCurrentUser(admin);
     setCurrentRole('admin');
-  };
+  }, []);
+
+  // Listen for Supabase email confirmation link clicks (e.g. #access_token=... or session callbacks)
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const authorizeSuperAdminFromEmail = (email?: string | null) => {
+      const target = (email || '').toLowerCase().trim();
+      if (target === 'admin@setlla.com' || target.includes('admin')) {
+        const adminProfile: UserProfile = {
+          id: 'DT-ADMIN-001',
+          fullName: 'Platform Administrator',
+          email: 'admin@setlla.com',
+          phone: '0800 000 0001',
+          state: 'Delta State',
+          city: 'Asaba',
+          isVerifiedTenant: false,
+          isAgent: false,
+          isAdmin: true,
+          isSuperAdmin: true,
+          savedListingIds: [],
+          createdAt: new Date().toISOString(),
+        };
+        handleAdminAuthSuccess(adminProfile);
+        window.location.hash = '#/admin';
+      }
+    };
+
+    // 1. Check existing session on load (handles instant token parse from email link redirect)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) {
+        authorizeSuperAdminFromEmail(session.user.email);
+      }
+    }).catch(() => {});
+
+    // 2. Subscribe to auth state changes (handles magic link click while app is open or loading)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user?.email) {
+        authorizeSuperAdminFromEmail(session.user.email);
+      }
+    });
+
+    // 3. Fallback: Parse URL hash if direct fragment redirect occurs (#access_token=...)
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, ''));
+      const accessToken = hashParams.get('access_token');
+      if (accessToken) {
+        supabase.auth.getUser(accessToken).then(({ data: { user } }) => {
+          if (user?.email) {
+            authorizeSuperAdminFromEmail(user.email);
+          }
+        }).catch(() => {});
+      }
+    }
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [handleAdminAuthSuccess]);
 
   const handleAdminSignOut = () => {
     logoutAdminSession();

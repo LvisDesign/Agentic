@@ -24,6 +24,7 @@ import {
   completeAdminRegistration, 
   loginAdminWithPassword
 } from '../../services/adminAuthService';
+import { supabase, isSupabaseConfigured } from '../../utils/supabaseClient';
 
 interface AdminAuthPortalProps {
   onSuccess: (adminUser: UserProfile) => void;
@@ -75,6 +76,53 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     }, 1000);
     return () => clearInterval(interval);
   }, [step, resendCooldown]);
+
+  // Listen for Supabase email confirmation link clicks while Admin portal is open
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+
+    const checkAndAuth = (email?: string | null) => {
+      if (email?.toLowerCase().includes('admin') || email?.toLowerCase() === OFFICIAL_ADMIN_EMAIL.toLowerCase()) {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+        if (mode === 'create-account' && fullName) {
+          const newAdmin = completeAdminRegistration(fullName, phone, password, masterPin);
+          onSuccess(newAdmin);
+        } else {
+          onSuccess({
+            id: 'DT-ADMIN-001',
+            fullName: fullName || 'Platform Administrator',
+            email: OFFICIAL_ADMIN_EMAIL,
+            phone: phone || '0800 000 0001',
+            state: 'Delta State',
+            city: 'Asaba',
+            isVerifiedTenant: false,
+            isAgent: false,
+            isAdmin: true,
+            isSuperAdmin: true,
+            savedListingIds: [],
+          });
+        }
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email) checkAndAuth(session.user.email);
+    }).catch(() => {});
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user?.email) {
+        checkAndAuth(session.user.email);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [mode, fullName, phone, password, masterPin, onSuccess]);
 
   // Handle Login Submission
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -656,7 +704,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   <span>Back to details</span>
                 </button>
 
-                {/* Security Mailbox Delivery Notice (No OTP revealed on screen) */}
+                {/* Security Mailbox Delivery Notice */}
                 <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl p-4 relative overflow-hidden shadow-xs">
                   <div className="flex items-start gap-3">
                     <div className="w-9 h-9 rounded-xl bg-[#342A21]/5 text-[#342A21] flex items-center justify-center shrink-0 border border-[#342A21]/15">
@@ -665,17 +713,26 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-bold text-[#000004]">
-                          Code Sent to Official Mailbox
+                          Verification Dispatched to Mailbox
                         </span>
                         <span className="px-2 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] text-[10px] font-semibold border border-[#342A21]/15">
                           Expires in 10m
                         </span>
                       </div>
                       <p className="text-xs text-[#70798C] mt-1 leading-relaxed">
-                        A secure 6-digit authorization code has been dispatched to{' '}
+                        An authorization email has been dispatched to{' '}
                         <span className="font-mono font-bold text-[#000004]">admin@setlla.com</span>.
-                        Please check your email inbox (or spam folder) and enter the code below to complete verification.
                       </p>
+                      <div className="mt-2.5 pt-2.5 border-t border-[#E5E7EB] space-y-1.5 text-[11px] text-[#70798C]">
+                        <p className="flex items-center gap-1.5 text-[#000004] font-medium">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] shrink-0" />
+                          <span><strong>Option 1:</strong> Click <em>"Confirm email address"</em> directly inside your email to authorize instantly.</span>
+                        </p>
+                        <p className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#70798C] shrink-0" />
+                          <span><strong>Option 2:</strong> Or enter the 6-digit OTP code below if your email includes one.</span>
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -152,7 +152,17 @@ export function generateAndSendAdminOTP(
   // Dispatch real email to the official admin mailbox via Supabase Auth if available
   if (isSupabaseConfigured()) {
     try {
-      supabase.auth.signInWithOtp({ email: targetEmail }).catch((err) => {
+      const redirectUrl = typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}#/admin`
+        : undefined;
+
+      supabase.auth.signInWithOtp({ 
+        email: targetEmail,
+        options: {
+          emailRedirectTo: redirectUrl,
+          shouldCreateUser: true,
+        }
+      }).catch((err) => {
         console.warn('[Setlla Admin Auth] Notice sending email OTP:', err?.message || err);
       });
     } catch (_) {}
