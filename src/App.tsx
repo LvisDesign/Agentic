@@ -986,6 +986,14 @@ export function App() {
     setAdverts((prev) => [newAd, ...prev]);
   };
 
+  const handleUpdateAdvert = (updatedAd: AdvertStory) => {
+    setAdverts((prev) => prev.map((ad) => (ad.id === updatedAd.id ? updatedAd : ad)));
+  };
+
+  const handleDeleteAdvert = (advertId: string) => {
+    setAdverts((prev) => prev.filter((ad) => ad.id !== advertId));
+  };
+
   const handleSelectAdvert = (ad: AdvertStory) => {
     // 1. External organization / influencer link
     if (ad.actionType === 'website' || (ad.websiteUrl && !ad.propertyId)) {
@@ -1576,6 +1584,10 @@ export function App() {
               currentUser={activeAdminUser || currentUser}
               listings={listings}
               bookings={bookings}
+              adverts={adverts}
+              onAddAdvert={handleAddAdvert}
+              onUpdateAdvert={handleUpdateAdvert}
+              onDeleteAdvert={handleDeleteAdvert}
               onUpdateListingAvailability={handleUpdateListingAvailability}
               onDeleteListing={handleDeleteListing}
               onAcceptBooking={handleAcceptBooking}

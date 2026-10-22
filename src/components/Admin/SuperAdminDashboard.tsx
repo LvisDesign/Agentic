@@ -44,9 +44,12 @@ import {
   MapPin,
   Clock,
   Send,
-  RotateCcw,
-  LogOut
+  LogOut,
+  Megaphone,
+  Tag,
+  Sparkles
 } from 'lucide-react';
+import { AdvertStory } from '../../data/mockAdverts';
 import { 
   PropertyListing, 
   BookingRecord, 
@@ -74,6 +77,10 @@ interface SuperAdminDashboardProps {
   currentUser: UserProfile;
   listings: PropertyListing[];
   bookings: BookingRecord[];
+  adverts?: AdvertStory[];
+  onAddAdvert?: (advert: AdvertStory) => void;
+  onUpdateAdvert?: (advert: AdvertStory) => void;
+  onDeleteAdvert?: (advertId: string) => void;
   onUpdateListingAvailability: (listingId: string, status: ListingAvailability) => void;
   onDeleteListing: (listingId: string) => void;
   onAcceptBooking: (bookingId: string) => void;
@@ -91,6 +98,7 @@ type AdminTab =
   | 'tenants' 
   | 'listings' 
   | 'inspections' 
+  | 'ads'
   | 'financials' 
   | 'settings' 
   | 'audit';
@@ -99,6 +107,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   currentUser,
   listings,
   bookings,
+  adverts,
+  onAddAdvert,
+  onUpdateAdvert,
+  onDeleteAdvert,
   onUpdateListingAvailability,
   onDeleteListing,
   onAcceptBooking,
@@ -113,6 +125,43 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [globalSearch, setGlobalSearch] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sponsored Adverts State
+  const [localAdverts, setLocalAdverts] = useState<AdvertStory[]>(() => {
+    if (adverts && adverts.length > 0) return adverts;
+    try {
+      const raw = localStorage.getItem('setlla_adverts') || localStorage.getItem('deltarent_adverts');
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return [];
+  });
+
+  useEffect(() => {
+    if (adverts) {
+      setLocalAdverts(adverts);
+    }
+  }, [adverts]);
+
+  const [advertsCategoryFilter, setAdvertsCategoryFilter] = useState<'all' | 'Property' | 'Estate' | 'Promo' | 'Service'>('all');
+  const [advertsVerifiedFilter, setAdvertsVerifiedFilter] = useState<'all' | 'verified' | 'unverified'>('all');
+  const [editingAdvert, setEditingAdvert] = useState<AdvertStory | null>(null);
+  const [isCreateAdvertOpen, setIsCreateAdvertOpen] = useState(false);
+  const [advertForm, setAdvertForm] = useState<Partial<AdvertStory>>({
+    headline: '',
+    advertiserName: '',
+    advertiserHandle: '',
+    category: 'Property',
+    badgeText: 'Featured',
+    mediaUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+    location: 'Asaba, Delta State',
+    price: '',
+    description: '',
+    ctaText: 'Visit Website',
+    websiteUrl: '',
+    phone: '',
+    whatsappNumber: '',
+    isVerified: true,
+  });
 
   // Local state for users and settings
   const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>([]);
@@ -139,6 +188,160 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  // Advert Handlers
+  const handleOpenCreateAdvert = () => {
+    setAdvertForm({
+      headline: '',
+      advertiserName: '',
+      advertiserHandle: '',
+      category: 'Property',
+      badgeText: 'Featured',
+      mediaUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+      location: 'Asaba, Delta State',
+      price: '',
+      description: '',
+      ctaText: 'Visit Website',
+      websiteUrl: '',
+      phone: '',
+      whatsappNumber: '',
+      isVerified: true,
+    });
+    setEditingAdvert(null);
+    setIsCreateAdvertOpen(true);
+  };
+
+  const handleOpenEditAdvert = (ad: AdvertStory) => {
+    setAdvertForm({ ...ad });
+    setEditingAdvert(ad);
+    setIsCreateAdvertOpen(true);
+  };
+
+  const handleSaveAdvert = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!advertForm.headline?.trim() || !advertForm.advertiserName?.trim()) {
+      showToast('Please provide a headline and advertiser name.');
+      return;
+    }
+
+    const adToSave: AdvertStory = {
+      id: editingAdvert ? editingAdvert.id : `ad-${Date.now()}`,
+      title: advertForm.headline?.trim() || 'Sponsored Advert',
+      headline: advertForm.headline?.trim() || '',
+      advertiserName: advertForm.advertiserName?.trim() || 'Setlla Sponsor',
+      advertiserHandle: advertForm.advertiserHandle?.trim() || advertForm.advertiserName?.toLowerCase().replace(/\s+/g, '_') || 'sponsor',
+      avatarUrl: advertForm.avatarUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=150&q=80',
+      category: advertForm.category || 'Property',
+      badgeText: advertForm.badgeText?.trim() || 'Featured',
+      thumbnailUrl: advertForm.mediaUrl || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80',
+      mediaUrl: advertForm.mediaUrl || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+      mediaType: 'image',
+      location: advertForm.location?.trim() || 'Delta State',
+      price: advertForm.price?.trim() || undefined,
+      description: advertForm.description?.trim() || '',
+      ctaText: advertForm.ctaText?.trim() || 'Visit Website',
+      websiteUrl: advertForm.websiteUrl?.trim() || undefined,
+      actionType: advertForm.websiteUrl?.trim() ? 'website' : 'contact',
+      whatsappNumber: advertForm.whatsappNumber?.trim() || advertForm.phone?.trim() || undefined,
+      phone: advertForm.phone?.trim() || undefined,
+      isVerified: Boolean(advertForm.isVerified),
+      likesCount: editingAdvert?.likesCount || Math.floor(Math.random() * 20) + 5,
+      commentsCount: editingAdvert?.commentsCount || Math.floor(Math.random() * 10),
+      sharesCount: editingAdvert?.sharesCount || Math.floor(Math.random() * 8) + 1,
+      timeAgo: editingAdvert?.timeAgo || 'Just now',
+    };
+
+    setLocalAdverts((prev) => {
+      const exists = prev.some((item) => item.id === adToSave.id);
+      const updated = exists ? prev.map((item) => (item.id === adToSave.id ? adToSave : item)) : [adToSave, ...prev];
+      try {
+        localStorage.setItem('setlla_adverts', JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+
+    if (editingAdvert) {
+      onUpdateAdvert?.(adToSave);
+      showToast(`Advert "${adToSave.headline}" updated successfully.`);
+    } else {
+      onAddAdvert?.(adToSave);
+      showToast(`New advert "${adToSave.headline}" published.`);
+    }
+
+    recordAuditLog(
+      'ADMIN_ADVERT_SAVED',
+      'system',
+      currentUser.id,
+      currentUser.fullName,
+      adToSave.advertiserName,
+      `Saved/updated advert "${adToSave.headline}" (${adToSave.category}).`
+    );
+
+    setIsCreateAdvertOpen(false);
+    setEditingAdvert(null);
+  };
+
+  const handleDeleteAdvertInternal = (adId: string) => {
+    const toDelete = localAdverts.find((a) => a.id === adId);
+    setLocalAdverts((prev) => {
+      const updated = prev.filter((a) => a.id !== adId);
+      try {
+        localStorage.setItem('setlla_adverts', JSON.stringify(updated));
+      } catch (_) {}
+      return updated;
+    });
+
+    onDeleteAdvert?.(adId);
+
+    if (toDelete) {
+      recordAuditLog(
+        'ADMIN_ADVERT_DELETED',
+        'system',
+        currentUser.id,
+        currentUser.fullName,
+        toDelete.advertiserName,
+        `Deleted advert "${toDelete.headline}".`
+      );
+    }
+
+    showToast('Advert removed successfully.');
+  };
+
+  const handleToggleAdvertVerification = (adId: string) => {
+    const target = localAdverts.find((a) => a.id === adId);
+    if (!target) return;
+    const updated: AdvertStory = { ...target, isVerified: !target.isVerified };
+    setLocalAdverts((prev) => {
+      const list = prev.map((item) => (item.id === adId ? updated : item));
+      try {
+        localStorage.setItem('setlla_adverts', JSON.stringify(list));
+      } catch (_) {}
+      return list;
+    });
+    onUpdateAdvert?.(updated);
+    showToast(`Advert verification ${updated.isVerified ? 'enabled' : 'disabled'}.`);
+  };
+
+  const filteredAdverts = useMemo(() => {
+    return localAdverts.filter((ad) => {
+      const q = globalSearch.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        ad.headline.toLowerCase().includes(q) ||
+        ad.advertiserName.toLowerCase().includes(q) ||
+        (ad.location && ad.location.toLowerCase().includes(q)) ||
+        (ad.description && ad.description.toLowerCase().includes(q));
+
+      const matchesCategory =
+        advertsCategoryFilter === 'all' || ad.category === advertsCategoryFilter;
+
+      const matchesVerified =
+        advertsVerifiedFilter === 'all' ||
+        (advertsVerifiedFilter === 'verified' ? ad.isVerified : !ad.isVerified);
+
+      return matchesSearch && matchesCategory && matchesVerified;
+    });
+  }, [localAdverts, globalSearch, advertsCategoryFilter, advertsVerifiedFilter]);
 
   // Load and refresh user list and logs
   const refreshAdminData = () => {
@@ -479,13 +682,6 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#000004] tracking-tight">
                   Super Admin Console
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-black text-[10px] uppercase tracking-wider shadow-xs">
-                  Master Authority
-                </span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] flex items-center gap-1 border border-emerald-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Live Sync
-                </span>
               </div>
               <p className="text-xs sm:text-sm text-[#70798C] mt-1 flex flex-wrap items-center gap-2">
                 <span>Direct oversight across Delta State rentals, verified agents, tenants, and inspection escrows.</span>
@@ -509,13 +705,6 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               title="Refresh Data"
             >
               <RefreshCw className="w-4 h-4 text-[#70798C]" />
-            </button>
-            <button
-              onClick={onSwitchToExplore}
-              className="py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-            >
-              <Globe className="w-3.5 h-3.5 text-amber-400" />
-              <span>View Live Marketplace</span>
             </button>
             {onSignOut && (
               <button
@@ -628,6 +817,21 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 {pendingRequestsCount}
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ads')}
+            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'ads'
+                ? 'bg-[#000004] text-white shadow-xs'
+                : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
+            }`}
+          >
+            <Megaphone className="w-3.5 h-3.5 text-amber-500" />
+            <span>Ads Management</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[#000004] text-[10px]">
+              {localAdverts.length}
+            </span>
           </button>
 
           <button
@@ -1660,6 +1864,266 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       )}
 
       {/* ========================================================================= */}
+      {/* TAB E.2: ADS MANAGEMENT & SPONSORED CAMPAIGNS                              */}
+      {/* ========================================================================= */}
+      {activeTab === 'ads' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Header Action Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-[#E5E7EB] shadow-xs">
+            <div>
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-5 h-5 text-amber-600" />
+                <h3 className="font-display font-bold text-lg text-[#000004]">
+                  Sponsored Ads & Campaign Control
+                </h3>
+              </div>
+              <p className="text-xs text-[#70798C] mt-1">
+                Manage featured feed stories, sidebar partner campaigns, verified sponsor badges, and outbound CTAs across Delta State.
+              </p>
+            </div>
+
+            <button
+              onClick={handleOpenCreateAdvert}
+              className="py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              <Plus className="w-4 h-4 text-amber-400" />
+              <span>Create New Advert</span>
+            </button>
+          </div>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-xs">
+              <span className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider block mb-1">
+                Active Campaigns
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-[#000004]">
+                {localAdverts.length}
+              </span>
+              <span className="text-[11px] text-[#70798C] block mt-1">
+                Running in live feed
+              </span>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-xs">
+              <span className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider block mb-1">
+                Verified Sponsors
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-emerald-600">
+                {localAdverts.filter((a) => a.isVerified).length}
+              </span>
+              <span className="text-[11px] text-[#70798C] block mt-1">
+                Trusted blue badge
+              </span>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-xs">
+              <span className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider block mb-1">
+                Total Engagements
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-[#000004]">
+                {localAdverts.reduce((acc, a) => acc + (a.likesCount || 0) + (a.commentsCount || 0) + (a.sharesCount || 0), 0).toLocaleString()}
+              </span>
+              <span className="text-[11px] text-[#70798C] block mt-1">
+                Likes, shares & comments
+              </span>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-xs">
+              <span className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider block mb-1">
+                Active Categories
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-amber-600">
+                {new Set(localAdverts.map((a) => a.category)).size}
+              </span>
+              <span className="text-[11px] text-[#70798C] block mt-1">
+                Property, Services, Promos
+              </span>
+            </div>
+          </div>
+
+          {/* Filtering Sub-Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#E5E7EB] shadow-xs">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+              {(['all', 'Property', 'Estate', 'Promo', 'Service'] as const).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setAdvertsCategoryFilter(cat)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    advertsCategoryFilter === cat
+                      ? 'bg-[#000004] text-white shadow-xs'
+                      : 'bg-slate-100 text-[#70798C] hover:bg-slate-200 hover:text-[#000004]'
+                  }`}
+                >
+                  {cat === 'all' ? 'All Categories' : cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <select
+                value={advertsVerifiedFilter}
+                onChange={(e) => setAdvertsVerifiedFilter(e.target.value as any)}
+                className="py-1.5 px-3 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold text-[#000004] focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Verification Status</option>
+                <option value="verified">Verified Sponsors Only</option>
+                <option value="unverified">Unverified Only</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Adverts Grid */}
+          {filteredAdverts.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 text-center border border-[#E5E7EB] space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+                <Megaphone className="w-6 h-6" />
+              </div>
+              <h4 className="font-bold text-base text-[#000004]">No Adverts Found</h4>
+              <p className="text-xs text-[#70798C] max-w-sm mx-auto">
+                No sponsored campaigns match your current filters. Create a new advert to feature sponsors across Delta State.
+              </p>
+              <button
+                onClick={handleOpenCreateAdvert}
+                className="py-2.5 px-4 rounded-xl bg-[#000004] text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer mt-2"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Create First Advert</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredAdverts.map((ad) => (
+                <div
+                  key={ad.id}
+                  className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow group"
+                >
+                  <div>
+                    {/* Media Preview Thumbnail */}
+                    <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
+                      <img
+                        src={ad.mediaUrl || ad.thumbnailUrl}
+                        alt={ad.headline}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&q=80';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+                      {/* Top Badges */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                        <span className="px-2.5 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-[10px] font-black uppercase tracking-wider text-[#000004] shadow-xs">
+                          {ad.category}
+                        </span>
+
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs ${
+                            ad.isVerified
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-slate-700/80 text-slate-200'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>{ad.isVerified ? 'Verified' : 'Standard'}</span>
+                        </span>
+                      </div>
+
+                      {/* Bottom Info on Image */}
+                      <div className="absolute bottom-2.5 left-3 right-3 flex items-end justify-between text-white">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold truncate text-white/90">
+                            {ad.advertiserName}
+                          </p>
+                          <p className="text-[10px] text-white/70 flex items-center gap-1">
+                            <MapPin className="w-2.5 h-2.5 text-amber-400" />
+                            <span>{ad.location || 'Delta State'}</span>
+                          </p>
+                        </div>
+                        {ad.price && (
+                          <span className="px-2 py-0.5 rounded-lg bg-amber-400 text-amber-950 font-black text-xs shrink-0 shadow-xs">
+                            {ad.price}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Content Section */}
+                    <div className="p-4 space-y-2">
+                      <h4 className="font-display font-bold text-sm text-[#000004] line-clamp-2 leading-snug">
+                        {ad.headline}
+                      </h4>
+                      <p className="text-xs text-[#70798C] line-clamp-2 leading-relaxed">
+                        {ad.description}
+                      </p>
+
+                      {/* Meta pills */}
+                      <div className="pt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-[#70798C]">
+                        {ad.ctaText && (
+                          <span className="px-2 py-0.5 rounded-md bg-[#FCF9F5] border border-[#E5E7EB] font-semibold text-[#000004]">
+                            CTA: {ad.ctaText}
+                          </span>
+                        )}
+                        {ad.phone && (
+                          <span className="px-2 py-0.5 rounded-md bg-[#FCF9F5] border border-[#E5E7EB] font-mono">
+                            {ad.phone}
+                          </span>
+                        )}
+                        {ad.websiteUrl && (
+                          <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold truncate max-w-[160px]">
+                            {ad.websiteUrl.replace(/^https?:\/\//, '')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions Toolbar */}
+                  <div className="p-3 bg-[#FCF9F5] border-t border-[#E5E7EB] flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleToggleAdvertVerification(ad.id)}
+                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        ad.isVerified
+                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                          : 'bg-white text-[#70798C] hover:bg-slate-100 border border-[#E5E7EB]'
+                      }`}
+                      title="Toggle verified badge"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>{ad.isVerified ? 'Verified' : 'Verify'}</span>
+                    </button>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenEditAdvert(ad)}
+                        className="p-1.5 rounded-xl bg-white hover:bg-slate-100 text-[#000004] border border-[#E5E7EB] transition-colors cursor-pointer"
+                        title="Edit Campaign"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete advert "${ad.headline}"?`)) {
+                            handleDeleteAdvertInternal(ad.id);
+                          }
+                        }}
+                        className="p-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
+                        title="Delete Advert"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
       {/* TAB F: ESCROW & FINANCIALS                                                */}
       {/* ========================================================================= */}
       {activeTab === 'financials' && (
@@ -2288,6 +2752,225 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {/* ========================================================================= */}
+      {/* MODAL 5: CREATE / EDIT ADVERT MODAL                                        */}
+      {/* ========================================================================= */}
+      {isCreateAdvertOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+          <form
+            onSubmit={handleSaveAdvert}
+            className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4 my-8"
+          >
+            <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
+              <div>
+                <h4 className="font-display font-bold text-base text-[#000004]">
+                  {editingAdvert ? 'Edit Advert Campaign' : 'Create New Sponsored Advert'}
+                </h4>
+                <p className="text-xs text-[#70798C]">
+                  Configure campaign copy, sponsor credentials, and outbound engagement channels.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreateAdvertOpen(false);
+                  setEditingAdvert(null);
+                }}
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center cursor-pointer text-[#70798C]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5 text-xs max-h-[70vh] overflow-y-auto pr-1">
+              <div>
+                <label className="font-bold text-[#000004] block mb-1">
+                  Campaign Headline <span className="text-[#F0544F]">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={advertForm.headline || ''}
+                  onChange={(e) => setAdvertForm({ ...advertForm, headline: e.target.value })}
+                  placeholder="e.g. Luxury 3-Bedroom Duplex in Core Area, Asaba"
+                  className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#000004]/10"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-[#000004] block mb-1">
+                    Advertiser / Brand Name <span className="text-[#F0544F]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={advertForm.advertiserName || ''}
+                    onChange={(e) => setAdvertForm({ ...advertForm, advertiserName: e.target.value })}
+                    placeholder="e.g. Delta Heritage Realty"
+                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-[#000004] block mb-1">
+                    Advertiser Handle
+                  </label>
+                  <input
+                    type="text"
+                    value={advertForm.advertiserHandle || ''}
+                    onChange={(e) => setAdvertForm({ ...advertForm, advertiserHandle: e.target.value })}
+                    placeholder="e.g. delta_heritage"
+                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-[#000004] block mb-1">Category</label>
+                  <select
+                    value={advertForm.category || 'Property'}
+                    onChange={(e) => setAdvertForm({ ...advertForm, category: e.target.value as any })}
+                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold focus:outline-none cursor-pointer"
+                  >
+                    <option value="Property">Property</option>
+                    <option value="Estate">Estate</option>
+                    <option value="Promo">Promo</option>
+                    <option value="Service">Service</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-[#000004] block mb-1">Badge Tag</label>
+                  <input
+                    type="text"
+                    value={advertForm.badgeText || ''}
+                    onChange={(e) => setAdvertForm({ ...advertForm, badgeText: e.target.value })}
+                    placeholder="e.g. Featured, Deal"
+                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-[#000004] block mb-1">Price / Offer Tag</label>
+                  <input
+                    type="text"
+                    value={advertForm.price || ''}
+                    onChange={(e) => setAdvertForm({ ...advertForm, price: e.target.value })}
+                    placeholder="e.g. ₦3.5M / yr"
+                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-[#000004] block mb-1">
+                  Media Image / Banner URL
+                </label>
+                <input
+                  type="url"
+                  value={advertForm.mediaUrl || ''}
+                  onChange={(e) => setAdvertForm({ ...advertForm, mediaUrl: e.target.value })}
+                  placeholder="https://images.unsplash.com/..."
+                  className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-mono focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-[#000004] block mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={advertForm.location || ''}
+                    onChange={(e) => setAdvertForm({ ...advertForm, location: e.target.value })}
+                    placeholder="e.g. Asaba, Delta State"
+                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-[#000004] block mb-1">CTA Button Label</label>
+                  <input
+                    type="text"
+                    value={advertForm.ctaText || ''}
+                    onChange={(e) => setAdvertForm({ ...advertForm, ctaText: e.target.value })}
+                    placeholder="e.g. Visit Website, Contact Agent"
+                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-[#000004] block mb-1">Website URL</label>
+                  <input
+                    type="url"
+                    value={advertForm.websiteUrl || ''}
+                    onChange={(e) => setAdvertForm({ ...advertForm, websiteUrl: e.target.value })}
+                    placeholder="https://deltaheritage.com"
+                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-mono focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-[#000004] block mb-1">WhatsApp / Phone Number</label>
+                  <input
+                    type="tel"
+                    value={advertForm.whatsappNumber || advertForm.phone || ''}
+                    onChange={(e) => setAdvertForm({ ...advertForm, whatsappNumber: e.target.value, phone: e.target.value })}
+                    placeholder="0803 555 1234"
+                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-mono focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-[#000004] block mb-1">Campaign Description</label>
+                <textarea
+                  rows={3}
+                  value={advertForm.description || ''}
+                  onChange={(e) => setAdvertForm({ ...advertForm, description: e.target.value })}
+                  placeholder="Describe key highlights, amenities, special discounts, or service promises..."
+                  className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-medium focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="ad-verified-toggle"
+                  checked={Boolean(advertForm.isVerified)}
+                  onChange={(e) => setAdvertForm({ ...advertForm, isVerified: e.target.checked })}
+                  className="rounded border-[#E5E7EB] text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="ad-verified-toggle" className="text-xs font-bold text-[#000004] cursor-pointer">
+                  Mark as Verified Sponsor (displays verified trust badge)
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 border-t border-[#E5E7EB] pt-3.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCreateAdvertOpen(false);
+                  setEditingAdvert(null);
+                }}
+                className="py-2.5 px-4 rounded-xl border border-[#E5E7EB] text-xs font-bold hover:bg-slate-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="py-2.5 px-5 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] shadow-sm cursor-pointer"
+              >
+                {editingAdvert ? 'Update Advert' : 'Publish Advert'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
