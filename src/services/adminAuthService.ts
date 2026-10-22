@@ -128,8 +128,8 @@ export async function generateAndSendAdminOTP(
   purpose: 'create_account' | 'login' = 'create_account',
   targetUserData?: Partial<UserProfile>
 ): Promise<{ otp: string; expiresAt: number; targetEmail: string; error?: string }> {
-  // Enforce security rule: The user requested that OTP is received at admin@setlla.com
-  const targetEmail = OFFICIAL_ADMIN_EMAIL;
+  // Target email defaults to official admin email if not provided
+  const targetEmail = (email && email.trim()) ? email.trim() : OFFICIAL_ADMIN_EMAIL;
 
   // Generate 8-digit cryptographic-quality random code
   const code = Math.floor(10000000 + Math.random() * 90000000).toString();
@@ -230,11 +230,13 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
   const sanitizedInput = code.trim().replace(/[\s-]+/g, '');
   const pending = getPendingAdminOTP();
 
-  // 1. Validate with Supabase Auth OTP (real email token sent to admin@setlla.com)
+  const targetEmail = pending?.email || OFFICIAL_ADMIN_EMAIL;
+
+  // 1. Validate with Supabase Auth OTP (real email token sent to admin)
   if (isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        email: OFFICIAL_ADMIN_EMAIL,
+        email: targetEmail,
         token: sanitizedInput,
         type: 'email',
       });
@@ -248,7 +250,7 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
 
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        email: OFFICIAL_ADMIN_EMAIL,
+        email: targetEmail,
         token: sanitizedInput,
         type: 'signup',
       });
@@ -274,7 +276,7 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
 
   return {
     success: false,
-    error: 'Invalid OTP verification code. Please check your inbox at admin@setlla.com and try again.',
+    error: 'Invalid OTP verification code. Please check your inbox and try again.',
   };
 }
 

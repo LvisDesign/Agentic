@@ -9,8 +9,7 @@ import {
   CheckCircle2, 
   AlertCircle, 
   RefreshCw, 
-  Globe,
-  ShieldCheck
+  Globe
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { UserProfile } from '../../types/marketplace';
@@ -35,6 +34,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   const [step, setStep] = useState<'form' | 'otp'>('form');
 
   // Administrator Profile Details (Passwordless - empty by default)
+  const [email, setEmail] = useState('');
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [sendLoading, setSendLoading] = useState(false);
@@ -62,8 +62,9 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
-    const checkAndAuth = (email?: string | null) => {
-      if (email?.toLowerCase().includes('admin') || email?.toLowerCase() === OFFICIAL_ADMIN_EMAIL.toLowerCase()) {
+    const checkAndAuth = (confirmedEmail?: string | null) => {
+      const activeAdminEmail = (email.trim() || OFFICIAL_ADMIN_EMAIL).toLowerCase();
+      if (confirmedEmail?.toLowerCase().includes('admin') || confirmedEmail?.toLowerCase() === activeAdminEmail) {
         confetti({
           particleCount: 80,
           spread: 70,
@@ -73,7 +74,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
         const adminProfile: UserProfile = {
           id: 'DT-ADMIN-001',
           fullName: fullName.trim() || 'Platform Administrator',
-          email: OFFICIAL_ADMIN_EMAIL,
+          email: email.trim() || OFFICIAL_ADMIN_EMAIL,
           phone: phone.trim() || '0800 000 0001',
           state: 'Delta State',
           city: 'Asaba',
@@ -116,8 +117,10 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     setSendError(null);
     setSendLoading(true);
 
+    const targetEmail = email.trim() || OFFICIAL_ADMIN_EMAIL;
+
     try {
-      const result = await generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'login', {
+      const result = await generateAndSendAdminOTP(targetEmail, 'login', {
         fullName: fullName.trim() || 'Platform Administrator',
         phone: phone.trim() || '0800 000 0001',
       });
@@ -197,12 +200,13 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     }
   };
 
-  // Resend OTP to admin@setlla.com
+  // Resend OTP
   const handleResendOTP = async () => {
     if (resendCooldown > 0) return;
     setOtpLoading(true);
     setOtpError(null);
-    const result = await generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'login', {
+    const targetEmail = email.trim() || OFFICIAL_ADMIN_EMAIL;
+    const result = await generateAndSendAdminOTP(targetEmail, 'login', {
       fullName,
       phone,
     });
@@ -219,7 +223,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   const executeVerifyOTP = async (codeToVerify?: string) => {
     const code = (codeToVerify || otpDigits.join('')).trim();
     if (code.length < 6) {
-      setOtpError('Please enter the authorization code received at admin@setlla.com.');
+      setOtpError('Please enter the authorization code received in your email.');
       return;
     }
 
@@ -241,10 +245,11 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
         origin: { y: 0.6 },
       });
 
+      const targetEmail = email.trim() || OFFICIAL_ADMIN_EMAIL;
       const adminProfile: UserProfile = {
         id: 'DT-ADMIN-001',
         fullName: fullName.trim() || 'Platform Administrator',
-        email: OFFICIAL_ADMIN_EMAIL,
+        email: targetEmail,
         phone: phone.trim() || '0800 000 0001',
         state: 'Delta State',
         city: 'Asaba',
@@ -268,7 +273,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
         adminProfile.id,
         adminProfile.fullName,
         adminProfile.fullName,
-        `Super Admin session authenticated via OTP verification to ${OFFICIAL_ADMIN_EMAIL}.`
+        `Super Admin session authenticated via OTP verification.`
       );
 
       onSuccess(adminProfile);
@@ -340,7 +345,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
               </h1>
               <p className="text-xs sm:text-sm text-[#70798C] mt-0.5">
                 {step === 'otp'
-                  ? 'Enter the authorization code sent to admin@setlla.com'
+                  ? 'Enter the 8-digit authorization code sent to your email'
                   : 'Passwordless authentication via One-Time Passcode (OTP)'}
               </p>
             </div>
@@ -349,34 +354,26 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
             {/* 1. STEP 1: PASSWORDLESS OTP REQUEST FORM */}
             {step === 'form' && (
-              <form onSubmit={handleRequestOTP} className="space-y-4">
-                {/* Official Admin Mailbox Display */}
-                <div className="p-3.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl flex items-center justify-between shadow-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#000004] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <Mail className="w-5 h-5 text-amber-400" />
-                    </div>
-                    <div>
-                      <div className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider">
-                        Official Admin Mailbox
-                      </div>
-                      <div className="text-sm font-mono font-bold text-[#000004]">
-                        admin@setlla.com
-                      </div>
-                    </div>
+              <form onSubmit={handleRequestOTP} className="space-y-3.5">
+                {/* Administrator Email Input */}
+                <div>
+                  <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                    Administrator Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="admin@setlla.com"
+                      className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
+                    />
                   </div>
                 </div>
 
-                {/* Security Policy Notice Banner */}
-                <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 text-xs text-amber-950 flex items-start gap-2.5 shadow-xs">
-                  <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                  <p className="leading-relaxed">
-                    <strong>Strict Security Enforcement:</strong> Passwords are completely disabled for platform administrators. All access requires a real-time one-time passcode (OTP) delivered to <span className="font-mono font-bold">admin@setlla.com</span>.
-                  </p>
-                </div>
-
                 {/* Administrator Profile Details (Optional) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#70798C] mb-1">
                       Administrator Name
@@ -388,7 +385,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         placeholder="Enter your full name"
-                        className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#000004] transition-all"
+                        className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
                       />
                     </div>
                   </div>
@@ -404,7 +401,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="Enter your phone number"
-                        className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#000004] transition-all"
+                        className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
                       />
                     </div>
                   </div>
@@ -426,12 +423,12 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   {sendLoading ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Dispatching OTP to admin@setlla.com...</span>
+                      <span>Sending authorization code...</span>
                     </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4 text-amber-400" />
-                      <span>Send Authorization Code to admin@setlla.com</span>
+                      <span>Send Authorization Code</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -451,27 +448,24 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   <span>Back to details</span>
                 </button>
 
-                {/* Security Mailbox Delivery Notice */}
-                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl p-4 relative overflow-hidden shadow-xs">
-                  <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#342A21]/5 text-[#342A21] flex items-center justify-center shrink-0 border border-[#342A21]/15">
-                      <Mail className="w-4 h-4 text-[#F95700]" />
+                {/* Discreet Verification Status Notice */}
+                <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl p-3 flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-[#000004] text-white flex items-center justify-center shrink-0">
+                      <Mail className="w-3.5 h-3.5 text-amber-400" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-[#000004]">
-                          Verification Dispatched to Mailbox
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] text-[10px] font-semibold border border-[#342A21]/15">
-                          Expires in 10m
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#70798C] mt-1 leading-relaxed">
-                        A verification email with authorization instructions has been dispatched to{' '}
-                        <span className="font-mono font-bold text-[#000004]">admin@setlla.com</span>. Please check your inbox or spam folder.
+                    <div>
+                      <p className="text-xs font-semibold text-[#000004]">
+                        Authorization code dispatched
+                      </p>
+                      <p className="text-[11px] text-[#70798C]">
+                        Check your inbox or spam folder for the 8-digit passcode.
                       </p>
                     </div>
                   </div>
+                  <span className="px-2 py-0.5 rounded-full bg-[#E5E7EB] text-[#70798C] text-[10px] font-semibold shrink-0">
+                    Expires in 10m
+                  </span>
                 </div>
 
                 {/* 8-Digit OTP Inputs (4-4 Grouped with Visual Divider) */}
@@ -565,7 +559,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                       onClick={handleResendOTP}
                       className="text-xs text-[#F95700] hover:underline font-bold cursor-pointer"
                     >
-                      Resend code to admin@setlla.com
+                      Resend authorization code
                     </button>
                   )}
                 </div>
