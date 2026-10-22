@@ -34,9 +34,9 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 }) => {
   const [step, setStep] = useState<'form' | 'otp'>('form');
 
-  // Administrator Profile Details (Passwordless)
-  const [fullName, setFullName] = useState('Platform Administrator');
-  const [phone, setPhone] = useState('0800 000 0001');
+  // Administrator Profile Details (Passwordless - empty by default)
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
   const [sendLoading, setSendLoading] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -365,10 +365,6 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                       </div>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Verified</span>
-                  </span>
                 </div>
 
                 {/* Security Policy Notice Banner */}
@@ -391,7 +387,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                         type="text"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Platform Administrator"
+                        placeholder="Enter your full name"
                         className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#000004] transition-all"
                       />
                     </div>
@@ -407,7 +403,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                         type="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        placeholder="0800 000 0001"
+                        placeholder="Enter your phone number"
                         className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-[#000004] transition-all"
                       />
                     </div>
