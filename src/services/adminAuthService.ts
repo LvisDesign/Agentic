@@ -120,8 +120,71 @@ export function getActiveAdminUser(): UserProfile | null {
 }
 
 /**
- * Generates and stores a 6-digit OTP specifically dispatched to admin@setlla.com.
- * Real email dispatch is triggered via Supabase Auth service directly to the admin's inbox.
+ * Looks up an admin account by email across local admin credentials, user registry, and Supabase.
+ * Returns the matching UserProfile or AdminCredential if found, otherwise null.
+ */
+export async function findAdminAccount(emailInput: string): Promise<UserProfile | AdminCredential | null> {
+  if (!emailInput || !emailInput.trim()) return null;
+  const cleanEmail = emailInput.trim().toLowerCase();
+
+  // 1. Check local admin credentials list
+  const creds = getAdminCredentials();
+  const matchedCred = creds.find((c) => c.email.toLowerCase() === cleanEmail);
+  if (matchedCred) {
+    return matchedCred;
+  }
+
+  // 2. Check local user registry (admins / super admins)
+  const registeredUsers = getRegisteredUsers();
+  const matchedUser = registeredUsers.find(
+    (u) => (u.isAdmin || u.isSuperAdmin) && u.email?.trim().toLowerCase() === cleanEmail
+  );
+  if (matchedUser) {
+    return matchedUser;
+  }
+
+  // 3. Check Supabase platform_users table if configured
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from('platform_users')
+        .select('*')
+        .ilike('email', cleanEmail)
+        .or('is_admin.eq.true,is_super_admin.eq.true')
+        .maybeSingle();
+
+      if (!error && data) {
+        return {
+          id: data.id,
+          fullName: data.full_name,
+          email: data.email,
+          phone: data.phone,
+          state: data.state || 'Delta State',
+          city: data.city || 'Asaba',
+          isVerifiedTenant: false,
+          isAgent: false,
+          isAdmin: true,
+          isSuperAdmin: Boolean(data.is_super_admin),
+          savedListingIds: [],
+          createdAt: data.created_at || new Date().toISOString(),
+        };
+      }
+    } catch (e) {
+      console.warn('[AdminAuthService] Supabase admin lookup notice:', e);
+    }
+  }
+
+  // 4. Default official admin email fallback
+  if (cleanEmail === OFFICIAL_ADMIN_EMAIL.toLowerCase()) {
+    return DEFAULT_MASTER_ADMIN;
+  }
+
+  return null;
+}
+
+/**
+ * Generates and stores a one-time passcode (OTP) for admin authorization.
+ * Dispatches real email via Supabase Auth service.
  */
 export async function generateAndSendAdminOTP(
   email: string = OFFICIAL_ADMIN_EMAIL,
@@ -130,6 +193,30 @@ export async function generateAndSendAdminOTP(
 ): Promise<{ otp: string; expiresAt: number; targetEmail: string; error?: string }> {
   // Target email defaults to official admin email if not provided
   const targetEmail = (email && email.trim()) ? email.trim() : OFFICIAL_ADMIN_EMAIL;
+
+  // Strict Security Gate:
+  // If logging in, the email MUST correspond to a registered administrator account!
+  if (purpose === 'login') {
+    const existing = await findAdminAccount(targetEmail);
+    if (!existing) {
+      return {
+        otp: '',
+        expiresAt: 0,
+        targetEmail,
+        error: 'No administrator account found with this email. Please check your credentials or create an admin account.',
+      };
+    }
+  } else if (purpose === 'create_account') {
+    const existing = await findAdminAccount(targetEmail);
+    if (existing) {
+      return {
+        otp: '',
+        expiresAt: 0,
+        targetEmail,
+        error: 'An administrator account with this email already exists. Please sign in instead.',
+      };
+    }
+  }
 
   // Generate 8-digit cryptographic-quality random code
   const code = Math.floor(10000000 + Math.random() * 90000000).toString();
@@ -287,11 +374,11 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
 export function completeAdminRegistration(
   fullName: string,
   phone: string,
-  password: string,
+  emailInput?: string,
   masterPin?: string
 ): UserProfile {
   const adminId = `DT-ADM-${Date.now().toString().slice(-4)}`;
-  const email = OFFICIAL_ADMIN_EMAIL;
+  const email = (emailInput && emailInput.trim()) ? emailInput.trim() : OFFICIAL_ADMIN_EMAIL;
 
   const newAdmin: UserProfile = {
     id: adminId,
@@ -312,7 +399,7 @@ export function completeAdminRegistration(
   // 1. Save credentials for future login
   saveAdminCredential({
     email,
-    passwordHash: password,
+    passwordHash: '',
     fullName: newAdmin.fullName,
     phone: newAdmin.phone,
     masterPin: masterPin || '2026',
@@ -322,20 +409,39 @@ export function completeAdminRegistration(
   // 2. Persist in user registry
   saveRegisteredUser(newAdmin);
 
-  // 3. Set active admin session
+  // 3. Persist in Supabase platform_users if configured
+  if (isSupabaseConfigured()) {
+    Promise.resolve(
+      supabase.from('platform_users').upsert({
+        id: newAdmin.id,
+        full_name: newAdmin.fullName,
+        phone: newAdmin.phone,
+        email: newAdmin.email,
+        state: newAdmin.state,
+        city: newAdmin.city,
+        is_admin: true,
+        is_super_admin: true,
+        created_at: newAdmin.createdAt,
+      })
+    ).then(({ error }: any) => {
+      if (error) console.warn('[AdminAuthService] Supabase platform_users upsert error:', error);
+    }).catch(() => {});
+  }
+
+  // 4. Set active admin session
   if (typeof window !== 'undefined') {
     localStorage.setItem(ADMIN_AUTH_KEY, 'true');
     localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(newAdmin));
   }
 
-  // 4. Record audit log
+  // 5. Record audit log
   recordAuditLog(
     'ADMIN_ACCOUNT_CREATED',
     'system',
     newAdmin.id,
     newAdmin.fullName,
     newAdmin.fullName,
-    `Super Admin account created and verified via OTP sent to ${email}.`
+    `Super Admin account created for ${email}.`
   );
 
   return newAdmin;

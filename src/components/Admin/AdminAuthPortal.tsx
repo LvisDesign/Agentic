@@ -16,7 +16,9 @@ import { UserProfile } from '../../types/marketplace';
 import { 
   OFFICIAL_ADMIN_EMAIL, 
   generateAndSendAdminOTP, 
-  verifyAdminOTP
+  verifyAdminOTP,
+  findAdminAccount,
+  completeAdminRegistration
 } from '../../services/adminAuthService';
 import { recordAuditLog } from '../../services/adminService';
 import { supabase, isSupabaseConfigured } from '../../utils/supabaseClient';
@@ -30,7 +32,9 @@ interface AdminAuthPortalProps {
 export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   onSuccess,
   onSwitchToExplore,
+  initialMode = 'login',
 }) => {
+  const [mode, setMode] = useState<'login' | 'create-account'>(initialMode);
   const [step, setStep] = useState<'form' | 'otp'>('form');
 
   // Administrator Profile Details (Passwordless - empty by default)
@@ -62,38 +66,39 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
-    const checkAndAuth = (confirmedEmail?: string | null) => {
-      const activeAdminEmail = (email.trim() || OFFICIAL_ADMIN_EMAIL).toLowerCase();
-      if (confirmedEmail?.toLowerCase().includes('admin') || confirmedEmail?.toLowerCase() === activeAdminEmail) {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
+    const checkAndAuth = async (confirmedEmail?: string | null) => {
+      const activeAdminEmail = (email.trim() || confirmedEmail || OFFICIAL_ADMIN_EMAIL).toLowerCase();
+      const existing = await findAdminAccount(activeAdminEmail);
+      if (!existing && mode === 'login') return;
 
-        const adminProfile: UserProfile = {
-          id: 'DT-ADMIN-001',
-          fullName: fullName.trim() || 'Platform Administrator',
-          email: email.trim() || OFFICIAL_ADMIN_EMAIL,
-          phone: phone.trim() || '0800 000 0001',
-          state: 'Delta State',
-          city: 'Asaba',
-          isVerifiedTenant: false,
-          isAgent: false,
-          isAdmin: true,
-          isSuperAdmin: true,
-          savedListingIds: [],
-          createdAt: new Date().toISOString(),
-        };
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
 
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('setlla_admin_auth', 'true');
-          localStorage.setItem('setlla_admin_user', JSON.stringify(adminProfile));
-          localStorage.removeItem('setlla_admin_accounts');
-        }
+      const adminProfile: UserProfile = {
+        id: (existing as any)?.id || 'DT-ADMIN-001',
+        fullName: fullName.trim() || (existing as any)?.fullName || 'Platform Administrator',
+        email: activeAdminEmail,
+        phone: phone.trim() || (existing as any)?.phone || '0800 000 0001',
+        state: (existing as any)?.state || 'Delta State',
+        city: (existing as any)?.city || 'Asaba',
+        isVerifiedTenant: false,
+        isAgent: false,
+        isAdmin: true,
+        isSuperAdmin: true,
+        savedListingIds: [],
+        createdAt: (existing as any)?.createdAt || new Date().toISOString(),
+      };
 
-        onSuccess(adminProfile);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('setlla_admin_auth', 'true');
+        localStorage.setItem('setlla_admin_user', JSON.stringify(adminProfile));
+        localStorage.removeItem('setlla_admin_accounts');
       }
+
+      onSuccess(adminProfile);
     };
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -109,21 +114,60 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     return () => {
       subscription.unsubscribe();
     };
-  }, [fullName, phone, onSuccess]);
+  }, [fullName, phone, email, mode, onSuccess]);
 
   // Handle Request OTP Submission (Passwordless)
   const handleRequestOTP = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setSendError(null);
+
+    const targetEmail = email.trim();
+    if (!targetEmail) {
+      setSendError('Please enter your administrator email.');
+      return;
+    }
+
     setSendLoading(true);
 
-    const targetEmail = email.trim() || OFFICIAL_ADMIN_EMAIL;
-
     try {
-      const result = await generateAndSendAdminOTP(targetEmail, 'login', {
-        fullName: fullName.trim() || 'Platform Administrator',
-        phone: phone.trim() || '0800 000 0001',
-      });
+      // 1. Strict Security Gate:
+      // If signing in, ensure this email belongs to a registered admin account!
+      const existingAccount = await findAdminAccount(targetEmail);
+
+      if (mode === 'login') {
+        if (!existingAccount) {
+          setSendError('No administrator account found with this email. Please check your credentials or create an admin account.');
+          setSendLoading(false);
+          return;
+        }
+      } else {
+        // mode === 'create-account'
+        if (existingAccount) {
+          setSendError('An administrator account with this email already exists. Please sign in instead.');
+          setSendLoading(false);
+          return;
+        }
+        if (!fullName.trim()) {
+          setSendError('Please enter your full name.');
+          setSendLoading(false);
+          return;
+        }
+        if (!phone.trim()) {
+          setSendError('Please enter your direct phone number.');
+          setSendLoading(false);
+          return;
+        }
+      }
+
+      // 2. Dispatch OTP to the target email
+      const result = await generateAndSendAdminOTP(
+        targetEmail, 
+        mode === 'create-account' ? 'create_account' : 'login', 
+        {
+          fullName: fullName.trim() || (existingAccount as any)?.fullName || 'Platform Administrator',
+          phone: phone.trim() || (existingAccount as any)?.phone || '0800 000 0001',
+        }
+      );
       setSendLoading(false);
 
       if (result.error) {
@@ -206,10 +250,14 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     setOtpLoading(true);
     setOtpError(null);
     const targetEmail = email.trim() || OFFICIAL_ADMIN_EMAIL;
-    const result = await generateAndSendAdminOTP(targetEmail, 'login', {
-      fullName,
-      phone,
-    });
+    const result = await generateAndSendAdminOTP(
+      targetEmail, 
+      mode === 'create-account' ? 'create_account' : 'login', 
+      {
+        fullName,
+        phone,
+      }
+    );
     setOtpLoading(false);
     if (result.error) {
       setOtpError(result.error);
@@ -246,35 +294,41 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
       });
 
       const targetEmail = email.trim() || OFFICIAL_ADMIN_EMAIL;
-      const adminProfile: UserProfile = {
-        id: 'DT-ADMIN-001',
-        fullName: fullName.trim() || 'Platform Administrator',
-        email: targetEmail,
-        phone: phone.trim() || '0800 000 0001',
-        state: 'Delta State',
-        city: 'Asaba',
-        isVerifiedTenant: false,
-        isAgent: false,
-        isAdmin: true,
-        isSuperAdmin: true,
-        savedListingIds: [],
-        createdAt: new Date().toISOString(),
-      };
+      let adminProfile: UserProfile;
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('setlla_admin_auth', 'true');
-        localStorage.setItem('setlla_admin_user', JSON.stringify(adminProfile));
-        localStorage.removeItem('setlla_admin_accounts'); // Clear any stored legacy passwords
+      if (mode === 'create-account') {
+        adminProfile = completeAdminRegistration(fullName, phone, targetEmail);
+      } else {
+        const existing = await findAdminAccount(targetEmail);
+        adminProfile = {
+          id: (existing as any)?.id || 'DT-ADMIN-001',
+          fullName: (existing as any)?.fullName || fullName.trim() || 'Platform Administrator',
+          email: targetEmail,
+          phone: (existing as any)?.phone || phone.trim() || '0800 000 0001',
+          state: (existing as any)?.state || 'Delta State',
+          city: (existing as any)?.city || 'Asaba',
+          isVerifiedTenant: false,
+          isAgent: false,
+          isAdmin: true,
+          isSuperAdmin: true,
+          savedListingIds: [],
+          createdAt: (existing as any)?.createdAt || new Date().toISOString(),
+        };
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('setlla_admin_auth', 'true');
+          localStorage.setItem('setlla_admin_user', JSON.stringify(adminProfile));
+        }
+
+        recordAuditLog(
+          'ADMIN_LOGIN',
+          'system',
+          adminProfile.id,
+          adminProfile.fullName,
+          adminProfile.fullName,
+          `Super Admin logged in via OTP verification.`
+        );
       }
-
-      recordAuditLog(
-        'ADMIN_OTP_VERIFIED',
-        'system',
-        adminProfile.id,
-        adminProfile.fullName,
-        adminProfile.fullName,
-        `Super Admin session authenticated via OTP verification.`
-      );
 
       onSuccess(adminProfile);
     } catch (err: any) {
@@ -341,16 +395,59 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
             {/* Title & Subtitle */}
             <div className="mb-3">
               <h1 className="font-display text-xl sm:text-2xl font-extrabold text-[#000004] tracking-tight">
-                {step === 'otp' ? 'Verify Authorization' : 'Super Admin Access'}
+                {step === 'otp'
+                  ? 'Verify Authorization'
+                  : mode === 'login'
+                    ? 'Super Admin Access'
+                    : 'Create Admin Account'}
               </h1>
               <p className="text-xs sm:text-sm text-[#70798C] mt-0.5">
                 {step === 'otp'
                   ? 'Enter the 8-digit authorization code sent to your email'
-                  : 'Passwordless authentication via One-Time Passcode (OTP)'}
+                  : mode === 'login'
+                    ? 'Sign in with your registered administrator email'
+                    : 'Register your administrator profile with one-time verification'}
               </p>
             </div>
 
-            <div className="w-full h-px bg-[#E5E7EB] mb-4" />
+            <div className="w-full h-px bg-[#E5E7EB] mb-3.5" />
+
+            {/* Segmented Pill Switcher (Sign In vs Create Account) */}
+            {step === 'form' && (
+              <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-2 mb-3.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('login');
+                    setSendError(null);
+                  }}
+                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    mode === 'login'
+                      ? 'bg-white text-[#000004] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#000004]'
+                  }`}
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Sign In</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode('create-account');
+                    setSendError(null);
+                  }}
+                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    mode === 'create-account'
+                      ? 'bg-white text-[#000004] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#000004]'
+                  }`}
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>Create Account</span>
+                </button>
+              </div>
+            )}
 
             {/* 1. STEP 1: PASSWORDLESS OTP REQUEST FORM */}
             {step === 'form' && (
@@ -358,7 +455,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 {/* Administrator Email Input */}
                 <div>
                   <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                    Administrator Email
+                    Administrator Email <span className="text-[#F0544F]">*</span>
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -366,46 +463,51 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@setlla.com"
+                      placeholder={mode === 'login' ? 'admin@setlla.com' : 'e.g. name@company.com'}
+                      required
                       className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
                     />
                   </div>
                 </div>
 
-                {/* Administrator Profile Details (Optional) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                      Administrator Name
-                    </label>
-                    <div className="relative">
-                      <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="text"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        placeholder="Enter your full name"
-                        className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
-                      />
+                {/* Additional Details needed during Create Account */}
+                {mode === 'create-account' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                        Administrator Name <span className="text-[#F0544F]">*</span>
+                      </label>
+                      <div className="relative">
+                        <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          placeholder="Enter your full name"
+                          required={mode === 'create-account'}
+                          className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                      Direct Phone Number
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Enter your phone number"
-                        className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
-                      />
+                    <div>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                        Direct Phone Number <span className="text-[#F0544F]">*</span>
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="Enter your phone number"
+                          required={mode === 'create-account'}
+                          className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {sendError && (
                   <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-xs text-[#F0544F] flex items-start gap-2">
@@ -423,12 +525,12 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   {sendLoading ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Sending authorization code...</span>
+                      <span>{mode === 'login' ? 'Validating & sending code...' : 'Dispatching verification code...'}</span>
                     </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4 text-amber-400" />
-                      <span>Send Authorization Code</span>
+                      <span>{mode === 'login' ? 'Send Authorization Code' : 'Create Account & Send Code'}</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -567,8 +669,43 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
             )}
           </div>
 
+          {/* Bottom Footer Switcher */}
+          {step === 'form' && (
+            <div className="pt-3 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3">
+              {mode === 'login' ? (
+                <p>
+                  No administrator account yet?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('create-account');
+                      setSendError(null);
+                    }}
+                    className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
+                  >
+                    Create one
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  Already an administrator?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setSendError(null);
+                    }}
+                    className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Bottom Security Assurance Footnote */}
-          <div className="pt-3.5 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3.5">
+          <div className="pt-3 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3">
             <span className="inline-flex items-center gap-1.5 text-[11px] text-[#70798C]">
               <Lock className="w-3 h-3 text-amber-500" />
               <span>Passwordless Security Standard • Authorized Delta State Operators Only</span>
