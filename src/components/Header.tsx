@@ -240,7 +240,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* TAB 5: User Profile (when authenticated) or Sign In + Signup (when unauthenticated) */}
-          {!isAuthenticated ? (
+          {!isAuthenticated && currentRole !== 'admin' ? (
             <>
               <button
                 onClick={onOpenLogin || onOpenSignup}
@@ -270,10 +270,14 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenProfile}
               className="relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group cursor-pointer shrink-0"
-              aria-label={(currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
-              title={(currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
+              aria-label={currentRole === 'admin' ? 'Super Admin' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
+              title={currentRole === 'admin' ? 'Super Admin' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
             >
-              {currentUser.avatarUrl ? (
+              {currentRole === 'admin' ? (
+                <div className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center shrink-0 shadow-xs">
+                  SA
+                </div>
+              ) : currentUser.avatarUrl ? (
                 <img
                   src={currentUser.avatarUrl}
                   alt={currentUser.fullName}
@@ -282,22 +286,24 @@ export const Header: React.FC<HeaderProps> = ({
               ) : (
                 <div className="w-5 h-5 rounded-full bg-[#342A21] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
                   {currentUser.fullName
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')
-                    .slice(0, 2)
-                    .toUpperCase()}
+                    ? currentUser.fullName
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase()
+                    : 'SA'}
                 </div>
               )}
 
               {/* Desktop Label */}
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-                {currentUser.fullName.split(' ')[0]}
+                {currentRole === 'admin' ? 'Super Admin' : currentUser.fullName ? currentUser.fullName.split(' ')[0] : 'Admin'}
               </span>
 
               {/* Mobile Tooltip */}
               <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-                {(currentUser.isAgent || currentRole === 'agent') ? `Agent Portal (${currentUser.fullName})` : currentUser.fullName}
+                {currentRole === 'admin' ? 'Super Admin' : (currentUser.isAgent || currentRole === 'agent') ? `Agent Portal (${currentUser.fullName})` : currentUser.fullName || 'Admin'}
               </span>
             </button>
           )}

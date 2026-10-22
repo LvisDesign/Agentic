@@ -61,6 +61,23 @@ const GUEST_USER: UserProfile = {
   createdAt: '',
 };
 
+// Platform Administrator Profile for Super Admin
+const ADMIN_USER: UserProfile = {
+  id: 'DT-ADMIN-001',
+  fullName: 'Platform Administrator',
+  email: 'admin@setlla.com',
+  phone: '0800 000 0001',
+  state: 'Delta State',
+  city: 'Asaba',
+  isVerifiedTenant: false,
+  isAgent: false,
+  isAdmin: true,
+  isSuperAdmin: true,
+  isDemoAdmin: true,
+  savedListingIds: [],
+  createdAt: '2026-09-01T08:00:00.000Z',
+};
+
 // Seed initial bookings for immediate testability
 const INITIAL_BOOKINGS: BookingRecord[] = [
   {
@@ -256,6 +273,10 @@ export function App() {
   // User Authentication State (Persisted in localStorage)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const isLocal = isLocalUrl();
+    const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
+    if (hash.includes('admin')) {
+      return true;
+    }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     if (!isLocal && isAuth) {
       const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
@@ -277,6 +298,10 @@ export function App() {
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
     const isLocal = isLocalUrl();
+    const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
+    if (hash.includes('admin')) {
+      return ADMIN_USER;
+    }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
     if (isAuth && saved) {
@@ -446,12 +471,24 @@ export function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isBecomeAgentOpen, setIsBecomeAgentOpen] = useState(false);
 
-  // For first-time visitors, open signup modal on arrival if they haven't skipped yet
+  // For first-time visitors, open signup modal on arrival if they haven't skipped yet (NEVER on admin side)
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
+    if (hash.includes('admin') || initialNav.role === 'admin') {
+      return false;
+    }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     const hasSkipped = (sessionStorage.getItem('setlla_guest_skipped') || sessionStorage.getItem('deltarent_guest_skipped')) === 'true';
     return !isAuth && !hasSkipped;
   });
+
+  // Ensure signup modal is immediately dismissed whenever in Admin mode
+  useEffect(() => {
+    if (currentRole === 'admin') {
+      setIsSignupOpen(false);
+      setSignupNotice(null);
+    }
+  }, [currentRole]);
 
   const [activeModalListing, setActiveModalListing] = useState<PropertyListing | null>(null);
   const [pushNotification, setPushNotification] = useState<PushNotificationData | null>(null);
@@ -1281,7 +1318,7 @@ export function App() {
   };
 
   const handleOpenSignup = () => {
-    if (isAuthenticated) return;
+    if (isAuthenticated || currentRole === 'admin') return;
     setSignupNotice(null);
     setSignupInitialRole('seeker');
     setSignupInitialMode('signup');
@@ -1289,7 +1326,7 @@ export function App() {
   };
 
   const handleOpenLogin = () => {
-    if (isAuthenticated) return;
+    if (isAuthenticated || currentRole === 'admin') return;
     setSignupNotice(null);
     setSignupInitialRole('seeker');
     setSignupInitialMode('login');
@@ -1297,7 +1334,7 @@ export function App() {
   };
 
   const handleOpenAgentSignup = () => {
-    if (isAuthenticated) return;
+    if (isAuthenticated || currentRole === 'admin') return;
     setSignupNotice(null);
     setSignupInitialRole('agent');
     setSignupInitialMode('signup');
@@ -1584,20 +1621,23 @@ export function App() {
         onBecomeAgent={handleBecomeAgent}
       />
 
-      <SignupModal
-        isOpen={isSignupOpen}
-        onClose={() => {
-          setIsSignupOpen(false);
-          setSignupNotice(null);
-        }}
-        currentUser={currentUser}
-        onUpdateUser={handleUpdateUser}
-        onSkip={handleSkipSignup}
-        initialRole={signupInitialRole}
-        initialMode={signupInitialMode}
-        notice={signupNotice}
-        isAuthenticated={isAuthenticated}
-      />
+      {/* Sign In / Sign Up Modal: Strictly for non-admin visitor views */}
+      {currentRole !== 'admin' && (
+        <SignupModal
+          isOpen={isSignupOpen && currentRole !== 'admin'}
+          onClose={() => {
+            setIsSignupOpen(false);
+            setSignupNotice(null);
+          }}
+          currentUser={currentUser}
+          onUpdateUser={handleUpdateUser}
+          onSkip={handleSkipSignup}
+          initialRole={signupInitialRole}
+          initialMode={signupInitialMode}
+          notice={signupNotice}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
 
       {activeModalListing && (
         <InspectionBookingModal
