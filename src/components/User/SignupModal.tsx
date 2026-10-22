@@ -585,12 +585,12 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         >
           {/* LEFT COLUMN: Visual Brand Banner with Warm Vertical Glows (Desktop & Tablet) */}
           <div className="hidden md:flex flex-col justify-between w-72 lg:w-84 bg-[#000004] text-white p-6 lg:p-7 relative overflow-hidden shrink-0">
-            {/* Warm vertical gradient beams matching Image 1 */}
+            {/* Warm vertical gradient beams strictly using Setlla palette tokens */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#E65100]/45 via-[#F95700]/15 to-transparent pointer-events-none" />
-            <div className="absolute -bottom-12 left-4 right-4 h-56 bg-gradient-to-t from-[#FF6D00]/55 via-[#E65100]/25 to-transparent blur-2xl pointer-events-none" />
-            <div className="absolute bottom-0 left-6 w-14 h-48 bg-gradient-to-t from-orange-500/40 via-amber-500/20 to-transparent blur-xl pointer-events-none" />
-            <div className="absolute bottom-0 left-24 w-16 h-60 bg-gradient-to-t from-amber-600/45 via-orange-600/25 to-transparent blur-xl pointer-events-none" />
-            <div className="absolute bottom-0 right-10 w-14 h-44 bg-gradient-to-t from-orange-500/35 via-amber-600/15 to-transparent blur-xl pointer-events-none" />
+            <div className="absolute -bottom-12 left-4 right-4 h-56 bg-gradient-to-t from-[#F95700]/40 via-[#E65100]/25 to-transparent blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-6 w-14 h-48 bg-gradient-to-t from-[#F95700]/30 via-[#342A21]/30 to-transparent blur-xl pointer-events-none" />
+            <div className="absolute bottom-0 left-24 w-16 h-60 bg-gradient-to-t from-[#E65100]/35 via-[#F95700]/20 to-transparent blur-xl pointer-events-none" />
+            <div className="absolute bottom-0 right-10 w-14 h-44 bg-gradient-to-t from-[#F95700]/25 via-[#342A21]/30 to-transparent blur-xl pointer-events-none" />
 
             {/* Top Headline Section */}
             <div className="relative z-10 space-y-3">
@@ -619,8 +619,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             <div>
               {/* Notice Banner (If triggered by attempting to book inspection) */}
               {notice && (
-                <div className="mb-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-3.5 py-2 flex items-center gap-2.5 text-amber-950">
-                  <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
+                <div className="mb-3 bg-[#342A21]/5 border border-[#342A21]/15 rounded-2xl px-3.5 py-2 flex items-center gap-2.5 text-[#342A21]">
+                  <div className="w-6 h-6 rounded-lg bg-[#342A21]/10 text-[#F95700] flex items-center justify-center shrink-0">
                     <CalendarCheck className="w-3.5 h-3.5" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -861,14 +861,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   <form onSubmit={handleSeekerSignup} className="space-y-3.5 text-xs">
                     {/* Duplicate Account Alert Banner */}
                     {duplicateError && (
-                      <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-2 animate-fade-in shadow-xs">
+                      <div className="p-3.5 rounded-2xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-2 animate-fade-in shadow-xs">
                         <div className="flex items-start gap-2.5">
-                          <div className="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                          <div className="w-7 h-7 rounded-xl bg-[#FEECEB] text-[#F0544F] flex items-center justify-center shrink-0 mt-0.5">
                             <AlertTriangle className="w-4 h-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h5 className="font-bold text-xs text-rose-900 leading-tight">Account Already Exists</h5>
-                            <p className="text-[11px] text-rose-800 leading-relaxed mt-0.5">
+                            <h5 className="font-bold text-xs text-[#000004] leading-tight">Account Already Exists</h5>
+                            <p className="text-[11px] text-[#70798C] leading-relaxed mt-0.5">
                               {duplicateError.message} You cannot register twice with the same phone number or email address.
                             </p>
                           </div>
@@ -879,7 +879,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
                             className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
                           >
-                            <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+                            <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
                             <span>Sign In With This Account</span>
                           </button>
                         </div>
@@ -890,7 +890,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          Full Name <span className="text-rose-500">*</span>
+                          Full Name <span className="text-[#F0544F]">*</span>
                         </label>
                         <div className="relative">
                           <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -907,12 +907,12 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          Phone Number <span className="text-rose-500">*</span>
+                          Phone Number <span className="text-[#F0544F]">*</span>
                         </label>
                         <div className="relative">
                           <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
                             duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                              ? 'text-rose-600'
+                              ? 'text-[#F0544F]'
                               : 'text-[#70798C]'
                           }`} />
                           <input
@@ -926,13 +926,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             }}
                             className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
                               duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                                ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                 : 'border-[#E5E7EB]'
                             }`}
                           />
                         </div>
                         {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
-                          <p className="text-[10px] sm:text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                             <span>Phone already registered.</span>
                           </p>
@@ -947,14 +947,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <label className="text-xs font-semibold text-[#70798C]">
                             Your email
                           </label>
-                          <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] text-[#70798C] font-semibold bg-[#F4F5F7] px-1.5 py-0.5 rounded">
                             Optional
                           </span>
                         </div>
                         <div className="relative">
                           <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
                             duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                              ? 'text-rose-600'
+                              ? 'text-[#F0544F]'
                               : 'text-[#70798C]'
                           }`} />
                           <input
@@ -967,13 +967,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             }}
                             className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
                               duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                 : 'border-[#E5E7EB]'
                             }`}
                           />
                         </div>
                         {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                          <p className="text-[10px] sm:text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                             <span>Email already registered.</span>
                           </p>
@@ -1013,8 +1013,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     )}
 
                     {/* Quick Info Box */}
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-2 text-[11px] text-[#70798C]">
-                      <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-[#F4F5F7] border border-[#E5E7EB] flex items-start gap-2 text-[11px] text-[#70798C]">
+                      <Info className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
                       <span>
                         Signing up unlocks instant booking for verified inspection slots. No inspection fees are charged until your booking is officially accepted.
                       </span>
@@ -1036,14 +1036,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   <form onSubmit={handleAgentSignup} className="space-y-2.5 sm:space-y-3 text-xs">
                     {/* Duplicate Account Alert Banner */}
                     {duplicateError && (
-                      <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-1.5 animate-fade-in shadow-xs">
+                      <div className="p-3 rounded-2xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
                         <div className="flex items-start gap-2.5">
-                          <div className="w-6 h-6 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                          <div className="w-6 h-6 rounded-xl bg-[#FEECEB] text-[#F0544F] flex items-center justify-center shrink-0 mt-0.5">
                             <AlertTriangle className="w-3.5 h-3.5" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h5 className="font-bold text-xs text-rose-900 leading-tight">Account Already Exists</h5>
-                            <p className="text-[11px] text-rose-800 leading-relaxed mt-0.5">
+                            <h5 className="font-bold text-xs text-[#000004] leading-tight">Account Already Exists</h5>
+                            <p className="text-[11px] text-[#70798C] leading-relaxed mt-0.5">
                               {duplicateError.message} You cannot register twice with the same phone number or email address.
                             </p>
                           </div>
@@ -1054,7 +1054,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
                             className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
                           >
-                            <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+                            <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
                             <span>Sign In With This Account</span>
                           </button>
                         </div>
@@ -1064,7 +1064,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     {/* Account Type Selector */}
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Agent / Listing Category <span className="text-rose-500">*</span>
+                        Agent / Listing Category <span className="text-[#F0544F]">*</span>
                       </label>
                       <div className="grid grid-cols-3 gap-1.5">
                         <button
@@ -1107,7 +1107,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          Agent Full Name <span className="text-rose-500">*</span>
+                          Agent Full Name <span className="text-[#F0544F]">*</span>
                         </label>
                         <div className="relative">
                           <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1124,7 +1124,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          Agency / Business Name <span className="text-rose-500">*</span>
+                          Agency / Business Name <span className="text-[#F0544F]">*</span>
                         </label>
                         <div className="relative">
                           <Building2 className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1144,12 +1144,12 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          Direct Phone Number <span className="text-rose-500">*</span>
+                          Direct Phone Number <span className="text-[#F0544F]">*</span>
                         </label>
                         <div className="relative">
                           <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
                             duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                              ? 'text-rose-600'
+                              ? 'text-[#F0544F]'
                               : 'text-[#70798C]'
                           }`} />
                           <input
@@ -1160,13 +1160,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             onChange={(e) => handleAgentPhoneChange(e.target.value)}
                             className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
                               duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                                ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                 : 'border-[#E5E7EB]'
                             }`}
                           />
                         </div>
                         {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
-                          <p className="text-[10px] sm:text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                             <span>Phone already registered.</span>
                           </p>
@@ -1198,7 +1198,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           onChange={(e) => setAgentWhatsapp(e.target.value)}
                           className={`w-full px-3 py-2 rounded-xl border text-xs sm:text-sm text-[#000004] outline-none transition-all ${
                             sameAsPhone 
-                              ? 'bg-slate-50 text-[#70798C] border-[#E5E7EB] cursor-not-allowed' 
+                              ? 'bg-[#F4F5F7] text-[#70798C] border-[#E5E7EB] cursor-not-allowed' 
                               : 'bg-[#F9FAFB] border-[#E5E7EB] focus:bg-white focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]'
                           }`}
                         />
@@ -1219,7 +1219,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <label className="text-xs font-semibold text-[#70798C]">
-                            Operating City / Towns <span className="text-rose-500">*</span>
+                            Operating City / Towns <span className="text-[#F0544F]">*</span>
                           </label>
                           {agentState === 'Delta State' && agentCitySelection && agentCitySelection !== 'Others' && (
                             <span className="text-[11px] text-[#70798C] font-semibold">
@@ -1257,7 +1257,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             {agentCitySelection === 'Others' && (
                               <div className="animate-fade-in">
                                 <label className="block text-[11px] font-semibold text-[#70798C] mb-1">
-                                  Enter Your City / Town Name <span className="text-rose-500">*</span>
+                                  Enter Your City / Town Name <span className="text-[#F0544F]">*</span>
                                 </label>
                                 <input
                                   type="text"
@@ -1268,7 +1268,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                     setCustomAgentCity(e.target.value);
                                     setAgentCity(e.target.value);
                                   }}
-                                  className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-amber-50/20 focus:bg-white"
+                                  className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F95700]/5 focus:bg-white"
                                 />
                               </div>
                             )}
@@ -1293,14 +1293,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <label className="text-xs font-semibold text-[#70798C]">
                             Email Address
                           </label>
-                          <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.5 rounded">
+                          <span className="text-[10px] text-[#70798C] font-semibold bg-[#F4F5F7] px-1.5 py-0.5 rounded">
                             Optional
                           </span>
                         </div>
                         <div className="relative">
                           <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
                             duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                              ? 'text-rose-600'
+                              ? 'text-[#F0544F]'
                               : 'text-[#70798C]'
                           }`} />
                           <input
@@ -1313,13 +1313,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             }}
                             className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
                               duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                 : 'border-[#E5E7EB]'
                             }`}
                           />
                         </div>
                         {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                          <p className="text-[10px] sm:text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                             <span>Email already registered.</span>
                           </p>
@@ -1331,12 +1331,12 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <label className="text-xs font-semibold text-[#70798C]">
                             CAC / License No.
                           </label>
-                          <span className="text-[10px] text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded font-semibold border border-amber-200">
+                          <span className="text-[10px] text-[#342A21] bg-[#342A21]/5 px-1.5 py-0.5 rounded font-semibold border border-[#342A21]/20">
                             Verified Badge
                           </span>
                         </div>
                         <div className="relative">
-                          <FileText className="w-4 h-4 text-amber-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <FileText className="w-4 h-4 text-[#F95700] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="text"
                             placeholder="e.g. RC-182903 or Reg No."
@@ -1349,8 +1349,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     </div>
 
                     {/* Notice */}
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-start gap-2 text-[11px] text-amber-950">
-                      <Check className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-[#342A21]/5 border border-[#342A21]/15 flex items-start gap-2 text-[11px] text-[#342A21]">
+                      <Check className="w-3.5 h-3.5 text-[#F95700] shrink-0 mt-0.5" />
                       <span>
                         As an Agent, you will receive real-time inspection requests from pre-screened tenants directly in your Agent Portal.
                       </span>

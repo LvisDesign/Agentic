@@ -88,6 +88,16 @@ body::-webkit-scrollbar,
   background: transparent !important;
 }
 
+/* Ensure browser autofill respects the design system input background and text */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #F9FAFB inset !important;
+  -webkit-text-fill-color: #000004 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Typography Utility Classes */
 .font-display {
   font-family: var(--font-display) !important;

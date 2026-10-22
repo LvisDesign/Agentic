@@ -56,6 +56,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [masterPin, setMasterPin] = useState('2026');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -313,12 +314,12 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
         
         {/* LEFT COLUMN: Visual Brand Banner with Warm Vertical Glows (Desktop & Tablet) */}
         <div className="hidden md:flex flex-col justify-between w-72 lg:w-84 bg-[#000004] text-white p-6 lg:p-7 relative overflow-hidden shrink-0">
-          {/* Warm vertical gradient beams matching Image 1 */}
+          {/* Warm vertical gradient beams strictly using Setlla palette tokens */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#E65100]/45 via-[#F95700]/15 to-transparent pointer-events-none" />
-          <div className="absolute -bottom-12 left-4 right-4 h-56 bg-gradient-to-t from-[#FF6D00]/55 via-[#E65100]/25 to-transparent blur-2xl pointer-events-none" />
-          <div className="absolute bottom-0 left-6 w-14 h-48 bg-gradient-to-t from-orange-500/40 via-amber-500/20 to-transparent blur-xl pointer-events-none" />
-          <div className="absolute bottom-0 left-24 w-16 h-60 bg-gradient-to-t from-amber-600/45 via-orange-600/25 to-transparent blur-xl pointer-events-none" />
-          <div className="absolute bottom-0 right-10 w-14 h-44 bg-gradient-to-t from-orange-500/35 via-amber-600/15 to-transparent blur-xl pointer-events-none" />
+          <div className="absolute -bottom-12 left-4 right-4 h-56 bg-gradient-to-t from-[#F95700]/40 via-[#E65100]/25 to-transparent blur-2xl pointer-events-none" />
+          <div className="absolute bottom-0 left-6 w-14 h-48 bg-gradient-to-t from-[#F95700]/30 via-[#342A21]/30 to-transparent blur-xl pointer-events-none" />
+          <div className="absolute bottom-0 left-24 w-16 h-60 bg-gradient-to-t from-[#E65100]/35 via-[#F95700]/20 to-transparent blur-xl pointer-events-none" />
+          <div className="absolute bottom-0 right-10 w-14 h-44 bg-gradient-to-t from-[#F95700]/25 via-[#342A21]/30 to-transparent blur-xl pointer-events-none" />
 
           {/* Top Headline Section */}
           <div className="relative z-10 space-y-3">
@@ -354,9 +355,9 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
               <button
                 type="button"
                 onClick={onSwitchToExplore}
-                className="text-xs text-[#70798C] hover:text-[#000004] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors py-1 px-2.5 rounded-lg hover:bg-slate-100"
+                className="text-xs text-[#70798C] hover:text-[#000004] font-semibold flex items-center gap-1.5 cursor-pointer transition-colors py-1 px-2.5 rounded-lg hover:bg-[#F4F5F7]"
               >
-                <Globe className="w-3.5 h-3.5 text-amber-600" />
+                <Globe className="w-3.5 h-3.5 text-[#F95700]" />
                 <span className="hidden sm:inline">Explore Feed</span>
               </button>
             </div>
@@ -486,8 +487,8 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 </div>
 
                 {loginError && (
-                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="p-2.5 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-xs text-[#F0544F] flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
                     <span>{loginError}</span>
                   </div>
                 )}
@@ -517,7 +518,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   <button
                     type="button"
                     onClick={handleQuickFillMasterAdmin}
-                    className="py-1 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-semibold flex items-center gap-1.5 transition-all cursor-pointer text-[11px]"
+                    className="py-1 px-2.5 rounded-lg bg-[#F4F5F7] hover:bg-[#E5E7EB] text-[#000004] font-semibold flex items-center gap-1.5 transition-all cursor-pointer text-[11px]"
                   >
                     <Key className="w-3 h-3 text-[#F95700]" />
                     <span>Fill Master Admin</span>
@@ -533,7 +534,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                      Full Name <span className="text-rose-500">*</span>
+                      Full Name <span className="text-[#F0544F]">*</span>
                     </label>
                     <div className="relative">
                       <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -550,7 +551,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
                   <div>
                     <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                      Phone Number <span className="text-rose-500">*</span>
+                      Phone Number <span className="text-[#F0544F]">*</span>
                     </label>
                     <div className="relative">
                       <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -570,9 +571,9 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-semibold text-[#70798C]">
-                      Your email <span className="text-rose-500">*</span>
+                      Your email <span className="text-[#F0544F]">*</span>
                     </label>
-                    <span className="text-[10px] text-[#F95700] font-bold bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
+                    <span className="text-[10px] text-[#F95700] font-bold bg-[#F95700]/10 px-2 py-0.5 rounded-full border border-[#F95700]/25">
                       Mandatory Mailbox
                     </span>
                   </div>
@@ -590,11 +591,11 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   </p>
                 </div>
 
-                {/* Password and Confirm Password in 2-column Grid */}
+                {/* Password and Confirm Password in 2-column Grid with Reveal Icons */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                      Create new password <span className="text-rose-500">*</span>
+                      Create new password <span className="text-[#F0544F]">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -603,31 +604,47 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
                         required
-                        className="w-full px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                        className="w-full pl-3 pr-9 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                      Confirm password <span className="text-rose-500">*</span>
+                      Confirm password <span className="text-[#F0544F]">*</span>
                     </label>
                     <div className="relative">
                       <input
-                        type={showPassword ? 'text' : 'password'}
+                        type={showConfirmPassword ? 'text' : 'password'}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••••••"
                         required
-                        className="w-full px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                        className="w-full pl-3 pr-9 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
                 </div>
 
                 {createError && (
-                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="p-2.5 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-xs text-[#F0544F] flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
                     <span>{createError}</span>
                   </div>
                 )}
@@ -669,11 +686,11 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 <div className="bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl p-4 relative overflow-hidden shadow-xs">
                   <div className="flex items-center justify-between gap-2 border-b border-[#E5E7EB] pb-2 mb-3 text-xs">
                     <div className="flex items-center gap-1.5 text-[#70798C]">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span className="w-2 h-2 rounded-full bg-[#10B981]" />
                       <span>Mailbox Dispatch:</span>
                       <span className="font-mono text-[#000004] font-bold">admin@setlla.com</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded-full bg-orange-100 text-[#E65100] text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-full bg-[#F95700]/15 text-[#F95700] text-[10px] font-bold">
                       Expires in 10m
                     </span>
                   </div>
@@ -695,7 +712,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                     >
                       {copiedOtp ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <Check className="w-3.5 h-3.5 text-[#10B981]" />
                           <span>Filled!</span>
                         </>
                       ) : (
@@ -735,8 +752,8 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 </div>
 
                 {otpError && (
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-xs text-[#F0544F] flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
                     <span>{otpError}</span>
                   </div>
                 )}
