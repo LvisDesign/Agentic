@@ -594,17 +594,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
             {/* Top Headline Section */}
             <div className="relative z-10 space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold text-amber-300">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                <span>
-                  {authMode === 'login' 
-                    ? 'Member Gateway' 
-                    : activeRoleTab === 'seeker' 
-                      ? 'Tenant Member Portal' 
-                      : 'Agent Partner Hub'}
-                </span>
-              </div>
-
               <h2 className="font-display text-xl lg:text-2xl font-extrabold text-white leading-tight tracking-tight">
                 {authMode === 'signup' && activeRoleTab === 'agent'
                   ? 'List verified rentals and close deals faster.'

@@ -322,11 +322,6 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
           {/* Top Headline Section */}
           <div className="relative z-10 space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold text-amber-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <span>Super Admin Gateway</span>
-            </div>
-
             <h2 className="font-display text-xl lg:text-2xl font-extrabold text-white leading-tight tracking-tight">
               Direct oversight across Delta State rentals and escrow.
             </h2>
