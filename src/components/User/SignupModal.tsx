@@ -471,7 +471,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/65 backdrop-blur-sm overflow-y-auto animate-fade-in">
       {showPostSignupPrompt ? (
         /* --- POST-SIGNUP SCREEN CARD LAYOUT --- */
         <div 
@@ -580,11 +580,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         </div>
       ) : (
         <div 
-          className="w-full max-w-4xl bg-white rounded-[28px] sm:rounded-[32px] shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col md:flex-row max-h-[92vh] animate-scale-up"
+          className="w-full max-w-4xl bg-white rounded-[24px] sm:rounded-[28px] md:rounded-[32px] shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col md:flex-row my-auto max-h-[min(94dvh,780px)] animate-scale-up"
           onClick={(e) => e.stopPropagation()}
         >
           {/* LEFT COLUMN: Visual Brand Banner with Warm Vertical Glows (Desktop & Tablet) */}
-          <div className="hidden md:flex flex-col justify-between w-80 lg:w-92 bg-[#000004] text-white p-8 relative overflow-hidden shrink-0">
+          <div className="hidden md:flex flex-col justify-between w-72 lg:w-84 bg-[#000004] text-white p-6 lg:p-7 relative overflow-hidden shrink-0">
             {/* Warm vertical gradient beams matching Image 1 */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#E65100]/45 via-[#F95700]/15 to-transparent pointer-events-none" />
             <div className="absolute -bottom-12 left-4 right-4 h-56 bg-gradient-to-t from-[#FF6D00]/55 via-[#E65100]/25 to-transparent blur-2xl pointer-events-none" />
@@ -593,7 +593,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             <div className="absolute bottom-0 right-10 w-14 h-44 bg-gradient-to-t from-orange-500/35 via-amber-600/15 to-transparent blur-xl pointer-events-none" />
 
             {/* Top Headline Section */}
-            <div className="relative z-10 space-y-4">
+            <div className="relative z-10 space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold text-amber-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                 <span>
@@ -605,7 +605,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 </span>
               </div>
 
-              <h2 className="font-display text-2xl lg:text-3xl font-extrabold text-white leading-tight tracking-tight">
+              <h2 className="font-display text-xl lg:text-2xl font-extrabold text-white leading-tight tracking-tight">
                 {authMode === 'signup' && activeRoleTab === 'agent'
                   ? 'List verified rentals and close deals faster.'
                   : 'Find, inspect, and secure verified apartments.'}
@@ -619,20 +619,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             </div>
 
             {/* Bottom Trust Hallmark */}
-            <div className="relative z-10 pt-8 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
+            <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
               <span>Setlla • Verified Homes</span>
               <span>Delta State</span>
             </div>
           </div>
 
           {/* RIGHT COLUMN: Authentication Form (Responsive for Mobile & Desktop) */}
-          <div className="flex-1 flex flex-col justify-between p-6 sm:p-8 lg:p-9 bg-white overflow-y-auto max-h-[92vh] no-scrollbar">
+          <div className="flex-1 flex flex-col justify-between p-5 sm:p-6 md:p-7 lg:p-8 bg-white overflow-y-auto max-h-[min(94dvh,780px)] no-scrollbar">
             <div>
               {/* Notice Banner (If triggered by attempting to book inspection) */}
               {notice && (
-                <div className="mb-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-2.5 flex items-center gap-2.5 text-amber-950">
-                  <div className="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
-                    <CalendarCheck className="w-4 h-4" />
+                <div className="mb-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-3.5 py-2 flex items-center gap-2.5 text-amber-950">
+                  <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
+                    <CalendarCheck className="w-3.5 h-3.5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold leading-tight">{notice.title}</p>
@@ -644,7 +644,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               )}
 
               {/* Header Bar: Brand Logo & Close Button */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div className="flex items-center gap-2.5">
                   <img 
                     src="/images/setlla-logo.png" 
@@ -665,28 +665,28 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               </div>
 
               {/* Title & Subtitle matching sample */}
-              <div className="mb-4">
-                <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#000004] tracking-tight">
+              <div className="mb-3">
+                <h1 className="font-display text-xl sm:text-2xl font-extrabold text-[#000004] tracking-tight">
                   {authMode === 'login' ? 'Welcome back' : 'Get Started'}
                 </h1>
-                <p className="text-xs sm:text-sm text-[#70798C] mt-1">
+                <p className="text-xs sm:text-sm text-[#70798C] mt-0.5">
                   {authMode === 'login'
                     ? 'Sign in to manage your bookings, passes, and account'
                     : 'Welcome to Setlla — Let’s get started'}
                 </p>
               </div>
 
-              <div className="w-full h-px bg-[#E5E7EB] mb-4" />
+              <div className="w-full h-px bg-[#E5E7EB] mb-3 sm:mb-3.5" />
 
               {/* 1. Primary Segmented Pill Switcher (Matching Sample 2) */}
-              <div className="p-1 bg-[#F4F5F7] rounded-2xl grid grid-cols-2 mb-4">
+              <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-2 mb-3">
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode('login');
                     setDuplicateError(null);
                   }}
-                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     authMode === 'login'
                       ? 'bg-white text-[#000004] shadow-xs'
                       : 'text-[#70798C] hover:text-[#000004]'
@@ -702,7 +702,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     setAuthMode('signup');
                     setDuplicateError(null);
                   }}
-                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     authMode === 'signup'
                       ? 'bg-white text-[#000004] shadow-xs'
                       : 'text-[#70798C] hover:text-[#000004]'
@@ -715,14 +715,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
               {/* 2. Secondary Role Switcher Pills: Tenant vs Agent (Shown during Create Account) */}
               {authMode === 'signup' && (
-                <div className="p-1 bg-[#F4F5F7] rounded-2xl grid grid-cols-2 mb-4 gap-1">
+                <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-2 mb-3 gap-1">
                   <button
                     type="button"
                     onClick={() => {
                       setActiveRoleTab('seeker');
                       setDuplicateError(null);
                     }}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       activeRoleTab === 'seeker'
                         ? 'bg-white text-[#000004] shadow-xs'
                         : 'text-[#70798C] hover:text-[#000004]'
@@ -738,7 +738,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       setActiveRoleTab('agent');
                       setDuplicateError(null);
                     }}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                       activeRoleTab === 'agent'
                         ? 'bg-white text-[#000004] shadow-xs'
                         : 'text-[#70798C] hover:text-[#000004]'
@@ -751,7 +751,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               )}
 
               {/* Subhead instructions matching mobile sample */}
-              <div className="mb-4">
+              <div className="mb-3">
                 <h3 className="font-bold text-xs sm:text-sm text-[#000004]">
                   {authMode === 'login'
                     ? 'Sign in to continue'
@@ -759,7 +759,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       ? 'Tenant registration'
                       : 'Agent partner registration'}
                 </h3>
-                <p className="text-xs text-[#70798C] mt-0.5">
+                <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
                   {authMode === 'login'
                     ? 'Access your dashboard, verified passes, and saved listings.'
                     : activeRoleTab === 'seeker'
@@ -897,106 +897,108 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     )}
 
-                    {/* Full Name */}
-                    <div>
-                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Full Name <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <User className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Chinedu Okafor"
-                          value={seekerFullName}
-                          onChange={(e) => setSeekerFullName(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Phone Number */}
-                    <div>
-                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Phone Number <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Phone className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                          duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                            ? 'text-rose-600'
-                            : 'text-[#70798C]'
-                        }`} />
-                        <input
-                          type="tel"
-                          required
-                          placeholder="0803 000 0000"
-                          value={seekerPhone}
-                          onChange={(e) => {
-                            setSeekerPhone(e.target.value);
-                            if (duplicateError) setDuplicateError(null);
-                          }}
-                          className={`w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                            duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                              ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
-                              : 'border-[#E5E7EB]'
-                          }`}
-                        />
-                      </div>
-                      {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
-                        <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>Phone number already registered. Please sign in instead.</span>
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Email (Optional) */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-[#70798C]">
-                          Your email
+                    {/* Full Name & Phone Number in 2-Column Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                          Full Name <span className="text-rose-500">*</span>
                         </label>
-                        <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.5 rounded">
-                          Optional
-                        </span>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Chinedu Okafor"
+                            value={seekerFullName}
+                            onChange={(e) => setSeekerFullName(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <Mail className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                          duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                            ? 'text-rose-600'
-                            : 'text-[#70798C]'
-                        }`} />
-                        <input
-                          type="email"
-                          placeholder="name@email.com (optional)"
-                          value={seekerEmail}
-                          onChange={(e) => {
-                            setSeekerEmail(e.target.value);
-                            if (duplicateError) setDuplicateError(null);
-                          }}
-                          className={`w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                              ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
-                              : 'border-[#E5E7EB]'
-                          }`}
-                        />
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                          Phone Number <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                            duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                              ? 'text-rose-600'
+                              : 'text-[#70798C]'
+                          }`} />
+                          <input
+                            type="tel"
+                            required
+                            placeholder="0803 000 0000"
+                            value={seekerPhone}
+                            onChange={(e) => {
+                              setSeekerPhone(e.target.value);
+                              if (duplicateError) setDuplicateError(null);
+                            }}
+                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                                ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                                : 'border-[#E5E7EB]'
+                            }`}
+                          />
+                        </div>
+                        {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>Phone already registered.</span>
+                          </p>
+                        )}
                       </div>
-                      {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                        <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>Email address already registered. Please sign in instead.</span>
-                        </p>
-                      )}
                     </div>
 
-                    {/* State Dropdown */}
-                    <div>
-                      <StateDropdown
-                        value={seekerState}
-                        onChange={(val) => setSeekerState(val)}
-                        label="Choose State Looking For Apartment"
-                        required
-                      />
+                    {/* Email & State in 2-Column Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-[#70798C]">
+                            Your email
+                          </label>
+                          <span className="text-[10px] text-[#70798C] font-semibold bg-slate-100 px-1.5 py-0.5 rounded">
+                            Optional
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                              ? 'text-rose-600'
+                              : 'text-[#70798C]'
+                          }`} />
+                          <input
+                            type="email"
+                            placeholder="name@email.com"
+                            value={seekerEmail}
+                            onChange={(e) => {
+                              setSeekerEmail(e.target.value);
+                              if (duplicateError) setDuplicateError(null);
+                            }}
+                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                              duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                                : 'border-[#E5E7EB]'
+                            }`}
+                          />
+                        </div>
+                        {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>Email already registered.</span>
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <StateDropdown
+                          value={seekerState}
+                          onChange={(val) => setSeekerState(val)}
+                          label="Choose State"
+                          required
+                        />
+                      </div>
                     </div>
 
                     {/* If Delta State selected, provide city option */}
@@ -1022,7 +1024,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     )}
 
                     {/* Quick Info Box */}
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-2 text-[11px] text-[#70798C]">
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-2 text-[11px] text-[#70798C]">
                       <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>
                         Signing up unlocks instant booking for verified inspection slots. No inspection fees are charged until your booking is officially accepted.
@@ -1030,10 +1032,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="pt-2">
+                    <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        className="w-full py-3 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                       >
                         <span>Create new account</span>
                         <ArrowRight className="w-4 h-4" />
@@ -1042,13 +1044,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   </form>
                 ) : (
                   /* --- 3. AGENT SIGNUP FORM --- */
-                  <form onSubmit={handleAgentSignup} className="space-y-3.5 text-xs">
+                  <form onSubmit={handleAgentSignup} className="space-y-2.5 sm:space-y-3 text-xs">
                     {/* Duplicate Account Alert Banner */}
                     {duplicateError && (
-                      <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-2 animate-fade-in shadow-xs">
+                      <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 space-y-1.5 animate-fade-in shadow-xs">
                         <div className="flex items-start gap-2.5">
-                          <div className="w-7 h-7 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
-                            <AlertTriangle className="w-4 h-4" />
+                          <div className="w-6 h-6 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0 mt-0.5">
+                            <AlertTriangle className="w-3.5 h-3.5" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h5 className="font-bold text-xs text-rose-900 leading-tight">Account Already Exists</h5>
@@ -1061,7 +1063,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                            className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                            className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
                           >
                             <LogIn className="w-3.5 h-3.5 text-emerald-400" />
                             <span>Sign In With This Account</span>
@@ -1079,7 +1081,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setAgentType('agency')}
-                          className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                             agentType === 'agency'
                               ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
                               : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
@@ -1090,7 +1092,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setAgentType('individual')}
-                          className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                             agentType === 'individual'
                               ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
                               : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
@@ -1101,7 +1103,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setAgentType('landlord')}
-                          className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                             agentType === 'landlord'
                               ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
                               : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
@@ -1113,20 +1115,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     </div>
 
                     {/* Full Name & Agency Name */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
                           Agent Full Name <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
-                          <User className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="text"
                             required
                             placeholder="e.g. Victor Ossai"
                             value={agentFullName}
                             onChange={(e) => setAgentFullName(e.target.value)}
-                            className="w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                            className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                           />
                         </div>
                       </div>
@@ -1136,88 +1138,86 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           Agency / Business Name <span className="text-rose-500">*</span>
                         </label>
                         <div className="relative">
-                          <Building2 className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <Building2 className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="text"
                             required
                             placeholder="e.g. Apex Real Estate Ltd"
                             value={agencyName}
                             onChange={(e) => setAgencyName(e.target.value)}
-                            className="w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                            className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* Direct Phone & WhatsApp */}
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                            Direct Phone Number <span className="text-rose-500">*</span>
-                          </label>
-                          <div className="relative">
-                            <Phone className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                                ? 'text-rose-600'
-                                : 'text-[#70798C]'
-                            }`} />
-                            <input
-                              type="tel"
-                              required
-                              placeholder="0803 123 4567"
-                              value={agentPhone}
-                              onChange={(e) => handleAgentPhoneChange(e.target.value)}
-                              className={`w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                                duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                                  ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
-                                  : 'border-[#E5E7EB]'
-                              }`}
-                            />
-                          </div>
-                          {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
-                            <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
-                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                              <span>Phone number already registered. Please sign in instead.</span>
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-xs font-semibold text-[#70798C]">
-                              WhatsApp Number
-                            </label>
-                            <label className="flex items-center gap-1 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={sameAsPhone}
-                                onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
-                                className="w-3.5 h-3.5 rounded accent-[#F95700]"
-                              />
-                              <span className="text-[10px] text-[#70798C] font-semibold">
-                                Same as phone
-                              </span>
-                            </label>
-                          </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                          Direct Phone Number <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                            duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                              ? 'text-rose-600'
+                              : 'text-[#70798C]'
+                          }`} />
                           <input
                             type="tel"
-                            disabled={sameAsPhone}
-                            placeholder={sameAsPhone ? (agentPhone || 'Synced with phone') : '0803 000 0000'}
-                            value={sameAsPhone ? agentPhone : agentWhatsapp}
-                            onChange={(e) => setAgentWhatsapp(e.target.value)}
-                            className={`w-full px-3.5 py-2.5 rounded-xl border text-sm text-[#000004] outline-none transition-all ${
-                              sameAsPhone 
-                                ? 'bg-slate-50 text-[#70798C] border-[#E5E7EB] cursor-not-allowed' 
-                                : 'bg-[#F9FAFB] border-[#E5E7EB] focus:bg-white focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]'
+                            required
+                            placeholder="0803 123 4567"
+                            value={agentPhone}
+                            onChange={(e) => handleAgentPhoneChange(e.target.value)}
+                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                                ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
+                                : 'border-[#E5E7EB]'
                             }`}
                           />
                         </div>
+                        {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>Phone already registered.</span>
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-[#70798C]">
+                            WhatsApp Number
+                          </label>
+                          <label className="flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={sameAsPhone}
+                              onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
+                              className="w-3.5 h-3.5 rounded accent-[#F95700]"
+                            />
+                            <span className="text-[10px] text-[#70798C] font-semibold">
+                              Same as phone
+                            </span>
+                          </label>
+                        </div>
+                        <input
+                          type="tel"
+                          disabled={sameAsPhone}
+                          placeholder={sameAsPhone ? (agentPhone || 'Synced with phone') : '0803 000 0000'}
+                          value={sameAsPhone ? agentPhone : agentWhatsapp}
+                          onChange={(e) => setAgentWhatsapp(e.target.value)}
+                          className={`w-full px-3 py-2 rounded-xl border text-xs sm:text-sm text-[#000004] outline-none transition-all ${
+                            sameAsPhone 
+                              ? 'bg-slate-50 text-[#70798C] border-[#E5E7EB] cursor-not-allowed' 
+                              : 'bg-[#F9FAFB] border-[#E5E7EB] focus:bg-white focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]'
+                          }`}
+                        />
                       </div>
                     </div>
 
                     {/* Operating State & City */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                       <div>
                         <StateDropdown
                           value={agentState}
@@ -1239,7 +1239,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           )}
                         </div>
                         {agentState === 'Delta State' ? (
-                          <div className="space-y-2">
+                          <div className="space-y-1.5">
                             <CustomDropdown
                               options={[
                                 ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
@@ -1279,7 +1279,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                     setCustomAgentCity(e.target.value);
                                     setAgentCity(e.target.value);
                                   }}
-                                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-sm text-[#000004] outline-none bg-amber-50/20 focus:bg-white"
+                                  className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-amber-50/20 focus:bg-white"
                                 />
                               </div>
                             )}
@@ -1291,14 +1291,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             placeholder="e.g. Ikeja, Benin City, Port Harcourt"
                             value={agentCity}
                             onChange={(e) => setAgentCity(e.target.value)}
-                            className="w-full px-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white"
+                            className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white"
                           />
                         )}
                       </div>
                     </div>
 
                     {/* Optional Email & CAC */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <label className="text-xs font-semibold text-[#70798C]">
@@ -1309,7 +1309,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           </span>
                         </div>
                         <div className="relative">
-                          <Mail className={`w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                          <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
                             duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
                               ? 'text-rose-600'
                               : 'text-[#70798C]'
@@ -1322,7 +1322,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               setAgentEmail(e.target.value);
                               if (duplicateError) setDuplicateError(null);
                             }}
-                            className={`w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
                               duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
                                 ? 'border-rose-500 ring-2 ring-rose-200 bg-rose-50/20'
                                 : 'border-[#E5E7EB]'
@@ -1330,9 +1330,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           />
                         </div>
                         {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                          <p className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-1 animate-fade-in">
                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>Email address already registered. Please sign in instead.</span>
+                            <span>Email already registered.</span>
                           </p>
                         )}
                       </div>
@@ -1347,31 +1347,31 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           </span>
                         </div>
                         <div className="relative">
-                          <FileText className="w-4 h-4 text-amber-600 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <FileText className="w-4 h-4 text-amber-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="text"
                             placeholder="e.g. RC-182903 or Reg No."
                             value={agentCac}
                             onChange={(e) => setAgentCac(e.target.value)}
-                            className="w-full pl-10 pr-3.5 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                            className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                           />
                         </div>
                       </div>
                     </div>
 
                     {/* Notice */}
-                    <div className="p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-start gap-2 text-[11px] text-amber-950">
-                      <Check className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                    <div className="p-2 sm:p-2.5 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-start gap-2 text-[11px] text-amber-950">
+                      <Check className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
                       <span>
                         As an Agent, you will receive real-time inspection requests from pre-screened tenants directly in your Agent Portal.
                       </span>
                     </div>
 
                     {/* Submit Button */}
-                    <div className="pt-2">
+                    <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        className="w-full py-3 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                       >
                         <Building2 className="w-4 h-4" />
                         <span>Register as Agent & Open Portal</span>
@@ -1384,7 +1384,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             </div>
 
             {/* Bottom Footer Switcher matching samples */}
-            <div className="pt-5 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-5 space-y-2">
+            <div className="pt-3.5 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3.5 space-y-1.5">
               {authMode === 'login' ? (
                 <p>
                   No account yet?{' '}

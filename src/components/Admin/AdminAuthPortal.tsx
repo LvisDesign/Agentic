@@ -307,12 +307,12 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   };
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] w-full bg-[#FCF9F5] text-[#000004] flex items-center justify-center p-3 sm:p-6 md:p-8">
+    <div className="min-h-[100dvh] w-full bg-[#FCF9F5] text-[#000004] flex items-center justify-center p-3 sm:p-4 md:p-6 overflow-y-auto">
       {/* Split Two-Column Card matching sample design */}
-      <div className="w-full max-w-4xl bg-white rounded-[28px] sm:rounded-[32px] shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col md:flex-row animate-scale-up">
+      <div className="w-full max-w-4xl bg-white rounded-[24px] sm:rounded-[28px] md:rounded-[32px] shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col md:flex-row my-auto max-h-[min(94vh,760px)] animate-scale-up">
         
         {/* LEFT COLUMN: Visual Brand Banner with Warm Vertical Glows (Desktop & Tablet) */}
-        <div className="hidden md:flex flex-col justify-between w-80 lg:w-96 bg-[#000004] text-white p-8 relative overflow-hidden shrink-0">
+        <div className="hidden md:flex flex-col justify-between w-72 lg:w-84 bg-[#000004] text-white p-6 lg:p-7 relative overflow-hidden shrink-0">
           {/* Warm vertical gradient beams matching Image 1 */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#E65100]/45 via-[#F95700]/15 to-transparent pointer-events-none" />
           <div className="absolute -bottom-12 left-4 right-4 h-56 bg-gradient-to-t from-[#FF6D00]/55 via-[#E65100]/25 to-transparent blur-2xl pointer-events-none" />
@@ -321,13 +321,13 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
           <div className="absolute bottom-0 right-10 w-14 h-44 bg-gradient-to-t from-orange-500/35 via-amber-600/15 to-transparent blur-xl pointer-events-none" />
 
           {/* Top Headline Section */}
-          <div className="relative z-10 space-y-4">
+          <div className="relative z-10 space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold text-amber-300">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               <span>Super Admin Gateway</span>
             </div>
 
-            <h2 className="font-display text-2xl lg:text-3xl font-extrabold text-white leading-tight tracking-tight">
+            <h2 className="font-display text-xl lg:text-2xl font-extrabold text-white leading-tight tracking-tight">
               Direct oversight across Delta State rentals and escrow.
             </h2>
 
@@ -337,17 +337,17 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
           </div>
 
           {/* Bottom Trust Hallmark */}
-          <div className="relative z-10 pt-8 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
+          <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
             <span>Setlla • Platform Authority</span>
             <span>Delta State</span>
           </div>
         </div>
 
         {/* RIGHT COLUMN: Authentication Form (Responsive for Mobile & Desktop) */}
-        <div className="flex-1 flex flex-col justify-between p-6 sm:p-8 lg:p-10 bg-white overflow-y-auto max-h-[88vh]">
+        <div className="flex-1 flex flex-col justify-between p-5 sm:p-6 md:p-7 lg:p-8 bg-white overflow-y-auto max-h-[min(94vh,760px)] no-scrollbar">
           <div>
             {/* Header: Brand Logo & Back to Live Marketplace */}
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
               <div className="flex items-center gap-2.5">
                 <img 
                   src="/images/setlla-logo.png" 
@@ -367,15 +367,15 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
             </div>
 
             {/* Title & Subtitle matching sample */}
-            <div className="mb-4">
-              <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#000004] tracking-tight">
+            <div className="mb-3">
+              <h1 className="font-display text-xl sm:text-2xl font-extrabold text-[#000004] tracking-tight">
                 {step === 'otp' 
                   ? 'Verify Authorization'
                   : mode === 'login' 
                     ? 'Welcome back' 
                     : 'Get Started'}
               </h1>
-              <p className="text-xs sm:text-sm text-[#70798C] mt-1">
+              <p className="text-xs sm:text-sm text-[#70798C] mt-0.5">
                 {step === 'otp'
                   ? 'Enter the 6-digit authorization code sent to admin@setlla.com'
                   : mode === 'login'
@@ -384,18 +384,18 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
               </p>
             </div>
 
-            <div className="w-full h-px bg-[#E5E7EB] mb-5" />
+            <div className="w-full h-px bg-[#E5E7EB] mb-3 sm:mb-3.5" />
 
             {/* Segmented Pill Switcher (Matching Image 2) */}
             {step === 'form' && (
-              <div className="p-1 bg-[#F4F5F7] rounded-2xl grid grid-cols-2 mb-5">
+              <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-2 mb-3">
                 <button
                   type="button"
                   onClick={() => {
                     setMode('login');
                     setLoginError(null);
                   }}
-                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     mode === 'login'
                       ? 'bg-white text-[#000004] shadow-xs'
                       : 'text-[#70798C] hover:text-[#000004]'
@@ -411,7 +411,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                     setMode('create-account');
                     setCreateError(null);
                   }}
-                  className={`py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                     mode === 'create-account'
                       ? 'bg-white text-[#000004] shadow-xs'
                       : 'text-[#70798C] hover:text-[#000004]'
@@ -425,11 +425,11 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
             {/* Subhead instructions matching mobile sample */}
             {step === 'form' && (
-              <div className="mb-4">
+              <div className="mb-3">
                 <h3 className="font-bold text-xs sm:text-sm text-[#000004]">
                   {mode === 'login' ? 'Sign in to continue' : 'Admin registration'}
                 </h3>
-                <p className="text-xs text-[#70798C] mt-0.5">
+                <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
                   {mode === 'login' 
                     ? 'Access your dashboard, verified partner agents, and store tools.' 
                     : 'Verification OTP will be dispatched to the official mailbox: admin@setlla.com.'}
@@ -439,9 +439,9 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
             {/* 1. SIGN IN FORM */}
             {step === 'form' && mode === 'login' && (
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <form onSubmit={handleLoginSubmit} className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-[#70798C] mb-1.5">
+                  <label className="block text-xs font-semibold text-[#70798C] mb-1">
                     Your email
                   </label>
                   <div className="relative">
@@ -452,13 +452,13 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                       onChange={(e) => setLoginEmail(e.target.value)}
                       placeholder="admin@setlla.com"
                       required
-                      className="w-full pl-10 pr-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-mono"
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-mono"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-semibold text-[#70798C]">
                       Password
                     </label>
@@ -478,7 +478,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                       onChange={(e) => setLoginPassword(e.target.value)}
                       placeholder="••••••••••••"
                       required
-                      className="w-full pl-10 pr-10 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                      className="w-full pl-10 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                     />
                     <button
                       type="button"
@@ -491,7 +491,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 </div>
 
                 {loginError && (
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
+                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                     <span>{loginError}</span>
                   </div>
@@ -501,7 +501,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 <button
                   type="submit"
                   disabled={loginLoading}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                  className="w-full py-3 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
                 >
                   {loginLoading ? (
                     <>
@@ -517,7 +517,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 </button>
 
                 {/* Testing helper */}
-                <div className="pt-2 flex items-center justify-between text-xs text-[#70798C]">
+                <div className="pt-1 flex items-center justify-between text-xs text-[#70798C]">
                   <span>Testing credentials?</span>
                   <button
                     type="button"
@@ -531,26 +531,47 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
               </form>
             )}
 
-            {/* 2. CREATE ACCOUNT FORM */}
+            {/* 2. CREATE ACCOUNT FORM (Optimized Responsive Grid) */}
             {step === 'form' && mode === 'create-account' && (
-              <form onSubmit={handleCreateAccountSubmit} className="space-y-3.5">
-                <div>
-                  <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                    Full Name <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="e.g. Chief Executive Admin"
-                      required
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
-                    />
+              <form onSubmit={handleCreateAccountSubmit} className="space-y-3">
+                {/* Full Name & Phone in Responsive Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                      Full Name <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="e.g. Executive Admin"
+                        required
+                        className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                      Phone Number <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="0800 000 0001"
+                        required
+                        className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
 
+                {/* Email (with Mandatory Mailbox Badge) */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-semibold text-[#70798C]">
@@ -561,37 +582,21 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                     </span>
                   </div>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="email"
                       value={adminEmail}
                       readOnly
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#F4F5F7] border border-[#E5E7EB] text-[#70798C] rounded-xl text-sm font-mono cursor-not-allowed select-all"
+                      className="w-full pl-9 pr-3 py-2 bg-[#F4F5F7] border border-[#E5E7EB] text-[#70798C] rounded-xl text-xs sm:text-sm font-mono cursor-not-allowed select-all"
                     />
                   </div>
-                  <p className="text-[11px] text-[#70798C] mt-1">
+                  <p className="text-[10px] sm:text-[11px] text-[#70798C] mt-0.5">
                     Verification OTP will be dispatched to <span className="font-mono font-bold text-[#000004]">admin@setlla.com</span>.
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                    Phone Number <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0800 000 0001"
-                      required
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Password and Confirm Password in 2-column Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-[#70798C] mb-1">
                       Create new password <span className="text-rose-500">*</span>
@@ -603,7 +608,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••••"
                         required
-                        className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                        className="w-full px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                       />
                     </div>
                   </div>
@@ -619,14 +624,14 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••••••"
                         required
-                        className="w-full px-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                        className="w-full px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
                       />
                     </div>
                   </div>
                 </div>
 
                 {createError && (
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
+                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                     <span>{createError}</span>
                   </div>
@@ -636,7 +641,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 <button
                   type="submit"
                   disabled={createLoading}
-                  className="w-full mt-2 py-3.5 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                  className="w-full mt-1.5 py-3 px-4 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
                 >
                   {createLoading ? (
                     <>
@@ -782,7 +787,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
           {/* Bottom Footer Switcher matching samples */}
           {step === 'form' && (
-            <div className="pt-6 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-6">
+            <div className="pt-3.5 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3.5">
               {mode === 'login' ? (
                 <p>
                   No account yet?{' '}

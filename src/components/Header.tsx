@@ -219,8 +219,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* TAB 4.5: Super Admin Console (Rendered when user is Admin or currentRole === 'admin') */}
-          {(currentUser.isAdmin || currentUser.isSuperAdmin || currentRole === 'admin') && (
+          {/* TAB 4.5: Super Admin Console (Rendered ONLY when authenticated as Admin) */}
+          {isAdminAuthenticated && (currentUser.isAdmin || currentUser.isSuperAdmin) && (
             <button
               onClick={() => onChangeRole('admin')}
               className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
@@ -242,7 +242,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* TAB 5: User Profile (when authenticated) or Sign In + Signup (when unauthenticated) */}
-          {!isAuthenticated && currentRole !== 'admin' ? (
+          {!isAuthenticated ? (
             <>
               <button
                 onClick={onOpenLogin || onOpenSignup}
@@ -268,11 +268,6 @@ export const Header: React.FC<HeaderProps> = ({
                 </span>
               </button>
             </>
-          ) : currentRole === 'admin' && !isAdminAuthenticated ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 sm:py-2 rounded-[14px] sm:rounded-[16px] bg-amber-500/10 border border-amber-500/30 text-amber-600 text-xs font-bold shrink-0">
-              <Lock className="w-3.5 h-3.5 text-amber-500" />
-              <span className="hidden sm:inline">Admin Portal</span>
-            </div>
           ) : (
             <button
               onClick={onOpenProfile}

@@ -1457,38 +1457,40 @@ export function App() {
     <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#342A21]/15 selection:text-[#342A21] ${
       isFeedView ? 'h-screen h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-hidden'
     }`}>
-      {/* 1. Global Navigation Header */}
-      <Header
-        currentRole={currentRole}
-        onChangeRole={setCurrentRole}
-        userView={userView}
-        onChangeUserView={setUserView}
-        activeBookings={userBookings}
-        onOpenMyPasses={() => {
-          if (!isAuthenticated) {
-            handleOpenSignup();
-            return;
-          }
-          setIsMyPassesOpen(true);
-        }}
-        onOpenProfile={() => {
-          if (!isAuthenticated) {
-            handleOpenSignup();
-            return;
-          }
-          setIsProfileOpen(true);
-        }}
-        currentUser={currentUser}
-        onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
-        onOpenSignup={handleOpenSignup}
-        onOpenLogin={handleOpenLogin}
-        isAuthenticated={isAuthenticated}
-        isAdminAuthenticated={isAdminAuthenticated}
-        onOpenAgentSignup={handleOpenAgentSignup}
-      />
+      {/* 1. Global Navigation Header (Hidden on unauthenticated Admin login/signup portal) */}
+      {!(currentRole === 'admin' && !isAdminAuthenticated) && (
+        <Header
+          currentRole={currentRole}
+          onChangeRole={setCurrentRole}
+          userView={userView}
+          onChangeUserView={setUserView}
+          activeBookings={userBookings}
+          onOpenMyPasses={() => {
+            if (!isAuthenticated) {
+              handleOpenSignup();
+              return;
+            }
+            setIsMyPassesOpen(true);
+          }}
+          onOpenProfile={() => {
+            if (!isAuthenticated) {
+              handleOpenSignup();
+              return;
+            }
+            setIsProfileOpen(true);
+          }}
+          currentUser={currentUser}
+          onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
+          onOpenSignup={handleOpenSignup}
+          onOpenLogin={handleOpenLogin}
+          isAuthenticated={isAuthenticated}
+          isAdminAuthenticated={isAdminAuthenticated}
+          onOpenAgentSignup={handleOpenAgentSignup}
+        />
+      )}
 
       {/* Platform Emergency Announcement Banner */}
-      {platformSettings.emergencyAnnouncementActive && platformSettings.emergencyAnnouncement && (
+      {!(currentRole === 'admin' && !isAdminAuthenticated) && platformSettings.emergencyAnnouncementActive && platformSettings.emergencyAnnouncement && (
         <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-600 text-white px-4 py-2.5 text-xs font-bold text-center shadow-xs flex items-center justify-center gap-2 border-b border-amber-800 z-40">
           <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping shrink-0" />
           <span>{platformSettings.emergencyAnnouncement}</span>
