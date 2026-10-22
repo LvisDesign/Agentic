@@ -158,7 +158,7 @@ export async function generateAndSendAdminOTP(
         ? `${window.location.origin}${window.location.pathname}#/admin`
         : undefined;
 
-      const { error } = await supabase.auth.signInWithOtp({ 
+      const { error: otpError } = await supabase.auth.signInWithOtp({ 
         email: targetEmail,
         options: {
           emailRedirectTo: redirectUrl,
@@ -166,12 +166,24 @@ export async function generateAndSendAdminOTP(
         }
       });
 
-      if (error) {
-        console.warn('[Setlla Admin Auth] Supabase email dispatch error:', error);
-        if (error.status === 429 || (error.message && error.message.toLowerCase().includes('rate limit'))) {
-          sendError = 'Supabase email delivery rate limit exceeded (default shared mailer allows max 3-4 emails/hour). Please wait a few moments before requesting another email, or connect custom Hostinger SMTP in Supabase Settings.';
-        } else {
-          sendError = `Email delivery notice: ${error.message}`;
+      if (otpError) {
+        console.warn('[Setlla Admin Auth] signInWithOtp notice:', otpError);
+        // Fallback to resend signup confirmation if signInWithOtp had an issue
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email: targetEmail,
+          options: {
+            emailRedirectTo: redirectUrl,
+          },
+        });
+
+        if (resendError) {
+          console.warn('[Setlla Admin Auth] resend signup error:', resendError);
+          if (otpError.status === 429 || (otpError.message && otpError.message.toLowerCase().includes('rate limit'))) {
+            sendError = 'Supabase email delivery rate limit exceeded. Please wait a moment before requesting another email.';
+          } else {
+            sendError = `Email delivery notice: ${otpError.message || resendError.message}`;
+          }
         }
       }
     } catch (err: any) {
@@ -225,6 +237,20 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
         email: OFFICIAL_ADMIN_EMAIL,
         token: sanitizedInput,
         type: 'email',
+      });
+      if (!error && (data?.session || data?.user)) {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
+        }
+        return { success: true, record: pending || undefined };
+      }
+    } catch (_) {}
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: OFFICIAL_ADMIN_EMAIL,
+        token: sanitizedInput,
+        type: 'signup',
       });
       if (!error && (data?.session || data?.user)) {
         if (typeof window !== 'undefined') {
