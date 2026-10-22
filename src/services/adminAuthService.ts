@@ -123,11 +123,11 @@ export function getActiveAdminUser(): UserProfile | null {
  * Generates and stores a 6-digit OTP specifically dispatched to admin@setlla.com.
  * Real email dispatch is triggered via Supabase Auth service directly to the admin's inbox.
  */
-export function generateAndSendAdminOTP(
+export async function generateAndSendAdminOTP(
   email: string = OFFICIAL_ADMIN_EMAIL,
   purpose: 'create_account' | 'login' = 'create_account',
   targetUserData?: Partial<UserProfile>
-): { otp: string; expiresAt: number; targetEmail: string } {
+): Promise<{ otp: string; expiresAt: number; targetEmail: string; error?: string }> {
   // Enforce security rule: The user requested that OTP is received at admin@setlla.com
   const targetEmail = OFFICIAL_ADMIN_EMAIL;
 
@@ -149,6 +149,8 @@ export function generateAndSendAdminOTP(
     } catch (_) {}
   }
 
+  let sendError: string | undefined = undefined;
+
   // Dispatch real email to the official admin mailbox via Supabase Auth if available
   if (isSupabaseConfigured()) {
     try {
@@ -156,16 +158,25 @@ export function generateAndSendAdminOTP(
         ? `${window.location.origin}${window.location.pathname}#/admin`
         : undefined;
 
-      supabase.auth.signInWithOtp({ 
+      const { error } = await supabase.auth.signInWithOtp({ 
         email: targetEmail,
         options: {
           emailRedirectTo: redirectUrl,
           shouldCreateUser: true,
         }
-      }).catch((err) => {
-        console.warn('[Setlla Admin Auth] Notice sending email OTP:', err?.message || err);
       });
-    } catch (_) {}
+
+      if (error) {
+        console.warn('[Setlla Admin Auth] Supabase email dispatch error:', error);
+        if (error.status === 429 || (error.message && error.message.toLowerCase().includes('rate limit'))) {
+          sendError = 'Supabase email delivery rate limit exceeded (default shared mailer allows max 3-4 emails/hour). Please wait a few moments before requesting another email, or connect custom Hostinger SMTP in Supabase Settings.';
+        } else {
+          sendError = `Email delivery notice: ${error.message}`;
+        }
+      }
+    } catch (err: any) {
+      console.warn('[Setlla Admin Auth] Exception sending email OTP:', err?.message || err);
+    }
   }
 
   // Record security audit notice
@@ -178,7 +189,7 @@ export function generateAndSendAdminOTP(
     `One-time passcode dispatched to ${targetEmail} for ${purpose}. Expires in 10 minutes.`
   );
 
-  return { otp: code, expiresAt, targetEmail };
+  return { otp: code, expiresAt, targetEmail, error: sendError };
 }
 
 /**

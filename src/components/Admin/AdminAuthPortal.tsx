@@ -164,8 +164,15 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   };
 
   // Switch to OTP Passwordless Login
-  const handleRequestLoginOTP = () => {
-    generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'login');
+  const handleRequestLoginOTP = async () => {
+    setLoginLoading(true);
+    setLoginError(null);
+    const result = await generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'login');
+    setLoginLoading(false);
+    if (result.error) {
+      setLoginError(result.error);
+      return;
+    }
     setOtpDigits(['', '', '', '', '', '']);
     setStep('otp');
     setResendCooldown(60);
@@ -200,15 +207,17 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 
     setCreateLoading(true);
 
-    setTimeout(() => {
-      // Dispatches OTP strictly to admin@setlla.com as required
-      generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'create_account', {
-        fullName,
-        phone,
-      });
+    generateAndSendAdminOTP(OFFICIAL_ADMIN_EMAIL, 'create_account', {
+      fullName,
+      phone,
+    }).then((result) => {
+      setCreateLoading(false);
+      if (result.error) {
+        setCreateError(result.error);
+        return;
+      }
 
       setOtpDigits(['', '', '', '', '', '']);
-      setCreateLoading(false);
       setStep('otp');
       setResendCooldown(60);
       setOtpError(null);
@@ -217,7 +226,10 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
       setTimeout(() => {
         digitInputRefs.current[0]?.focus();
       }, 100);
-    }, 500);
+    }).catch((err) => {
+      setCreateLoading(false);
+      setCreateError(err?.message || 'Failed to dispatch verification code.');
+    });
   };
 
   // Handle OTP Input Change & Auto-Focus
@@ -269,12 +281,19 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   };
 
   // Resend OTP to admin@setlla.com
-  const handleResendOTP = () => {
+  const handleResendOTP = async () => {
     if (resendCooldown > 0) return;
-    generateAndSendAdminOTP(
+    setOtpLoading(true);
+    setOtpError(null);
+    const result = await generateAndSendAdminOTP(
       OFFICIAL_ADMIN_EMAIL,
       mode === 'create-account' ? 'create_account' : 'login'
     );
+    setOtpLoading(false);
+    if (result.error) {
+      setOtpError(result.error);
+      return;
+    }
     setResendCooldown(60);
     setOtpError(null);
   };
@@ -720,19 +739,9 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                         </span>
                       </div>
                       <p className="text-xs text-[#70798C] mt-1 leading-relaxed">
-                        An authorization email has been dispatched to{' '}
-                        <span className="font-mono font-bold text-[#000004]">admin@setlla.com</span>.
+                        A verification email with authorization instructions has been dispatched to{' '}
+                        <span className="font-mono font-bold text-[#000004]">admin@setlla.com</span>. Please check your inbox or spam folder.
                       </p>
-                      <div className="mt-2.5 pt-2.5 border-t border-[#E5E7EB] space-y-1.5 text-[11px] text-[#70798C]">
-                        <p className="flex items-center gap-1.5 text-[#000004] font-medium">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] shrink-0" />
-                          <span><strong>Option 1:</strong> Click <em>"Confirm email address"</em> directly inside your email to authorize instantly.</span>
-                        </p>
-                        <p className="flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#70798C] shrink-0" />
-                          <span><strong>Option 2:</strong> Or enter the 6-digit OTP code below if your email includes one.</span>
-                        </p>
-                      </div>
                     </div>
                   </div>
                 </div>
