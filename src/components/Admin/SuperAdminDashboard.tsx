@@ -743,31 +743,31 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       </div>
 
       {/* 2. Interactive Navigation Tabs Island */}
-      <div className="mb-6 overflow-x-auto scrollbar-none py-1">
-        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-white border border-[#E5E7EB] shadow-xs min-w-max">
+      <div className="mb-6">
+        <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl bg-white border border-[#E5E7EB] shadow-xs w-full">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'overview'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <BarChart3 className="w-3.5 h-3.5" />
+            <BarChart3 className="w-3.5 h-3.5 shrink-0" />
             <span>Overview & KPIs</span>
           </button>
 
           <button
             onClick={() => setActiveTab('agents')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer relative ${
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer relative shrink-0 ${
               activeTab === 'agents'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <UserCheck className="w-3.5 h-3.5 text-slate-400" />
+            <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <span>Agents Control</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[#000004] text-[10px]">
+            <span className="px-1.5 py-0.5 rounded-full bg-slate-200 text-[#000004] text-[10px] font-semibold">
               {agentsList.length}
             </span>
             {pendingKycAgents > 0 && (
@@ -777,43 +777,43 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
           <button
             onClick={() => setActiveTab('tenants')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'tenants'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <Users className="w-3.5 h-3.5" />
+            <Users className="w-3.5 h-3.5 shrink-0" />
             <span>Tenants Control</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[#000004] text-[10px]">
+            <span className="px-1.5 py-0.5 rounded-full bg-slate-200 text-[#000004] text-[10px] font-semibold">
               {tenantsList.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('listings')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'listings'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <Building className="w-3.5 h-3.5" />
+            <Building className="w-3.5 h-3.5 shrink-0" />
             <span>Listings ({listings.length})</span>
           </button>
 
           <button
             onClick={() => setActiveTab('inspections')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'inspections'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <CalendarCheck className="w-3.5 h-3.5" />
+            <CalendarCheck className="w-3.5 h-3.5 shrink-0" />
             <span>Global Inspections</span>
             {pendingRequestsCount > 0 && (
-              <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">
                 {pendingRequestsCount}
               </span>
             )}
@@ -821,52 +821,52 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
           <button
             onClick={() => setActiveTab('ads')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'ads'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <Megaphone className="w-3.5 h-3.5 text-amber-500" />
+            <Megaphone className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             <span>Ads Management</span>
-            <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[#000004] text-[10px]">
+            <span className="px-1.5 py-0.5 rounded-full bg-slate-200 text-[#000004] text-[10px] font-semibold">
               {localAdverts.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('financials')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'financials'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <DollarSign className="w-3.5 h-3.5" />
+            <DollarSign className="w-3.5 h-3.5 shrink-0" />
             <span>Escrow & Fees</span>
           </button>
 
           <button
             onClick={() => setActiveTab('settings')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'settings'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-3.5 h-3.5 shrink-0" />
             <span>Platform Config</span>
           </button>
 
           <button
             onClick={() => setActiveTab('audit')}
-            className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'audit'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <Activity className="w-3.5 h-3.5" />
+            <Activity className="w-3.5 h-3.5 shrink-0" />
             <span>Audit Trail</span>
           </button>
         </div>
@@ -1944,7 +1944,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
           {/* Filtering Sub-Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#E5E7EB] shadow-xs">
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5">
+            <div className="flex flex-wrap items-center gap-1.5 py-0.5">
               {(['all', 'Property', 'Estate', 'Promo', 'Service'] as const).map((cat) => (
                 <button
                   key={cat}
