@@ -1624,7 +1624,7 @@ export function App() {
       {/* Sign In / Sign Up Modal: Strictly for non-admin visitor views */}
       {currentRole !== 'admin' && (
         <SignupModal
-          isOpen={isSignupOpen && currentRole !== 'admin'}
+          isOpen={isSignupOpen}
           onClose={() => {
             setIsSignupOpen(false);
             setSignupNotice(null);
