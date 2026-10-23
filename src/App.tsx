@@ -206,7 +206,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     if (isUserAgent) {
       return { role: 'agent', view: 'feed', openPasses: false };
     }
-    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : savedView === 'partner' ? 'partner' : 'feed', openPasses: false };
+    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
   }
 
   // 3. Fallback defaults:
@@ -1921,7 +1921,6 @@ export function App() {
                 adverts={adverts}
                 onSelectAdvert={handleSelectAdvert}
                 onOpenPostAd={() => setIsPostAdOpen(true)}
-                onOpenPartnerPortal={() => setUserView('partner')}
               />
 
               {/* Main Property Rental Continuous Feed */}
