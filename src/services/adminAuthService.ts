@@ -48,7 +48,7 @@ export const DEFAULT_SUPER_ADMIN_USER: UserProfile = {
   isAgent: false,
   isAdmin: true,
   isSuperAdmin: true,
-  isDemoAdmin: true,
+  isDemoAdmin: false,
   savedListingIds: [],
   createdAt: '2026-09-01T08:00:00.000Z',
 };

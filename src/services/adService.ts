@@ -1,5 +1,5 @@
 import { AdvertStory, MOCK_ADVERT_STORIES } from '../data/mockAdverts';
-import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 
 export interface PartnerApiKey {
   id: string;
@@ -264,6 +264,7 @@ export const saveAdvert = async (ad: AdvertStory): Promise<AdvertStory> => {
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(updatedList));
+    window.dispatchEvent(new CustomEvent('setlla_adverts_updated'));
   }
 
   if (isSupabaseConfigured()) {
@@ -286,6 +287,7 @@ export const removeAdvert = async (id: string): Promise<void> => {
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(filtered));
+    window.dispatchEvent(new CustomEvent('setlla_adverts_updated'));
   }
 
   if (isSupabaseConfigured()) {
@@ -295,6 +297,53 @@ export const removeAdvert = async (id: string): Promise<void> => {
       console.warn('[AdService] Failed to delete from Supabase:', e);
     }
   }
+};
+
+/**
+ * Subscribes to advert changes via Realtime and local events across tabs/devices
+ */
+export const subscribeToAdvertChanges = (callback: (adverts: AdvertStory[]) => void): (() => void) => {
+  if (typeof window === 'undefined') return () => {};
+
+  const handler = () => {
+    loadAllAdverts().then(callback).catch(() => {});
+  };
+
+  window.addEventListener('setlla_adverts_updated', handler);
+  window.addEventListener('storage', (e) => {
+    if (e.key === ADVERTS_STORAGE_KEY) {
+      handler();
+    }
+  });
+
+  let channel: any = null;
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        channel = client
+          .channel('setlla_realtime_adverts')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'adverts' },
+            () => {
+              loadAllAdverts().then(callback).catch(() => {});
+            }
+          )
+          .subscribe();
+      }
+    } catch (e) {}
+  }
+
+  return () => {
+    window.removeEventListener('setlla_adverts_updated', handler);
+    if (channel && isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseClient();
+        client?.removeChannel(channel);
+      } catch (e) {}
+    }
+  };
 };
 
 /**

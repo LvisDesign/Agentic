@@ -441,7 +441,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             isAgent: !isSystemAdmin,
             isAdmin: isSystemAdmin,
             isSuperAdmin: isSystemAdmin,
-            isDemoAdmin: true,
+            isDemoAdmin: false,
             savedListingIds: [],
           }
         : {
@@ -851,36 +851,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         />
                       </div>
                     </div>
-
-                    {/* Demo quick sign-in triggers - ONLY visible on local developer environment */}
-                    {isLocalUrl() && (
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#F4F5F7] border border-[#E5E7EB] text-[11px]">
-                        <span className="text-[#70798C] font-medium">Quick Demo Test:</span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={handleFillDemoTenant}
-                            className="py-1 px-2.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#F4F5F7] text-[#000004] font-semibold text-[11px] transition-colors cursor-pointer shadow-xs"
-                          >
-                            👤 Tenant
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleFillDemoAgent}
-                            className="py-1 px-2.5 rounded-lg border border-[#342A21]/20 bg-[#342A21]/5 hover:bg-[#342A21]/10 text-[#342A21] font-semibold text-[11px] transition-colors cursor-pointer shadow-xs"
-                          >
-                            🏢 Agent
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleFillDemoAdmin}
-                            className="py-1 px-2.5 rounded-lg border border-[#000004]/20 bg-[#000004]/5 hover:bg-[#000004]/10 text-[#000004] font-bold text-[11px] transition-colors cursor-pointer shadow-xs"
-                          >
-                            🛡️ Admin
-                          </button>
-                        </div>
-                      </div>
-                    )}
 
                     <div className="pt-1">
                       <button

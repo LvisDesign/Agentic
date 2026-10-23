@@ -94,7 +94,7 @@ export const MOCK_ADVERT_STORIES: AdvertStory[] = [
     category: 'Property',
     badgeText: 'HOT DEAL',
     thumbnailUrl: '/images/properties/asaba_gra_exterior.jpg',
-    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-modern-apartment-living-room-interior-39744-large.mp4',
+    mediaUrl: '/videos/property-walkthrough.mp4',
     mediaType: 'video',
     headline: 'Emerald Haven Phase 2 — 2 Units Remaining in Prime GRA Asaba 🏡',
     description: 'Executive 2-Bedroom Serviced Flat with 24/7 Band A Electricity, dedicated transformer & treated borehole. 100% verified move-in package with transparent regional lease guarantee.\n\nWater heater in all rooms, private balcony with serene view of government reserve.',

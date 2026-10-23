@@ -69,50 +69,31 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   }, []);
 
   // Check if current user is an admin / platform manager
-  const isDemoAdmin = Boolean(
+  const isPlatformAdmin = Boolean(
     currentUser?.isAdmin ||
-    currentUser?.isDemoAdmin ||
+    currentUser?.isSuperAdmin ||
     currentUser?.email === 'admin@setlla.com' ||
-    currentUser?.email === 'admin@deltarent.ng' ||
-    (currentUser?.id === 'DT-AGT-9012' && currentUser?.fullName === 'Victor Ossai')
+    currentUser?.email === 'admin@deltarent.ng'
   );
 
   // Active Agent Profile
   const defaultAgent = listings[0]?.agent || {
-    id: 'agent-chief-oghene',
-    fullName: 'Chief Oghenetega Macaulay',
-    agencyName: 'Delta Heritage Realty Ltd',
+    id: 'agent-verified',
+    fullName: currentUser?.fullName || 'Verified Agent Partner',
+    agencyName: currentUser?.agencyName || 'Independent Real Estate Partner',
     isVerified: true,
-    cacNumber: 'RC-1849204',
-    rating: 4.9,
-    reviewCount: 42,
-    completedInspections: 138,
+    cacNumber: 'VERIFIED-REG',
+    rating: 5.0,
+    reviewCount: 0,
+    completedInspections: 0,
     responseTime: 'Responds within 10 mins',
-    phone: '08034928172',
-    whatsapp: '2348034928172',
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    phone: currentUser?.phone || '',
+    whatsapp: currentUser?.whatsapp || currentUser?.phone || '',
+    avatarUrl: currentUser?.avatarUrl || '/images/properties/asaba_gra_exterior.jpg',
   };
 
-  const agentProfile: AgentProfile = (currentUser?.isAgent && currentUser.fullName) ? {
-    id: currentUser.id || 'agent-active',
-    fullName: currentUser.fullName,
-    agencyName: currentUser.agencyName || 'Independent Real Estate Partner',
-    isVerified: true,
-    cacNumber: currentUser.cacNumber || 'VERIFIED-REG',
-    rating: isDemoAdmin ? 4.9 : 5.0,
-    reviewCount: isDemoAdmin ? 42 : 0,
-    completedInspections: isDemoAdmin ? 138 : 0,
-    responseTime: 'Responds within 10 mins',
-    phone: currentUser.phone || (isDemoAdmin ? '0803 555 1234' : ''),
-    whatsapp: currentUser.whatsapp || currentUser.phone || (isDemoAdmin ? '2348035551234' : ''),
-    avatarUrl: currentUser.avatarUrl || defaultAgent.avatarUrl,
-  } : {
-    ...defaultAgent,
-    avatarUrl: currentUser?.avatarUrl || defaultAgent.avatarUrl,
-  };
-
-  // Filter listings and bookings for this specific agent (or show all if demo admin)
-  const agentListings = (isDemoAdmin
+  // Filter listings and bookings for this specific agent (or show all if platform admin)
+  const agentListings = (isPlatformAdmin
     ? listings
     : listings.filter((l) => {
         if (!currentUser) return false;
@@ -123,14 +104,32 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
       })
   ).filter((l) => l.availabilityStatus !== 'Deleted');
 
-  const agentBookings = isDemoAdmin
+  const agentBookings = isPlatformAdmin
     ? bookings
     : bookings.filter((b) => agentListings.some((l) => l.id === b.propertyId));
 
-  // Compute metrics
+  const agentProfile: AgentProfile = (currentUser?.isAgent && currentUser.fullName) ? {
+    id: currentUser.id || 'agent-active',
+    fullName: currentUser.fullName,
+    agencyName: currentUser.agencyName || 'Independent Real Estate Partner',
+    isVerified: true,
+    cacNumber: currentUser.cacNumber || 'VERIFIED-REG',
+    rating: 5.0,
+    reviewCount: 0,
+    completedInspections: agentBookings.filter((b) => b.status === 'CONFIRMED_UNLOCKED' || b.status === 'APPROVED_CONFIRMED').length,
+    responseTime: 'Responds within 10 mins',
+    phone: currentUser.phone || '',
+    whatsapp: currentUser.whatsapp || currentUser.phone || '',
+    avatarUrl: currentUser.avatarUrl || defaultAgent.avatarUrl,
+  } : {
+    ...defaultAgent,
+    avatarUrl: currentUser?.avatarUrl || defaultAgent.avatarUrl,
+  };
+
+  // Compute metrics from actual live data
   const totalRevenue = agentBookings
-    .filter((b) => b.status === 'CONFIRMED_UNLOCKED')
-    .reduce((acc, curr) => acc + curr.inspectionFeeAmount, isDemoAdmin ? 85000 : 0);
+    .filter((b) => b.status === 'CONFIRMED_UNLOCKED' || b.status === 'APPROVED_CONFIRMED')
+    .reduce((acc, curr) => acc + (curr.inspectionFeeAmount || 0), 0);
 
   const pendingRequests = agentBookings.filter(
     (b) => b.status === 'REQUEST_SUBMITTED'

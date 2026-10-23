@@ -366,11 +366,6 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.warn('[UserRegistry] Supabase platform_users fetch notice:', error.message);
-      return localUsers;
-    }
-
     const userMap = new Map<string, UserProfile>();
 
     // 1. Seed defaults (excluding explicitly deleted)
@@ -387,7 +382,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
       }
     });
 
-    // 3. Database records take highest precedence (canonical source of truth)
+    // 3. Database platform_users records take precedence
     if (Array.isArray(data)) {
       data.forEach((row) => {
         const u = mapDbToUserProfile(row);
@@ -395,25 +390,114 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
           userMap.set(u.id, u);
         }
       });
-
-      // Auto-seed: Ensure all default platform agents & tenants exist in Supabase database
-      const dbIds = new Set(data.map((r: any) => r.id));
-      const missingDefaults = DEFAULT_REGISTERED_USERS.filter((u) => !dbIds.has(u.id) && !deletedIds.has(u.id));
-      if (missingDefaults.length > 0) {
-        const rows = missingDefaults.map(mapUserProfileToDb);
-        Promise.resolve(client.from('platform_users').upsert(rows, { onConflict: 'id' }))
-          .then(() => {
-            console.log(`[UserRegistry] Synchronized ${missingDefaults.length} default users into Supabase database.`);
-          })
-          .catch(() => {});
-      }
     }
+
+    // 4. Auto-harvest live agents from active listings in Supabase
+    try {
+      const { data: listingRows } = await client
+        .from('listings')
+        .select('id, title, agent, city, state')
+        .neq('availability_status', 'Deleted');
+
+      if (Array.isArray(listingRows)) {
+        listingRows.forEach((row: any) => {
+          const agent = row.agent;
+          if (agent && (agent.fullName || agent.name || agent.phone)) {
+            const rawPhone = agent.phone || '';
+            const phone = rawPhone.trim();
+            const id = agent.id || (phone ? `DT-AGT-${normalizePhoneNumber(phone).slice(-4)}` : `agent-${row.id}`);
+            if (!deletedIds.has(id)) {
+              const existingWithPhone = Array.from(userMap.values()).find(
+                (u) => phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(phone)
+              );
+              if (existingWithPhone) {
+                if (agent.agencyName && !existingWithPhone.agencyName) {
+                  existingWithPhone.agencyName = agent.agencyName;
+                }
+                if (agent.fullName && !existingWithPhone.fullName) {
+                  existingWithPhone.fullName = agent.fullName;
+                }
+              } else {
+                userMap.set(id, {
+                  id,
+                  fullName: agent.fullName || agent.name || 'Verified Agent',
+                  phone: phone || '08000000000',
+                  whatsapp: agent.whatsapp || phone || '',
+                  agencyName: agent.agencyName || 'Independent Real Estate Partner',
+                  agentType: 'agency',
+                  isAgent: true,
+                  isVerifiedTenant: false,
+                  cacNumber: agent.cacNumber || 'VERIFIED-REG',
+                  operatingState: row.state || 'Delta State',
+                  operatingCity: row.city || 'Asaba',
+                  state: row.state || 'Delta State',
+                  city: row.city || 'Asaba',
+                  savedListingIds: [],
+                  createdAt: new Date().toISOString(),
+                });
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {}
+
+    // 5. Auto-harvest live tenants from real bookings in Supabase
+    try {
+      const { data: bookingRows } = await client
+        .from('bookings')
+        .select('id, applicant_name, applicant_phone, applicant_email, created_at');
+
+      if (Array.isArray(bookingRows)) {
+        bookingRows.forEach((b: any) => {
+          const rawPhone = b.applicant_phone || '';
+          const phone = rawPhone.trim();
+          const name = b.applicant_name || '';
+          if (name && phone) {
+            const id = `DT-USR-${normalizePhoneNumber(phone).slice(-4)}`;
+            if (!deletedIds.has(id)) {
+              const existing = Array.from(userMap.values()).find(
+                (u) => normalizePhoneNumber(u.phone) === normalizePhoneNumber(phone)
+              );
+              if (!existing) {
+                userMap.set(id, {
+                  id,
+                  fullName: name,
+                  phone,
+                  email: b.applicant_email || undefined,
+                  state: 'Delta State',
+                  city: 'Asaba',
+                  isVerifiedTenant: true,
+                  isAgent: false,
+                  savedListingIds: [],
+                  createdAt: b.created_at || new Date().toISOString(),
+                });
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {}
 
     const mergedList = Array.from(userMap.values());
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedList));
     } catch (err) {
       // quota exceeded or SSR
+    }
+
+    // Auto-seed: Ensure all platform agents & tenants exist in Supabase database
+    if (Array.isArray(data) && !error) {
+      const dbIds = new Set(data.map((r: any) => r.id));
+      const missingUsers = mergedList.filter((u) => !dbIds.has(u.id) && !deletedIds.has(u.id));
+      if (missingUsers.length > 0) {
+        const rows = missingUsers.map(mapUserProfileToDb);
+        Promise.resolve(client.from('platform_users').upsert(rows, { onConflict: 'id' }))
+          .then(() => {
+            console.log(`[UserRegistry] Synchronized ${missingUsers.length} users into Supabase database.`);
+          })
+          .catch(() => {});
+      }
     }
 
     return mergedList;

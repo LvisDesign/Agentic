@@ -449,7 +449,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </p>
               <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs font-bold text-[#000004] flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-[#342A21]" />
-                <span className="truncate">{currentUser.email || (isAgent ? 'victor@apexrealty.ng' : 'chinedu.okafor@gmail.com')}</span>
+                <span className="truncate">{currentUser.email || currentUser.phone || 'Account Verified'}</span>
               </div>
 
               {/* Security authorization code */}
@@ -717,7 +717,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                         }}
                         className="px-2 py-0.5 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold transition-colors cursor-pointer"
                       >
-                        Fast-Forward Time (Unlock for Demo)
+                        Fast-Forward Cooldown (Testing)
                       </button>
                     </div>
                   )}

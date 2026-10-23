@@ -218,7 +218,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       advertiserHandle: '',
       category: 'Property',
       badgeText: 'Featured',
-      mediaUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+      mediaUrl: '/images/properties/asaba_gra_exterior.jpg',
       location: 'Asaba, Delta State',
       price: '',
       description: '',

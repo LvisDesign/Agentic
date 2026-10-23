@@ -32,6 +32,7 @@ import { MyPassesModal } from './components/Pass/MyPassesModal';
 import { UserProfileModal } from './components/Profile/UserProfileModal';
 import { InspectionBookingModal } from './components/Booking/InspectionBookingModal';
 import { MOCK_ADVERT_STORIES, AdvertStory } from './data/mockAdverts';
+import { loadAllAdverts, saveAdvert, removeAdvert, subscribeToAdvertChanges } from './services/adService';
 import { PostAdModal } from './components/Feed/PostAdModal';
 import { PartnerAdSubmissionModal } from './components/Adverts/PartnerAdSubmissionModal';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
@@ -96,7 +97,6 @@ const ADMIN_USER: UserProfile = {
   isAgent: false,
   isAdmin: true,
   isSuperAdmin: true,
-  isDemoAdmin: true,
   savedListingIds: [],
   createdAt: '2026-09-01T08:00:00.000Z',
 };
@@ -429,10 +429,11 @@ export function App() {
   // Background Data Synchronizer without requiring manual page reloads
   const syncLatestData = useCallback(async () => {
     try {
-      const [fetchedListings, fetchedBookings, fetchedUsers] = await Promise.all([
+      const [fetchedListings, fetchedBookings, fetchedUsers, fetchedAdverts] = await Promise.all([
         fetchAllListings(),
         fetchAllBookings(),
         fetchRegisteredUsersFromDb(),
+        loadAllAdverts(),
       ]);
 
       if (fetchedListings && fetchedListings.length > 0) {
@@ -440,6 +441,9 @@ export function App() {
       }
       if (fetchedBookings) {
         setBookings(fetchedBookings);
+      }
+      if (fetchedAdverts && fetchedAdverts.length > 0) {
+        setAdverts(fetchedAdverts);
       }
       // Keep active session in sync with central platform_users database
       if (fetchedUsers && currentUser.id && currentUser.id !== 'GUEST_USER' && currentUser.id !== 'DT-USR-GUEST') {
@@ -1004,24 +1008,20 @@ export function App() {
   const [signupInitialRole, setSignupInitialRole] = useState<'seeker' | 'agent'>('seeker');
   const [signupInitialMode, setSignupInitialMode] = useState<'signup' | 'login'>('signup');
 
-  // Sponsored adverts state - Only seed demo ads on local development
+  // Sponsored adverts state - Loaded live from adService (Supabase + active partner campaigns)
   const [adverts, setAdverts] = useState<AdvertStory[]>(() => {
-    const isLocal = isLocalUrl();
-    const saved = localStorage.getItem('setlla_adverts') || localStorage.getItem('deltarent_adverts');
+    const saved = typeof window !== 'undefined'
+      ? (localStorage.getItem('setlla_adverts') || localStorage.getItem('deltarent_adverts'))
+      : null;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          if (!isLocal) {
-            return parsed.filter((ad: AdvertStory) =>
-              !MOCK_ADVERT_STORIES.some((m) => m.id === ad.id)
-            );
-          }
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
       } catch (e) {}
     }
-    return isLocal ? MOCK_ADVERT_STORIES : [];
+    return MOCK_ADVERT_STORIES;
   });
 
   useEffect(() => {
@@ -1030,19 +1030,32 @@ export function App() {
     } catch (e) {}
   }, [adverts]);
 
+  // Subscribe to realtime advert updates across all devices
+  useEffect(() => {
+    const unsubscribe = subscribeToAdvertChanges((updatedAdverts) => {
+      if (updatedAdverts && updatedAdverts.length > 0) {
+        setAdverts(updatedAdverts);
+      }
+    });
+    return unsubscribe;
+  }, []);
+
   const [isPostAdOpen, setIsPostAdOpen] = useState(false);
   const [isPartnerPortalOpen, setIsPartnerPortalOpen] = useState(false);
 
   const handleAddAdvert = (newAd: AdvertStory) => {
-    setAdverts((prev) => [newAd, ...prev]);
+    setAdverts((prev) => [newAd, ...prev.filter((a) => a.id !== newAd.id)]);
+    saveAdvert(newAd).catch((err) => console.warn('[Setlla Adverts] Failed to save ad:', err));
   };
 
   const handleUpdateAdvert = (updatedAd: AdvertStory) => {
     setAdverts((prev) => prev.map((ad) => (ad.id === updatedAd.id ? updatedAd : ad)));
+    saveAdvert(updatedAd).catch((err) => console.warn('[Setlla Adverts] Failed to update ad:', err));
   };
 
   const handleDeleteAdvert = (advertId: string) => {
     setAdverts((prev) => prev.filter((ad) => ad.id !== advertId));
+    removeAdvert(advertId).catch((err) => console.warn('[Setlla Adverts] Failed to remove ad:', err));
   };
 
   const handleSelectAdvert = (ad: AdvertStory) => {
