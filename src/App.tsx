@@ -169,8 +169,8 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   const savedRole = (localStorage.getItem('setlla_active_role') || localStorage.getItem('deltarent_active_role')) as UserRole | null;
   const savedView = (localStorage.getItem('setlla_active_view') || localStorage.getItem('deltarent_active_view')) as ('dashboard' | 'feed' | 'partner') | null;
 
-  // 1. Explicit Routing (e.g. #/partner, #/advertise, #/admin, #/agent, #/dashboard, #/explore, #/inspections)
-  if (hash.includes('partner') || hash.includes('advertise') || pathname.includes('/partner') || pathname.includes('/advertise')) {
+  // 1. Explicit Routing (e.g. #/partner, #/advertise, #/advertiser, #/admin, #/agent, #/dashboard, #/explore, #/inspections)
+  if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser') || pathname.includes('/partner') || pathname.includes('/advertise') || pathname.includes('/advertiser')) {
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
   if (hash.includes('admin')) {
@@ -415,7 +415,7 @@ export function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.toLowerCase();
-      if (hash.includes('partner') || hash.includes('advertise')) {
+      if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser')) {
         setCurrentRole('tenant');
         setUserView('partner');
       } else if (hash.includes('admin')) {

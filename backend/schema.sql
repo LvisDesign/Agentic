@@ -384,5 +384,59 @@ begin
   end if;
 end $$;
 
+-- =========================================================================
+-- 12. Ads Customers & Brand Partner Accounts Table
+-- Enables corporate advertisers, property developers, and agencies to sign up,
+-- log in, and manage their campaigns from their private advertiser dashboard.
+-- =========================================================================
+
+create table if not exists public.advertisers (
+  id text primary key,
+  company_name text not null,
+  contact_name text not null,
+  email text unique not null,
+  phone text not null,
+  whatsapp text,
+  password_hash text,
+  industry text default 'Real Estate & Properties',
+  operating_city text default 'Asaba',
+  website_url text,
+  logo_url text,
+  api_key text,
+  account_status text default 'active' check (account_status in ('active', 'suspended', 'pending')),
+  total_spent numeric default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  updated_at timestamp with time zone default timezone('utc'::text, now()),
+  last_login_at timestamp with time zone
+);
+
+create index if not exists idx_advertisers_email on public.advertisers (email);
+create index if not exists idx_advertisers_status on public.advertisers (account_status);
+
+alter table public.advertisers enable row level security;
+grant all on table public.advertisers to anon, authenticated;
+
+drop policy if exists "Advertiser public signup" on public.advertisers;
+create policy "Advertiser public signup" on public.advertisers
+  for insert with check (true);
+
+drop policy if exists "Advertiser manage own profile" on public.advertisers;
+create policy "Advertiser manage own profile" on public.advertisers
+  for all using (true) with check (true);
+
+-- Enable Realtime for advertisers table
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' 
+    and schemaname = 'public' 
+    and tablename = 'advertisers'
+  ) then
+    alter publication supabase_realtime add table public.advertisers;
+  end if;
+end $$;
+
+
 
 

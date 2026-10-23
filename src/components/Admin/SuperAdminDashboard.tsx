@@ -50,11 +50,13 @@ import {
   Sparkles,
   Terminal,
   Zap,
-  Code2
+  Code2,
+  BookOpen
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 import { ApiWebhookModal } from './ApiWebhookModal';
 import { PartnerAdSubmissionModal } from '../Adverts/PartnerAdSubmissionModal';
+import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 import { 
   approvePartnerAdvert, 
   rejectPartnerAdvert, 
@@ -167,6 +169,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [advertsStatusFilter, setAdvertsStatusFilter] = useState<'all' | 'active' | 'pending_review' | 'expired'>('all');
   const [isApiWebhookOpen, setIsApiWebhookOpen] = useState(false);
   const [isPartnerPortalPreviewOpen, setIsPartnerPortalPreviewOpen] = useState(false);
+  const [isAdsGuideOpen, setIsAdsGuideOpen] = useState(false);
   const [editingAdvert, setEditingAdvert] = useState<AdvertStory | null>(null);
   const [isCreateAdvertOpen, setIsCreateAdvertOpen] = useState(false);
   const [advertForm, setAdvertForm] = useState<Partial<AdvertStory>>({
@@ -2062,6 +2065,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               </button>
 
               <button
+                onClick={() => setIsAdsGuideOpen(true)}
+                className="py-2.5 px-3.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#342A21] text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                title="View full Ads Setup & Operations Guide"
+              >
+                <BookOpen className="w-4 h-4 text-[#B45309]" />
+                <span>Ads Guide</span>
+              </button>
+
+              <button
                 onClick={handleOpenCreateAdvert}
                 className="py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
               >
@@ -3316,6 +3328,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           showToast(`Partner submission for "${newAd.advertiserName}" received in review queue.`);
         }}
       />
+
+      {/* Ads Setup & Management Operations Guide Modal */}
+      {isAdsGuideOpen && (
+        <AdsSetupGuide
+          mode="admin"
+          isModal={true}
+          onClose={() => setIsAdsGuideOpen(false)}
+        />
+      )}
 
       {/* Custom Global Confirmation & Prompt Modal */}
       {confirmModalState && (

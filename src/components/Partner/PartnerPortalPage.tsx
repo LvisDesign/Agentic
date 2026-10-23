@@ -23,7 +23,8 @@ import {
   Zap,
   ExternalLink,
   Code2,
-  KeyRound
+  KeyRound,
+  BookOpen
 } from 'lucide-react';
 import { 
   submitPartnerAdvert, 
@@ -38,6 +39,10 @@ import {
 } from '../../services/adService';
 import { AdvertStory } from '../../data/mockAdverts';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
+import { AdvertiserUser, getActiveAdvertiser, logoutAdvertiser } from '../../services/advertiserAuthService';
+import { AdvertiserAuthModal } from '../Advertiser/AdvertiserAuthModal';
+import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
+import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 
 interface PartnerPortalPageProps {
   onBackToExplore?: () => void;
@@ -48,7 +53,19 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   onBackToExplore,
   onAdSubmitted,
 }) => {
-  const [activeTab, setActiveTab] = useState<'packages' | 'placements' | 'api'>('packages');
+  const [activeTab, setActiveTab] = useState<'packages' | 'placements' | 'api' | 'guide'>('packages');
+  const [activeAdvertiser, setActiveAdvertiser] = useState<AdvertiserUser | null>(() => getActiveAdvertiser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalInitialMode, setAuthModalInitialMode] = useState<'login' | 'signup'>('login');
+  const [viewMode, setViewMode] = useState<'landing' | 'advertiser-dashboard'>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.toLowerCase();
+      if ((hash.includes('advertiser') || hash.includes('manage')) && getActiveAdvertiser()) {
+        return 'advertiser-dashboard';
+      }
+    }
+    return 'landing';
+  });
 
   // Campaign Booking State
   const [packageTier, setPackageTier] = useState<'starter' | 'growth' | 'corporate'>('growth');
@@ -122,6 +139,23 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     if (loadedKeys.length > 0) {
       setSimSelectedKey(loadedKeys[0].apiKey);
     }
+
+    const handleHash = () => {
+      if (typeof window !== 'undefined') {
+        const hash = window.location.hash.toLowerCase();
+        if (hash.includes('advertiser') || hash.includes('manage')) {
+          if (getActiveAdvertiser()) {
+            setViewMode('advertiser-dashboard');
+          } else {
+            setAuthModalInitialMode('login');
+            setIsAuthModalOpen(true);
+          }
+        }
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
   const TIERS = [
@@ -350,6 +384,43 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     }
   };
 
+  // Dedicated Full-Page Advertiser Customer Dashboard
+  if (viewMode === 'advertiser-dashboard' && activeAdvertiser) {
+    return (
+      <>
+        <AdvertiserDashboard
+          advertiser={activeAdvertiser}
+          onLogout={() => {
+            logoutAdvertiser();
+            setActiveAdvertiser(null);
+            setViewMode('landing');
+            window.location.hash = '#/partner';
+          }}
+          onBackToExplore={handleReturn}
+          onCampaignCreated={(newAd) => {
+            if (onAdSubmitted) onAdSubmitted(newAd);
+          }}
+        />
+        {/* Custom Confirmation Modal */}
+        {confirmModal && (
+          <CustomConfirmModal
+            isOpen={confirmModal.isOpen}
+            title={confirmModal.title}
+            message={confirmModal.message}
+            itemTitle={confirmModal.itemTitle}
+            badge={confirmModal.badge}
+            confirmText={confirmModal.confirmText}
+            cancelText={confirmModal.cancelText}
+            variant={confirmModal.variant}
+            isAlertOnly={confirmModal.isAlertOnly}
+            onConfirm={confirmModal.onConfirm}
+            onCancel={() => setConfirmModal(null)}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] font-body selection:bg-[#342A21]/10 selection:text-[#342A21]">
       {/* 1. Bespoke Brand Top Navigation Bar */}
@@ -401,7 +472,18 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     : 'text-[#70798C] hover:text-[#342A21]'
                 }`}
               >
-                Placement Showcase
+                Showcase
+              </button>
+              <button
+                onClick={() => setActiveTab('guide')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                  activeTab === 'guide'
+                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                    : 'text-[#70798C] hover:text-[#342A21]'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Ads Guide</span>
               </button>
               <button
                 onClick={() => setActiveTab('api')}
@@ -411,27 +493,62 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     : 'text-[#70798C] hover:text-[#342A21]'
                 }`}
               >
-                Developer API
+                REST API
               </button>
             </nav>
+
+            {/* Advertiser Account Login / Dashboard trigger */}
+            {activeAdvertiser ? (
+              <button
+                onClick={() => setViewMode('advertiser-dashboard')}
+                className="px-3 py-2 rounded-xl bg-[#342A21] text-[#FCF9F5] hover:bg-[#231C16] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                title="Go to your Advertiser Dashboard"
+              >
+                <Building2 className="w-3.5 h-3.5 text-amber-300" />
+                <span className="max-w-[110px] sm:max-w-[140px] truncate">{activeAdvertiser.companyName}</span>
+                <ChevronRight className="w-3 h-3 text-stone-300" />
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => {
+                    setAuthModalInitialMode('login');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white hover:bg-[#F6F3EF] text-[#342A21] border border-[#342A21]/20 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-[#342A21]" />
+                  <span>Advertiser Sign In</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthModalInitialMode('signup');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="hidden sm:flex px-3 py-2 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <span>Register</span>
+                </button>
+              </div>
+            )}
 
             <a
               href="https://wa.me/2348000000000?text=Hello%20Setlla%20Team%2C%20I%20am%20interested%20in%20becoming%20an%20advertising%20partner%20on%20Setlla."
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3.5 py-2 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+              className="hidden lg:flex px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-semibold items-center gap-1.5 transition-all cursor-pointer"
             >
-              <MessageSquare className="w-3.5 h-3.5 text-amber-300" />
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
               <span>Ad Concierge</span>
             </a>
           </div>
         </div>
 
         {/* Mobile Sub-Navigation Bar */}
-        <div className="md:hidden border-t border-[#342A21]/5 bg-[#FCF9F5] px-4 py-2 flex items-center justify-around text-xs">
+        <div className="md:hidden border-t border-[#342A21]/5 bg-[#FCF9F5] px-4 py-2 flex items-center gap-2 overflow-x-auto text-xs no-scrollbar">
           <button
             onClick={() => setActiveTab('packages')}
-            className={`py-1 px-2.5 rounded-lg font-medium transition-colors ${
+            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
               activeTab === 'packages' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
             }`}
           >
@@ -439,20 +556,46 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('placements')}
-            className={`py-1 px-2.5 rounded-lg font-medium transition-colors ${
+            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
               activeTab === 'placements' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
             }`}
           >
-            Placements
+            Showcase
+          </button>
+          <button
+            onClick={() => setActiveTab('guide')}
+            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
+              activeTab === 'guide' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
+            }`}
+          >
+            Ads Guide
           </button>
           <button
             onClick={() => setActiveTab('api')}
-            className={`py-1 px-2.5 rounded-lg font-medium transition-colors ${
+            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
               activeTab === 'api' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
             }`}
           >
             REST API
           </button>
+          {activeAdvertiser ? (
+            <button
+              onClick={() => setViewMode('advertiser-dashboard')}
+              className="py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 bg-[#342A21] text-white"
+            >
+              My Dashboard
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                setAuthModalInitialMode('login');
+                setIsAuthModalOpen(true);
+              }}
+              className="py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 bg-white text-[#342A21] border border-[#342A21]/20"
+            >
+              Sign In
+            </button>
+          )}
         </div>
       </header>
 
@@ -496,6 +639,44 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               <span className="text-[11px] font-semibold uppercase tracking-wider text-[#70798C] block">Partner Status</span>
               <span className="text-xl sm:text-2xl font-bold text-emerald-700 block mt-0.5">Verified</span>
               <span className="text-[11px] text-[#70798C] block mt-0.5">Official blue badge</span>
+            </div>
+          </div>
+
+          {/* Advertiser Quick Gateway Access */}
+          <div className="pt-2">
+            <div className="inline-flex flex-wrap items-center justify-center gap-3 px-4 py-2 rounded-2xl bg-white border border-[#342A21]/15 shadow-subtle text-xs">
+              <span className="text-[#70798C]">Existing corporate advertiser or marketing agency?</span>
+              {activeAdvertiser ? (
+                <button
+                  onClick={() => setViewMode('advertiser-dashboard')}
+                  className="font-semibold text-[#342A21] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>Open {activeAdvertiser.companyName} Dashboard</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setAuthModalInitialMode('login');
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="font-semibold text-[#342A21] hover:underline cursor-pointer"
+                  >
+                    Sign in to your Ads Dashboard →
+                  </button>
+                  <span className="text-stone-300">·</span>
+                  <button
+                    onClick={() => {
+                      setAuthModalInitialMode('signup');
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="text-[#70798C] hover:text-[#342A21] cursor-pointer"
+                  >
+                    Create Account
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -628,6 +809,21 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        if (activeAdvertiser) {
+                          setViewMode('advertiser-dashboard');
+                        } else {
+                          setAuthModalInitialMode('signup');
+                          setIsAuthModalOpen(true);
+                        }
+                      }}
+                      className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                    >
+                      <Building2 className="w-4 h-4 text-amber-300" />
+                      <span>{activeAdvertiser ? 'Manage on Advertiser Dashboard' : 'Open Ads Dashboard'}</span>
+                    </button>
+
                     <a
                       href={`https://wa.me/2348000000000?text=${encodeURIComponent(
                         `Hello Setlla Team, I submitted an ad flight with Ref: ${submittedResult.trackingRef} for ${submittedResult.advert.advertiserName}. Please review and activate.`
@@ -644,7 +840,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       onClick={() => setSubmittedResult(null)}
                       className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] text-xs font-semibold border border-[#E5E7EB] transition-colors cursor-pointer"
                     >
-                      Submit Another Campaign
+                      Submit Another
                     </button>
                   </div>
                 </div>
@@ -1128,6 +1324,62 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         )}
 
         {/* ========================================================================= */}
+        {/* TAB: ADS SETUP & MANAGEMENT EDITORIAL GUIDE                               */}
+        {/* ========================================================================= */}
+        {activeTab === 'guide' && (
+          <div className="space-y-8 animate-fade-in">
+            <div className="bg-white rounded-3xl border border-[#342A21]/15 p-6 sm:p-8 shadow-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#70798C] block">
+                  Official Editorial Handbook
+                </span>
+                <h2 className="font-display text-2xl sm:text-3xl text-[#342A21] font-normal mt-1">
+                  Ads Setup, Verification & Lead Guide
+                </h2>
+                <p className="text-xs sm:text-sm text-[#70798C] mt-1 max-w-xl">
+                  A complete playbook for advertisers: creative specs, rapid review SLAs, WhatsApp conversion tactics, and programmatic API documentation.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {activeAdvertiser ? (
+                  <button
+                    onClick={() => setViewMode('advertiser-dashboard')}
+                    className="py-2.5 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <Building2 className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Open My Ads Dashboard</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setAuthModalInitialMode('login');
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="py-2.5 px-4 rounded-xl bg-white hover:bg-[#F6F3EF] text-[#342A21] border border-[#342A21]/20 text-xs font-semibold cursor-pointer"
+                    >
+                      Advertiser Login
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAuthModalInitialMode('signup');
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="py-2.5 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold shadow-xs cursor-pointer"
+                    >
+                      Create Account
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <AdsSetupGuide mode="customer" isModal={false} />
+          </div>
+        )}
+
+        {/* ========================================================================= */}
         {/* TAB 3: ENTERPRISE PROGRAMMATIC REST API & DEVELOPER GATEWAY               */}
         {/* ========================================================================= */}
         {activeTab === 'api' && (
@@ -1500,6 +1752,18 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           </div>
         </div>
       </footer>
+
+      {/* Advertiser Authentication Modal (Sign In / Register) */}
+      <AdvertiserAuthModal
+        isOpen={isAuthModalOpen}
+        initialMode={authModalInitialMode}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={(user: AdvertiserUser) => {
+          setActiveAdvertiser(user);
+          setIsAuthModalOpen(false);
+          setViewMode('advertiser-dashboard');
+        }}
+      />
 
       {/* Custom Confirmation Modal */}
       {confirmModal && (
