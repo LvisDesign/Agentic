@@ -6,6 +6,7 @@ interface DesktopAdvertSidebarProps {
   adverts: AdvertStory[];
   onSelectAdvert: (ad: AdvertStory) => void;
   onOpenPostAd: () => void;
+  onOpenPartnerPortal?: () => void;
   activeStoryId?: string | null;
 }
 
@@ -32,6 +33,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
   adverts,
   onSelectAdvert,
   onOpenPostAd,
+  onOpenPartnerPortal,
   activeStoryId,
 }) => {
   return (
@@ -50,13 +52,26 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
           </span>
         </div>
 
-        <button
-          onClick={onOpenPostAd}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-[11px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5 text-white" />
-          <span>Post Ad</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          {onOpenPartnerPortal && (
+            <button
+              onClick={onOpenPartnerPortal}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg border border-[#E5E7EB] hover:bg-slate-50 text-[#70798C] hover:text-[#000004] text-[10px] font-bold transition-all shadow-xs cursor-pointer"
+              title="Partner & Brand Advertising Portal"
+            >
+              <Megaphone className="w-3 h-3 text-amber-500" />
+              <span>Partner</span>
+            </button>
+          )}
+
+          <button
+            onClick={onOpenPostAd}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-[11px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5 text-white" />
+            <span>Post Ad</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. Vertically Listed Full-Bleed Showcase Cards or Empty Promotion State */}

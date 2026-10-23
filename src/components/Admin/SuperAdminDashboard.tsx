@@ -47,9 +47,20 @@ import {
   LogOut,
   Megaphone,
   Tag,
-  Sparkles
+  Sparkles,
+  Terminal,
+  Zap
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
+import { ApiWebhookModal } from './ApiWebhookModal';
+import { PartnerAdSubmissionModal } from '../Adverts/PartnerAdSubmissionModal';
+import { 
+  approvePartnerAdvert, 
+  rejectPartnerAdvert, 
+  saveAdvert, 
+  removeAdvert, 
+  loadAllAdverts 
+} from '../../services/adService';
 import { 
   PropertyListing, 
   BookingRecord, 
@@ -137,13 +148,22 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   });
 
   useEffect(() => {
-    if (adverts) {
+    if (adverts && adverts.length > 0) {
       setLocalAdverts(adverts);
+    } else {
+      loadAllAdverts().then((ads) => {
+        if (ads && ads.length > 0) {
+          setLocalAdverts(ads);
+        }
+      });
     }
   }, [adverts]);
 
   const [advertsCategoryFilter, setAdvertsCategoryFilter] = useState<'all' | 'Property' | 'Estate' | 'Promo' | 'Service'>('all');
   const [advertsVerifiedFilter, setAdvertsVerifiedFilter] = useState<'all' | 'verified' | 'unverified'>('all');
+  const [advertsStatusFilter, setAdvertsStatusFilter] = useState<'all' | 'active' | 'pending_review' | 'expired'>('all');
+  const [isApiWebhookOpen, setIsApiWebhookOpen] = useState(false);
+  const [isPartnerPortalPreviewOpen, setIsPartnerPortalPreviewOpen] = useState(false);
   const [editingAdvert, setEditingAdvert] = useState<AdvertStory | null>(null);
   const [isCreateAdvertOpen, setIsCreateAdvertOpen] = useState(false);
   const [advertForm, setAdvertForm] = useState<Partial<AdvertStory>>({
@@ -254,11 +274,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     setLocalAdverts((prev) => {
       const exists = prev.some((item) => item.id === adToSave.id);
       const updated = exists ? prev.map((item) => (item.id === adToSave.id ? adToSave : item)) : [adToSave, ...prev];
-      try {
-        localStorage.setItem('setlla_adverts', JSON.stringify(updated));
-      } catch (_) {}
       return updated;
     });
+
+    saveAdvert(adToSave);
 
     if (editingAdvert) {
       onUpdateAdvert?.(adToSave);
@@ -283,13 +302,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
   const handleDeleteAdvertInternal = (adId: string) => {
     const toDelete = localAdverts.find((a) => a.id === adId);
-    setLocalAdverts((prev) => {
-      const updated = prev.filter((a) => a.id !== adId);
-      try {
-        localStorage.setItem('setlla_adverts', JSON.stringify(updated));
-      } catch (_) {}
-      return updated;
-    });
+    setLocalAdverts((prev) => prev.filter((a) => a.id !== adId));
+    removeAdvert(adId);
 
     onDeleteAdvert?.(adId);
 
@@ -311,16 +325,49 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     const target = localAdverts.find((a) => a.id === adId);
     if (!target) return;
     const updated: AdvertStory = { ...target, isVerified: !target.isVerified };
-    setLocalAdverts((prev) => {
-      const list = prev.map((item) => (item.id === adId ? updated : item));
-      try {
-        localStorage.setItem('setlla_adverts', JSON.stringify(list));
-      } catch (_) {}
-      return list;
-    });
+    setLocalAdverts((prev) => prev.map((item) => (item.id === adId ? updated : item)));
+    saveAdvert(updated);
     onUpdateAdvert?.(updated);
     showToast(`Advert verification ${updated.isVerified ? 'enabled' : 'disabled'}.`);
   };
+
+  const handleApprovePartnerSubmission = async (adId: string) => {
+    const updated = await approvePartnerAdvert(adId, 30);
+    if (updated) {
+      setLocalAdverts((prev) => prev.map((a) => (a.id === adId ? updated : a)));
+      onUpdateAdvert?.(updated);
+      showToast(`Campaign "${updated.headline}" approved & broadcasted live!`);
+      recordAuditLog(
+        'ADVERT_APPROVED',
+        'system',
+        updated.id,
+        updated.headline,
+        currentUser.fullName,
+        `Approved submission from ${updated.advertiserName}. Flight active for 30 days.`
+      );
+    }
+  };
+
+  const handleRejectPartnerSubmission = async (adId: string) => {
+    const updated = await rejectPartnerAdvert(adId);
+    if (updated) {
+      setLocalAdverts((prev) => prev.map((a) => (a.id === adId ? updated : a)));
+      onUpdateAdvert?.(updated);
+      showToast(`Campaign rejected.`);
+      recordAuditLog(
+        'ADVERT_REJECTED',
+        'system',
+        updated.id,
+        updated.headline,
+        currentUser.fullName,
+        `Rejected partner submission from ${updated.advertiserName}.`
+      );
+    }
+  };
+
+  const pendingPartnerAdverts = useMemo(() => {
+    return localAdverts.filter((a) => a.status === 'pending_review');
+  }, [localAdverts]);
 
   const filteredAdverts = useMemo(() => {
     return localAdverts.filter((ad) => {
@@ -339,9 +386,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
         advertsVerifiedFilter === 'all' ||
         (advertsVerifiedFilter === 'verified' ? ad.isVerified : !ad.isVerified);
 
-      return matchesSearch && matchesCategory && matchesVerified;
+      const matchesStatus =
+        advertsStatusFilter === 'all' ||
+        (ad.status || 'active') === advertsStatusFilter;
+
+      return matchesSearch && matchesCategory && matchesVerified && matchesStatus;
     });
-  }, [localAdverts, globalSearch, advertsCategoryFilter, advertsVerifiedFilter]);
+  }, [localAdverts, globalSearch, advertsCategoryFilter, advertsVerifiedFilter, advertsStatusFilter]);
 
   // Load and refresh user list and logs
   const refreshAdminData = () => {
@@ -1874,34 +1925,131 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               <div className="flex items-center gap-2">
                 <Megaphone className="w-5 h-5 text-amber-600" />
                 <h3 className="font-display font-bold text-lg text-[#000004]">
-                  Sponsored Ads & Campaign Control
+                  Sponsored Ads & Multi-Channel Campaigns
                 </h3>
               </div>
               <p className="text-xs text-[#70798C] mt-1">
-                Manage featured feed stories, sidebar partner campaigns, verified sponsor badges, and outbound CTAs across Delta State.
+                Oversee campaigns across 3 ingestion models: Direct Admin Concierge, Self-Service Partner Portal, and Programmatic REST API.
               </p>
             </div>
 
-            <button
-              onClick={handleOpenCreateAdvert}
-              className="py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
-            >
-              <Plus className="w-4 h-4 text-amber-400" />
-              <span>Create New Advert</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setIsApiWebhookOpen(true)}
+                className="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[#000004] text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                title="Manage REST API keys and programmatic webhook push"
+              >
+                <Terminal className="w-4 h-4 text-indigo-600" />
+                <span>API & Webhooks</span>
+              </button>
+
+              <button
+                onClick={() => setIsPartnerPortalPreviewOpen(true)}
+                className="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[#000004] text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                title="Preview Self-Service Partner & Advertiser Submission Portal"
+              >
+                <Globe className="w-4 h-4 text-emerald-600" />
+                <span>Partner Portal</span>
+              </button>
+
+              <button
+                onClick={handleOpenCreateAdvert}
+                className="py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4 text-amber-400" />
+                <span>Create New Advert</span>
+              </button>
+            </div>
           </div>
+
+          {/* Pending Submissions Review Queue (Method 2 & 3 Submissions) */}
+          {pendingPartnerAdverts.length > 0 && (
+            <div className="bg-amber-50/70 border border-amber-200 rounded-3xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    {pendingPartnerAdverts.length}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-amber-950">
+                      Incoming Partner Submissions Awaiting Approval
+                    </h4>
+                    <p className="text-xs text-amber-800">
+                      Submitted via the Self-Service Partner Portal or External API. Review creatives before broadcasting live across Delta State.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {pendingPartnerAdverts.map((sub) => (
+                  <div key={sub.id} className="bg-white rounded-2xl p-4 border border-amber-200/80 shadow-xs flex flex-col justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                      <img 
+                        src={sub.thumbnailUrl || sub.mediaUrl} 
+                        alt={sub.headline} 
+                        className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0" 
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-xs text-[#000004] truncate">{sub.advertiserName}</span>
+                          <span className="text-[10px] px-2 py-0.2 rounded-md bg-amber-100 text-amber-800 font-bold uppercase">
+                            {sub.packageTier || 'Growth'}
+                          </span>
+                        </div>
+                        <h5 className="font-semibold text-xs text-[#000004] mt-0.5 line-clamp-1">{sub.headline}</h5>
+                        <p className="text-[11px] text-[#70798C] line-clamp-1 mt-0.5">{sub.description}</p>
+                        <div className="flex items-center gap-3 mt-1 text-[11px] text-[#70798C]">
+                          {sub.partnerEmail && <span>{sub.partnerEmail}</span>}
+                          {sub.whatsappNumber && <span>WA: {sub.whatsappNumber}</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        onClick={() => handleRejectPartnerSubmission(sub.id)}
+                        className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Decline
+                      </button>
+                      <button
+                        onClick={() => handleApprovePartnerSubmission(sub.id)}
+                        className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Approve & Broadcast</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
             <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-xs">
               <span className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider block mb-1">
-                Active Campaigns
+                Active Live Campaigns
               </span>
               <span className="text-xl sm:text-2xl font-black text-[#000004]">
-                {localAdverts.length}
+                {localAdverts.filter((a) => (a.status || 'active') === 'active').length}
               </span>
               <span className="text-[11px] text-[#70798C] block mt-1">
-                Running in live feed
+                Running in stories & banners
+              </span>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-xs">
+              <span className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider block mb-1">
+                Pending Reviews
+              </span>
+              <span className={`text-xl sm:text-2xl font-black ${pendingPartnerAdverts.length > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                {pendingPartnerAdverts.length}
+              </span>
+              <span className="text-[11px] text-[#70798C] block mt-1">
+                Awaiting admin broadcast
               </span>
             </div>
 
@@ -1928,18 +2076,6 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 Likes, shares & comments
               </span>
             </div>
-
-            <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-xs">
-              <span className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider block mb-1">
-                Active Categories
-              </span>
-              <span className="text-xl sm:text-2xl font-black text-amber-600">
-                {new Set(localAdverts.map((a) => a.category)).size}
-              </span>
-              <span className="text-[11px] text-[#70798C] block mt-1">
-                Property, Services, Promos
-              </span>
-            </div>
           </div>
 
           {/* Filtering Sub-Bar */}
@@ -1960,14 +2096,25 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                value={advertsStatusFilter}
+                onChange={(e) => setAdvertsStatusFilter(e.target.value as any)}
+                className="py-1.5 px-3 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold text-[#000004] focus:outline-none cursor-pointer"
+              >
+                <option value="all">All Campaign Statuses</option>
+                <option value="active">Live Active Only</option>
+                <option value="pending_review">Pending Review</option>
+                <option value="expired">Expired Campaigns</option>
+              </select>
+
               <select
                 value={advertsVerifiedFilter}
                 onChange={(e) => setAdvertsVerifiedFilter(e.target.value as any)}
                 className="py-1.5 px-3 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold text-[#000004] focus:outline-none cursor-pointer"
               >
-                <option value="all">All Verification Status</option>
-                <option value="verified">Verified Sponsors Only</option>
+                <option value="all">All Verification</option>
+                <option value="verified">Verified Only</option>
                 <option value="unverified">Unverified Only</option>
               </select>
             </div>
@@ -1981,7 +2128,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               </div>
               <h4 className="font-bold text-base text-[#000004]">No Adverts Found</h4>
               <p className="text-xs text-[#70798C] max-w-sm mx-auto">
-                No sponsored campaigns match your current filters. Create a new advert to feature sponsors across Delta State.
+                No sponsored campaigns match your current filters. Create an advert, approve a pending partner, or test an API push.
               </p>
               <button
                 onClick={handleOpenCreateAdvert}
@@ -1993,131 +2140,177 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredAdverts.map((ad) => (
-                <div
-                  key={ad.id}
-                  className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow group"
-                >
-                  <div>
-                    {/* Media Preview Thumbnail */}
-                    <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
-                      <img
-                        src={ad.mediaUrl || ad.thumbnailUrl}
-                        alt={ad.headline}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&q=80';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+              {filteredAdverts.map((ad) => {
+                const daysRemaining = ad.endDate
+                  ? Math.ceil((new Date(ad.endDate).getTime() - Date.now()) / 86400000)
+                  : null;
 
-                      {/* Top Badges */}
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
-                        <span className="px-2.5 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-[10px] font-black uppercase tracking-wider text-[#000004] shadow-xs">
-                          {ad.category}
-                        </span>
+                return (
+                  <div
+                    key={ad.id}
+                    className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow group"
+                  >
+                    <div>
+                      {/* Media Preview Thumbnail */}
+                      <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
+                        <img
+                          src={ad.mediaUrl || ad.thumbnailUrl}
+                          alt={ad.headline}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&q=80';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
 
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs ${
-                            ad.isVerified
-                              ? 'bg-emerald-500 text-white'
-                              : 'bg-slate-700/80 text-slate-200'
-                          }`}
-                        >
-                          <CheckCircle2 className="w-3 h-3" />
-                          <span>{ad.isVerified ? 'Verified' : 'Standard'}</span>
-                        </span>
-                      </div>
+                        {/* Top Badges */}
+                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                          <span className="px-2.5 py-0.5 rounded-full bg-white/90 backdrop-blur-xs text-[10px] font-black uppercase tracking-wider text-[#000004] shadow-xs">
+                            {ad.category}
+                          </span>
 
-                      {/* Bottom Info on Image */}
-                      <div className="absolute bottom-2.5 left-3 right-3 flex items-end justify-between text-white">
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold truncate text-white/90">
-                            {ad.advertiserName}
-                          </p>
-                          <p className="text-[10px] text-white/70 flex items-center gap-1">
-                            <MapPin className="w-2.5 h-2.5 text-amber-400" />
-                            <span>{ad.location || 'Delta State'}</span>
-                          </p>
+                          <div className="flex items-center gap-1">
+                            {ad.submissionSource === 'api_webhook' && (
+                              <span className="px-2 py-0.5 rounded-full bg-indigo-600/90 text-white text-[9px] font-bold">
+                                API Push
+                              </span>
+                            )}
+                            {ad.submissionSource === 'partner_portal' && (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-600/90 text-white text-[9px] font-bold">
+                                Partner Portal
+                              </span>
+                            )}
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs ${
+                                ad.isVerified
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'bg-slate-700/80 text-slate-200'
+                              }`}
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>{ad.isVerified ? 'Verified' : 'Standard'}</span>
+                            </span>
+                          </div>
                         </div>
-                        {ad.price && (
-                          <span className="px-2 py-0.5 rounded-lg bg-amber-400 text-amber-950 font-black text-xs shrink-0 shadow-xs">
-                            {ad.price}
-                          </span>
-                        )}
+
+                        {/* Bottom Info on Image */}
+                        <div className="absolute bottom-2.5 left-3 right-3 flex items-end justify-between text-white">
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-bold truncate text-white/90">
+                              {ad.advertiserName}
+                            </p>
+                            <p className="text-[10px] text-white/70 flex items-center gap-1">
+                              <MapPin className="w-2.5 h-2.5 text-amber-400" />
+                              <span>{ad.location || 'Delta State'}</span>
+                            </p>
+                          </div>
+                          {ad.price && (
+                            <span className="px-2 py-0.5 rounded-lg bg-amber-400 text-amber-950 font-black text-xs shrink-0 shadow-xs">
+                              {ad.price}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Content Section */}
+                      <div className="p-4 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-display font-bold text-sm text-[#000004] line-clamp-1 leading-snug">
+                            {ad.headline}
+                          </h4>
+                          {ad.status === 'pending_review' ? (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold text-[10px] shrink-0">
+                              Pending Review
+                            </span>
+                          ) : ad.status === 'expired' ? (
+                            <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-900 font-bold text-[10px] shrink-0">
+                              Expired
+                            </span>
+                          ) : daysRemaining !== null ? (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold text-[10px] shrink-0">
+                              {daysRemaining > 0 ? `${daysRemaining}d left` : 'Ends today'}
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <p className="text-xs text-[#70798C] line-clamp-2 leading-relaxed">
+                          {ad.description}
+                        </p>
+
+                        {/* Meta pills */}
+                        <div className="pt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-[#70798C]">
+                          {ad.ctaText && (
+                            <span className="px-2 py-0.5 rounded-md bg-[#FCF9F5] border border-[#E5E7EB] font-semibold text-[#000004]">
+                              CTA: {ad.ctaText}
+                            </span>
+                          )}
+                          {ad.phone && (
+                            <span className="px-2 py-0.5 rounded-md bg-[#FCF9F5] border border-[#E5E7EB] font-mono">
+                              {ad.phone}
+                            </span>
+                          )}
+                          {ad.websiteUrl && (
+                            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold truncate max-w-[160px]">
+                              {ad.websiteUrl.replace(/^https?:\/\//, '')}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Content Section */}
-                    <div className="p-4 space-y-2">
-                      <h4 className="font-display font-bold text-sm text-[#000004] line-clamp-2 leading-snug">
-                        {ad.headline}
-                      </h4>
-                      <p className="text-xs text-[#70798C] line-clamp-2 leading-relaxed">
-                        {ad.description}
-                      </p>
+                    {/* Actions Toolbar */}
+                    <div className="p-3 bg-[#FCF9F5] border-t border-[#E5E7EB] flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {ad.status === 'pending_review' ? (
+                          <button
+                            onClick={() => handleApprovePartnerSubmission(ad.id)}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 shadow-xs cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Approve</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleAdvertVerification(ad.id)}
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                              ad.isVerified
+                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                                : 'bg-white text-[#70798C] hover:bg-slate-100 border border-[#E5E7EB]'
+                            }`}
+                            title="Toggle verified badge"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>{ad.isVerified ? 'Verified' : 'Verify'}</span>
+                          </button>
+                        )}
+                      </div>
 
-                      {/* Meta pills */}
-                      <div className="pt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-[#70798C]">
-                        {ad.ctaText && (
-                          <span className="px-2 py-0.5 rounded-md bg-[#FCF9F5] border border-[#E5E7EB] font-semibold text-[#000004]">
-                            CTA: {ad.ctaText}
-                          </span>
-                        )}
-                        {ad.phone && (
-                          <span className="px-2 py-0.5 rounded-md bg-[#FCF9F5] border border-[#E5E7EB] font-mono">
-                            {ad.phone}
-                          </span>
-                        )}
-                        {ad.websiteUrl && (
-                          <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold truncate max-w-[160px]">
-                            {ad.websiteUrl.replace(/^https?:\/\//, '')}
-                          </span>
-                        )}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleOpenEditAdvert(ad)}
+                          className="p-1.5 rounded-xl bg-white hover:bg-slate-100 text-[#000004] border border-[#E5E7EB] transition-colors cursor-pointer"
+                          title="Edit Campaign"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`Delete advert "${ad.headline}"?`)) {
+                              handleDeleteAdvertInternal(ad.id);
+                            }
+                          }}
+                          className="p-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
+                          title="Delete Advert"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   </div>
-
-                  {/* Actions Toolbar */}
-                  <div className="p-3 bg-[#FCF9F5] border-t border-[#E5E7EB] flex items-center justify-between gap-2">
-                    <button
-                      onClick={() => handleToggleAdvertVerification(ad.id)}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                        ad.isVerified
-                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                          : 'bg-white text-[#70798C] hover:bg-slate-100 border border-[#E5E7EB]'
-                      }`}
-                      title="Toggle verified badge"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>{ad.isVerified ? 'Verified' : 'Verify'}</span>
-                    </button>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => handleOpenEditAdvert(ad)}
-                        className="p-1.5 rounded-xl bg-white hover:bg-slate-100 text-[#000004] border border-[#E5E7EB] transition-colors cursor-pointer"
-                        title="Edit Campaign"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`Delete advert "${ad.headline}"?`)) {
-                            handleDeleteAdvertInternal(ad.id);
-                          }
-                        }}
-                        className="p-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
-                        title="Delete Advert"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -2973,6 +3166,28 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           </form>
         </div>
       )}
+
+      {/* Method 3: Programmatic Push API & Webhook Modal */}
+      <ApiWebhookModal
+        isOpen={isApiWebhookOpen}
+        onClose={() => setIsApiWebhookOpen(false)}
+        onAdvertPushed={(newAd) => {
+          setLocalAdverts((prev) => [newAd, ...prev.filter((a) => a.id !== newAd.id)]);
+          onAddAdvert?.(newAd);
+          showToast(`Programmatic API ad "${newAd.headline}" ingested successfully!`);
+        }}
+      />
+
+      {/* Method 2: Self-Service Partner Portal Preview */}
+      <PartnerAdSubmissionModal
+        isOpen={isPartnerPortalPreviewOpen}
+        onClose={() => setIsPartnerPortalPreviewOpen(false)}
+        onSubmissionSuccess={(newAd) => {
+          setLocalAdverts((prev) => [newAd, ...prev.filter((a) => a.id !== newAd.id)]);
+          onAddAdvert?.(newAd);
+          showToast(`Partner submission for "${newAd.advertiserName}" received in review queue.`);
+        }}
+      />
     </div>
   );
 };

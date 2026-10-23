@@ -244,4 +244,140 @@ begin
   end if;
 end $$;
 
+-- =========================================================================
+-- 11. Advertising & Sponsored Campaigns Infrastructure
+-- Supports 3 ingestion methods:
+--   1. Admin Direct Concierge (Super Admin entry)
+--   2. Self-Service Partner Portal (Web submissions with pending approval)
+--   3. Programmatic Push API / Webhook (Ingestion via partner API key)
+-- =========================================================================
+
+create table if not exists public.adverts (
+  id text primary key,
+  title text,
+  headline text not null,
+  advertiser_name text not null,
+  advertiser_handle text,
+  avatar_url text,
+  category text not null default 'Promo' check (category in ('Property', 'Estate', 'Promo', 'Service')),
+  badge_text text default 'SPONSORED',
+  thumbnail_url text,
+  media_url text not null,
+  media_type text not null default 'image' check (media_type in ('image', 'video')),
+  description text,
+  location text default 'Delta State',
+  price text,
+  cta_text text default 'Learn More',
+  website_url text,
+  action_type text default 'website' check (action_type in ('website', 'contact', 'property')),
+  whatsapp_number text,
+  phone text,
+  is_verified boolean default false,
+  
+  -- Campaign Lifecycle & Ingestion Method
+  status text not null default 'active' check (status in ('pending_review', 'active', 'paused', 'expired', 'rejected')),
+  submission_source text default 'admin' check (submission_source in ('admin', 'partner_portal', 'api_webhook')),
+  partner_email text,
+  package_tier text default 'growth',
+  budget_amount numeric default 0,
+  start_date timestamp with time zone default timezone('utc'::text, now()),
+  end_date timestamp with time zone,
+  
+  -- Engagement & Performance Tracking
+  impressions_count integer default 0,
+  clicks_count integer default 0,
+  likes_count integer default 0,
+  comments_count integer default 0,
+  shares_count integer default 0,
+  
+  -- Programmatic Integration Reference
+  api_key_ref text,
+  property_id text,
+  
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create index if not exists idx_adverts_status on public.adverts (status, start_date, end_date);
+create index if not exists idx_adverts_category on public.adverts (category);
+
+-- Partner API Keys Table (For Programmatic Webhook / Push API access)
+create table if not exists public.partner_api_keys (
+  id text primary key,
+  company_name text not null,
+  api_key text unique not null,
+  contact_email text not null,
+  contact_phone text,
+  is_active boolean default true,
+  rate_limit_per_day integer default 100,
+  requests_today integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()),
+  last_used_at timestamp with time zone
+);
+
+create index if not exists idx_partner_key on public.partner_api_keys (api_key);
+
+-- Storage Bucket for Ad Creatives (High-res 9:16 vertical stories and banner graphics)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'ad-creatives',
+  'ad-creatives',
+  true,
+  20971520, -- 20MB max file size
+  array['video/mp4', 'video/webm', 'video/quicktime', 'image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update set 
+  public = true,
+  file_size_limit = 20971520,
+  allowed_mime_types = array['video/mp4', 'video/webm', 'video/quicktime', 'image/jpeg', 'image/png', 'image/webp'];
+
+-- Storage Security Policies for ad-creatives bucket
+drop policy if exists "Public Ad Creatives Access" on storage.objects;
+create policy "Public Ad Creatives Access" on storage.objects for select using (bucket_id = 'ad-creatives');
+
+drop policy if exists "Public Ad Creatives Upload" on storage.objects;
+create policy "Public Ad Creatives Upload" on storage.objects for insert with check (bucket_id = 'ad-creatives');
+
+-- RLS & Grants for Adverts and Partner Keys
+alter table public.adverts enable row level security;
+alter table public.partner_api_keys enable row level security;
+
+grant all on table public.adverts to anon, authenticated;
+grant all on table public.partner_api_keys to anon, authenticated;
+
+-- Policies
+drop policy if exists "Public can view active adverts" on public.adverts;
+create policy "Public can view active adverts" on public.adverts
+  for select using (
+    status = 'active' and 
+    (start_date is null or start_date <= timezone('utc'::text, now())) and
+    (end_date is null or end_date > timezone('utc'::text, now()))
+  );
+
+drop policy if exists "Partners can submit adverts" on public.adverts;
+create policy "Partners can submit adverts" on public.adverts
+  for insert with check (true);
+
+drop policy if exists "Admin full management adverts" on public.adverts;
+create policy "Admin full management adverts" on public.adverts
+  for all using (true) with check (true);
+
+drop policy if exists "Admin manage partner keys" on public.partner_api_keys;
+create policy "Admin manage partner keys" on public.partner_api_keys
+  for all using (true) with check (true);
+
+-- Enable Realtime for adverts table so new ads broadcast instantly to all users
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' 
+    and schemaname = 'public' 
+    and tablename = 'adverts'
+  ) then
+    alter publication supabase_realtime add table public.adverts;
+  end if;
+end $$;
+
+
 

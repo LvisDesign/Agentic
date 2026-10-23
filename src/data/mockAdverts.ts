@@ -24,6 +24,19 @@ export interface AdvertStory {
   phone?: string;
   isVerified: boolean;
   propertyId?: string;
+
+  // Ingestion & Campaign Flight Metadata
+  status?: 'pending_review' | 'active' | 'paused' | 'expired' | 'rejected';
+  submissionSource?: 'admin' | 'partner_portal' | 'api_webhook';
+  partnerEmail?: string;
+  packageTier?: 'starter' | 'growth' | 'corporate' | string;
+  budgetAmount?: number;
+  startDate?: string;
+  endDate?: string;
+  impressionsCount?: number;
+  clicksCount?: number;
+  apiKeyRef?: string;
+  createdAt?: string;
 }
 
 export interface AdvertCtaConfig {

@@ -18,6 +18,7 @@ import { UserProfileModal } from './components/Profile/UserProfileModal';
 import { InspectionBookingModal } from './components/Booking/InspectionBookingModal';
 import { MOCK_ADVERT_STORIES, AdvertStory } from './data/mockAdverts';
 import { PostAdModal } from './components/Feed/PostAdModal';
+import { PartnerAdSubmissionModal } from './components/Adverts/PartnerAdSubmissionModal';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
@@ -981,6 +982,7 @@ export function App() {
   }, [adverts]);
 
   const [isPostAdOpen, setIsPostAdOpen] = useState(false);
+  const [isPartnerPortalOpen, setIsPartnerPortalOpen] = useState(false);
 
   const handleAddAdvert = (newAd: AdvertStory) => {
     setAdverts((prev) => [newAd, ...prev]);
@@ -1663,6 +1665,7 @@ export function App() {
                 adverts={adverts}
                 onSelectAdvert={handleSelectAdvert}
                 onOpenPostAd={() => setIsPostAdOpen(true)}
+                onOpenPartnerPortal={() => setIsPartnerPortalOpen(true)}
               />
 
               {/* Main Property Rental Continuous Feed */}
@@ -1787,6 +1790,12 @@ export function App() {
         isOpen={isPostAdOpen}
         onClose={() => setIsPostAdOpen(false)}
         onAddAdvert={handleAddAdvert}
+      />
+
+      <PartnerAdSubmissionModal
+        isOpen={isPartnerPortalOpen}
+        onClose={() => setIsPartnerPortalOpen(false)}
+        onSubmissionSuccess={handleAddAdvert}
       />
 
       {/* 4. Instant PWA Web Push Notification Banner Simulation */}
