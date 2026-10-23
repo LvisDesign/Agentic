@@ -280,7 +280,7 @@ create table if not exists public.adverts (
   is_verified boolean default false,
   
   -- Campaign Lifecycle & Ingestion Method
-  status text not null default 'active' check (status in ('pending_review', 'active', 'paused', 'expired', 'rejected')),
+  status text not null default 'active' check (status in ('pending_review', 'active', 'paused', 'expired', 'rejected', 'deleted')),
   submission_source text default 'admin' check (submission_source in ('admin', 'partner_portal', 'api_webhook')),
   partner_email text,
   package_tier text default 'growth',
@@ -436,6 +436,39 @@ begin
     alter publication supabase_realtime add table public.advertisers;
   end if;
 end $$;
+
+-- =========================================================================
+-- 13. Tombstones for Deleted Adverts (Cross-Device Mobile & Web Instant Purge)
+-- Ensures when an admin or customer deletes an ad, it vanishes instantly
+-- from all mobile devices and never resurrects.
+-- =========================================================================
+
+create table if not exists public.deleted_adverts (
+  id text primary key,
+  deleted_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create index if not exists idx_deleted_adverts_time on public.deleted_adverts (deleted_at desc);
+
+alter table public.deleted_adverts enable row level security;
+grant all on table public.deleted_adverts to anon, authenticated;
+
+drop policy if exists "Public access deleted_adverts" on public.deleted_adverts;
+create policy "Public access deleted_adverts" on public.deleted_adverts for all using (true) with check (true);
+
+-- Enable Realtime for deleted_adverts table
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables 
+    where pubname = 'supabase_realtime' 
+    and schemaname = 'public' 
+    and tablename = 'deleted_adverts'
+  ) then
+    alter publication supabase_realtime add table public.deleted_adverts;
+  end if;
+end $$;
+
 
 
 

@@ -62,7 +62,9 @@ import {
   rejectPartnerAdvert, 
   saveAdvert, 
   removeAdvert, 
-  loadAllAdverts 
+  loadAllAdverts,
+  getDeletedAdvertIds,
+  SYSTEM_DEMO_ADVERT_IDS
 } from '../../services/adService';
 import { 
   PropertyListing, 
@@ -144,23 +146,26 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
   // Sponsored Adverts State
   const [localAdverts, setLocalAdverts] = useState<AdvertStory[]>(() => {
-    if (adverts && adverts.length > 0) return adverts;
+    const deletedIds = getDeletedAdvertIds();
+    if (adverts && Array.isArray(adverts)) {
+      return adverts.filter((a) => a && a.id && !deletedIds.has(a.id) && !SYSTEM_DEMO_ADVERT_IDS.has(a.id) && a.status !== 'deleted');
+    }
     try {
       const raw = localStorage.getItem('setlla_adverts') || localStorage.getItem('deltarent_adverts');
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((a) => a && a.id && !deletedIds.has(a.id) && !SYSTEM_DEMO_ADVERT_IDS.has(a.id) && a.status !== 'deleted');
+        }
+      }
     } catch (_) {}
     return [];
   });
 
   useEffect(() => {
-    if (adverts && adverts.length > 0) {
-      setLocalAdverts(adverts);
-    } else {
-      loadAllAdverts().then((ads) => {
-        if (ads && ads.length > 0) {
-          setLocalAdverts(ads);
-        }
-      });
+    if (Array.isArray(adverts)) {
+      const deletedIds = getDeletedAdvertIds();
+      setLocalAdverts(adverts.filter((a) => a && a.id && !deletedIds.has(a.id) && !SYSTEM_DEMO_ADVERT_IDS.has(a.id) && a.status !== 'deleted'));
     }
   }, [adverts]);
 

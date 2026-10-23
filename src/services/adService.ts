@@ -1,4 +1,4 @@
-import { AdvertStory, MOCK_ADVERT_STORIES } from '../data/mockAdverts';
+import { AdvertStory } from '../data/mockAdverts';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 
 export interface PartnerApiKey {
@@ -52,7 +52,133 @@ export interface ProgrammaticPushPayload {
 }
 
 const ADVERTS_STORAGE_KEY = 'setlla_adverts';
+const DELETED_ADVERTS_STORAGE_KEY = 'setlla_deleted_adverts';
 const API_KEYS_STORAGE_KEY = 'setlla_partner_api_keys';
+
+/**
+ * All known system demo / mock advert IDs.
+ * These are strictly flagged as permanently deleted so they NEVER resurrect
+ * on desktop or mobile devices once deleted by the user or admin.
+ */
+export const SYSTEM_DEMO_ADVERT_IDS = new Set([
+  'ad-asaba-emerald',
+  'ad-warri-movers',
+  'ad-delta-solar',
+  'ad-warri-willows',
+  'ad-delta-paints',
+  'ad-abraka-delsu',
+  'ad-sapele-palms',
+  'ad-ughelli-otovwodo',
+  'ad-story-1',
+  'ad-story-2',
+  'ad-story-3',
+  'ad-story-4',
+  'ad-story-5',
+  'ad-story-6',
+  'ad-story-7',
+  'ad-story-8',
+]);
+
+/**
+ * Returns a Set of advert IDs that have been explicitly deleted.
+ * Initialized with SYSTEM_DEMO_ADVERT_IDS to guarantee demo ads never resurrect.
+ */
+export function getDeletedAdvertIds(): Set<string> {
+  const set = new Set<string>(SYSTEM_DEMO_ADVERT_IDS);
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(DELETED_ADVERTS_STORAGE_KEY) : null;
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        arr.forEach((id) => set.add(id));
+      }
+    }
+  } catch (e) {}
+  return set;
+}
+
+export function recordDeletedAdvertId(id: string): void {
+  try {
+    const set = getDeletedAdvertIds();
+    set.add(id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(DELETED_ADVERTS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+      // Also cleanse local advert storage immediately
+      const raw = localStorage.getItem(ADVERTS_STORAGE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            const filtered = parsed.filter((a: any) => a && a.id !== id);
+            localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(filtered));
+          }
+        } catch (_) {}
+      }
+    }
+  } catch (e) {}
+}
+
+export function unrecordDeletedAdvertId(id: string): void {
+  try {
+    const set = getDeletedAdvertIds();
+    if (set.has(id)) {
+      set.delete(id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(DELETED_ADVERTS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+      }
+    }
+  } catch (e) {}
+}
+
+/**
+ * Fetches deleted advert IDs from Supabase to synchronize tombstones to mobile devices
+ */
+export async function syncDeletedAdvertsFromCloud(): Promise<Set<string>> {
+  const localSet = getDeletedAdvertIds();
+  if (isSupabaseConfigured()) {
+    try {
+      const { data } = await supabase.from('deleted_adverts').select('id');
+      if (data && Array.isArray(data)) {
+        data.forEach((row) => {
+          if (row.id) localSet.add(row.id);
+        });
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(DELETED_ADVERTS_STORAGE_KEY, JSON.stringify(Array.from(localSet)));
+        }
+      }
+    } catch (_) {}
+  }
+  return localSet;
+}
+
+/**
+ * Explicit purge helper for system demo adverts
+ */
+export async function purgeSystemDemoAdverts(): Promise<void> {
+  const demoIds = Array.from(SYSTEM_DEMO_ADVERT_IDS);
+  demoIds.forEach((id) => recordDeletedAdvertId(id));
+
+  if (typeof window !== 'undefined') {
+    const raw = localStorage.getItem(ADVERTS_STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const clean = parsed.filter((a: any) => a && !SYSTEM_DEMO_ADVERT_IDS.has(a.id));
+          localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(clean));
+        }
+      } catch (_) {}
+    }
+  }
+
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase.from('adverts').delete().in('id', demoIds);
+      const tombstoneRows = demoIds.map((id) => ({ id, deleted_at: new Date().toISOString() }));
+      await supabase.from('deleted_adverts').upsert(tombstoneRows);
+    } catch (_) {}
+  }
+}
 
 // Seed Partner API Keys for corporate testing
 const DEFAULT_PARTNER_KEYS: PartnerApiKey[] = [
@@ -175,52 +301,61 @@ export const isCampaignExpired = (ad: AdvertStory): boolean => {
 /**
  * Fetches all adverts with automatic expiration detection.
  * Reads from Supabase if online, seamlessly falls back to localStorage.
+ * STRICT RULE: Never resurrects deleted ads or system demo ads.
  */
 export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
-  let list: AdvertStory[] = [];
+  // 1. Sync cloud tombstones so this device knows what was deleted
+  await syncDeletedAdvertsFromCloud().catch(() => {});
+  const deletedIds = getDeletedAdvertIds();
 
-  // Try Supabase first if configured
+  let list: AdvertStory[] = [];
+  let fetchedFromCloud = false;
+
+  // 2. Fetch live adverts from Supabase
   if (isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase
         .from('adverts')
         .select('*')
+        .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        list = data.map(mapDbToAdvert);
+      if (!error && Array.isArray(data)) {
+        fetchedFromCloud = true;
+        list = data
+          .map(mapDbToAdvert)
+          .filter((ad) => ad && ad.id && !deletedIds.has(ad.id) && ad.status !== 'deleted');
+
+        // Immediately update localStorage with the clean cloud list
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list));
+        }
       }
     } catch (err) {
       console.warn('[AdService] Supabase fetch error, using local cache:', err);
     }
   }
 
-  // Fallback to localStorage if Supabase was empty or offline
-  if (list.length === 0) {
+  // 3. Fallback to localStorage ONLY if cloud was unreachable/offline
+  if (!fetchedFromCloud) {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(ADVERTS_STORAGE_KEY) : null;
     if (raw) {
       try {
-        list = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          list = parsed.filter(
+            (ad: AdvertStory) => ad && ad.id && !deletedIds.has(ad.id) && ad.status !== 'deleted'
+          );
+        }
       } catch {
         list = [];
       }
     }
   }
 
-  // Default seed if completely empty
-  if (list.length === 0) {
-    list = MOCK_ADVERT_STORIES.map((ad: AdvertStory, idx: number) => ({
-      ...ad,
-      status: 'active' as const,
-      submissionSource: 'admin' as const,
-      startDate: new Date(Date.now() - 86400000 * (idx + 1)).toISOString(),
-      endDate: new Date(Date.now() + 86400000 * (30 - idx * 2)).toISOString(),
-      impressionsCount: 1200 + idx * 340,
-      clicksCount: 84 + idx * 19,
-    }));
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list));
-    }
+  // 4. Update localStorage with sanitized list (no demo ads, no deleted ads)
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list));
   }
 
   // Check and flag expired campaigns
@@ -244,6 +379,9 @@ export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
  * Saves or updates an advert in both Supabase and localStorage
  */
 export const saveAdvert = async (ad: AdvertStory): Promise<AdvertStory> => {
+  // If this ad ID was previously tombstoned, clear it
+  unrecordDeletedAdvertId(ad.id);
+
   const all = await loadAllAdverts();
   const existingIdx = all.findIndex((item) => item.id === ad.id);
   const now = new Date().toISOString();
@@ -279,10 +417,19 @@ export const saveAdvert = async (ad: AdvertStory): Promise<AdvertStory> => {
 };
 
 /**
- * Deletes an advert
+ * Permanently deletes an advert across all devices (mobile and desktop).
+ * Writes tombstone to Supabase deleted_adverts and purges from cloud and localStorage.
  */
 export const removeAdvert = async (id: string): Promise<void> => {
-  const all = await loadAllAdverts();
+  // 1. Record ID in tombstones (cloud + local)
+  recordDeletedAdvertId(id);
+
+  // 2. Remove from local storage cache
+  const raw = typeof window !== 'undefined' ? localStorage.getItem(ADVERTS_STORAGE_KEY) : null;
+  let all: AdvertStory[] = [];
+  if (raw) {
+    try { all = JSON.parse(raw); } catch {}
+  }
   const filtered = all.filter((item) => item.id !== id);
 
   if (typeof window !== 'undefined') {
@@ -290,9 +437,15 @@ export const removeAdvert = async (id: string): Promise<void> => {
     window.dispatchEvent(new CustomEvent('setlla_adverts_updated'));
   }
 
+  // 3. Delete from Supabase & record tombstone
   if (isSupabaseConfigured()) {
     try {
+      // Update status to 'deleted'
+      await supabase.from('adverts').update({ status: 'deleted' }).eq('id', id);
+      // Hard delete from adverts table
       await supabase.from('adverts').delete().eq('id', id);
+      // Record in deleted_adverts table for cross-device realtime broadcast
+      await supabase.from('deleted_adverts').upsert({ id, deleted_at: new Date().toISOString() });
     } catch (e) {
       console.warn('[AdService] Failed to delete from Supabase:', e);
     }
@@ -311,7 +464,7 @@ export const subscribeToAdvertChanges = (callback: (adverts: AdvertStory[]) => v
 
   window.addEventListener('setlla_adverts_updated', handler);
   window.addEventListener('storage', (e) => {
-    if (e.key === ADVERTS_STORAGE_KEY) {
+    if (e.key === ADVERTS_STORAGE_KEY || e.key === DELETED_ADVERTS_STORAGE_KEY) {
       handler();
     }
   });
@@ -326,6 +479,13 @@ export const subscribeToAdvertChanges = (callback: (adverts: AdvertStory[]) => v
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'adverts' },
+            () => {
+              loadAllAdverts().then(callback).catch(() => {});
+            }
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'deleted_adverts' },
             () => {
               loadAllAdverts().then(callback).catch(() => {});
             }
@@ -612,3 +772,8 @@ const incrementApiKeyUsage = (id: string) => {
     localStorage.setItem(API_KEYS_STORAGE_KEY, JSON.stringify(list));
   }
 };
+
+// Auto-purge any stale system demo adverts on client bootstrap
+if (typeof window !== 'undefined') {
+  purgeSystemDemoAdverts().catch(() => {});
+}

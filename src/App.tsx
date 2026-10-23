@@ -31,8 +31,8 @@ import { SignupModal } from './components/User/SignupModal';
 import { MyPassesModal } from './components/Pass/MyPassesModal';
 import { UserProfileModal } from './components/Profile/UserProfileModal';
 import { InspectionBookingModal } from './components/Booking/InspectionBookingModal';
-import { MOCK_ADVERT_STORIES, AdvertStory } from './data/mockAdverts';
-import { loadAllAdverts, saveAdvert, removeAdvert, subscribeToAdvertChanges } from './services/adService';
+import { AdvertStory } from './data/mockAdverts';
+import { loadAllAdverts, saveAdvert, removeAdvert, subscribeToAdvertChanges, getDeletedAdvertIds, SYSTEM_DEMO_ADVERT_IDS } from './services/adService';
 import { PostAdModal } from './components/Feed/PostAdModal';
 import { PartnerAdSubmissionModal } from './components/Adverts/PartnerAdSubmissionModal';
 import { PartnerPortalPage } from './components/Partner/PartnerPortalPage';
@@ -1036,18 +1036,23 @@ export function App() {
 
   // Sponsored adverts state - Loaded live from adService (Supabase + active partner campaigns)
   const [adverts, setAdverts] = useState<AdvertStory[]>(() => {
+    const deletedIds = getDeletedAdvertIds();
     const saved = typeof window !== 'undefined'
       ? (localStorage.getItem('setlla_adverts') || localStorage.getItem('deltarent_adverts'))
       : null;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed)) {
+          // Strictly filter out any deleted or system demo ads
+          return parsed.filter(
+            (a: AdvertStory) => a && a.id && !deletedIds.has(a.id) && !SYSTEM_DEMO_ADVERT_IDS.has(a.id) && a.status !== 'deleted'
+          );
         }
       } catch (e) {}
     }
-    return MOCK_ADVERT_STORIES;
+    // Strictly return [] - Never fallback to demo mock ads
+    return [];
   });
 
   useEffect(() => {
@@ -1056,10 +1061,20 @@ export function App() {
     } catch (e) {}
   }, [adverts]);
 
-  // Subscribe to realtime advert updates across all devices
+  // Initial cloud sync on mount: Loads live adverts from Supabase and purges deleted ads on mobile
+  useEffect(() => {
+    loadAllAdverts().then((freshAds) => {
+      if (Array.isArray(freshAds)) {
+        setAdverts(freshAds);
+      }
+    });
+  }, []);
+
+  // Subscribe to realtime advert updates across all mobile & desktop devices
   useEffect(() => {
     const unsubscribe = subscribeToAdvertChanges((updatedAdverts) => {
-      if (updatedAdverts && updatedAdverts.length > 0) {
+      // Must accept empty array [] so deleted ads immediately vanish from mobile
+      if (Array.isArray(updatedAdverts)) {
         setAdverts(updatedAdverts);
       }
     });
