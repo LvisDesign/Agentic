@@ -1,5 +1,7 @@
 import { UserProfile, BookingRecord } from '../types/marketplace';
 import { isLocalUrl } from './environment';
+import { supabase, isSupabaseConfigured, getSupabaseClient } from './supabaseClient';
+import { broadcastRealtimeEvent } from '../services/realtimeSync';
 
 // Default seeded accounts for instant marketplace testing
 export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
@@ -260,7 +262,147 @@ export function getRegisteredUsers(): UserProfile[] {
 }
 
 /**
- * Saves a new or updated user profile to the registry.
+ * Maps a raw Supabase platform_users database record into a clean UserProfile object.
+ */
+export function mapDbToUserProfile(row: any): UserProfile {
+  return {
+    id: row.id,
+    fullName: row.full_name || '',
+    email: row.email || undefined,
+    phone: row.phone || '',
+    state: row.state || 'Delta State',
+    city: row.city || 'Asaba',
+    preferredPropertyType: row.preferred_property_type || undefined,
+    budget: row.budget !== null && row.budget !== undefined ? Number(row.budget) : undefined,
+    nin: row.nin || undefined,
+    isVerifiedTenant: Boolean(row.is_verified_tenant),
+    avatarUrl: row.avatar_url || undefined,
+    isAgent: Boolean(row.is_agent),
+    agencyName: row.agency_name || undefined,
+    cacNumber: row.cac_number || undefined,
+    whatsapp: row.whatsapp || undefined,
+    operatingState: row.operating_state || row.state || 'Delta State',
+    operatingCity: row.operating_city || row.city || 'Asaba',
+    agentType: row.agent_type || (row.is_agent ? 'agency' : undefined),
+    savedListingIds: Array.isArray(row.saved_listing_ids) ? row.saved_listing_ids : [],
+    isAdmin: Boolean(row.is_admin),
+    isSuperAdmin: Boolean(row.is_super_admin),
+    isDemoAdmin: false,
+    isSuspended: Boolean(row.is_suspended),
+    suspensionReason: row.suspension_reason || undefined,
+    kycStatus: row.kyc_status || 'not_submitted',
+    kycDocuments: row.kyc_documents && typeof row.kyc_documents === 'object' ? row.kyc_documents : undefined,
+    createdAt: row.created_at || new Date().toISOString(),
+    lastProfileEditAt: row.last_profile_edit_at || undefined,
+  };
+}
+
+/**
+ * Maps a UserProfile object into a Supabase platform_users database record format.
+ */
+export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
+  return {
+    id: user.id,
+    full_name: user.fullName,
+    phone: user.phone,
+    email: user.email || null,
+    state: user.state || 'Delta State',
+    city: user.city || 'Asaba',
+    preferred_property_type: user.preferredPropertyType || null,
+    budget: user.budget ?? 0,
+    nin: user.nin || null,
+    is_verified_tenant: Boolean(user.isVerifiedTenant),
+    avatar_url: user.avatarUrl || null,
+    is_agent: Boolean(user.isAgent),
+    agency_name: user.agencyName || null,
+    cac_number: user.cacNumber || null,
+    whatsapp: user.whatsapp || null,
+    operating_state: user.operatingState || user.state || 'Delta State',
+    operating_city: user.operatingCity || user.city || 'Asaba',
+    agent_type: user.agentType || (user.isAgent ? 'agency' : null),
+    saved_listing_ids: Array.isArray(user.savedListingIds) ? user.savedListingIds : [],
+    is_admin: Boolean(user.isAdmin),
+    is_super_admin: Boolean(user.isSuperAdmin),
+    is_suspended: Boolean(user.isSuspended),
+    suspension_reason: user.suspensionReason || null,
+    kyc_status: user.kycStatus || 'not_submitted',
+    kyc_documents: user.kycDocuments || {},
+    created_at: user.createdAt || new Date().toISOString(),
+    last_profile_edit_at: user.lastProfileEditAt || null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+/**
+ * Fetches all registered users from the shared Supabase database.
+ * Syncs the local storage cache so that accounts created on mobile or web correlate automatically.
+ */
+export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
+  if (!isSupabaseConfigured()) {
+    return getRegisteredUsers();
+  }
+
+  try {
+    const client = getSupabaseClient();
+    if (!client) return getRegisteredUsers();
+
+    const { data, error } = await client
+      .from('platform_users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.warn('[UserRegistry] Supabase platform_users fetch notice:', error.message);
+      return getRegisteredUsers();
+    }
+
+    if (Array.isArray(data)) {
+      const dbUsers: UserProfile[] = data.map(mapDbToUserProfile);
+      const isLocal = isLocalUrl();
+
+      // Merge DB users with existing local users
+      const userMap = new Map<string, UserProfile>();
+
+      // 1. Seed defaults if local
+      if (isLocal) {
+        DEFAULT_REGISTERED_USERS.forEach((u) => userMap.set(u.id, u));
+      }
+
+      // 2. Add local storage users
+      const localUsers = getRegisteredUsers();
+      localUsers.forEach((u) => {
+        if (u && u.id && (isLocal || !DEMO_USER_IDS.has(u.id))) {
+          userMap.set(u.id, u);
+        }
+      });
+
+      // 3. Database records take highest precedence (canonical source of truth)
+      dbUsers.forEach((u) => {
+        if (u && u.id && (isLocal || !DEMO_USER_IDS.has(u.id))) {
+          userMap.set(u.id, u);
+        }
+      });
+
+      const mergedList = Array.from(userMap.values());
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedList));
+      } catch (err) {
+        // quota exceeded or SSR
+      }
+
+      return mergedList;
+    }
+  } catch (err) {
+    console.warn('[UserRegistry] Network error fetching platform users:', err);
+  }
+
+  return getRegisteredUsers();
+}
+
+/**
+ * Saves a new or updated user profile to the registry AND automatically
+ * synchronizes to the shared Supabase database so all accounts correlate across
+ * mobile, desktop, and all screens automatically.
  */
 export function saveRegisteredUser(user: UserProfile): void {
   if (typeof window === 'undefined' || !user) return;
@@ -285,10 +427,51 @@ export function saveRegisteredUser(user: UserProfile): void {
   } catch (err) {
     console.error('[UserRegistry] Failed to save user to registry:', err);
   }
+
+  // Synchronize to central Supabase platform_users table
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
+      const dbRow = mapUserProfileToDb(user);
+      Promise.resolve(client.from('platform_users').upsert(dbRow, { onConflict: 'id' }))
+        .then((res: any) => {
+          if (res?.error) {
+            console.warn('[UserRegistry] Supabase platform_users sync notice:', res.error.message);
+          } else {
+            broadcastRealtimeEvent('USER_REGISTERED', { user });
+          }
+        })
+        .catch((err: any) => {
+          console.warn('[UserRegistry] Network error syncing user to DB:', err);
+        });
+    }
+  }
 }
 
 /**
- * Super Admin function: forces an update to any user record in the registry.
+ * Async version of saveRegisteredUser that waits for database confirmation.
+ */
+export async function saveRegisteredUserAsync(user: UserProfile): Promise<boolean> {
+  saveRegisteredUser(user);
+  if (!isSupabaseConfigured()) return true;
+
+  try {
+    const client = getSupabaseClient();
+    if (!client) return true;
+    const dbRow = mapUserProfileToDb(user);
+    const { error } = await client.from('platform_users').upsert(dbRow, { onConflict: 'id' });
+    if (!error) {
+      broadcastRealtimeEvent('USER_REGISTERED', { user });
+      return true;
+    }
+  } catch (e) {
+    console.warn('[UserRegistry] Async user save error:', e);
+  }
+  return false;
+}
+
+/**
+ * Super Admin function: forces an update to any user record in the registry and database.
  */
 export function adminUpdateUser(user: UserProfile): void {
   if (typeof window === 'undefined' || !user) return;
@@ -304,10 +487,27 @@ export function adminUpdateUser(user: UserProfile): void {
   } catch (err) {
     console.error('[UserRegistry] Failed to admin update user:', err);
   }
+
+  // Sync to database
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
+      const dbRow = mapUserProfileToDb(user);
+      Promise.resolve(client.from('platform_users').upsert(dbRow, { onConflict: 'id' }))
+        .then((res: any) => {
+          if (res?.error) {
+            console.warn('[UserRegistry] Supabase admin update error:', res.error.message);
+          } else {
+            broadcastRealtimeEvent('USER_UPDATED', { user });
+          }
+        })
+        .catch(() => {});
+    }
+  }
 }
 
 /**
- * Super Admin function: removes a user from the registry.
+ * Super Admin function: removes a user from the registry and central database.
  */
 export function deleteUserFromRegistry(userId: string): void {
   if (typeof window === 'undefined' || !userId) return;
@@ -317,7 +517,22 @@ export function deleteUserFromRegistry(userId: string): void {
   } catch (err) {
     console.error('[UserRegistry] Failed to delete user from registry:', err);
   }
+
+  // Delete from Supabase platform_users
+  if (isSupabaseConfigured()) {
+    const client = getSupabaseClient();
+    if (client) {
+      Promise.resolve(client.from('platform_users').delete().eq('id', userId))
+        .then((res: any) => {
+          if (res?.error) {
+            console.warn('[UserRegistry] Supabase delete user error:', res.error.message);
+          }
+        })
+        .catch(() => {});
+    }
+  }
 }
+
 
 export interface DuplicateCheckResult {
   exists: boolean;
@@ -328,7 +543,7 @@ export interface DuplicateCheckResult {
 }
 
 /**
- * Checks whether an account already exists with the given phone number or email address.
+ * Checks whether an account already exists with the given phone number or email address in local storage.
  * Excludes the currently signed-in user's own ID if specified.
  */
 export function checkUserExists(
@@ -391,7 +606,102 @@ export function checkUserExists(
 }
 
 /**
- * Finds a registered user by phone or email query.
+ * Asynchronously checks whether an account already exists with the given phone number or email,
+ * inspecting both local cache and the central Supabase database across all devices.
+ */
+export async function checkUserExistsAsync(
+  phone: string,
+  email?: string,
+  excludeUserId?: string
+): Promise<DuplicateCheckResult> {
+  // First check local cache
+  const localCheck = checkUserExists(phone, email, excludeUserId);
+  if (localCheck.exists) {
+    return localCheck;
+  }
+
+  if (!isSupabaseConfigured()) {
+    return { exists: false };
+  }
+
+  const normPhone = normalizePhoneNumber(phone);
+  const normEmail = normalizeEmail(email);
+  const last10 = normPhone.slice(-10);
+
+  try {
+    const client = getSupabaseClient();
+    if (!client) return { exists: false };
+
+    let queryBuilder = client.from('platform_users').select('*');
+    const filters: string[] = [];
+
+    if (last10.length >= 7) {
+      filters.push(`phone.ilike.%${last10}%`);
+    } else if (phone && phone.trim()) {
+      filters.push(`phone.eq.${phone.trim()}`);
+    }
+
+    if (normEmail) {
+      filters.push(`email.ilike.${normEmail}`);
+    }
+
+    if (filters.length > 0) {
+      const { data, error } = await queryBuilder.or(filters.join(','));
+      if (!error && Array.isArray(data)) {
+        for (const row of data) {
+          if (excludeUserId && row.id === excludeUserId) continue;
+
+          const user = mapDbToUserProfile(row);
+          const userNormPhone = normalizePhoneNumber(user.phone);
+          const userNormEmail = normalizeEmail(user.email);
+
+          const phoneMatches = Boolean(
+            normPhone && userNormPhone &&
+            (normPhone === userNormPhone || (last10.length >= 7 && userNormPhone.slice(-10) === last10))
+          );
+          const emailMatches = Boolean(normEmail && userNormEmail && normEmail === userNormEmail);
+
+          if (phoneMatches && emailMatches) {
+            return {
+              exists: true,
+              reason: 'both',
+              field: 'both',
+              message: `An account with phone number "${phone}" and email "${email}" already exists.`,
+              matchedUser: user,
+            };
+          }
+
+          if (phoneMatches) {
+            return {
+              exists: true,
+              reason: 'phone',
+              field: 'phone',
+              message: `An account with phone number "${phone}" already exists.`,
+              matchedUser: user,
+            };
+          }
+
+          if (emailMatches) {
+            return {
+              exists: true,
+              reason: 'email',
+              field: 'email',
+              message: `An account with email "${email}" already exists.`,
+              matchedUser: user,
+            };
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[UserRegistry] Exception during checkUserExistsAsync:', err);
+  }
+
+  return { exists: false };
+}
+
+/**
+ * Finds a registered user by phone or email query in local cache.
  */
 export function findUserByCredential(query: string): UserProfile | null {
   if (!query || !query.trim()) return null;
@@ -399,6 +709,7 @@ export function findUserByCredential(query: string): UserProfile | null {
   const isEmailQuery = trimmed.includes('@');
   const normPhone = normalizePhoneNumber(trimmed);
   const normEmail = normalizeEmail(trimmed);
+  const last10 = normPhone.slice(-10);
 
   const registeredUsers = getRegisteredUsers();
 
@@ -408,7 +719,8 @@ export function findUserByCredential(query: string): UserProfile | null {
         return user;
       }
     } else {
-      if (normalizePhoneNumber(user.phone) === normPhone) {
+      const uPhone = normalizePhoneNumber(user.phone);
+      if (uPhone === normPhone || (last10.length >= 7 && uPhone.slice(-10) === last10)) {
         return user;
       }
     }
@@ -416,6 +728,88 @@ export function findUserByCredential(query: string): UserProfile | null {
 
   return null;
 }
+
+/**
+ * Asynchronously finds a user by credential (phone or email) querying both
+ * local storage and the shared Supabase database.
+ * This guarantees that an account created on Web/Desktop is instantly recognized
+ * on Mobile devices and vice versa.
+ */
+export async function findUserByCredentialAsync(query: string): Promise<UserProfile | null> {
+  if (!query || !query.trim()) return null;
+  const trimmed = query.trim();
+
+  // 1. Check local cache first
+  const localMatch = findUserByCredential(trimmed);
+  if (localMatch) {
+    return localMatch;
+  }
+
+  // 2. Query Supabase database
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  const client = getSupabaseClient();
+  if (!client) return null;
+
+  const isEmail = trimmed.includes('@');
+  const normPhone = normalizePhoneNumber(trimmed);
+  const normEmail = normalizeEmail(trimmed);
+  const last10 = normPhone.slice(-10);
+
+  try {
+    let queryBuilder = client.from('platform_users').select('*');
+
+    if (isEmail) {
+      queryBuilder = queryBuilder.ilike('email', normEmail);
+    } else if (last10.length >= 7) {
+      queryBuilder = queryBuilder.or(`phone.ilike.%${last10}%,phone.eq.${trimmed}`);
+    } else {
+      queryBuilder = queryBuilder.eq('phone', trimmed);
+    }
+
+    const { data, error } = await queryBuilder;
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      for (const row of data) {
+        const user = mapDbToUserProfile(row);
+        if (isEmail) {
+          if (user.email && normalizeEmail(user.email) === normEmail) {
+            saveRegisteredUser(user);
+            return user;
+          }
+        } else {
+          const uPhone = normalizePhoneNumber(user.phone);
+          if (uPhone === normPhone || (last10.length >= 7 && uPhone.slice(-10) === last10)) {
+            saveRegisteredUser(user);
+            return user;
+          }
+        }
+      }
+    }
+
+    // 3. Fallback: Fetch latest users from DB if targeted indexed query returned no hit
+    const allDbUsers = await fetchRegisteredUsersFromDb();
+    for (const user of allDbUsers) {
+      if (isEmail) {
+        if (user.email && normalizeEmail(user.email) === normEmail) {
+          return user;
+        }
+      } else {
+        const uPhone = normalizePhoneNumber(user.phone);
+        if (uPhone === normPhone || (last10.length >= 7 && uPhone.slice(-10) === last10)) {
+          return user;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[UserRegistry] Exception during findUserByCredentialAsync:', err);
+  }
+
+  return null;
+}
+
 
 const MY_BOOKINGS_STORAGE_KEY = 'setlla_my_booking_ids';
 const LEGACY_MY_BOOKINGS_STORAGE_KEY = 'deltarent_my_booking_ids';

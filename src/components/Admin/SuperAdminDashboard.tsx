@@ -81,7 +81,7 @@ import {
   toggleUserSuspension, 
   exportPlatformDataSnapshot 
 } from '../../services/adminService';
-import { getRegisteredUsers, adminUpdateUser, deleteUserFromRegistry } from '../../utils/userRegistry';
+import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry } from '../../utils/userRegistry';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 
 interface SuperAdminDashboardProps {
@@ -399,6 +399,11 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     setRegisteredUsers(getRegisteredUsers());
     setPlatformSettings(getPlatformSettings());
     setAuditLogs(getAuditLogs());
+    fetchRegisteredUsersFromDb().then((users) => {
+      if (users && users.length > 0) {
+        setRegisteredUsers(users);
+      }
+    });
   };
 
   useEffect(() => {

@@ -3,7 +3,22 @@ import { INITIAL_LISTINGS } from './data/mockListings';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability, PlatformSettings } from './types/marketplace';
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge } from './utils/pwa';
-import { saveRegisteredUser, isBookingForUser, getMyDeviceBookingIds, recordMyDeviceBookingId, clearMyDeviceBookingIds, getNotifiedBookingIds, recordNotifiedBookingId, getNotifiedDeclinedBookingIds, recordNotifiedDeclinedBookingId, getNotifiedAgentBookingIds, recordNotifiedAgentBookingId } from './utils/userRegistry';
+import { 
+  saveRegisteredUser, 
+  isBookingForUser, 
+  getMyDeviceBookingIds, 
+  recordMyDeviceBookingId, 
+  clearMyDeviceBookingIds, 
+  getNotifiedBookingIds, 
+  recordNotifiedBookingId, 
+  getNotifiedDeclinedBookingIds, 
+  recordNotifiedDeclinedBookingId, 
+  getNotifiedAgentBookingIds, 
+  recordNotifiedAgentBookingId,
+  fetchRegisteredUsersFromDb,
+  mapDbToUserProfile,
+  normalizePhoneNumber
+} from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
 import { FilterBar } from './components/Feed/FilterBar';
@@ -414,9 +429,10 @@ export function App() {
   // Background Data Synchronizer without requiring manual page reloads
   const syncLatestData = useCallback(async () => {
     try {
-      const [fetchedListings, fetchedBookings] = await Promise.all([
+      const [fetchedListings, fetchedBookings, fetchedUsers] = await Promise.all([
         fetchAllListings(),
         fetchAllBookings(),
+        fetchRegisteredUsersFromDb(),
       ]);
 
       if (fetchedListings && fetchedListings.length > 0) {
@@ -425,10 +441,21 @@ export function App() {
       if (fetchedBookings) {
         setBookings(fetchedBookings);
       }
+      // Keep active session in sync with central platform_users database
+      if (fetchedUsers && currentUser.id && currentUser.id !== 'GUEST_USER' && currentUser.id !== 'DT-USR-GUEST') {
+        const matched = fetchedUsers.find(
+          (u) =>
+            u.id === currentUser.id ||
+            (currentUser.phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(currentUser.phone))
+        );
+        if (matched) {
+          setCurrentUser((prev) => ({ ...prev, ...matched }));
+        }
+      }
     } catch (err) {
       console.warn('[Setlla Sync] Real-time background refresh notice:', err);
     }
-  }, []);
+  }, [currentUser.id, currentUser.phone]);
 
   // When user opens the app, unlocks screen, or switches to tab, auto-sync immediately without reload
   useEffect(() => {
@@ -633,6 +660,12 @@ export function App() {
         setListings((prev) => prev.map((l) => (l.id === event.listing!.id ? event.listing! : l)));
       } else if (event.type === 'LISTING_DELETED' && event.listingId) {
         setListings((prev) => prev.filter((l) => l.id !== event.listingId));
+      } else if ((event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED') && event.user) {
+        saveRegisteredUser(event.user);
+        if (currentUser.id === event.user.id || (currentUser.phone && event.user.phone && normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(event.user.phone))) {
+          setCurrentUser(event.user);
+          localStorage.setItem('setlla_user', JSON.stringify(event.user));
+        }
       }
     });
 
@@ -789,6 +822,22 @@ export function App() {
                     });
                     playNotificationSound('alert');
                   }
+                }
+              }
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'platform_users' },
+          (payload) => {
+            if (!isMounted) return;
+            fetchRegisteredUsersFromDb().then(() => {
+              if (payload.new) {
+                const updated = mapDbToUserProfile(payload.new);
+                if (currentUser.id === updated.id || (currentUser.phone && normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(updated.phone))) {
+                  setCurrentUser(updated);
+                  localStorage.setItem('setlla_user', JSON.stringify(updated));
                 }
               }
             });

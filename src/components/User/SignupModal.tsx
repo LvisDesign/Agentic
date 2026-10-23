@@ -19,7 +19,8 @@ import {
   PlusSquare,
   AlertCircle,
   AlertTriangle,
-  Globe
+  Globe,
+  Loader2
 } from 'lucide-react';
 import { DeltaCity, UserProfile, UserRole } from '../../types/marketplace';
 import { StateDropdown } from '../UI/StateDropdown';
@@ -29,7 +30,9 @@ import { usePWA } from '../../utils/pwa';
 import { isLocalUrl } from '../../utils/environment';
 import { 
   checkUserExists, 
+  checkUserExistsAsync,
   findUserByCredential, 
+  findUserByCredentialAsync,
   saveRegisteredUser, 
   DuplicateCheckResult 
 } from '../../utils/userRegistry';
@@ -156,6 +159,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [loginPhoneOrEmail, setLoginPhoneOrEmail] = useState('');
   const [loginRole, setLoginRole] = useState<'seeker' | 'agent'>('seeker');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Success state
   const [isSuccess, setIsSuccess] = useState(false);
@@ -238,12 +242,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   };
 
   // Submission for Tenant Signup
-  const handleSeekerSignup = (e: React.FormEvent) => {
+  const handleSeekerSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!seekerFullName.trim() || !seekerPhone.trim()) return;
 
-    // Strict duplicate check: prevent signing up twice with same phone number or email
-    const dupCheck = checkUserExists(seekerPhone, seekerEmail);
+    // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
+    const localDupCheck = checkUserExists(seekerPhone, seekerEmail);
+    if (localDupCheck.exists) {
+      setDuplicateError(localDupCheck);
+      return;
+    }
+    const dupCheck = await checkUserExistsAsync(seekerPhone, seekerEmail);
     if (dupCheck.exists) {
       setDuplicateError(dupCheck);
       return;
@@ -268,9 +277,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       createdAt: new Date().toISOString(),
     };
 
+    // Save immediately to local storage AND Supabase platform_users database
+    saveRegisteredUser(updated);
+
     if (isStandalone) {
-      // If already installed/standalone, save user and bypass directly
-      saveRegisteredUser(updated);
       setSuccessMessage({
         title: `Welcome, ${seekerFullName.trim()}!`,
         subtitle: `Your tenant profile is active for ${seekerState}. Inspection bookings are now unlocked!`,
@@ -290,12 +300,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   };
 
   // Submission for Agent Signup
-  const handleAgentSignup = (e: React.FormEvent) => {
+  const handleAgentSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agentFullName.trim() || !agencyName.trim() || !agentPhone.trim()) return;
 
-    // Strict duplicate check: prevent signing up twice with same phone number or email
-    const dupCheck = checkUserExists(agentPhone, agentEmail);
+    // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
+    const localDupCheck = checkUserExists(agentPhone, agentEmail);
+    if (localDupCheck.exists) {
+      setDuplicateError(localDupCheck);
+      return;
+    }
+    const dupCheck = await checkUserExistsAsync(agentPhone, agentEmail);
     if (dupCheck.exists) {
       setDuplicateError(dupCheck);
       return;
@@ -327,9 +342,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       createdAt: new Date().toISOString(),
     };
 
+    // Save immediately to local storage AND Supabase platform_users database
+    saveRegisteredUser(updated);
+
     if (isStandalone) {
-      // If already installed/standalone, save user and bypass directly
-      saveRegisteredUser(updated);
       setSuccessMessage({
         title: `Welcome, ${agentFullName.trim()}!`,
         subtitle: `${agencyName.trim()} is now registered. Redirecting to your Agent Listing Portal...`,
@@ -349,102 +365,122 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   };
 
   // Submission for Login
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const query = loginPhoneOrEmail.trim();
     if (!query) return;
 
-    // Check registry for exact match first
-    const registeredMatch = findUserByCredential(query);
-    if (registeredMatch) {
-      setLoginError(null);
-      const isAgent = registeredMatch.isAgent;
+    setIsLoggingIn(true);
+    setLoginError(null);
+
+    try {
+      // 1. Check local registry first for fast response
+      let registeredMatch = findUserByCredential(query);
+
+      // 2. If not found in local cache, query central Supabase platform_users database across mobile & desktop!
+      if (!registeredMatch) {
+        registeredMatch = await findUserByCredentialAsync(query);
+      }
+
+      if (registeredMatch) {
+        setLoginError(null);
+        const isAgent = registeredMatch.isAgent;
+        setSuccessMessage({
+          title: `Welcome back, ${registeredMatch.fullName}!`,
+          subtitle: isAgent
+            ? 'Signed in as Agent. Loading your listings and inspection requests...'
+            : 'Signed in as Tenant. Your saved inspections and passes are ready!',
+        });
+        setIsSuccess(true);
+
+        setTimeout(() => {
+          onUpdateUser(registeredMatch!, isAgent ? 'agent' : 'seeker');
+          setIsSuccess(false);
+          setIsLoggingIn(false);
+          onClose();
+        }, 1000);
+        return;
+      }
+
+      // On deployed environments, reject unknown credentials so fake accounts are not generated
+      if (!isLocalUrl()) {
+        setLoginError('No registered account was found with this phone number or email. Please check your credentials or create an account.');
+        setIsLoggingIn(false);
+        return;
+      }
+
+      // Demo fallback (Local development only)
+      const isSystemAdmin =
+        query.toLowerCase().includes('admin') ||
+        query === 'admin@setlla.com' ||
+        query === 'admin@deltarent.ng';
+
+      const isAgentLogin =
+        isSystemAdmin ||
+        loginRole === 'agent' ||
+        query === '0803 555 1234' ||
+        query.toLowerCase().includes('agent') ||
+        query.toLowerCase().includes('apex') ||
+        (currentUser.isAgent && (query === currentUser.phone || query === currentUser.email));
+
+      const updated: UserProfile = isAgentLogin
+        ? {
+            id: isSystemAdmin ? 'DT-ADMIN-001' : 'DT-AGT-9012',
+            fullName: isSystemAdmin ? 'Platform Administrator' : 'Victor Ossai',
+            agencyName: isSystemAdmin ? 'Setlla Administration' : 'Apex Real Estate Ltd',
+            agentType: 'agency',
+            phone: query.includes('@') ? (isSystemAdmin ? '0800 000 0001' : '0803 555 1234') : query,
+            whatsapp: isSystemAdmin ? '0800 000 0001' : '0803 555 1234',
+            email: query.includes('@') ? query : (isSystemAdmin ? 'admin@setlla.com' : 'victor@apexrealty.ng'),
+            operatingState: 'Delta State',
+            operatingCity: 'Asaba',
+            state: 'Delta State',
+            city: 'Asaba',
+            cacNumber: 'RC-1849204',
+            isVerifiedTenant: false,
+            isAgent: !isSystemAdmin,
+            isAdmin: isSystemAdmin,
+            isSuperAdmin: isSystemAdmin,
+            isDemoAdmin: true,
+            savedListingIds: [],
+          }
+        : {
+            id: 'DT-USR-8492',
+            fullName: 'Chinedu Okafor',
+            phone: query.includes('@') ? '0803 891 0293' : query,
+            email: query.includes('@') ? query : 'chinedu.okafor@gmail.com',
+            state: 'Delta State',
+            city: 'Asaba',
+            preferredPropertyType: 'Bedseater',
+            isVerifiedTenant: true,
+            isAgent: false,
+            savedListingIds: ['prop-asaba-01'],
+          };
+
       setSuccessMessage({
-        title: `Welcome back, ${registeredMatch.fullName}!`,
-        subtitle: isAgent
+        title: `Welcome back, ${updated.fullName}!`,
+        subtitle: isSystemAdmin
+          ? 'Signed in as Super Admin. Opening master control console...'
+          : isAgentLogin
           ? 'Signed in as Agent. Loading your listings and inspection requests...'
           : 'Signed in as Tenant. Your saved inspections and passes are ready!',
       });
       setIsSuccess(true);
 
       setTimeout(() => {
-        onUpdateUser(registeredMatch, isAgent ? 'agent' : 'seeker');
+        onUpdateUser(updated, isSystemAdmin ? 'admin' : isAgentLogin ? 'agent' : 'seeker');
         setIsSuccess(false);
+        setIsLoggingIn(false);
         onClose();
       }, 1000);
-      return;
+    } catch (err) {
+      console.warn('[SignupModal] Login error:', err);
+      setLoginError('An unexpected error occurred while verifying your account. Please try again.');
+    } finally {
+      setIsLoggingIn(false);
     }
-
-    // On deployed environments, reject unknown credentials so fake accounts are not generated
-    if (!isLocalUrl()) {
-      setLoginError('No registered account was found with this phone number or email. Please check your credentials or create an account.');
-      return;
-    }
-
-    // Demo fallback (Local development only)
-    const isSystemAdmin =
-      query.toLowerCase().includes('admin') ||
-      query === 'admin@setlla.com' ||
-      query === 'admin@deltarent.ng';
-
-    const isAgentLogin =
-      isSystemAdmin ||
-      loginRole === 'agent' ||
-      query === '0803 555 1234' ||
-      query.toLowerCase().includes('agent') ||
-      query.toLowerCase().includes('apex') ||
-      (currentUser.isAgent && (query === currentUser.phone || query === currentUser.email));
-
-    const updated: UserProfile = isAgentLogin
-      ? {
-          id: isSystemAdmin ? 'DT-ADMIN-001' : 'DT-AGT-9012',
-          fullName: isSystemAdmin ? 'Platform Administrator' : 'Victor Ossai',
-          agencyName: isSystemAdmin ? 'Setlla Administration' : 'Apex Real Estate Ltd',
-          agentType: 'agency',
-          phone: query.includes('@') ? (isSystemAdmin ? '0800 000 0001' : '0803 555 1234') : query,
-          whatsapp: isSystemAdmin ? '0800 000 0001' : '0803 555 1234',
-          email: query.includes('@') ? query : (isSystemAdmin ? 'admin@setlla.com' : 'victor@apexrealty.ng'),
-          operatingState: 'Delta State',
-          operatingCity: 'Asaba',
-          state: 'Delta State',
-          city: 'Asaba',
-          cacNumber: 'RC-1849204',
-          isVerifiedTenant: false,
-          isAgent: !isSystemAdmin,
-          isAdmin: isSystemAdmin,
-          isSuperAdmin: isSystemAdmin,
-          isDemoAdmin: true,
-          savedListingIds: [],
-        }
-      : {
-          id: 'DT-USR-8492',
-          fullName: 'Chinedu Okafor',
-          phone: query.includes('@') ? '0803 891 0293' : query,
-          email: query.includes('@') ? query : 'chinedu.okafor@gmail.com',
-          state: 'Delta State',
-          city: 'Asaba',
-          preferredPropertyType: 'Bedseater',
-          isVerifiedTenant: true,
-          isAgent: false,
-          savedListingIds: ['prop-asaba-01'],
-        };
-
-    setSuccessMessage({
-      title: `Welcome back, ${updated.fullName}!`,
-      subtitle: isSystemAdmin
-        ? 'Signed in as Super Admin. Opening master control console...'
-        : isAgentLogin
-        ? 'Signed in as Agent. Loading your listings and inspection requests...'
-        : 'Signed in as Tenant. Your saved inspections and passes are ready!',
-    });
-    setIsSuccess(true);
-
-    setTimeout(() => {
-      onUpdateUser(updated, isSystemAdmin ? 'admin' : isAgentLogin ? 'agent' : 'seeker');
-      setIsSuccess(false);
-      onClose();
-    }, 1000);
   };
+
 
   // Demo Quick-fill helpers for easy testing
   const handleFillDemoTenant = () => {
@@ -849,10 +885,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full py-3.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        disabled={isLoggingIn}
+                        className="w-full py-3.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                       >
-                        <span>Sign In</span>
-                        <ArrowRight className="w-4 h-4" />
+                        {isLoggingIn ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            <span>Verifying Account...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Sign In</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
                       </button>
                     </div>
                   </form>

@@ -178,6 +178,11 @@ create table if not exists public.platform_users (
 create index if not exists idx_users_phone on public.platform_users (phone);
 create index if not exists idx_users_role on public.platform_users (is_agent, is_admin);
 
+-- Ensure all platform user profile columns exist
+alter table public.platform_users add column if not exists saved_listing_ids jsonb default '[]'::jsonb;
+alter table public.platform_users add column if not exists avatar_url text;
+alter table public.platform_users add column if not exists last_profile_edit_at timestamp with time zone;
+
 -- 8. Admin Audit Trail Table
 create table if not exists public.admin_audit_logs (
   id text primary key,

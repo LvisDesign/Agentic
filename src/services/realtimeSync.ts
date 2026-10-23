@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
-import { PropertyListing, BookingRecord } from '../types/marketplace';
+import { PropertyListing, BookingRecord, UserProfile } from '../types/marketplace';
 
 export type RealtimeEventType = 
   | 'NEW_BOOKING_REQUEST'
@@ -7,12 +7,15 @@ export type RealtimeEventType =
   | 'BOOKING_REJECTED'
   | 'LISTING_CREATED'
   | 'LISTING_UPDATED'
-  | 'LISTING_DELETED';
+  | 'LISTING_DELETED'
+  | 'USER_REGISTERED'
+  | 'USER_UPDATED';
 
 export interface RealtimeEventPayload {
   type: RealtimeEventType;
   booking?: BookingRecord;
   listing?: PropertyListing;
+  user?: UserProfile;
   listingId?: string;
   bookingId?: string;
   propertyId?: string;
@@ -47,6 +50,7 @@ export async function broadcastRealtimeEvent(
   data: {
     booking?: BookingRecord;
     listing?: PropertyListing;
+    user?: UserProfile;
     listingId?: string;
     bookingId?: string;
     propertyId?: string;
