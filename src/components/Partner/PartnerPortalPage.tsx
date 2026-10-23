@@ -46,11 +46,13 @@ import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 
 interface PartnerPortalPageProps {
   onBackToExplore?: () => void;
+  onBackToAdmin?: () => void;
   onAdSubmitted?: (ad: AdvertStory) => void;
 }
 
 export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   onBackToExplore,
+  onBackToAdmin,
   onAdSubmitted,
 }) => {
   const [activeTab, setActiveTab] = useState<'packages' | 'placements' | 'api' | 'guide'>('packages');
@@ -377,7 +379,9 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   };
 
   const handleReturn = () => {
-    if (onBackToExplore) {
+    if (onBackToAdmin) {
+      onBackToAdmin();
+    } else if (onBackToExplore) {
       onBackToExplore();
     } else {
       window.location.hash = '#/explore';
@@ -427,14 +431,35 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-[#342A21]/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleReturn}
-              className="p-2 -ml-2 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
-              title="Return to property feed"
-            >
-              <ArrowLeft className="w-4 h-4 text-[#342A21]" />
-              <span className="hidden sm:inline">Explore Feed</span>
-            </button>
+            {onBackToAdmin ? (
+              <button
+                onClick={onBackToAdmin}
+                className="py-1.5 px-3 rounded-xl text-amber-900 bg-amber-50 hover:bg-amber-100 hover:text-amber-950 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold border border-amber-200/80 shadow-xs"
+                title="Return to Super Admin Dashboard"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-amber-700" />
+                <span>Admin Dashboard</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleReturn}
+                className="p-2 -ml-2 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+                title="Return to property feed"
+              >
+                <ArrowLeft className="w-4 h-4 text-[#342A21]" />
+                <span className="hidden sm:inline">Explore Feed</span>
+              </button>
+            )}
+
+            {onBackToAdmin && onBackToExplore && (
+              <button
+                onClick={onBackToExplore}
+                className="py-1.5 px-2.5 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer hidden sm:flex items-center gap-1 text-xs font-medium"
+                title="Explore properties feed"
+              >
+                <span>Explore Feed</span>
+              </button>
+            )}
 
             <div className="h-5 w-px bg-[#E5E7EB] hidden sm:block" />
 

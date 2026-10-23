@@ -107,6 +107,7 @@ interface SuperAdminDashboardProps {
   onSwitchToExplore: () => void;
   onSwitchToAgent?: () => void;
   onSwitchToTenant?: () => void;
+  onSwitchToPartner?: () => void;
   onSignOut?: () => void;
 }
 
@@ -137,6 +138,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   onSwitchToExplore,
   onSwitchToAgent,
   onSwitchToTenant,
+  onSwitchToPartner,
   onSignOut,
 }) => {
   // Navigation State
@@ -2039,17 +2041,26 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <a
-                href="#/partner"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={(e) => {
+                  if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                    window.open(`${window.location.origin}${window.location.pathname}#/partner`, '_blank');
+                    return;
+                  }
+                  if (onSwitchToPartner) {
+                    onSwitchToPartner();
+                  } else {
+                    window.location.hash = '#/partner';
+                  }
+                }}
                 className="py-2.5 px-3.5 rounded-xl border border-[#342A21]/20 bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                title="View live standalone Setlla Partner & Brand Advertising page"
+                title="View live standalone Setlla Partner & Brand Advertising page (Ctrl+Click to open in new tab)"
               >
                 <Globe className="w-4 h-4 text-emerald-700" />
                 <span>Live Partner Page</span>
                 <ExternalLink className="w-3 h-3 text-[#70798C]" />
-              </a>
+              </button>
 
               <button
                 onClick={() => setIsApiWebhookOpen(true)}
@@ -3310,7 +3321,11 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
         onClose={() => setIsApiWebhookOpen(false)}
         onOpenFullPage={() => {
           setIsApiWebhookOpen(false);
-          window.location.hash = '#/partner';
+          if (onSwitchToPartner) {
+            onSwitchToPartner();
+          } else {
+            window.location.hash = '#/partner';
+          }
         }}
         onAdvertPushed={(newAd) => {
           setLocalAdverts((prev) => [newAd, ...prev.filter((a) => a.id !== newAd.id)]);
@@ -3325,7 +3340,11 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
         onClose={() => setIsPartnerPortalPreviewOpen(false)}
         onOpenFullPage={() => {
           setIsPartnerPortalPreviewOpen(false);
-          window.location.hash = '#/partner';
+          if (onSwitchToPartner) {
+            onSwitchToPartner();
+          } else {
+            window.location.hash = '#/partner';
+          }
         }}
         onSubmissionSuccess={(newAd) => {
           setLocalAdverts((prev) => [newAd, ...prev.filter((a) => a.id !== newAd.id)]);

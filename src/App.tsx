@@ -1714,6 +1714,11 @@ export function App() {
                 setCurrentRole('tenant');
                 setUserView('dashboard');
               }}
+              onSwitchToPartner={() => {
+                setCurrentRole('tenant');
+                setUserView('partner');
+                window.location.hash = '#/partner';
+              }}
               onSignOut={handleAdminSignOut}
             />
           </main>
@@ -1733,7 +1738,14 @@ export function App() {
           /* Setlla Partner & Brand Advertising Dedicated Standalone Page */
           <main className="flex-1 w-full min-h-screen">
             <PartnerPortalPage
-              onBackToExplore={() => setUserView('feed')}
+              onBackToExplore={() => {
+                setUserView('feed');
+                window.location.hash = '#/explore';
+              }}
+              onBackToAdmin={isAdminAuthenticated ? () => {
+                setCurrentRole('admin');
+                window.location.hash = '#/admin';
+              } : undefined}
               onAdSubmitted={handleAddAdvert}
             />
           </main>
