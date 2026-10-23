@@ -192,33 +192,52 @@ export function normalizeEmail(email?: string): string {
   return email.trim().toLowerCase();
 }
 
-const DEMO_USER_IDS = new Set([
-  'DT-USR-8492',
-  'DT-AGT-9012',
-  'DT-WRI-3918',
-  'DT-ADMIN-001',
-  'DT-AGT-1021',
-  'DT-AGT-2044',
-  'DT-AGT-3055',
-  'DT-USR-5520',
-]);
+const DELETED_USERS_STORAGE_KEY = 'setlla_deleted_user_ids';
+const LEGACY_DELETED_USERS_STORAGE_KEY = 'deltarent_deleted_user_ids';
+
+/**
+ * Returns a Set of user IDs that were explicitly deleted by the Super Administrator.
+ */
+export function getDeletedUserIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(DELETED_USERS_STORAGE_KEY) || localStorage.getItem(LEGACY_DELETED_USERS_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch (_) {}
+  return new Set();
+}
+
+/**
+ * Records a deleted user ID so that explicitly deleted users do not resurface.
+ */
+export function recordDeletedUserId(id: string): void {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    const set = getDeletedUserIds();
+    set.add(id);
+    localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+  } catch (_) {}
+}
 
 /**
  * Retrieves all registered users from storage and defaults.
- * On deployed URLs, demo accounts are excluded so the platform starts clean.
+ * Provides all available registered agents, tenants, and platform administrators.
  */
 export function getRegisteredUsers(): UserProfile[] {
-  const isLocal = isLocalUrl();
-  if (typeof window === 'undefined') return isLocal ? DEFAULT_REGISTERED_USERS : [];
+  if (typeof window === 'undefined') return DEFAULT_REGISTERED_USERS;
 
+  const deletedIds = getDeletedUserIds();
   const usersMap = new Map<string, UserProfile>();
 
-  // 1. Seed defaults ONLY on local development environment
-  if (isLocal) {
-    DEFAULT_REGISTERED_USERS.forEach((user) => {
+  // 1. Seed all default registered agents, tenants, and administrators
+  DEFAULT_REGISTERED_USERS.forEach((user) => {
+    if (!deletedIds.has(user.id)) {
       usersMap.set(user.id, user);
-    });
-  }
+    }
+  });
 
   // 2. Load from localStorage registered users registry
   try {
@@ -227,11 +246,7 @@ export function getRegisteredUsers(): UserProfile[] {
       const parsed: UserProfile[] = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         parsed.forEach((user) => {
-          if (user && user.id) {
-            // On deployed view, filter out cached demo users
-            if (!isLocal && DEMO_USER_IDS.has(user.id)) {
-              return;
-            }
+          if (user && user.id && !deletedIds.has(user.id)) {
             usersMap.set(user.id, user);
           }
         });
@@ -246,12 +261,8 @@ export function getRegisteredUsers(): UserProfile[] {
     const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
     if (rawCurrent) {
       const current: UserProfile = JSON.parse(rawCurrent);
-      if (current && current.id) {
-        if (!isLocal && DEMO_USER_IDS.has(current.id)) {
-          // ignore demo user on deployed URL
-        } else {
-          usersMap.set(current.id, current);
-        }
+      if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST' && !deletedIds.has(current.id)) {
+        usersMap.set(current.id, current);
       }
     }
   } catch (err) {
@@ -260,6 +271,7 @@ export function getRegisteredUsers(): UserProfile[] {
 
   return Array.from(usersMap.values());
 }
+
 
 /**
  * Maps a raw Supabase platform_users database record into a clean UserProfile object.
@@ -338,13 +350,16 @@ export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
  * Syncs the local storage cache so that accounts created on mobile or web correlate automatically.
  */
 export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
+  const deletedIds = getDeletedUserIds();
+  const localUsers = getRegisteredUsers();
+
   if (!isSupabaseConfigured()) {
-    return getRegisteredUsers();
+    return localUsers;
   }
 
   try {
     const client = getSupabaseClient();
-    if (!client) return getRegisteredUsers();
+    if (!client) return localUsers;
 
     const { data, error } = await client
       .from('platform_users')
@@ -353,50 +368,60 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
 
     if (error) {
       console.warn('[UserRegistry] Supabase platform_users fetch notice:', error.message);
-      return getRegisteredUsers();
+      return localUsers;
     }
 
+    const userMap = new Map<string, UserProfile>();
+
+    // 1. Seed defaults (excluding explicitly deleted)
+    DEFAULT_REGISTERED_USERS.forEach((u) => {
+      if (!deletedIds.has(u.id)) {
+        userMap.set(u.id, u);
+      }
+    });
+
+    // 2. Add local storage users
+    localUsers.forEach((u) => {
+      if (u && u.id && !deletedIds.has(u.id)) {
+        userMap.set(u.id, u);
+      }
+    });
+
+    // 3. Database records take highest precedence (canonical source of truth)
     if (Array.isArray(data)) {
-      const dbUsers: UserProfile[] = data.map(mapDbToUserProfile);
-      const isLocal = isLocalUrl();
-
-      // Merge DB users with existing local users
-      const userMap = new Map<string, UserProfile>();
-
-      // 1. Seed defaults if local
-      if (isLocal) {
-        DEFAULT_REGISTERED_USERS.forEach((u) => userMap.set(u.id, u));
-      }
-
-      // 2. Add local storage users
-      const localUsers = getRegisteredUsers();
-      localUsers.forEach((u) => {
-        if (u && u.id && (isLocal || !DEMO_USER_IDS.has(u.id))) {
+      data.forEach((row) => {
+        const u = mapDbToUserProfile(row);
+        if (u && u.id && !deletedIds.has(u.id)) {
           userMap.set(u.id, u);
         }
       });
 
-      // 3. Database records take highest precedence (canonical source of truth)
-      dbUsers.forEach((u) => {
-        if (u && u.id && (isLocal || !DEMO_USER_IDS.has(u.id))) {
-          userMap.set(u.id, u);
-        }
-      });
-
-      const mergedList = Array.from(userMap.values());
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedList));
-      } catch (err) {
-        // quota exceeded or SSR
+      // Auto-seed: Ensure all default platform agents & tenants exist in Supabase database
+      const dbIds = new Set(data.map((r: any) => r.id));
+      const missingDefaults = DEFAULT_REGISTERED_USERS.filter((u) => !dbIds.has(u.id) && !deletedIds.has(u.id));
+      if (missingDefaults.length > 0) {
+        const rows = missingDefaults.map(mapUserProfileToDb);
+        Promise.resolve(client.from('platform_users').upsert(rows, { onConflict: 'id' }))
+          .then(() => {
+            console.log(`[UserRegistry] Synchronized ${missingDefaults.length} default users into Supabase database.`);
+          })
+          .catch(() => {});
       }
-
-      return mergedList;
     }
+
+    const mergedList = Array.from(userMap.values());
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedList));
+    } catch (err) {
+      // quota exceeded or SSR
+    }
+
+    return mergedList;
   } catch (err) {
     console.warn('[UserRegistry] Network error fetching platform users:', err);
   }
 
-  return getRegisteredUsers();
+  return localUsers;
 }
 
 /**
@@ -406,7 +431,6 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
  */
 export function saveRegisteredUser(user: UserProfile): void {
   if (typeof window === 'undefined' || !user) return;
-  if (!isLocalUrl() && DEMO_USER_IDS.has(user.id)) return;
 
   const allUsers = getRegisteredUsers();
   const existingIndex = allUsers.findIndex(
@@ -511,6 +535,7 @@ export function adminUpdateUser(user: UserProfile): void {
  */
 export function deleteUserFromRegistry(userId: string): void {
   if (typeof window === 'undefined' || !userId) return;
+  recordDeletedUserId(userId);
   const allUsers = getRegisteredUsers().filter((u) => u.id !== userId);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(allUsers));
@@ -532,6 +557,7 @@ export function deleteUserFromRegistry(userId: string): void {
     }
   }
 }
+
 
 
 export interface DuplicateCheckResult {

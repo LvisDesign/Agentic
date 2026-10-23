@@ -82,6 +82,7 @@ import {
   exportPlatformDataSnapshot 
 } from '../../services/adminService';
 import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry } from '../../utils/userRegistry';
+import { subscribeToRealtimeEvents } from '../../services/realtimeSync';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 
 interface SuperAdminDashboardProps {
@@ -184,7 +185,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   });
 
   // Local state for users and settings
-  const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>([]);
+  const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>(() => getRegisteredUsers());
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(getPlatformSettings());
   const [auditLogs, setAuditLogs] = useState<AdminAuditLog[]>([]);
 
@@ -408,6 +409,32 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
   useEffect(() => {
     refreshAdminData();
+
+    // 1. Cross-device Realtime event listener for live registrations/updates
+    const unsub = subscribeToRealtimeEvents((event) => {
+      if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED') {
+        refreshAdminData();
+      }
+    });
+
+    // 2. Poll Supabase every 12s so new accounts from mobile reflect automatically
+    const interval = setInterval(() => {
+      fetchRegisteredUsersFromDb().then((users) => {
+        if (users && users.length > 0) {
+          setRegisteredUsers(users);
+        }
+      });
+    }, 12000);
+
+    // 3. Auto-sync on window focus
+    const handleFocus = () => refreshAdminData();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      unsub();
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   // Split users into agents and tenants
