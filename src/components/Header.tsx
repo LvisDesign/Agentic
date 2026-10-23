@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Hourglass, 
   Lock,
@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 import { usePWA } from '../utils/pwa';
+import { CustomConfirmModal } from './UI/CustomConfirmModal';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -61,10 +62,11 @@ export const Header: React.FC<HeaderProps> = ({
 
   // Unobtrusive Header PWA Install hook
   const { isStandalone, isIOS, installApp } = usePWA();
+  const [showIosPrompt, setShowIosPrompt] = useState(false);
 
   const handleHeaderInstall = async () => {
     if (isIOS) {
-      alert("To install Setlla on iOS:\n1. Tap the Safari Share button (⎋)\n2. Tap 'Add to Home Screen' (➕)");
+      setShowIosPrompt(true);
       return;
     }
     await installApp();
@@ -340,6 +342,20 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
+
+      {showIosPrompt && (
+        <CustomConfirmModal
+          isOpen={showIosPrompt}
+          title="Install Setlla on iPhone / iPad"
+          message="To install Setlla on iOS Safari: Tap the Safari Share icon (⎋) at the bottom bar of your screen, scroll down the share menu, and tap 'Add to Home Screen' (➕) for instant full-screen app access."
+          badge="IOS WEB APP"
+          confirmText="Got it!"
+          variant="info"
+          isAlertOnly={true}
+          onConfirm={() => setShowIosPrompt(false)}
+          onCancel={() => setShowIosPrompt(false)}
+        />
+      )}
     </header>
   );
 };

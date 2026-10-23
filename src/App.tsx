@@ -39,6 +39,7 @@ import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
 import { SuperAdminDashboard } from './components/Admin/SuperAdminDashboard';
+import { CustomConfirmModal } from './components/UI/CustomConfirmModal';
 import { AdminAuthPortal } from './components/Admin/AdminAuthPortal';
 import { 
   isSuperAdminAuthenticated, 
@@ -541,6 +542,14 @@ export function App() {
   const [activeModalListing, setActiveModalListing] = useState<PropertyListing | null>(null);
   const [pushNotification, setPushNotification] = useState<PushNotificationData | null>(null);
   const [unlockedSheetData, setUnlockedSheetData] = useState<{ listing: PropertyListing; booking: BookingRecord } | null>(null);
+  const [platformAlertModal, setPlatformAlertModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    badge?: string;
+    variant?: 'danger' | 'warning' | 'info' | 'success';
+    confirmText?: string;
+  } | null>(null);
 
   // Real-time Push Notifications & Pop-up Alerts across devices and tabs without page reload
   useEffect(() => {
@@ -1239,7 +1248,14 @@ export function App() {
     // Concurrency Rule: Agent can accept an applicant ONLY if requested slot has active capacity (< 5 bookings)
     const targetSlot = targetListing.inspectionSlots.find((s) => s.id === targetBooking.slotId);
     if (targetSlot && targetSlot.bookedCount >= 5 && targetBooking.status === 'QUEUED') {
-      alert('Concurrency limit reached: This slot already has 5 confirmed applicants. An applicant must cancel before a standby applicant can be admitted.');
+      setPlatformAlertModal({
+        isOpen: true,
+        title: 'Inspection Slot Full (Capacity Limit)',
+        message: 'Concurrency limit reached: This inspection slot already has 5 confirmed applicants. An applicant must cancel before a standby applicant can be admitted.',
+        badge: 'SLOT CAPACITY LIMIT',
+        variant: 'warning',
+        confirmText: 'Understood',
+      });
       return;
     }
 
@@ -1881,6 +1897,21 @@ export function App() {
           onClose={() => setUnlockedSheetData(null)}
           listing={unlockedSheetData.listing}
           booking={unlockedSheetData.booking}
+        />
+      )}
+
+      {/* Global Platform Notice / Alert Modal */}
+      {platformAlertModal && (
+        <CustomConfirmModal
+          isOpen={platformAlertModal.isOpen}
+          title={platformAlertModal.title}
+          message={platformAlertModal.message}
+          badge={platformAlertModal.badge}
+          variant={platformAlertModal.variant}
+          confirmText={platformAlertModal.confirmText}
+          isAlertOnly={true}
+          onConfirm={() => setPlatformAlertModal(null)}
+          onCancel={() => setPlatformAlertModal(null)}
         />
       )}
     </div>

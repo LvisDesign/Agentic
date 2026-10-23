@@ -151,6 +151,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   const [uploadedMedia, setUploadedMedia] = useState<MediaItemDraft[]>([]);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const [rentError, setRentError] = useState<string | null>(null);
 
   // Inspection Window Rules
   const [selectedDays, setSelectedDays] = useState<string[]>(['Mon', 'Wed', 'Fri', 'Sat']);
@@ -267,9 +268,10 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
     e.preventDefault();
 
     if (!baseRentNum || baseRentNum <= 0) {
-      alert('Please enter a valid house rent amount.');
+      setRentError('Please enter a valid house rent amount.');
       return;
     }
+    setRentError(null);
 
     if (uploadedMedia.length === 0) {
       setMediaError('Please upload at least 1 photo or video walkthrough of the property.');
@@ -658,12 +660,22 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   <input
                     type="text"
                     value={formatCurrencyInput(baseRentInput)}
-                    onChange={(e) => setBaseRentInput(e.target.value)}
+                    onChange={(e) => {
+                      setBaseRentInput(e.target.value);
+                      if (rentError) setRentError(null);
+                    }}
                     placeholder="1,500,000"
-                    className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] font-semibold focus:outline-none focus:border-[#342A21]"
+                    className={`w-full pl-7 pr-3 py-2 rounded-lg border text-xs text-[#000004] font-semibold focus:outline-none ${
+                      rentError ? 'border-rose-500 bg-rose-50/20' : 'border-[#E5E7EB] focus:border-[#342A21]'
+                    }`}
                     required
                   />
                 </div>
+                {rentError && (
+                  <p className="text-[11px] text-rose-600 font-semibold mt-1">
+                    {rentError}
+                  </p>
+                )}
               </div>
 
               <div>

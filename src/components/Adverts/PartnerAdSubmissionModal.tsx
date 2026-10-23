@@ -49,6 +49,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<{ trackingRef: string; advert: AdvertStory } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -102,8 +103,9 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     if (!companyName || !headline || !partnerEmail || !mediaUrl) {
-      alert('Please fill in your company name, headline, contact email, and media URL.');
+      setFormError('Please fill in your company name, headline, contact email, and media URL.');
       return;
     }
 
@@ -136,7 +138,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
       }
     } catch (err) {
       console.error('Submission failed:', err);
-      alert('Could not submit ad. Please try again.');
+      setFormError('Could not submit ad. Please check your network connection and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -460,6 +462,13 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                 )}
               </div>
             </div>
+
+            {/* Form Error Banner */}
+            {formError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold animate-fade-in">
+                {formError}
+              </div>
+            )}
 
             {/* Bottom Actions */}
             <div className="pt-5 border-t border-slate-200 flex items-center justify-between gap-3">

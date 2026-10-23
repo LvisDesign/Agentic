@@ -75,6 +75,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [demoBypassTime, setDemoBypassTime] = useState(false);
   const [showLockNotice, setShowLockNotice] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
 
   // Profile Edit Form Fields
   const [editFullName, setEditFullName] = useState(currentUser.fullName || '');
@@ -139,8 +140,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveErrorMessage(null);
     if (!editFullName.trim() || !editPhone.trim()) {
-      alert('Full name and phone number are required.');
+      setSaveErrorMessage('Full name and phone number are required.');
       return;
     }
 
@@ -172,7 +174,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('Please select an image smaller than 5MB');
+      setSaveErrorMessage('Please select an image smaller than 5MB.');
       return;
     }
 
@@ -643,6 +645,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
                   <span>Saving changes will apply a 14-day security lock before the next profile edit is permitted.</span>
                 </div>
+
+                {saveErrorMessage && (
+                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold animate-fade-in">
+                    {saveErrorMessage}
+                  </div>
+                )}
 
                 <div className="flex gap-2 pt-1">
                   <button

@@ -26,6 +26,7 @@ import {
   ProgrammaticPushPayload 
 } from '../../services/adService';
 import { AdvertStory } from '../../data/mockAdverts';
+import { CustomConfirmModal } from '../UI/CustomConfirmModal';
 
 interface ApiWebhookModalProps {
   isOpen: boolean;
@@ -42,6 +43,18 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
   const [keys, setKeys] = useState<PartnerApiKey[]>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [copiedCurl, setCopiedCurl] = useState(false);
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    itemTitle?: string;
+    badge?: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'info' | 'success';
+    isAlertOnly?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
 
   // New Key Form
   const [showNewKeyModal, setShowNewKeyModal] = useState(false);
@@ -125,15 +138,36 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
   };
 
   const handleDeleteKey = (id: string) => {
-    if (confirm('Revoke and delete this partner API key permanently?')) {
-      const updated = deletePartnerApiKey(id);
-      setKeys(updated);
-    }
+    const targetKey = keys.find((k) => k.id === id);
+    setConfirmState({
+      isOpen: true,
+      title: 'Revoke & Delete Partner API Key?',
+      message: 'Any automated marketing scripts or server integrations using this API key will immediately be rejected.',
+      itemTitle: targetKey ? `${targetKey.companyName} (${targetKey.apiKey})` : id,
+      badge: 'API SECURITY ACTION',
+      confirmText: 'Yes, Revoke Key',
+      cancelText: 'Cancel',
+      variant: 'danger',
+      onConfirm: () => {
+        const updated = deletePartnerApiKey(id);
+        setKeys(updated);
+        setConfirmState(null);
+      },
+    });
   };
 
   const handleRunSimulation = async () => {
     if (!simSelectedKey) {
-      alert('Please select a Partner API Key.');
+      setConfirmState({
+        isOpen: true,
+        title: 'Partner API Key Required',
+        message: 'Please generate or select an active Partner API Key before executing a programmatic push simulation.',
+        badge: 'GATEWAY VALIDATION',
+        confirmText: 'Understood',
+        variant: 'warning',
+        isAlertOnly: true,
+        onConfirm: () => setConfirmState(null),
+      });
       return;
     }
     setIsSimulating(true);
@@ -617,6 +651,22 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
           )}
         </div>
       </div>
+
+      {confirmState && (
+        <CustomConfirmModal
+          isOpen={confirmState.isOpen}
+          title={confirmState.title}
+          message={confirmState.message}
+          itemTitle={confirmState.itemTitle}
+          badge={confirmState.badge}
+          confirmText={confirmState.confirmText}
+          cancelText={confirmState.cancelText}
+          variant={confirmState.variant}
+          isAlertOnly={confirmState.isAlertOnly}
+          onConfirm={confirmState.onConfirm}
+          onCancel={() => setConfirmState(null)}
+        />
+      )}
     </div>
   );
 };

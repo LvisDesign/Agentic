@@ -84,6 +84,7 @@ import {
 import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry } from '../../utils/userRegistry';
 import { subscribeToRealtimeEvents } from '../../services/realtimeSync';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
+import { CustomConfirmModal } from '../UI/CustomConfirmModal';
 
 interface SuperAdminDashboardProps {
   currentUser: UserProfile;
@@ -203,6 +204,37 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [viewingTenantBookings, setViewingTenantBookings] = useState<UserProfile | null>(null);
   const [directPassModalTenant, setDirectPassModalTenant] = useState<UserProfile | null>(null);
   const [directPassSelectedListingId, setDirectPassSelectedListingId] = useState<string>('');
+
+  // Custom Confirm & Alert Dialog state
+  const [confirmModalState, setConfirmModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    itemTitle?: string;
+    itemSubtitle?: string;
+    badge?: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'info' | 'success';
+    onConfirm: () => void | Promise<void>;
+  } | null>(null);
+
+  const openConfirmDialog = (options: {
+    title: string;
+    message: string;
+    itemTitle?: string;
+    itemSubtitle?: string;
+    badge?: string;
+    confirmText?: string;
+    cancelText?: string;
+    variant?: 'danger' | 'warning' | 'info' | 'success';
+    onConfirm: () => void | Promise<void>;
+  }) => {
+    setConfirmModalState({
+      isOpen: true,
+      ...options,
+    });
+  };
 
   // Toast display helper
   const showToast = (msg: string) => {
@@ -564,20 +596,30 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
   // Action: Delete User
   const handleDeleteUser = (user: UserProfile) => {
-    if (!window.confirm(`Are you sure you want to permanently remove ${user.fullName} (${user.phone}) from Setlla registry?`)) {
-      return;
-    }
-    deleteUserFromRegistry(user.id);
-    recordAuditLog(
-      'USER_DELETED',
-      user.isAgent ? 'agent' : 'tenant',
-      user.id,
-      user.fullName,
-      currentUser.fullName,
-      'Permanently removed user account.'
-    );
-    refreshAdminData();
-    showToast(`Removed ${user.fullName} from user registry.`);
+    openConfirmDialog({
+      title: `Permanently Delete ${user.isAgent ? 'Agent' : 'Tenant'} Account?`,
+      message: `Are you sure you want to remove ${user.fullName} (${user.phone}) from the Setlla registry? All active authorizations and linked data will be revoked.`,
+      itemTitle: `${user.fullName} (${user.phone})`,
+      itemSubtitle: user.email || (user.isAgent ? (user.agencyName || 'Independent Agent') : 'Tenant Account'),
+      badge: 'USER ACCOUNT MANAGEMENT',
+      confirmText: 'Yes, Delete Account',
+      cancelText: 'Cancel',
+      variant: 'danger',
+      onConfirm: () => {
+        deleteUserFromRegistry(user.id);
+        recordAuditLog(
+          'USER_DELETED',
+          user.isAgent ? 'agent' : 'tenant',
+          user.id,
+          user.fullName,
+          currentUser.fullName,
+          'Permanently removed user account.'
+        );
+        refreshAdminData();
+        showToast(`Removed ${user.fullName} from user registry.`);
+        setConfirmModalState(null);
+      },
+    });
   };
 
   // Action: Save Edited User
@@ -1766,11 +1808,22 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                               {/* Delete Listing */}
                               <button
                                 onClick={() => {
-                                  if (window.confirm(`Permanently remove "${listing.title}" from the marketplace?`)) {
-                                    onDeleteListing(listing.id);
-                                    recordAuditLog('LISTING_DELETED', 'listing', listing.id, listing.title, currentUser.fullName);
-                                    showToast(`Deleted "${listing.title}".`);
-                                  }
+                                  openConfirmDialog({
+                                    title: 'Permanently Remove Listing?',
+                                    message: 'Are you sure you want to remove this property listing from the live Setlla marketplace? Active inspection queues for this property will be archived.',
+                                    itemTitle: listing.title,
+                                    itemSubtitle: `${listing.city} • ${listing.propertyType} • ${formatNaira(listing.fees.baseRent)}/yr`,
+                                    badge: 'MARKETPLACE LISTING',
+                                    confirmText: 'Yes, Permanently Remove',
+                                    cancelText: 'Cancel',
+                                    variant: 'danger',
+                                    onConfirm: () => {
+                                      onDeleteListing(listing.id);
+                                      recordAuditLog('LISTING_DELETED', 'listing', listing.id, listing.title, currentUser.fullName);
+                                      showToast(`Deleted "${listing.title}".`);
+                                      setConfirmModalState(null);
+                                    },
+                                  });
                                 }}
                                 className="p-1.5 rounded-lg border border-[#E5E7EB] bg-white text-[#70798C] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                                 title="Delete Listing"
@@ -1924,9 +1977,20 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
                               <button
                                 onClick={() => {
-                                  if (window.confirm(`Cancel inspection booking ${booking.id}?`)) {
-                                    handleAdminCancelBooking(booking.id);
-                                  }
+                                  openConfirmDialog({
+                                    title: 'Cancel Inspection Booking?',
+                                    message: `Are you sure you want to cancel inspection booking #${booking.id}? The applicant and agent will be notified.`,
+                                    itemTitle: `Applicant: ${booking.applicantName} (${booking.applicantPhone})`,
+                                    itemSubtitle: `Slot: ${booking.slotTimeWindow || 'Scheduled inspection'}`,
+                                    badge: 'INSPECTION BOOKING',
+                                    confirmText: 'Yes, Cancel Booking',
+                                    cancelText: 'Keep Booking',
+                                    variant: 'warning',
+                                    onConfirm: () => {
+                                      handleAdminCancelBooking(booking.id);
+                                      setConfirmModalState(null);
+                                    },
+                                  });
                                 }}
                                 className="py-1 px-2 rounded-lg border border-[#E5E7EB] bg-white hover:bg-red-50 text-[#70798C] hover:text-red-600 text-xs font-semibold transition-colors cursor-pointer"
                                 title="Cancel Booking"
@@ -2329,9 +2393,20 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
                         <button
                           onClick={() => {
-                            if (window.confirm(`Delete advert "${ad.headline}"?`)) {
-                              handleDeleteAdvertInternal(ad.id);
-                            }
+                            openConfirmDialog({
+                              title: 'Delete Sponsored Campaign?',
+                              message: 'Are you sure you want to delete this sponsored partner campaign from the platform? It will immediately stop appearing in the stories tray and carousel.',
+                              itemTitle: ad.headline || ad.title,
+                              itemSubtitle: `${ad.advertiserName} • ${ad.category} • Flight: ${ad.badgeText || 'SPONSORED'}`,
+                              badge: 'SPONSORED CAMPAIGN',
+                              confirmText: 'Yes, Delete Campaign',
+                              cancelText: 'Cancel',
+                              variant: 'danger',
+                              onConfirm: () => {
+                                handleDeleteAdvertInternal(ad.id);
+                                setConfirmModalState(null);
+                              },
+                            });
                           }}
                           className="p-1.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 transition-colors cursor-pointer"
                           title="Delete Advert"
@@ -3220,6 +3295,23 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           showToast(`Partner submission for "${newAd.advertiserName}" received in review queue.`);
         }}
       />
+
+      {/* Custom Global Confirmation & Prompt Modal */}
+      {confirmModalState && (
+        <CustomConfirmModal
+          isOpen={confirmModalState.isOpen}
+          title={confirmModalState.title}
+          message={confirmModalState.message}
+          itemTitle={confirmModalState.itemTitle}
+          itemSubtitle={confirmModalState.itemSubtitle}
+          badge={confirmModalState.badge}
+          confirmText={confirmModalState.confirmText}
+          cancelText={confirmModalState.cancelText}
+          variant={confirmModalState.variant}
+          onConfirm={confirmModalState.onConfirm}
+          onCancel={() => setConfirmModalState(null)}
+        />
+      )}
     </div>
   );
 };
