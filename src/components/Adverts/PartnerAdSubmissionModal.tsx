@@ -2,19 +2,11 @@ import React, { useState } from 'react';
 import { 
   X, 
   Sparkles, 
-  Megaphone, 
   CheckCircle2, 
-  ShieldCheck, 
-  Globe, 
-  MessageSquare, 
-  Phone, 
-  ArrowRight, 
-  TrendingUp, 
-  Zap, 
-  Building2, 
-  FileText,
   Clock,
-  Layers,
+  ArrowRight, 
+  MessageSquare, 
+  ExternalLink,
   Check
 } from 'lucide-react';
 import { submitPartnerAdvert, PartnerSubmissionPayload } from '../../services/adService';
@@ -24,12 +16,14 @@ interface PartnerAdSubmissionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmissionSuccess?: (ad: AdvertStory) => void;
+  onOpenFullPage?: () => void;
 }
 
 export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> = ({
   isOpen,
   onClose,
   onSubmissionSuccess,
+  onOpenFullPage,
 }) => {
   const [packageTier, setPackageTier] = useState<'starter' | 'growth' | 'corporate'>('growth');
   const [companyName, setCompanyName] = useState('');
@@ -60,7 +54,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
       durationDays: 7,
       price: '₦15,000',
       budgetAmount: 15000,
-      badge: '7 Days',
+      badge: '7-Day Flight',
       features: ['Feed Stories Tray Rotation', 'Click & WhatsApp Lead Routing', 'Basic Impression Analytics'],
     },
     {
@@ -99,6 +93,15 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
   const handleMediaPreset = (url: string, type: 'image' | 'video' = 'image') => {
     setMediaUrl(url);
     setMediaType(type);
+  };
+
+  const handleOpenPage = () => {
+    onClose();
+    if (onOpenFullPage) {
+      onOpenFullPage();
+    } else {
+      window.location.hash = '#/partner';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -145,42 +148,56 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-scale-up">
-        {/* Modal Top Header */}
-        <div className="relative bg-[#000004] text-white p-6 sm:p-8">
-          <button
-            onClick={onClose}
-            className="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto font-body">
+      <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-card border border-[#342A21]/15 overflow-hidden my-auto animate-scale-up">
+        {/* Modal Top Header: Warm Ivory & Serif Typography */}
+        <div className="relative bg-[#FCF9F5] p-6 sm:p-8 border-b border-[#342A21]/10">
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-[#B45309]" />
+              <span>Setlla Partner & Advertiser Desk</span>
+            </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Setlla Partner & Advertiser Portal</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleOpenPage}
+                className="text-xs font-semibold text-[#342A21] hover:underline flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-white transition-colors cursor-pointer"
+                title="Open dedicated partner page"
+              >
+                <span>Open Full Page</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-white hover:bg-[#F6F3EF] border border-[#E5E7EB] text-[#70798C] hover:text-[#342A21] flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-            Put Your Brand in Front of 50,000+ Delta State Renters
+          <h2 className="font-display text-2xl sm:text-3xl text-[#342A21] font-normal tracking-tight mt-3">
+            Put your brand in front of <em className="italic font-normal">Delta's active renters.</em>
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-            Broadcast your business, estate developments, interior decor, or service directly on Setlla's high-traffic rental feed across Asaba, Warri, and Abraka.
+          <p className="text-xs sm:text-sm text-[#70798C] mt-1.5 max-w-xl leading-relaxed">
+            Broadcast your business, developments, solar solutions, or services directly on Setlla's high-traffic rental feed across Asaba, Warri, and Abraka.
           </p>
 
           {/* Quick value stats */}
-          <div className="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-white/10 text-center">
+          <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-[#342A21]/10 text-center">
             <div>
-              <span className="text-base sm:text-xl font-black text-amber-400">50K+</span>
-              <span className="text-[10px] sm:text-xs text-slate-300 block">Monthly Views</span>
+              <span className="text-base sm:text-xl font-bold text-[#342A21]">50,000+</span>
+              <span className="text-[11px] text-[#70798C] block">Monthly Viewers</span>
             </div>
             <div>
-              <span className="text-base sm:text-xl font-black text-emerald-400">1-Click</span>
-              <span className="text-[10px] sm:text-xs text-slate-300 block">WhatsApp Leads</span>
+              <span className="text-base sm:text-xl font-bold text-[#342A21]">1-Click</span>
+              <span className="text-[11px] text-[#70798C] block">WhatsApp Leads</span>
             </div>
             <div>
-              <span className="text-base sm:text-xl font-black text-white">Delta Wide</span>
-              <span className="text-[10px] sm:text-xs text-slate-300 block">Asaba · Warri · Abraka</span>
+              <span className="text-base sm:text-xl font-bold text-[#342A21]">Delta Wide</span>
+              <span className="text-[11px] text-[#70798C] block">Asaba · Warri · Abraka</span>
             </div>
           </div>
         </div>
@@ -188,30 +205,30 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
         {/* Modal Body */}
         {submittedResult ? (
           <div className="p-6 sm:p-10 text-center space-y-5">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
-              <CheckCircle2 className="w-9 h-9" />
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div>
-              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold inline-block mb-2">
-                Submission Received · Pending Super Admin Review
+              <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold inline-block mb-2 border border-emerald-200">
+                Submission Received · Pending Priority Desk Review
               </span>
-              <h3 className="text-xl font-bold text-[#000004]">Campaign Submitted Successfully!</h3>
-              <p className="text-xs sm:text-sm text-[#70798C] mt-2 max-w-md mx-auto">
-                Your campaign <span className="font-bold text-[#000004]">"{submittedResult.advert.headline}"</span> has been logged with reference:
+              <h3 className="font-display text-xl sm:text-2xl text-[#342A21] font-normal">Campaign Submitted Successfully!</h3>
+              <p className="text-xs sm:text-sm text-[#70798C] mt-1.5 max-w-md mx-auto">
+                Your campaign <strong className="text-[#342A21]">"{submittedResult.advert.headline}"</strong> has been logged with reference:
               </p>
-              <div className="mt-3 inline-block bg-[#FCF9F5] border border-dashed border-[#E5E7EB] px-4 py-2 rounded-xl text-sm font-mono font-bold text-[#000004]">
+              <div className="mt-3 inline-block bg-[#FCF9F5] border border-dashed border-[#342A21]/20 px-4 py-2 rounded-xl text-sm font-mono font-bold text-[#342A21]">
                 {submittedResult.trackingRef}
               </div>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 max-w-md mx-auto text-left text-xs text-amber-900 space-y-1">
-              <div className="font-bold flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-amber-600" />
-                <span>Next Step: Fast-Track Verification</span>
+            <div className="bg-[#FCF9F5] border border-[#E5E7EB] rounded-2xl p-4 max-w-md mx-auto text-left text-xs text-[#342A21] space-y-1">
+              <div className="font-semibold flex items-center gap-1.5 text-[#342A21]">
+                <Clock className="w-4 h-4 text-[#B45309]" />
+                <span>Next Step: Priority Creative Verification</span>
               </div>
-              <p className="text-amber-800 text-[11px] leading-relaxed">
-                Our admin desk typically reviews ad creatives within 1 hour. You can message our ad concierge on WhatsApp with your reference number for instant broadcast.
+              <p className="text-[#70798C] text-[11px] leading-relaxed">
+                Our partnership desk reviews creatives within 1 hour. You can message our desk on WhatsApp with your reference number for instant flight activation.
               </p>
             </div>
 
@@ -222,7 +239,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
+                className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all"
               >
                 <MessageSquare className="w-4 h-4" />
                 <span>Chat Ad Concierge on WhatsApp</span>
@@ -230,7 +247,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
 
               <button
                 onClick={onClose}
-                className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#000004] text-xs font-bold transition-colors cursor-pointer"
+                className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-[#FCF9F5] hover:bg-[#F6F3EF] border border-[#E5E7EB] text-[#342A21] text-xs font-semibold transition-colors cursor-pointer"
               >
                 Done
               </button>
@@ -240,7 +257,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
           <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6 max-h-[65vh] overflow-y-auto">
             {/* Step 1: Package Selection */}
             <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-[#70798C] block mb-3">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block mb-3">
                 1. Select Campaign Flight Duration & Package
               </label>
 
@@ -253,30 +270,30 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                       onClick={() => setPackageTier(tier.id)}
                       className={`relative rounded-2xl p-4 border transition-all cursor-pointer flex flex-col justify-between ${
                         isSelected
-                          ? 'border-[#000004] bg-slate-50 ring-2 ring-[#000004]/10 shadow-sm'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                          ? 'border-[#342A21] bg-white ring-2 ring-[#342A21]/15 shadow-subtle'
+                          : 'border-[#E5E7EB] hover:border-[#342A21]/30 bg-[#FCF9F5]'
                       }`}
                     >
                       {tier.popular && (
-                        <span className="absolute -top-2.5 right-3 bg-amber-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-full shadow-xs">
+                        <span className="absolute -top-2.5 right-3 bg-[#342A21] text-[#FCF9F5] text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full shadow-xs">
                           {tier.badge}
                         </span>
                       )}
                       <div>
                         <div className="flex items-center justify-between">
-                          <h4 className="font-bold text-xs text-[#000004]">{tier.name}</h4>
-                          {isSelected && <Check className="w-4 h-4 text-emerald-600 shrink-0" />}
+                          <h4 className="font-display font-medium text-xs text-[#342A21]">{tier.name}</h4>
+                          {isSelected && <Check className="w-4 h-4 text-emerald-700 shrink-0" />}
                         </div>
                         <div className="mt-1">
-                          <span className="text-lg font-black text-[#000004]">{tier.price}</span>
+                          <span className="text-lg font-bold text-[#342A21]">{tier.price}</span>
                           <span className="text-[10px] text-[#70798C]"> / {tier.durationDays} days</span>
                         </div>
                       </div>
 
-                      <ul className="mt-3 space-y-1 text-[11px] text-[#70798C] border-t border-slate-100 pt-2.5">
+                      <ul className="mt-3 space-y-1 text-[11px] text-[#70798C] border-t border-[#E5E7EB] pt-2.5">
                         {tier.features.map((feat, i) => (
                           <li key={i} className="flex items-start gap-1">
-                            <span className="text-emerald-500 font-bold">✓</span>
+                            <span className="text-emerald-700 font-bold">✓</span>
                             <span>{feat}</span>
                           </li>
                         ))}
@@ -288,86 +305,86 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
             </div>
 
             {/* Step 2: Advertiser Contact Info */}
-            <div className="pt-4 border-t border-slate-100 space-y-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#70798C] block">
+            <div className="pt-4 border-t border-[#E5E7EB] space-y-3">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block">
                 2. Business & Contact Information
               </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-[#000004] block mb-1">Company / Brand Name *</label>
+                  <label className="text-xs font-medium text-[#342A21] block mb-1">Company / Brand Name *</label>
                   <input
                     type="text"
                     required
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     placeholder="e.g. Asaba Royal Suites"
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#000004]"
+                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-[#000004] block mb-1">Official Business Email *</label>
+                  <label className="text-xs font-medium text-[#342A21] block mb-1">Official Business Email *</label>
                   <input
                     type="email"
                     required
                     value={partnerEmail}
                     onChange={(e) => setPartnerEmail(e.target.value)}
                     placeholder="partners@yourbrand.ng"
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#000004]"
+                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-[#000004] block mb-1">WhatsApp Business Number *</label>
+                  <label className="text-xs font-medium text-[#342A21] block mb-1">WhatsApp Business Number *</label>
                   <input
                     type="text"
                     required
                     value={whatsappNumber}
                     onChange={(e) => setWhatsappNumber(e.target.value)}
                     placeholder="e.g. 08012345678"
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#000004]"
+                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-[#000004] block mb-1">Alternate Phone Number</label>
+                  <label className="text-xs font-medium text-[#342A21] block mb-1">Alternate Phone Number</label>
                   <input
                     type="text"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="e.g. 08123456789"
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#000004]"
+                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
               </div>
             </div>
 
             {/* Step 3: Campaign Content & Creative */}
-            <div className="pt-4 border-t border-slate-100 space-y-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-[#70798C] block">
+            <div className="pt-4 border-t border-[#E5E7EB] space-y-3">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block">
                 3. Campaign Copy & Creative Assets
               </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] font-semibold text-[#000004] block mb-1">Campaign Headline *</label>
+                  <label className="text-xs font-medium text-[#342A21] block mb-1">Campaign Headline *</label>
                   <input
                     type="text"
                     required
                     value={headline}
                     onChange={(e) => setHeadline(e.target.value)}
                     placeholder="e.g. 20% Off Fully Furnished Shortlet"
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#000004]"
+                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-semibold text-[#000004] block mb-1">Category</label>
+                  <label className="text-xs font-medium text-[#342A21] block mb-1">Category</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs font-semibold text-[#000004] focus:outline-none focus:border-[#000004]"
+                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
                   >
                     <option value="Property">Property Rental</option>
                     <option value="Estate">Estate & Real Estate</option>
@@ -378,19 +395,19 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-[#000004] block mb-1">Offer Description</label>
+                <label className="text-xs font-medium text-[#342A21] block mb-1">Offer Description</label>
                 <textarea
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Describe your special offer, pricing discount, or why Delta renters should choose your company..."
-                  className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#000004]"
+                  className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                 />
               </div>
 
               {/* Media URL & Presets */}
               <div>
-                <label className="text-[11px] font-semibold text-[#000004] block mb-1">
+                <label className="text-xs font-medium text-[#342A21] block mb-1">
                   Creative Image / Video Media URL *
                 </label>
                 <input
@@ -399,32 +416,31 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                   value={mediaUrl}
                   onChange={(e) => setMediaUrl(e.target.value)}
                   placeholder="https://... image or video URL (9:16 or 16:9)"
-                  className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs text-[#000004] font-mono focus:outline-none focus:border-[#000004]"
+                  className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] font-mono focus:outline-none focus:border-[#342A21]"
                 />
 
-                {/* Quick Presets for instant testing */}
                 <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                  <span className="text-[10px] text-[#70798C]">Sample Creatives:</span>
+                  <span className="text-[10px] text-[#70798C]">Sample Presets:</span>
                   <button
                     type="button"
                     onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80')}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-semibold cursor-pointer"
+                    className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
                   >
-                    Modern Condo
+                    Penthouse
                   </button>
                   <button
                     type="button"
                     onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1080&q=80')}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-semibold cursor-pointer"
+                    className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
                   >
-                    Luxury Villa
+                    Estate Villa
                   </button>
                   <button
                     type="button"
                     onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1080&q=80')}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-semibold cursor-pointer"
+                    className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
                   >
-                    Solar Energy
+                    Solar Power
                   </button>
                 </div>
               </div>
@@ -432,7 +448,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
               {/* Action Type & CTA */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 <div>
-                  <label className="text-[11px] font-semibold text-[#000004] block mb-1">Target Action</label>
+                  <label className="text-xs font-medium text-[#342A21] block mb-1">Target Action</label>
                   <select
                     value={actionType}
                     onChange={(e) => {
@@ -441,7 +457,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                       if (val === 'website') setCtaText('Visit Website');
                       else setCtaText('Contact on WhatsApp');
                     }}
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs font-semibold text-[#000004] focus:outline-none"
+                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none"
                   >
                     <option value="website">Send to Website</option>
                     <option value="contact">Direct WhatsApp Chat</option>
@@ -450,13 +466,13 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
 
                 {actionType === 'website' && (
                   <div className="sm:col-span-2">
-                    <label className="text-[11px] font-semibold text-[#000004] block mb-1">Destination Website URL</label>
+                    <label className="text-xs font-medium text-[#342A21] block mb-1">Destination Website URL</label>
                     <input
                       type="url"
                       value={websiteUrl}
                       onChange={(e) => setWebsiteUrl(e.target.value)}
                       placeholder="https://yourbrand.ng/promo"
-                      className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-slate-200 rounded-xl text-xs text-[#000004] focus:outline-none"
+                      className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none"
                     />
                   </div>
                 )}
@@ -465,23 +481,23 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
 
             {/* Form Error Banner */}
             {formError && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold animate-fade-in">
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
                 {formError}
               </div>
             )}
 
             {/* Bottom Actions */}
-            <div className="pt-5 border-t border-slate-200 flex items-center justify-between gap-3">
+            <div className="pt-5 border-t border-[#E5E7EB] flex items-center justify-between gap-3">
               <div>
-                <span className="text-[10px] text-[#70798C] block">Total Package:</span>
-                <span className="text-base font-black text-[#000004]">{currentTier.price}</span>
+                <span className="text-[10px] text-[#70798C] uppercase tracking-wider block">Total Flight Package:</span>
+                <span className="text-lg font-bold text-[#342A21]">{currentTier.price}</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-[#70798C] hover:text-[#000004] cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#70798C] hover:text-[#342A21] cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -489,14 +505,14 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-[#000004] hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    <span>Submitting Campaign...</span>
+                    <span>Submitting Flight...</span>
                   ) : (
                     <>
                       <span>Submit for Review</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                      <ArrowRight className="w-3.5 h-3.5 text-amber-300" />
                     </>
                   )}
                 </button>

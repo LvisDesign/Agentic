@@ -9,7 +9,8 @@ import {
   UserPlus, 
   Download,
   Briefcase,
-  LogOut
+  LogOut,
+  Megaphone
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 import { usePWA } from '../utils/pwa';
@@ -18,8 +19,8 @@ import { CustomConfirmModal } from './UI/CustomConfirmModal';
 interface HeaderProps {
   currentRole: UserRole;
   onChangeRole: (role: UserRole) => void;
-  userView: 'dashboard' | 'feed';
-  onChangeUserView: (view: 'dashboard' | 'feed') => void;
+  userView: 'dashboard' | 'feed' | 'partner';
+  onChangeUserView: (view: 'dashboard' | 'feed' | 'partner') => void;
   activeBookings: BookingRecord[];
   onOpenMyPasses: () => void;
   onOpenProfile: () => void;
@@ -140,27 +141,58 @@ export const Header: React.FC<HeaderProps> = ({
               onChangeUserView('feed');
             }}
             className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-              ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin')
+              ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin' && userView !== 'partner' && userView !== 'dashboard')
                 ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.03]'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
             }`}
             aria-label="Explore"
             title="Explore"
           >
-            <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin')) ? 'text-white' : ''}`} />
+            <Compass className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin' && userView !== 'partner' && userView !== 'dashboard')) ? 'text-white' : ''}`} />
             
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
               Explore
             </span>
 
-            {(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin')) && (
+            {(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && !isAdminAuthenticated && currentRole !== 'admin' && userView !== 'partner' && userView !== 'dashboard')) && (
               <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
             )}
 
             {/* Mobile Tooltip */}
             <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
               Explore
+            </span>
+          </button>
+
+          {/* TAB 2.5: Partner Portal */}
+          <button
+            onClick={() => {
+              onChangeRole('tenant');
+              onChangeUserView('partner');
+            }}
+            className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
+              userView === 'partner'
+                ? 'bg-[#342A21] text-white shadow-md border-2 border-white ring-2 ring-[#342A21]/15 z-10 scale-[1.03]'
+                : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#342A21] border border-[#E5E7EB]/80 hover:shadow-xs'
+            }`}
+            aria-label="Partner"
+            title="Setlla Partner & Brand Advertising"
+          >
+            <Megaphone className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${userView === 'partner' ? 'text-amber-300' : 'text-[#70798C]'}`} />
+            
+            {/* Desktop Label */}
+            <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
+              Partner
+            </span>
+
+            {userView === 'partner' && (
+              <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#342A21] rotate-45 rounded-[1px] pointer-events-none" />
+            )}
+
+            {/* Mobile Tooltip */}
+            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#342A21] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
+              Partner
             </span>
           </button>
 

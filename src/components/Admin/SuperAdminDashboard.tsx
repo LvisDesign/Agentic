@@ -49,7 +49,8 @@ import {
   Tag,
   Sparkles,
   Terminal,
-  Zap
+  Zap,
+  Code2
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 import { ApiWebhookModal } from './ApiWebhookModal';
@@ -2030,22 +2031,34 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              <a
+                href="#/partner"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="py-2.5 px-3.5 rounded-xl border border-[#342A21]/20 bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                title="View live standalone Setlla Partner & Brand Advertising page"
+              >
+                <Globe className="w-4 h-4 text-emerald-700" />
+                <span>Live Partner Page</span>
+                <ExternalLink className="w-3 h-3 text-[#70798C]" />
+              </a>
+
               <button
                 onClick={() => setIsApiWebhookOpen(true)}
-                className="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[#000004] text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                className="py-2.5 px-3.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#342A21] text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                 title="Manage REST API keys and programmatic webhook push"
               >
-                <Terminal className="w-4 h-4 text-indigo-600" />
-                <span>API & Webhooks</span>
+                <Code2 className="w-4 h-4 text-indigo-600" />
+                <span>API & Keys</span>
               </button>
 
               <button
                 onClick={() => setIsPartnerPortalPreviewOpen(true)}
-                className="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[#000004] text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                className="py-2.5 px-3.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#342A21] text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                 title="Preview Self-Service Partner & Advertiser Submission Portal"
               >
-                <Globe className="w-4 h-4 text-emerald-600" />
-                <span>Partner Portal</span>
+                <Megaphone className="w-4 h-4 text-[#B45309]" />
+                <span>Partner Form</span>
               </button>
 
               <button
@@ -3278,6 +3291,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       <ApiWebhookModal
         isOpen={isApiWebhookOpen}
         onClose={() => setIsApiWebhookOpen(false)}
+        onOpenFullPage={() => {
+          setIsApiWebhookOpen(false);
+          window.location.hash = '#/partner';
+        }}
         onAdvertPushed={(newAd) => {
           setLocalAdverts((prev) => [newAd, ...prev.filter((a) => a.id !== newAd.id)]);
           onAddAdvert?.(newAd);
@@ -3289,6 +3306,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       <PartnerAdSubmissionModal
         isOpen={isPartnerPortalPreviewOpen}
         onClose={() => setIsPartnerPortalPreviewOpen(false)}
+        onOpenFullPage={() => {
+          setIsPartnerPortalPreviewOpen(false);
+          window.location.hash = '#/partner';
+        }}
         onSubmissionSuccess={(newAd) => {
           setLocalAdverts((prev) => [newAd, ...prev.filter((a) => a.id !== newAd.id)]);
           onAddAdvert?.(newAd);

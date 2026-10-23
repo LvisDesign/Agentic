@@ -35,6 +35,7 @@ import { MOCK_ADVERT_STORIES, AdvertStory } from './data/mockAdverts';
 import { loadAllAdverts, saveAdvert, removeAdvert, subscribeToAdvertChanges } from './services/adService';
 import { PostAdModal } from './components/Feed/PostAdModal';
 import { PartnerAdSubmissionModal } from './components/Adverts/PartnerAdSubmissionModal';
+import { PartnerPortalPage } from './components/Partner/PartnerPortalPage';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
@@ -149,13 +150,13 @@ const INITIAL_BOOKINGS: BookingRecord[] = [
 
 interface InitialNavState {
   role: UserRole;
-  view: 'dashboard' | 'feed';
+  view: 'dashboard' | 'feed' | 'partner';
   openPasses: boolean;
 }
 
 /**
  * Resolves the initial navigation state upon page load or browser refresh.
- * Preserves the exact view the user or agent was on (Explore, Agent Portal, Dashboard, Passes)
+ * Preserves the exact view the user or agent was on (Explore, Agent Portal, Dashboard, Passes, Partner Portal)
  * so every page refresh stays on the same page instead of resetting.
  */
 function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = false): InitialNavState {
@@ -164,10 +165,14 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   }
 
   const hash = window.location.hash.toLowerCase();
+  const pathname = (window.location.pathname || '').toLowerCase();
   const savedRole = (localStorage.getItem('setlla_active_role') || localStorage.getItem('deltarent_active_role')) as UserRole | null;
-  const savedView = (localStorage.getItem('setlla_active_view') || localStorage.getItem('deltarent_active_view')) as ('dashboard' | 'feed') | null;
+  const savedView = (localStorage.getItem('setlla_active_view') || localStorage.getItem('deltarent_active_view')) as ('dashboard' | 'feed' | 'partner') | null;
 
-  // 1. Explicit Hash Routing (e.g. #/admin, #/agent, #/dashboard, #/explore, #/inspections)
+  // 1. Explicit Routing (e.g. #/partner, #/advertise, #/admin, #/agent, #/dashboard, #/explore, #/inspections)
+  if (hash.includes('partner') || hash.includes('advertise') || pathname.includes('/partner') || pathname.includes('/advertise')) {
+    return { role: 'tenant', view: 'partner', openPasses: false };
+  }
   if (hash.includes('admin')) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
@@ -194,7 +199,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     return { role: 'agent', view: 'feed', openPasses: false };
   }
   if (savedRole === 'seeker' || savedRole === 'tenant') {
-    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
+    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : savedView === 'partner' ? 'partner' : 'feed', openPasses: false };
   }
 
   // 3. Fallback defaults:
@@ -380,7 +385,7 @@ export function App() {
   }, []);
 
   const [currentRole, setCurrentRole] = useState<UserRole>(initialNav.role);
-  const [userView, setUserView] = useState<'dashboard' | 'feed'>(initialNav.view);
+  const [userView, setUserView] = useState<'dashboard' | 'feed' | 'partner'>(initialNav.view);
   const [isMyPassesOpen, setIsMyPassesOpen] = useState(initialNav.openPasses);
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(() => getPlatformSettings());
 
@@ -395,6 +400,8 @@ export function App() {
       ? '#/admin'
       : currentRole === 'agent'
       ? '#/agent'
+      : userView === 'partner'
+      ? '#/partner'
       : userView === 'dashboard'
       ? '#/dashboard'
       : '#/explore';
@@ -408,7 +415,10 @@ export function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.toLowerCase();
-      if (hash.includes('admin')) {
+      if (hash.includes('partner') || hash.includes('advertise')) {
+        setCurrentRole('tenant');
+        setUserView('partner');
+      } else if (hash.includes('admin')) {
         setCurrentRole('admin');
       } else if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
         setCurrentRole('agent');
@@ -520,10 +530,17 @@ export function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isBecomeAgentOpen, setIsBecomeAgentOpen] = useState(false);
 
-  // For first-time visitors, open signup modal on arrival if they haven't skipped yet (NEVER on admin side)
+  // For first-time visitors, open signup modal on arrival if they haven't skipped yet (NEVER on admin or partner pages)
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(() => {
     const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
-    if (hash.includes('admin') || initialNav.role === 'admin' || isSuperAdminAuthenticated()) {
+    if (
+      hash.includes('admin') || 
+      hash.includes('partner') || 
+      hash.includes('advertise') || 
+      initialNav.role === 'admin' || 
+      initialNav.view === 'partner' || 
+      isSuperAdminAuthenticated()
+    ) {
       return false;
     }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
@@ -531,13 +548,13 @@ export function App() {
     return !isAuth && !hasSkipped;
   });
 
-  // Ensure signup modal is immediately dismissed whenever in Admin mode
+  // Ensure signup modal is immediately dismissed whenever in Admin or Partner mode
   useEffect(() => {
-    if (currentRole === 'admin' || isAdminAuthenticated) {
+    if (currentRole === 'admin' || isAdminAuthenticated || userView === 'partner') {
       setIsSignupOpen(false);
       setSignupNotice(null);
     }
-  }, [currentRole, isAdminAuthenticated]);
+  }, [currentRole, isAdminAuthenticated, userView]);
 
   const [activeModalListing, setActiveModalListing] = useState<PropertyListing | null>(null);
   const [pushNotification, setPushNotification] = useState<PushNotificationData | null>(null);
@@ -1607,15 +1624,15 @@ export function App() {
   };
 
   // Determine root container layout:
-  // Tenant Feed is viewport locked for snap reels; Tenant Dashboard and Agent Dashboard are naturally scrolling pages.
-  const isFeedView = (currentRole === 'tenant' || currentRole === 'seeker') && (userView === 'feed' || !isAuthenticated);
+  // Tenant Feed is viewport locked for snap reels; Tenant Dashboard, Agent Dashboard, and Partner Portal are naturally scrolling pages.
+  const isFeedView = (currentRole === 'tenant' || currentRole === 'seeker') && userView === 'feed';
 
   return (
     <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#342A21]/15 selection:text-[#342A21] ${
       isFeedView ? 'h-screen h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-hidden'
     }`}>
-      {/* 1. Global Navigation Header (Hidden on unauthenticated Admin login/signup portal) */}
-      {!(currentRole === 'admin' && !isAdminAuthenticated) && (
+      {/* 1. Global Navigation Header (Hidden on unauthenticated Admin login/signup portal and on dedicated Partner Portal page) */}
+      {!(currentRole === 'admin' && !isAdminAuthenticated) && userView !== 'partner' && (
         <Header
           currentRole={currentRole}
           onChangeRole={setCurrentRole}
@@ -1648,7 +1665,7 @@ export function App() {
       )}
 
       {/* Platform Emergency Announcement Banner */}
-      {!(currentRole === 'admin' && !isAdminAuthenticated) && platformSettings.emergencyAnnouncementActive && platformSettings.emergencyAnnouncement && (
+      {!(currentRole === 'admin' && !isAdminAuthenticated) && userView !== 'partner' && platformSettings.emergencyAnnouncementActive && platformSettings.emergencyAnnouncement && (
         <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-600 text-white px-4 py-2.5 text-xs font-bold text-center shadow-xs flex items-center justify-center gap-2 border-b border-amber-800 z-40">
           <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping shrink-0" />
           <span>{platformSettings.emergencyAnnouncement}</span>
@@ -1697,7 +1714,15 @@ export function App() {
           </main>
         )
       ) : (currentRole === 'tenant' || currentRole === 'seeker') ? (
-        userView === 'dashboard' && isAuthenticated ? (
+        userView === 'partner' ? (
+          /* Setlla Partner & Brand Advertising Dedicated Standalone Page */
+          <main className="flex-1 w-full min-h-screen">
+            <PartnerPortalPage
+              onBackToExplore={() => setUserView('feed')}
+              onAdSubmitted={handleAddAdvert}
+            />
+          </main>
+        ) : userView === 'dashboard' && isAuthenticated ? (
           /* Tenant / User Dashboard: Strictly for authenticated users */
           <main className="flex-1 w-full">
             <UserDashboard
@@ -1743,7 +1768,7 @@ export function App() {
                 adverts={adverts}
                 onSelectAdvert={handleSelectAdvert}
                 onOpenPostAd={() => setIsPostAdOpen(true)}
-                onOpenPartnerPortal={() => setIsPartnerPortalOpen(true)}
+                onOpenPartnerPortal={() => setUserView('partner')}
               />
 
               {/* Main Property Rental Continuous Feed */}
@@ -1874,6 +1899,10 @@ export function App() {
         isOpen={isPartnerPortalOpen}
         onClose={() => setIsPartnerPortalOpen(false)}
         onSubmissionSuccess={handleAddAdvert}
+        onOpenFullPage={() => {
+          setIsPartnerPortalOpen(false);
+          setUserView('partner');
+        }}
       />
 
       {/* 4. Instant PWA Web Push Notification Banner Simulation */}
