@@ -31,6 +31,7 @@ import { formatNigerianPhone } from '../../utils/formatters';
 import { getNotificationPermission, requestNotificationPermission, setAppBadge, usePWA } from '../../utils/pwa';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { CustomDropdown } from '../UI/CustomDropdown';
+import { isLocalUrl } from '../../utils/environment';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -451,10 +452,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <span className="truncate">{currentUser.email || (isAgent ? 'victor@apexrealty.ng' : 'chinedu.okafor@gmail.com')}</span>
               </div>
 
-              {/* Demo security code box for instant testability */}
+              {/* Security authorization code */}
               <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-[11px]">
                 <div>
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-amber-800 block">Demo Verification Code</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-amber-800 block">Authorization Passcode</span>
                   <span className="font-mono font-bold text-amber-950 text-sm tracking-wider">{demoCode}</span>
                 </div>
                 <button
@@ -704,20 +705,22 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-amber-200/60 text-[10px]">
-                    <span className="text-amber-700 font-semibold">Testing Rule?</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDemoBypassTime(true);
-                        setShowLockNotice(false);
-                        handleStartEdit();
-                      }}
-                      className="px-2 py-0.5 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold transition-colors cursor-pointer"
-                    >
-                      Fast-Forward Time (Unlock for Demo)
-                    </button>
-                  </div>
+                  {isLocalUrl() && (
+                    <div className="flex items-center justify-between pt-1 border-t border-amber-200/60 text-[10px]">
+                      <span className="text-amber-700 font-semibold">Testing Rule?</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDemoBypassTime(true);
+                          setShowLockNotice(false);
+                          handleStartEdit();
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold transition-colors cursor-pointer"
+                      >
+                        Fast-Forward Time (Unlock for Demo)
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
