@@ -408,15 +408,31 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
             const id = agent.id || (phone ? `DT-AGT-${normalizePhoneNumber(phone).slice(-4)}` : `agent-${row.id}`);
             if (!deletedIds.has(id)) {
               const existingWithPhone = Array.from(userMap.values()).find(
-                (u) => phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(phone)
+                (u) =>
+                  (phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(phone)) ||
+                  (agent.id && u.id === agent.id)
               );
               if (existingWithPhone) {
-                if (agent.agencyName && !existingWithPhone.agencyName) {
+                // The user has active published listings: they are definitively an AGENT!
+                existingWithPhone.isAgent = true;
+                existingWithPhone.isVerifiedTenant = false;
+                if (agent.agencyName) {
                   existingWithPhone.agencyName = agent.agencyName;
                 }
-                if (agent.fullName && !existingWithPhone.fullName) {
+                if (agent.fullName) {
                   existingWithPhone.fullName = agent.fullName;
                 }
+                if (agent.cacNumber) {
+                  existingWithPhone.cacNumber = agent.cacNumber;
+                }
+                if (agent.operatingCity) {
+                  existingWithPhone.operatingCity = agent.operatingCity;
+                }
+                if (agent.whatsapp) {
+                  existingWithPhone.whatsapp = agent.whatsapp;
+                }
+                existingWithPhone.agentType = 'agency';
+                userMap.set(existingWithPhone.id, existingWithPhone);
               } else {
                 userMap.set(id, {
                   id,
@@ -525,7 +541,11 @@ export function saveRegisteredUser(user: UserProfile): void {
   );
 
   if (existingIndex >= 0) {
-    allUsers[existingIndex] = { ...allUsers[existingIndex], ...user };
+    allUsers[existingIndex] = { 
+      ...allUsers[existingIndex], 
+      ...user,
+      ...(user.isAgent ? { isAgent: true, isVerifiedTenant: false } : {})
+    };
   } else {
     allUsers.push(user);
   }
@@ -542,9 +562,16 @@ export function saveRegisteredUser(user: UserProfile): void {
     if (client) {
       const dbRow = mapUserProfileToDb(user);
       Promise.resolve(client.from('platform_users').upsert(dbRow, { onConflict: 'id' }))
-        .then((res: any) => {
+        .then(async (res: any) => {
           if (res?.error) {
-            console.warn('[UserRegistry] Supabase platform_users sync notice:', res.error.message);
+            // Fallback retry with core columns if extra columns caused the failure
+            const { avatar_url, saved_listing_ids, last_profile_edit_at, ...coreDbRow } = dbRow;
+            const retryRes = await client.from('platform_users').upsert(coreDbRow, { onConflict: 'id' });
+            if (!retryRes?.error) {
+              broadcastRealtimeEvent('USER_REGISTERED', { user });
+            } else {
+              console.warn('[UserRegistry] Supabase platform_users sync notice:', res.error.message);
+            }
           } else {
             broadcastRealtimeEvent('USER_REGISTERED', { user });
           }
@@ -571,6 +598,14 @@ export async function saveRegisteredUserAsync(user: UserProfile): Promise<boolea
     if (!error) {
       broadcastRealtimeEvent('USER_REGISTERED', { user });
       return true;
+    } else {
+      // Retry with core columns if extra columns don't exist in Supabase
+      const { avatar_url, saved_listing_ids, last_profile_edit_at, ...coreDbRow } = dbRow;
+      const retryRes = await client.from('platform_users').upsert(coreDbRow, { onConflict: 'id' });
+      if (!retryRes.error) {
+        broadcastRealtimeEvent('USER_REGISTERED', { user });
+        return true;
+      }
     }
   } catch (e) {
     console.warn('[UserRegistry] Async user save error:', e);

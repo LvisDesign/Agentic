@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   Users, 
   Building, 
@@ -86,7 +86,7 @@ import {
   toggleUserSuspension, 
   exportPlatformDataSnapshot 
 } from '../../services/adminService';
-import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry } from '../../utils/userRegistry';
+import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry, normalizePhoneNumber } from '../../utils/userRegistry';
 import { subscribeToRealtimeEvents } from '../../services/realtimeSync';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
@@ -480,14 +480,25 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     };
   }, []);
 
-  // Split users into agents and tenants
+  // Split users into agents and tenants: Any user marked isAgent or who has active published listings is categorized as an Agent
+  const isAgentUser = useCallback((u: UserProfile) => {
+    if (u.isAgent) return true;
+    const phoneNorm = u.phone ? normalizePhoneNumber(u.phone) : '';
+    return listings.some(
+      (l) =>
+        l.availabilityStatus !== 'Deleted' &&
+        ((l.agent?.id && l.agent.id === u.id) ||
+          (phoneNorm && l.agent?.phone && normalizePhoneNumber(l.agent.phone) === phoneNorm))
+    );
+  }, [listings]);
+
   const agentsList = useMemo(() => {
-    return registeredUsers.filter((u) => u.isAgent);
-  }, [registeredUsers]);
+    return registeredUsers.filter((u) => isAgentUser(u));
+  }, [registeredUsers, isAgentUser]);
 
   const tenantsList = useMemo(() => {
-    return registeredUsers.filter((u) => !u.isAgent && !u.isAdmin);
-  }, [registeredUsers]);
+    return registeredUsers.filter((u) => !isAgentUser(u) && !u.isAdmin);
+  }, [registeredUsers, isAgentUser]);
 
   // Derived KPI Metrics
   const totalVerifiedAgents = agentsList.filter((a) => a.kycStatus === 'verified' || a.isVerifiedTenant).length;

@@ -5,6 +5,7 @@ import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge } from './utils/pwa';
 import { 
   saveRegisteredUser, 
+  saveRegisteredUserAsync, 
   isBookingForUser, 
   getMyDeviceBookingIds, 
   recordMyDeviceBookingId, 
@@ -182,10 +183,13 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     }
   }
   if (hash.includes('dashboard')) {
+    if (isUserAgent) {
+      return { role: 'agent', view: 'feed', openPasses: false };
+    }
     return { role: 'tenant', view: 'dashboard', openPasses: false };
   }
   if (hash.includes('explore') || hash.includes('feed')) {
-    return { role: 'tenant', view: 'feed', openPasses: false };
+    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
   }
   if (hash.includes('inspections') || hash.includes('passes')) {
     return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
@@ -199,6 +203,9 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     return { role: 'agent', view: 'feed', openPasses: false };
   }
   if (savedRole === 'seeker' || savedRole === 'tenant') {
+    if (isUserAgent) {
+      return { role: 'agent', view: 'feed', openPasses: false };
+    }
     return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : savedView === 'partner' ? 'partner' : 'feed', openPasses: false };
   }
 
@@ -389,6 +396,41 @@ export function App() {
   const [isMyPassesOpen, setIsMyPassesOpen] = useState(initialNav.openPasses);
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(() => getPlatformSettings());
 
+  // Auto-heal agent status if current user has published listings on this device or in cloud
+  useEffect(() => {
+    if (!currentUser || currentUser.id === 'GUEST_USER' || currentUser.isAgent) return;
+    const phoneNorm = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
+    const myListing = listings.find(
+      (l) =>
+        l.availabilityStatus !== 'Deleted' &&
+        ((l.agent?.id && l.agent.id === currentUser.id) ||
+          (phoneNorm && l.agent?.phone && normalizePhoneNumber(l.agent.phone) === phoneNorm))
+    );
+
+    if (myListing) {
+      console.log('[App] Detected active agent listing for current user - auto-upgrading user profile to Agent.');
+      const healedAgent: UserProfile = {
+        ...currentUser,
+        isAgent: true,
+        isVerifiedTenant: false,
+        agencyName: myListing.agent?.agencyName || currentUser.agencyName || currentUser.fullName,
+        cacNumber: myListing.agent?.cacNumber || currentUser.cacNumber || 'VERIFIED-REG',
+        agentType: 'agency',
+        phone: myListing.agent?.phone || currentUser.phone,
+        operatingCity: myListing.city || currentUser.city || 'Asaba',
+        operatingState: myListing.state || currentUser.state || 'Delta State',
+      };
+      setCurrentUser(healedAgent);
+      setCurrentRole('agent');
+      localStorage.setItem('setlla_user', JSON.stringify(healedAgent));
+      localStorage.setItem('deltarent_user', JSON.stringify(healedAgent));
+      localStorage.setItem('setlla_active_role', 'agent');
+      localStorage.setItem('deltarent_active_role', 'agent');
+      saveRegisteredUser(healedAgent);
+      saveRegisteredUserAsync(healedAgent);
+    }
+  }, [listings, currentUser]);
+
   // 1. Keep active view & role in sync with localStorage and URL Hash on every navigation
   useEffect(() => {
     try {
@@ -423,12 +465,17 @@ export function App() {
       } else if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
         setCurrentRole('agent');
       } else if (hash.includes('dashboard')) {
-        setCurrentRole('tenant');
-        setUserView('dashboard');
+        if (currentUser.isAgent) {
+          setCurrentRole('agent');
+          setUserView('feed');
+        } else {
+          setCurrentRole('tenant');
+          setUserView('dashboard');
+        }
       } else if (hash.includes('inspections') || hash.includes('passes')) {
         setIsMyPassesOpen(true);
       } else if (hash.includes('explore') || hash.includes('feed')) {
-        setCurrentRole('tenant');
+        setCurrentRole(currentUser.isAgent ? 'agent' : 'tenant');
         setUserView('feed');
       }
     };
@@ -1393,6 +1440,30 @@ export function App() {
   const handleListingCreated = (newListing: PropertyListing) => {
     setListings((prev) => [newListing, ...prev]);
     saveNewListing(newListing);
+
+    // Confirm and reinforce agent profile for current user upon publishing listing
+    if (currentUser && !currentUser.isAgent) {
+      const upgraded: UserProfile = {
+        ...currentUser,
+        isAgent: true,
+        isVerifiedTenant: false,
+        agencyName: newListing.agent?.agencyName || currentUser.agencyName || currentUser.fullName,
+        cacNumber: newListing.agent?.cacNumber || currentUser.cacNumber || 'VERIFIED-REG',
+        agentType: 'agency',
+        phone: newListing.agent?.phone || currentUser.phone,
+        operatingCity: newListing.city || currentUser.city || 'Asaba',
+        operatingState: newListing.state || currentUser.state || 'Delta State',
+      };
+      setCurrentUser(upgraded);
+      setCurrentRole('agent');
+      localStorage.setItem('setlla_user', JSON.stringify(upgraded));
+      localStorage.setItem('deltarent_user', JSON.stringify(upgraded));
+      localStorage.setItem('setlla_active_role', 'agent');
+      localStorage.setItem('deltarent_active_role', 'agent');
+      saveRegisteredUser(upgraded);
+      saveRegisteredUserAsync(upgraded);
+    }
+
     broadcastRealtimeEvent('LISTING_CREATED', {
       listing: newListing,
     });
@@ -1418,7 +1489,7 @@ export function App() {
   };
 
   // Handler: User upgrades to Agent
-  const handleBecomeAgent = (agentData: {
+  const handleBecomeAgent = async (agentData: {
     agencyName: string;
     cacNumber: string;
     phone: string;
@@ -1427,13 +1498,42 @@ export function App() {
     const updatedAgentProfile: UserProfile = {
       ...currentUser,
       isAgent: true,
+      isVerifiedTenant: false,
       agencyName: agentData.agencyName,
       cacNumber: agentData.cacNumber,
       phone: agentData.phone,
+      whatsapp: agentData.phone,
+      agentType: 'agency',
+      operatingCity: agentData.cities[0] || currentUser.city || 'Asaba',
+      operatingState: currentUser.state || 'Delta State',
+      kycStatus: currentUser.kycStatus === 'verified' ? 'verified' : 'pending',
+      lastProfileEditAt: new Date().toISOString(),
     };
-    saveRegisteredUser(updatedAgentProfile);
+
+    // 1. Immediately persist to localStorage so mobile reloads / refreshes remain Agent
+    localStorage.setItem('setlla_user', JSON.stringify(updatedAgentProfile));
+    localStorage.setItem('deltarent_user', JSON.stringify(updatedAgentProfile));
+    localStorage.setItem('setlla_active_role', 'agent');
+    localStorage.setItem('deltarent_active_role', 'agent');
+    localStorage.setItem('setlla_active_view', 'feed');
+    localStorage.setItem('deltarent_active_view', 'feed');
+    localStorage.setItem('setlla_auth', 'true');
+    localStorage.setItem('deltarent_auth', 'true');
+
+    // 2. Update React application state
     setCurrentUser(updatedAgentProfile);
     setCurrentRole('agent');
+    setUserView('feed');
+    window.location.hash = '#/agent';
+
+    // 3. Save to registry and Supabase platform_users database
+    saveRegisteredUser(updatedAgentProfile);
+    await saveRegisteredUserAsync(updatedAgentProfile);
+
+    // 4. Broadcast live cross-device event so admin console updates immediately
+    broadcastRealtimeEvent('USER_UPDATED', {
+      user: updatedAgentProfile,
+    });
   };
 
   // Centralized booking opener with auth guard:
@@ -1750,24 +1850,50 @@ export function App() {
             />
           </main>
         ) : userView === 'dashboard' && isAuthenticated ? (
-          /* Tenant / User Dashboard: Strictly for authenticated users */
-          <main className="flex-1 w-full">
-            <UserDashboard
-              currentUser={currentUser}
-              listings={listings}
-              bookings={userBookings}
-              savedPropertyIds={savedPropertyIds}
-              onToggleSaveProperty={handleToggleSaveProperty}
-              onOpenBookingModal={handleOpenBooking}
-              onCancelBooking={handleCancelBooking}
-              onOpenMyPasses={() => setIsMyPassesOpen(true)}
-              onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
-              onOpenSignup={handleOpenSignup}
-              onSwitchToFeed={() => setUserView('feed')}
-              onSwitchToAgent={() => setCurrentRole('agent')}
-              isAuthenticated={isAuthenticated}
-            />
-          </main>
+          currentUser.isAgent ? (
+            /* If the user is an agent, their dashboard is the Agent Dashboard */
+            <main className="flex-1 w-full">
+              <AgentDashboard
+                currentUser={currentUser}
+                listings={listings}
+                bookings={bookings}
+                onAcceptBooking={handleAcceptBooking}
+                onRejectBooking={handleRejectBooking}
+                onListingCreated={handleListingCreated}
+                onListingUpdated={handleListingUpdated}
+                onDeleteListing={handleDeleteListing}
+                onUpdateAvailability={handleUpdateListingAvailability}
+                onConfirmFreshness={handleConfirmListingFreshness}
+                onSwitchToSeeker={() => {
+                  setCurrentRole('tenant');
+                  setUserView('feed');
+                }}
+                onSwitchToTenant={() => {
+                  setCurrentRole('tenant');
+                  setUserView('feed');
+                }}
+              />
+            </main>
+          ) : (
+            /* Tenant / User Dashboard: Strictly for authenticated non-agent tenants */
+            <main className="flex-1 w-full">
+              <UserDashboard
+                currentUser={currentUser}
+                listings={listings}
+                bookings={userBookings}
+                savedPropertyIds={savedPropertyIds}
+                onToggleSaveProperty={handleToggleSaveProperty}
+                onOpenBookingModal={handleOpenBooking}
+                onCancelBooking={handleCancelBooking}
+                onOpenMyPasses={() => setIsMyPassesOpen(true)}
+                onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
+                onOpenSignup={handleOpenSignup}
+                onSwitchToFeed={() => setUserView('feed')}
+                onSwitchToAgent={() => setCurrentRole('agent')}
+                isAuthenticated={isAuthenticated}
+              />
+            </main>
+          )
         ) : (
           /* Tenant Snap Feed View */
           <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">
