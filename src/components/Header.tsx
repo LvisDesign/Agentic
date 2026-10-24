@@ -92,9 +92,6 @@ export const Header: React.FC<HeaderProps> = ({
               alt="Setlla" 
               className="h-[18px] sm:h-[20px] w-auto object-contain transition-transform group-hover:scale-[1.02]" 
             />
-            <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#F59E0B]/15 text-[#B45309] border border-[#F59E0B]/30 hidden xs:inline-block">
-              Delta State
-            </span>
           </button>
         </div>
 

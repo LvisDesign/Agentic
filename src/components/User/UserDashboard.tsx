@@ -127,8 +127,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             <p className="text-xs text-[#70798C] mt-0.5">
               {isAuthenticated
                 ? currentUser.isAgent
-                  ? `${currentUser.agencyName || 'Partner Agency'} • Agent ID: ${currentUser.id} • Operating in ${currentUser.operatingCity || currentUser.city || 'Delta State'}`
-                  : `${currentUser.state || 'Delta State'} Tenant • Member ID: ${currentUser.id} • Looking in ${currentUser.city || 'Delta'}`
+                  ? `${currentUser.agencyName || 'Partner Agency'} • Agent ID: ${currentUser.id} • Operating in ${currentUser.operatingCity || currentUser.city || 'Network'}`
+                  : `${currentUser.state || 'Verified'} Tenant • Member ID: ${currentUser.id} • Looking in ${currentUser.city || 'All Cities'}`
                 : 'Browsing rentals as guest • Create an account to book verified inspection appointments'}
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-[#70798C]">
@@ -219,7 +219,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 Tenant Access: Direct Browsing of Verified Agent Rentals
               </h4>
               <p className="text-[11px] text-[#70798C] mt-0.5">
-                You are signed in as a tenant. You can book as many property inspections as you want across Delta State! Only agents are restricted to 5 bookings per window to prevent overcrowding and ensure they never waste your time.
+                You are signed in as a tenant. You can book as many property inspections as you want! Only agents are restricted to 5 bookings per window to prevent overcrowding and ensure they never waste your time.
               </p>
             </div>
           </div>
@@ -589,7 +589,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#342A21] shrink-0" />
               <span className="text-[#000004] font-medium leading-relaxed">
-                Browsing <strong>{listings.length} verified apartments</strong> uploaded by registered Delta State agents.
+                Browsing <strong>{listings.length} verified apartments</strong> uploaded by verified partner agents.
               </span>
             </div>
             <button
@@ -622,7 +622,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     />
                     <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium flex items-center gap-1">
                       <MapPin className="w-3 h-3 text-white" />
-                      <span>{prop.city}, Delta</span>
+                      <span>{prop.city}</span>
                     </div>
 
                     <button
@@ -727,7 +727,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium">
-                      {prop.city}, Delta
+                      {prop.city}
                     </div>
                     <button
                       onClick={() => onToggleSaveProperty(prop.id)}

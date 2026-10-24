@@ -354,7 +354,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
           {/* Top Headline Section */}
           <div className="relative z-10 space-y-3">
             <h2 className="font-display text-xl lg:text-2xl font-extrabold text-white leading-tight tracking-tight">
-              Direct oversight across Delta State rentals and escrow.
+              Direct oversight across rentals, listings, and escrow.
             </h2>
 
             <p className="text-xs text-white/70 leading-relaxed">
@@ -365,7 +365,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
           {/* Bottom Trust Hallmark */}
           <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
             <span>Setlla • Platform Authority</span>
-            <span>Delta State</span>
+            <span>Nigeria</span>
           </div>
         </div>
 
@@ -708,7 +708,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
           <div className="pt-3 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3">
             <span className="inline-flex items-center gap-1.5 text-[11px] text-[#70798C]">
               <Lock className="w-3 h-3 text-amber-500" />
-              <span>Passwordless Security Standard • Authorized Delta State Operators Only</span>
+              <span>Passwordless Security Standard • Authorized Platform Operators Only</span>
             </span>
           </div>
         </div>

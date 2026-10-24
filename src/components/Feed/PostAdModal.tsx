@@ -123,7 +123,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 Promote Rental Story Advert
               </h3>
               <p className="text-[11px] text-[#70798C]">
-                Reach 50,000+ prospective tenants in Delta State
+                Reach 50,000+ prospective tenants
               </p>
             </div>
           </div>
@@ -145,7 +145,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               Payment Confirmed & Advert Live!
             </h4>
             <p className="text-xs text-[#70798C] max-w-xs leading-relaxed">
-              Your promoted rental advert has been funded via Paystack and is now active across Delta State feeds.
+              Your promoted rental advert has been funded via Paystack and is now active across Setlla marketplace feeds.
             </p>
             <div className="p-3 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] text-left text-xs w-full max-w-xs space-y-1">
               <div className="flex justify-between">

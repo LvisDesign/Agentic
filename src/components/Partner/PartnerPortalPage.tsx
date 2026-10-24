@@ -80,7 +80,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   const [category, setCategory] = useState<'Property' | 'Estate' | 'Promo' | 'Service'>('Promo');
   const [headline, setHeadline] = useState('');
   const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('All Delta State (Asaba, Warri, Abraka)');
+  const [location, setLocation] = useState('All Regions (Network-Wide)');
   const [price, setPrice] = useState('');
   const [mediaUrl, setMediaUrl] = useState('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80');
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
@@ -107,8 +107,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
   // API Sandbox State
   const [simSelectedKey, setSimSelectedKey] = useState('');
-  const [simHeadline, setSimHeadline] = useState('24/7 Solar Backup Power for Delta Renters');
-  const [simCompanyName, setSimCompanyName] = useState('Asaba Solar & Power Solutions Ltd');
+  const [simHeadline, setSimHeadline] = useState('24/7 Solar Backup Power for Modern Homes');
+  const [simCompanyName, setSimCompanyName] = useState('Apex Solar & Power Solutions Ltd');
   const [simMediaUrl, setSimMediaUrl] = useState('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1080&q=80');
   const [simCategory, setSimCategory] = useState<'Property' | 'Estate' | 'Promo' | 'Service'>('Service');
   const [simCtaText, setSimCtaText] = useState('Get Free Quote');
@@ -204,10 +204,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       description: 'Built for enterprise developers, financial institutions, and major brands.',
       badge: 'Quarterly VIP · 90 Days',
       features: [
-        'Permanent top-rotation across all Delta property feeds',
+        'Permanent top-rotation across all property feeds',
         'Dedicated VIP Account Executive & ad design assistance',
         'Direct listing integration & custom lead webhook',
-        'Network-wide broadcast covering all Delta State territories',
+        'Network-wide broadcast across all marketplace feeds',
         'Comprehensive monthly conversion analytics report',
       ],
     },
@@ -281,15 +281,15 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   -H "Content-Type: application/json" \\
   -H "X-Setlla-Partner-Key: ${activeKey}" \\
   -d '{
-    "companyName": "Asaba Solar & Power Solutions Ltd",
-    "headline": "24/7 Solar Backup Power for Delta Renters",
-    "description": "Zero down payment solar installations for apartments across Asaba & Warri.",
+    "companyName": "Apex Solar & Power Solutions Ltd",
+    "headline": "24/7 Solar Backup Power for Modern Homes",
+    "description": "Zero down payment solar installations for apartments and commercial spaces.",
     "category": "Service",
     "mediaUrl": "https://images.unsplash.com/photo-1509391365360-2e959784a276",
     "ctaText": "Get Free Quote",
     "actionType": "contact",
     "whatsappNumber": "08031122334",
-    "location": "Asaba, Delta State",
+    "location": "Nationwide",
     "durationDays": 30
   }'`;
     navigator.clipboard.writeText(curlCode);
@@ -360,7 +360,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       ctaText: simCtaText,
       actionType: 'contact',
       whatsappNumber: simWhatsapp,
-      location: 'Delta State Network Wide',
+      location: 'Network Wide',
       durationDays: simDuration,
     };
 
@@ -619,11 +619,11 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         <div className="max-w-4xl mx-auto text-center space-y-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#342A21]/5 border border-[#342A21]/15 text-[#342A21] text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-[#B45309]" />
-            <span>Delta State Premier Property & Renter Audience</span>
+            <span>Premier Property & Renter Audience</span>
           </div>
 
           <h1 className="font-display text-3xl sm:text-5xl md:text-6xl text-[#342A21] font-normal tracking-tight leading-[1.12]">
-            Put your brand in front of <em className="italic font-normal">Delta's active renters & property investors.</em>
+            Put your brand in front of <em className="italic font-normal">active renters & property investors.</em>
           </h1>
 
           <p className="text-sm sm:text-base text-[#70798C] max-w-2xl mx-auto leading-relaxed">
@@ -707,9 +707,9 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             </div>
 
             <div className="bg-white p-4 rounded-2xl border border-[#342A21]/10 shadow-subtle">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#70798C] block">Regional Focus</span>
-              <span className="text-xl sm:text-2xl font-bold text-[#342A21] block mt-0.5">Delta Wide</span>
-              <span className="text-[11px] text-[#70798C] block mt-0.5">Asaba · Warri · Abraka</span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#70798C] block">Target Audience</span>
+              <span className="text-xl sm:text-2xl font-bold text-[#342A21] block mt-0.5">High-Intent</span>
+              <span className="text-[11px] text-[#70798C] block mt-0.5">Renters & property buyers</span>
             </div>
 
             <div className="bg-white p-4 rounded-2xl border border-[#342A21]/10 shadow-subtle">
@@ -878,7 +878,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             How Setlla Partner Ads Work
           </h2>
           <p className="text-xs sm:text-sm text-[#70798C] leading-relaxed">
-            Every sponsored ad passes through Setlla's verification desk to ensure brand safety, accurate pricing, and trust across Delta State.
+            Every sponsored ad passes through Setlla's verification desk to ensure brand safety, accurate pricing, and market trust.
           </p>
         </div>
 
@@ -909,7 +909,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             </div>
             <h4 className="font-display text-lg text-[#342A21] font-medium">Explore Feed Live</h4>
             <p className="text-xs text-[#70798C] leading-relaxed">
-              Once accepted, your campaign status flips to <strong className="text-emerald-700">Active</strong> and broadcasts to 50,000+ Delta renters.
+              Once accepted, your campaign status flips to <strong className="text-emerald-700">Active</strong> and broadcasts to 50,000+ active renters & buyers.
             </p>
           </div>
 
@@ -1317,7 +1317,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                         rows={3}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Detail your special offer, pricing advantages, or why Delta renters and buyers should connect with your brand..."
+                        placeholder="Detail your special offer, pricing advantages, or why renters and buyers should connect with your brand..."
                         className="w-full px-4 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21] focus:ring-1 focus:ring-[#342A21] leading-relaxed"
                       />
                     </div>
@@ -1551,7 +1551,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                         />
                       </div>
                       <span className="text-[11px] font-medium text-[#70798C] max-w-[70px] truncate text-center">
-                        Solar Delta
+                        Solar Power
                       </span>
                     </div>
 
@@ -1565,7 +1565,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                         />
                       </div>
                       <span className="text-[11px] font-medium text-[#70798C] max-w-[70px] truncate text-center">
-                        Warri Plots
+                        Prime Plots
                       </span>
                     </div>
                   </div>
@@ -1655,7 +1655,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       />
                       <div className="p-3 space-y-2">
                         <h4 className="font-display text-sm font-semibold text-[#342A21]">
-                          Zero-Down Payment Solar Installation for Delta Renters
+                          Zero-Down Payment Solar Installation for Modern Homes
                         </h4>
                         <p className="text-xs text-[#70798C]">
                           Keep your inverter and fans running 24/7. Flexible monthly lease-to-own plans.
@@ -1793,15 +1793,15 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   -H "Content-Type: application/json" \\
   -H "X-Setlla-Partner-Key: stla_live_8f39a01b92c44de88a912bf7" \\
   -d '{
-    "companyName": "Asaba Solar & Power Solutions Ltd",
-    "headline": "24/7 Solar Backup Power for Delta Renters",
-    "description": "Zero down payment solar installations for apartments across Asaba & Warri.",
+    "companyName": "Apex Solar & Power Solutions Ltd",
+    "headline": "24/7 Solar Backup Power for Modern Homes",
+    "description": "Zero down payment solar installations for apartments and commercial spaces.",
     "category": "Service",
     "mediaUrl": "https://images.unsplash.com/photo-1509391365360-2e959784a276",
     "ctaText": "Get Free Quote",
     "actionType": "contact",
     "whatsappNumber": "08031122334",
-    "location": "Asaba, Delta State",
+    "location": "Nationwide",
     "durationDays": 30
   }'`}
               </pre>
@@ -2070,7 +2070,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               <span className="text-xs font-semibold text-[#342A21]">Partnerships & Media Desk</span>
             </div>
             <p className="text-xs text-[#70798C]">
-              Delta State's high-traffic direct rental and inspection marketplace.
+              High-traffic direct rental and property inspection marketplace.
             </p>
           </div>
 

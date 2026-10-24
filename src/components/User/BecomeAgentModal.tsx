@@ -157,7 +157,7 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Apex Delta Properties Ltd"
+                  placeholder="e.g. Apex Premier Properties Ltd"
                   value={agencyName}
                   onChange={(e) => setAgencyName(e.target.value)}
                   className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] focus:ring-1 focus:ring-[#000004] text-xs text-[#000004] outline-none"
@@ -205,7 +205,7 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
             <div>
               <label className="block text-[11px] font-bold text-[#000004] mb-1.5 flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-[#342A21]" />
-                <span>Operating Cities in Delta State</span>
+                <span>Operating Cities & Hubs</span>
               </label>
               <div className="flex flex-wrap gap-1.5">
                 {AVAILABLE_CITIES.map((city) => {
@@ -238,7 +238,7 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
                 className="mt-0.5 rounded border-slate-300 text-[#000004] focus:ring-[#000004] cursor-pointer"
               />
               <label htmlFor="agentTerms" className="text-[11px] text-[#70798C] cursor-pointer leading-tight">
-                I agree to only post genuine, verified Delta State apartments with accurate pricing, honor the 5-booking cap per time window so I never waste tenants' time, and charge zero inspection booking fees.
+                I agree to only post genuine, verified apartments with accurate pricing, honor the 5-booking cap per time window so I never waste tenants' time, and charge zero inspection booking fees.
               </label>
             </div>
 

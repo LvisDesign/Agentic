@@ -451,7 +451,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   placeholder="Select City / Town"
                   variant="form"
                   allowCustomInput={true}
-                  customSearchSubtitle="Type area or town in Delta State"
+                  customSearchSubtitle="Type city, area, or town"
                 />
               </div>
             </div>

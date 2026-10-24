@@ -42,7 +42,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
               House Inspections
             </h3>
             <p className="text-xs text-[#70798C]">
-              {bookings.length} active inspection(s) in Delta State
+              {bookings.length} active inspection(s)
             </p>
           </div>
           <button

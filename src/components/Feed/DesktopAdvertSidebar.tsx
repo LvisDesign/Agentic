@@ -70,7 +70,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
           <div>
             <h4 className="text-xs font-bold text-[#000004]">No Active Promotions Yet</h4>
             <p className="text-[11px] text-[#70798C] mt-1 leading-relaxed">
-              Showcase your properties, agency services, or home moving business to tenants across Delta State.
+              Showcase your properties, agency services, or home moving business to active renters.
             </p>
           </div>
           <button
@@ -159,10 +159,10 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
         <div className="p-2.5 rounded-2xl bg-gradient-to-br from-[#FCF9F5] to-[#342A21]/5 border border-[#342A21]/15 flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="text-[10px] font-bold text-[#000004]">
-              Reach Delta Renters
+              Reach Active Renters
             </div>
             <p className="text-[9px] text-[#70798C] truncate">
-              Instant story ads on Asaba, Warri & more
+              Instant story ads on trending property feeds
             </p>
           </div>
           <button

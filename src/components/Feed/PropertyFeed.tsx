@@ -97,7 +97,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
             No Properties Listed Yet
           </h3>
           <p className="text-xs text-[#70798C] mt-1.5 max-w-sm leading-relaxed">
-            Setlla is live! Be the first verified agent or landlord to publish rentals and connect with tenants across Delta State.
+            Setlla is live! Be the first verified agent or landlord to publish rentals and connect with tenants.
           </p>
           {onOpenBecomeAgent && (
             <button
@@ -121,7 +121,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
           No Properties Found
         </h3>
         <p className="text-xs text-[#70798C] mt-1.5 max-w-sm">
-          No rentals in Delta State match your current filter parameters. Try loosening your price or selecting "All Delta Cities".
+          No rentals match your current filter parameters. Try loosening your price or selecting "All Cities".
         </p>
         <button
           onClick={onResetFilters}

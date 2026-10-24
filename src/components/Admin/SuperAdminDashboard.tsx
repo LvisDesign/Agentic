@@ -832,7 +832,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 </h1>
               </div>
               <p className="text-xs sm:text-sm text-[#70798C] mt-1 flex flex-wrap items-center gap-2">
-                <span>Direct oversight across Delta State rentals, verified agents, tenants, and inspection escrows.</span>
+                <span>Direct oversight across rentals, verified agents, tenants, and inspection escrows.</span>
               </p>
             </div>
           </div>
@@ -1156,7 +1156,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-bold text-base text-[#000004] flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-emerald-600" />
-                  <span>Delta State Market Footprint</span>
+                  <span>Market Footprint by City</span>
                 </h3>
                 <span className="text-xs text-[#70798C] font-semibold">{listings.length} listings active</span>
               </div>
@@ -2135,7 +2135,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                       Incoming Partner Submissions Awaiting Approval
                     </h4>
                     <p className="text-xs text-amber-800">
-                      Submitted via the Self-Service Partner Portal or External API. Review creatives before broadcasting live across Delta State.
+                      Submitted via the Self-Service Partner Portal or External API. Review creatives before broadcasting live across the marketplace.
                     </p>
                   </div>
                 </div>
@@ -2779,7 +2779,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/70 text-white font-mono text-[10px]">
-                    Verified Delta State Ministry of Lands Registration Stamp
+                    Verified Ministry of Lands Registration Stamp
                   </div>
                 </div>
               </div>

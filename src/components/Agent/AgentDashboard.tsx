@@ -284,7 +284,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   No Inspection Requests Yet
                 </h3>
                 <p className="text-xs text-[#70798C] leading-relaxed">
-                  Welcome, <strong>{agentProfile.fullName}</strong>! You haven't added any properties yet. Once you publish your available apartments or houses in Delta State, tenants will book verified inspection slots and requests will appear here.
+                  Welcome, <strong>{agentProfile.fullName}</strong>! You haven't added any properties yet. Once you publish your available apartments or houses, tenants will book verified inspection slots and requests will appear here.
                 </p>
               </div>
               <div className="pt-2">
@@ -507,7 +507,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   You Haven't Listed Any Properties Yet
                 </h3>
                 <p className="text-xs text-[#70798C] leading-relaxed">
-                  Start listing your flats, self-contains, or houses across Delta State. Verified listings appear live on the video feed and search immediately.
+                  Start listing your flats, self-contains, or houses. Verified listings appear live on the video feed and search immediately.
                 </p>
               </div>
               <div className="pt-2">
@@ -567,7 +567,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         />
                       )}
                       <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium">
-                        {prop.city}, Delta
+                        {prop.city}
                       </div>
                       <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-white font-display text-sm font-bold">
                         {formatNaira(prop.fees.baseRent)}/{prop.fees.rentPeriod}

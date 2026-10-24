@@ -69,13 +69,13 @@ async function pushSetllaAd() {
       "X-Setlla-Partner-Key": "stla_live_8f39a01b92c44de88a912bf7"
     },
     body: JSON.stringify({
-      companyName: "Asaba Solar & Power Ltd",
-      headline: "24/7 Clean Solar Energy for Delta Renters",
+      companyName: "Apex Solar & Power Solutions Ltd",
+      headline: "24/7 Clean Solar Energy for Modern Homes",
       category: "Service",
       mediaUrl: "https://images.unsplash.com/photo-1509391365360-2e959784a276",
       mediaType: "image",
       whatsappNumber: "08031122334",
-      location: "Asaba, Delta State",
+      location: "Nationwide",
       durationDays: 30,
       budgetAmount: 45000,
       ctaText: "Chat on WhatsApp"
@@ -97,13 +97,13 @@ headers = {
     "X-Setlla-Partner-Key": "stla_live_8f39a01b92c44de88a912bf7"
 }
 payload = {
-    "companyName": "Asaba Solar & Power Ltd",
-    "headline": "24/7 Clean Solar Energy for Delta Renters",
+    "companyName": "Apex Solar & Power Solutions Ltd",
+    "headline": "24/7 Clean Solar Energy for Modern Homes",
     "category": "Service",
     "mediaUrl": "https://images.unsplash.com/photo-1509391365360-2e959784a276",
     "mediaType": "image",
     "whatsappNumber": "08031122334",
-    "location": "Asaba, Delta State",
+    "location": "Nationwide",
     "durationDays": 30,
     "budgetAmount": 45000,
     "ctaText": "Chat on WhatsApp"
@@ -118,13 +118,13 @@ print("Campaign Data:", response.json())`;
   -H "Content-Type: application/json" \\
   -H "X-Setlla-Partner-Key: stla_live_8f39a01b92c44de88a912bf7" \\
   -d '{
-    "companyName": "Asaba Solar & Power Ltd",
-    "headline": "24/7 Clean Solar Energy for Delta Renters",
+    "companyName": "Apex Solar & Power Solutions Ltd",
+    "headline": "24/7 Clean Solar Energy for Modern Homes",
     "category": "Service",
     "mediaUrl": "https://images.unsplash.com/photo-1509391365360-2e959784a276",
     "mediaType": "image",
     "whatsappNumber": "08031122334",
-    "location": "Asaba, Delta State",
+    "location": "Nationwide",
     "durationDays": 30,
     "budgetAmount": 45000,
     "ctaText": "Chat on WhatsApp"
@@ -264,7 +264,7 @@ print("Campaign Data:", response.json())`;
                 <div className="pt-3 border-t border-[#E5E7EB] text-xs text-[#342A21] space-y-1.5">
                   <div className="flex items-center gap-1.5 font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Permanent top-rotation across all Delta feeds</span>
+                    <span>Permanent top-rotation across all property feeds</span>
                   </div>
                   <div className="flex items-center gap-1.5 font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -358,7 +358,7 @@ print("Campaign Data:", response.json())`;
                   </li>
                   <li className="flex items-start gap-1.5">
                     <span className="text-amber-800 font-bold">•</span>
-                    <span><strong>City Anchor:</strong> Explicitly mention target Delta city (e.g. Asaba GRA, Effurun, Abraka).</span>
+                    <span><strong>City Anchor:</strong> Explicitly mention target city or region.</span>
                   </li>
                 </ul>
               </div>
@@ -388,7 +388,7 @@ print("Campaign Data:", response.json())`;
                 </h3>
               </div>
               <p className="text-xs text-[#70798C] leading-relaxed">
-                How every campaign moves from submission to live broadcasting across Delta State.
+                How every campaign moves from submission to live broadcasting across the network.
               </p>
             </div>
 
@@ -850,7 +850,7 @@ print("Campaign Data:", response.json())`;
                 Ads Setup & Campaign Management Guide
               </h2>
               <p className="text-xs text-[#70798C] mt-0.5 hidden sm:block truncate">
-                Plan, launch, and connect programmatic campaigns across Delta State's property network.
+                Plan, launch, and connect programmatic campaigns across Setlla's property network.
               </p>
             </div>
 
@@ -943,7 +943,7 @@ print("Campaign Data:", response.json())`;
             Ads Setup & Campaign Management Guide
           </h2>
           <p className="text-xs sm:text-sm text-[#70798C] mt-1 max-w-2xl leading-relaxed">
-            Everything you need to plan, produce, launch, and connect programmatic campaigns across Delta State's rental network.
+            Everything you need to plan, produce, launch, and connect programmatic campaigns across Setlla's rental network.
           </p>
         </div>
 

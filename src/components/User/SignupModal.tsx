@@ -649,15 +649,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
               <p className="text-xs text-white/70 leading-relaxed">
                 {authMode === 'signup' && activeRoleTab === 'agent'
-                  ? 'Direct connection with serious pre-screened tenants across Delta State. Manage inspection slots and close leases with zero hassle.'
-                  : 'Direct access to video-verified apartments, scam-free inspections, and secure booking passes across Delta State.'}
+                  ? 'Direct connection with serious pre-screened tenants. Manage inspection slots and close leases with zero hassle.'
+                  : 'Direct access to video-verified apartments, scam-free inspections, and secure booking passes.'}
               </p>
             </div>
 
             {/* Bottom Trust Hallmark */}
             <div className="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
               <span>Setlla • Verified Homes</span>
-              <span>Delta State</span>
+              <span>Nigeria</span>
             </div>
           </div>
 
@@ -967,7 +967,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             options={DELTA_CITY_OPTIONS}
                             value={seekerCity}
                             onChange={(c) => setSeekerCity(c)}
-                            headerTitle="Delta State Cities & Towns"
+                            headerTitle="Cities & Towns"
                             placeholder="Select City (e.g. Asaba, Warri, Ughelli)"
                             icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
                             variant="form"
@@ -1261,7 +1261,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   setAgentCity(customAgentCity || '');
                                 }
                               }}
-                              headerTitle="Delta State Cities & Towns"
+                              headerTitle="Cities & Towns"
                               placeholder="Select Operating City (e.g. Asaba, Warri)"
                               icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
                               variant="form"

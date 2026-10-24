@@ -133,7 +133,7 @@ export const StateDropdown: React.FC<StateDropdownProps> = ({
   };
 
   const handleAttemptDisabled = (stateName: string) => {
-    setInactiveNotice(`${stateName} is coming soon! Delta State is currently the available hub.`);
+    setInactiveNotice(`${stateName} is coming soon!`);
     setTimeout(() => {
       setInactiveNotice(null);
     }, 3000);
@@ -272,7 +272,7 @@ export const StateDropdown: React.FC<StateDropdownProps> = ({
                 type="button"
                 onClick={() => handleAttemptDisabled(st.name)}
                 className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-not-allowed select-none opacity-40 hover:opacity-60 hover:bg-slate-50 border border-transparent"
-                title={`${st.name} is coming soon. Delta State is currently active.`}
+                title={`${st.name} is coming soon.`}
               >
                 <div className="flex items-center gap-2 truncate mr-2">
                   <Lock className="w-3.5 h-3.5 text-slate-400 shrink-0" />

@@ -65,7 +65,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   const [actionType, setActionType] = useState<'website' | 'contact' | 'property'>('website');
   const [websiteUrl, setWebsiteUrl] = useState(advertiser.websiteUrl || '');
   const [ctaText, setCtaText] = useState('Visit Website');
-  const [location, setLocation] = useState('All Delta State');
+  const [location, setLocation] = useState('Network Wide');
   const [price, setPrice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null);
@@ -338,7 +338,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   Your Sponsored Campaigns & Flights
                 </h3>
                 <p className="text-xs text-[#70798C] mt-0.5">
-                  Track real-time impressions, lead routing, and flight status across Setlla's Delta network.
+                  Track real-time impressions, lead routing, and flight status across Setlla's network.
                 </p>
               </div>
 
@@ -367,7 +367,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 <div>
                   <h4 className="font-display text-base text-[#342A21]">No campaigns in this view</h4>
                   <p className="text-xs text-[#70798C] mt-1 max-w-sm mx-auto">
-                    Launch a new sponsored flight to put your brand in front of 50,000+ Delta State property seekers.
+                    Launch a new sponsored flight to put your brand in front of 50,000+ active property seekers.
                   </p>
                 </div>
                 <button
@@ -429,7 +429,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                           </h4>
 
                           <p className="text-[11px] text-[#70798C] line-clamp-2">
-                            {ad.description || 'Sponsored campaign broadcast across Delta rental feed.'}
+                            {ad.description || 'Sponsored campaign broadcast across property rental feed.'}
                           </p>
                         </div>
                       </div>
@@ -530,7 +530,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                       maxLength={65}
                       value={headline}
                       onChange={(e) => setHeadline(e.target.value)}
-                      placeholder="e.g. 24/7 Solar Backup Power for Delta Renters"
+                      placeholder="e.g. 24/7 Solar Backup Power for Modern Homes"
                       className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
                     />
                   </div>
@@ -642,7 +642,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   -H "X-Setlla-Partner-Key: ${advertiser.apiKey}" \\
   -d '{
     "companyName": "${advertiser.companyName}",
-    "headline": "24/7 Solar Backup Power for Delta Renters",
+    "headline": "24/7 Solar Backup Power for Modern Homes",
     "category": "Service",
     "mediaUrl": "https://images.unsplash.com/photo-1509391365360-2e959784a276",
     "whatsappNumber": "${advertiser.whatsapp || advertiser.phone}",

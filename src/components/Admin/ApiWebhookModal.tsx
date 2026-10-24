@@ -64,8 +64,8 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
 
   // Simulator State
   const [simSelectedKey, setSimSelectedKey] = useState('');
-  const [simHeadline, setSimHeadline] = useState('24/7 Solar Backup Power for Delta Renters');
-  const [simCompanyName, setSimCompanyName] = useState('Asaba Solar & Power Solutions Ltd');
+  const [simHeadline, setSimHeadline] = useState('24/7 Solar Backup Power for Modern Homes');
+  const [simCompanyName, setSimCompanyName] = useState('Apex Solar & Power Solutions Ltd');
   const [simMediaUrl, setSimMediaUrl] = useState('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1080&q=80');
   const [simCategory, setSimCategory] = useState<'Property' | 'Estate' | 'Promo' | 'Service'>('Service');
   const [simCtaText, setSimCtaText] = useState('Get Free Quote');
@@ -110,15 +110,15 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
   -H "Content-Type: application/json" \\
   -H "X-Setlla-Partner-Key: ${activeKey}" \\
   -d '{
-    "companyName": "Asaba Solar & Power Solutions Ltd",
-    "headline": "24/7 Solar Backup Power for Delta Renters",
-    "description": "Zero down payment solar installations for apartments across Asaba & Warri.",
+    "companyName": "Apex Solar & Power Solutions Ltd",
+    "headline": "24/7 Solar Backup Power for Modern Homes",
+    "description": "Zero down payment solar installations for apartments nationwide.",
     "category": "Service",
     "mediaUrl": "https://images.unsplash.com/photo-1509391365360-2e959784a276",
     "ctaText": "Get Free Quote",
     "actionType": "contact",
     "whatsappNumber": "08031122334",
-    "location": "Asaba, Delta State",
+    "location": "Nationwide",
     "durationDays": 30
   }'`;
     navigator.clipboard.writeText(curlCode);
@@ -198,7 +198,7 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
       ctaText: simCtaText,
       actionType: 'contact',
       whatsappNumber: simWhatsapp,
-      location: 'Delta State Network Wide',
+      location: 'Network Wide',
       durationDays: simDuration,
     };
 
@@ -342,15 +342,15 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
   -H "Content-Type: application/json" \\
   -H "X-Setlla-Partner-Key: stla_live_8f39a01b92c44de88a912bf7" \\
   -d '{
-    "companyName": "Asaba Solar & Power Solutions Ltd",
-    "headline": "24/7 Solar Backup Power for Delta Renters",
-    "description": "Zero down payment solar installations for apartments across Asaba & Warri.",
+    "companyName": "Apex Solar & Power Solutions Ltd",
+    "headline": "24/7 Solar Backup Power for Modern Homes",
+    "description": "Zero down payment solar installations for apartments nationwide.",
     "category": "Service",
     "mediaUrl": "https://images.unsplash.com/photo-1509391365360-2e959784a276",
     "ctaText": "Get Free Quote",
     "actionType": "contact",
     "whatsappNumber": "08031122334",
-    "location": "Asaba, Delta State",
+    "location": "Nationwide",
     "durationDays": 30
   }'`}
                 </pre>

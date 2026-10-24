@@ -33,7 +33,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
   const [category, setCategory] = useState<'Property' | 'Estate' | 'Promo' | 'Service'>('Promo');
   const [headline, setHeadline] = useState('');
   const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('All Delta State (Asaba, Warri, Abraka)');
+  const [location, setLocation] = useState('All Regions (Network-Wide)');
   const [price, setPrice] = useState('');
   const [mediaUrl, setMediaUrl] = useState('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80');
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
@@ -68,7 +68,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
       features: [
         'Feed Stories + Desktop Pinned Banner',
         'Verified Partner Blue Badge',
-        'Priority Delta Region Targeting',
+        'Priority Region Targeting',
         'Weekly Campaign Analytics Report',
       ],
     },
@@ -82,7 +82,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
       features: [
         'Permanent Top Feed Placement',
         'Dedicated WhatsApp Concierge Routing',
-        'All Delta Cities Broadcast',
+        'Network-Wide Feed Broadcast',
         'Custom CTA + Direct Listing Integration',
       ],
     },
@@ -167,10 +167,10 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
           </div>
 
           <h2 className="font-display text-2xl sm:text-3xl text-[#342A21] font-normal tracking-tight mt-3">
-            Put your brand in front of <em className="italic font-normal">Delta's active renters.</em>
+            Put your brand in front of <em className="italic font-normal">active renters & property investors.</em>
           </h2>
           <p className="text-xs sm:text-sm text-[#70798C] mt-1.5 max-w-xl leading-relaxed">
-            Broadcast your business, developments, solar solutions, or services directly on Setlla's high-traffic rental feed across Asaba, Warri, and Abraka.
+            Broadcast your business, developments, solar solutions, or services directly on Setlla's high-traffic rental feed.
           </p>
 
           {/* Quick value stats */}
@@ -184,8 +184,8 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
               <span className="text-[11px] text-[#70798C] block">WhatsApp Leads</span>
             </div>
             <div>
-              <span className="text-base sm:text-xl font-bold text-[#342A21]">Delta Wide</span>
-              <span className="text-[11px] text-[#70798C] block">Asaba · Warri · Abraka</span>
+              <span className="text-base sm:text-xl font-bold text-[#342A21]">High Intent</span>
+              <span className="text-[11px] text-[#70798C] block">Renters & Investors</span>
             </div>
           </div>
         </div>
@@ -389,7 +389,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                   rows={2}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe your special offer, pricing discount, or why Delta renters should choose your company..."
+                  placeholder="Describe your special offer, pricing discount, or why renters should choose your company..."
                   className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                 />
               </div>

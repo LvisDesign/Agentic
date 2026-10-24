@@ -64,8 +64,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     const opts: DropdownOption[] = [
       {
         value: 'All Delta Cities',
-        label: 'All Delta Cities',
-        subtitle: 'Show all properties across Delta State',
+        label: 'All Cities',
+        subtitle: 'Show all properties across all locations',
       },
     ];
 
@@ -95,7 +95,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       });
     });
 
-    // Predefined Standard Cities & Towns across Delta State
+    // Predefined Standard Cities & Towns
     DELTA_ALL_TOWNS.forEach((town) => {
       opts.push({
         value: town.value,
@@ -140,7 +140,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               value={selectedCity}
               onChange={onSelectCity}
               onClear={() => onSelectCity('All Delta Cities')}
-              headerTitle="Delta State Cities & Areas"
+              headerTitle="Cities & Areas"
               icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
               align="left"
               variant="pill"
@@ -216,7 +216,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   variant="form"
                 />
                 <p className="text-[11px] text-[#342A21] mt-1">
-                  Delta State is currently available with live inspection queues.
+                  Available with live inspection queues.
                 </p>
               </div>
 
@@ -267,7 +267,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   <div className="flex items-center gap-1 mb-2">
                     <MapPin className="w-3.5 h-3.5 text-amber-600" />
                     <label className="text-xs font-bold uppercase tracking-wider text-[#70798C]">
-                      Agent-Posted Areas in Delta
+                      Agent-Posted Areas
                     </label>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
@@ -297,10 +297,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 </div>
               )}
 
-              {/* Standard Delta Cities Pills */}
+              {/* Standard Cities Pills */}
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-[#70798C] block mb-2">
-                  Standard Delta Cities & LGAs
+                  Popular Cities & Areas
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {DELTA_CITIES.map((c) => {

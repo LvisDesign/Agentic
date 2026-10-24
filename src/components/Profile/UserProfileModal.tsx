@@ -255,7 +255,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 {isAgent ? 'Agent Profile' : 'Tenant Profile'}
               </h3>
               <p className="text-xs text-[#70798C]">
-                {isAgent ? 'Delta State Partner Agent Account' : 'Setlla Member Account'}
+                {isAgent ? 'Setlla Partner Agent Account' : 'Setlla Member Account'}
               </p>
             </div>
           </div>
@@ -349,7 +349,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </div>
                 <div className="text-[11px] text-[#70798C] flex items-center gap-2 mt-0.5">
                   <span className="flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-[#342A21]" /> {currentUser.city || currentUser.operatingCity || 'Asaba'}, Delta
+                    <MapPin className="w-3 h-3 text-[#342A21]" /> {currentUser.city || currentUser.operatingCity || 'Asaba'}
                   </span>
                   <span>•</span>
                   <span>{isAgent ? (currentUser.agencyName || 'Partner Agency') : 'Verified Tenant'}</span>
@@ -377,8 +377,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
             <p className="text-[11px] text-[#70798C] leading-relaxed">
               {isAgent
-                ? 'You have full access to list apartments across Delta State, set inspection time slots, accept inspection bookings, and connect directly with verified tenants.'
-                : 'You have full, unrestricted access to browse apartments uploaded by verified Delta State agents and book as many inspections as you want. Only agents are restricted to 5 bookings per window so your time is never wasted.'}
+                ? 'You have full access to list apartments, set inspection time slots, accept inspection bookings, and connect directly with verified tenants.'
+                : 'You have full, unrestricted access to browse apartments uploaded by verified partner agents and book as many inspections as you want. Only agents are restricted to 5 bookings per window so your time is never wasted.'}
             </p>
           </div>
 
@@ -399,7 +399,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-white/80 leading-relaxed">
-                Register as a Setlla Partner Agent. Upload unlimited apartments across Delta State, set strict 5-capacity inspection time slots, and dispatch directly to tenants.
+                Register as a Setlla Partner Agent. Upload unlimited apartments, set strict 5-capacity inspection time slots, and dispatch directly to tenants.
               </p>
               <button
                 onClick={() => {

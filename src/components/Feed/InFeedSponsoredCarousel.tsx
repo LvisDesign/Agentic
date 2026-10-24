@@ -375,7 +375,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
           <h3 className="font-display font-extrabold text-sm sm:text-base tracking-tight text-[#1C1F18] flex items-center gap-1.5 drop-shadow-2xs">
             <span>Sponsored Promos</span>
             <span className="text-[10px] font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-white/70 text-[#1C1F18] border border-white/80 shadow-2xs backdrop-blur-xs">
-              Delta
+              Featured
             </span>
           </h3>
         </div>
@@ -596,7 +596,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
               Grow Your Business Here
             </h4>
             <p className="text-[#70798C] text-xs leading-relaxed mb-4 max-w-[220px]">
-              Reach thousands of verified house-hunters and tenants across Delta State today.
+              Reach thousands of verified house-hunters and tenants today.
             </p>
 
             <span className="py-2 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold text-xs shadow-xs transition-colors">

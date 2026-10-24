@@ -109,7 +109,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <div className="flex items-center gap-1.5 text-xs font-semibold text-[#000004] truncate">
             <MapPin className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
             <span className="truncate">{listing.neighborhood}, {listing.city}</span>
-            <span className="text-[#70798C] font-normal text-[11px] shrink-0 hidden sm:inline">• Delta</span>
           </div>
 
           {/* Capacity Badge, Report Flag & Share */}

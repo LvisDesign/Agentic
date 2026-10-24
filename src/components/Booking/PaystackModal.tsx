@@ -220,7 +220,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
 
               <div className="p-2.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] text-[11px] text-[#70798C] flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#342A21] shrink-0" />
-                <span>Zero Risk: Held in Delta Escrow until physical inspection takes place.</span>
+                <span>Zero Risk: Held in Setlla Escrow until physical inspection takes place.</span>
               </div>
             </div>
           )}

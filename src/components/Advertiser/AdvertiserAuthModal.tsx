@@ -229,7 +229,7 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
                       { value: 'Asaba', label: 'Asaba' },
                       { value: 'Warri', label: 'Warri' },
                       { value: 'Abraka', label: 'Abraka' },
-                      { value: 'All Delta State', label: 'Delta Wide' },
+                      { value: 'Network Wide', label: 'Network Wide' },
                     ]}
                     variant="form"
                   />
