@@ -24,7 +24,11 @@ import {
   ExternalLink,
   Code2,
   KeyRound,
-  BookOpen
+  BookOpen,
+  ArrowRight,
+  Rocket,
+  Upload,
+  Shield
 } from 'lucide-react';
 import { 
   submitPartnerAdvert, 
@@ -428,39 +432,18 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] font-body selection:bg-[#342A21]/10 selection:text-[#342A21]">
-      {/* 1. Bespoke Brand Top Navigation Bar */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-[#342A21]/10">
+      {/* 1. Brand Top Navigation Bar (Partner & Customer Focused) */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#342A21]/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {onBackToAdmin ? (
-              <button
-                onClick={onBackToAdmin}
-                className="py-1.5 px-3 rounded-xl text-amber-900 bg-amber-50 hover:bg-amber-100 hover:text-amber-950 transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold border border-amber-200/80 shadow-xs"
-                title="Return to Super Admin Dashboard"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-amber-700" />
-                <span>Admin Dashboard</span>
-              </button>
-            ) : (
-              <button
-                onClick={handleReturn}
-                className="p-2 -ml-2 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
-                title="Return to property feed"
-              >
-                <ArrowLeft className="w-4 h-4 text-[#342A21]" />
-                <span className="hidden sm:inline">Explore Feed</span>
-              </button>
-            )}
-
-            {onBackToAdmin && onBackToExplore && (
-              <button
-                onClick={onBackToExplore}
-                className="py-1.5 px-2.5 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer hidden sm:flex items-center gap-1 text-xs font-medium"
-                title="Explore properties feed"
-              >
-                <span>Explore Feed</span>
-              </button>
-            )}
+            <button
+              onClick={onBackToExplore || handleReturn}
+              className="py-1.5 px-3 -ml-2 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+              title="Return to property feed"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#342A21]" />
+              <span>Explore Feed</span>
+            </button>
 
             <div className="h-5 w-px bg-[#E5E7EB] hidden sm:block" />
 
@@ -468,11 +451,11 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               <img 
                 src="/images/setlla-logo.png" 
                 alt="Setlla" 
-                className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer"
+                className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer" 
                 onClick={handleReturn}
               />
-              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15">
-                Partner Network
+              <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15">
+                Partner Ads Network
               </span>
             </div>
           </div>
@@ -481,7 +464,11 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           <div className="flex items-center gap-2 sm:gap-3">
             <nav className="hidden md:flex items-center gap-1 p-1 bg-[#FCF9F5] rounded-xl border border-[#E5E7EB]">
               <button
-                onClick={() => setActiveTab('packages')}
+                onClick={() => {
+                  setActiveTab('packages');
+                  const el = document.getElementById('ad-creation-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
                   activeTab === 'packages'
                     ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
@@ -491,7 +478,11 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 Flight Packages
               </button>
               <button
-                onClick={() => setActiveTab('placements')}
+                onClick={() => {
+                  setActiveTab('placements');
+                  const el = document.getElementById('ad-creation-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
                   activeTab === 'placements'
                     ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
@@ -501,7 +492,25 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 Showcase
               </button>
               <button
-                onClick={() => setActiveTab('guide')}
+                onClick={() => {
+                  setActiveTab('api');
+                  const el = document.getElementById('ad-creation-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
+                  activeTab === 'api'
+                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                    : 'text-[#70798C] hover:text-[#342A21]'
+                }`}
+              >
+                REST API
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('guide');
+                  const el = document.getElementById('ad-creation-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
                   activeTab === 'guide'
                     ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
@@ -511,27 +520,17 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Ads Guide</span>
               </button>
-              <button
-                onClick={() => setActiveTab('api')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                  activeTab === 'api'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21]'
-                }`}
-              >
-                REST API
-              </button>
             </nav>
 
             {/* Advertiser Account Login / Dashboard trigger */}
             {activeAdvertiser ? (
               <button
                 onClick={() => setViewMode('advertiser-dashboard')}
-                className="px-3 py-2 rounded-xl bg-[#342A21] text-[#FCF9F5] hover:bg-[#231C16] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
-                title="Go to your Advertiser Dashboard"
+                className="px-3.5 py-2 rounded-xl bg-[#342A21] text-[#FCF9F5] hover:bg-[#231C16] text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+                title="Go to your Customer Ads Dashboard"
               >
-                <Building2 className="w-3.5 h-3.5 text-amber-300" />
-                <span className="max-w-[110px] sm:max-w-[140px] truncate">{activeAdvertiser.companyName}</span>
+                <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                <span className="max-w-[110px] sm:max-w-[150px] truncate">{activeAdvertiser.companyName} Dashboard</span>
                 <ChevronRight className="w-3 h-3 text-stone-300" />
               </button>
             ) : (
@@ -541,18 +540,19 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     setAuthModalInitialMode('login');
                     setIsAuthModalOpen(true);
                   }}
-                  className="px-3 py-2 rounded-xl bg-white hover:bg-[#F6F3EF] text-[#342A21] border border-[#342A21]/20 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  className="px-3 py-2 rounded-xl bg-white hover:bg-[#F6F3EF] text-[#342A21] border border-[#342A21]/20 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                 >
                   <KeyRound className="w-3.5 h-3.5 text-[#342A21]" />
-                  <span>Advertiser Sign In</span>
+                  <span>Sign In</span>
                 </button>
                 <button
                   onClick={() => {
                     setAuthModalInitialMode('signup');
                     setIsAuthModalOpen(true);
                   }}
-                  className="hidden sm:flex px-3 py-2 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
+                  <Rocket className="w-3.5 h-3.5 text-amber-400" />
                   <span>Register</span>
                 </button>
               </div>
@@ -567,21 +567,40 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
               <span>Ad Concierge</span>
             </a>
+
+            {/* Subtle Super Admin link for previewing staff */}
+            {onBackToAdmin && (
+              <button
+                onClick={onBackToAdmin}
+                className="text-[11px] text-[#70798C] hover:text-amber-900 hover:underline cursor-pointer hidden xl:inline-block pl-1"
+                title="Return to Super Admin Console"
+              >
+                Admin Console ↗
+              </button>
+            )}
           </div>
         </div>
 
         {/* Mobile Sub-Navigation Bar */}
         <div className="md:hidden border-t border-[#342A21]/5 bg-[#FCF9F5] px-4 py-2 flex items-center gap-2 overflow-x-auto text-xs no-scrollbar">
           <button
-            onClick={() => setActiveTab('packages')}
+            onClick={() => {
+              setActiveTab('packages');
+              const el = document.getElementById('ad-creation-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
             className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
               activeTab === 'packages' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
             }`}
           >
-            Packages & Booking
+            Flight Packages
           </button>
           <button
-            onClick={() => setActiveTab('placements')}
+            onClick={() => {
+              setActiveTab('placements');
+              const el = document.getElementById('ad-creation-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
             className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
               activeTab === 'placements' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
             }`}
@@ -589,20 +608,28 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             Showcase
           </button>
           <button
-            onClick={() => setActiveTab('guide')}
-            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
-              activeTab === 'guide' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
-            }`}
-          >
-            Ads Guide
-          </button>
-          <button
-            onClick={() => setActiveTab('api')}
+            onClick={() => {
+              setActiveTab('api');
+              const el = document.getElementById('ad-creation-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
             className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
               activeTab === 'api' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
             }`}
           >
             REST API
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('guide');
+              const el = document.getElementById('ad-creation-section');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
+              activeTab === 'guide' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
+            }`}
+          >
+            Ads Guide
           </button>
           {activeAdvertiser ? (
             <button
@@ -625,21 +652,90 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         </div>
       </header>
 
-      {/* 2. Hero Section: Editorial & Prestigious Real-Estate Atmosphere */}
-      <section className="relative pt-12 pb-14 px-4 sm:px-6 overflow-hidden border-b border-[#342A21]/10 bg-gradient-to-b from-[#FCF9F5] via-white to-[#FCF9F5]">
+      {/* 2. Hero Section: Marketing Presentation & Direct Action Buttons */}
+      <section className="relative pt-10 sm:pt-14 pb-14 px-4 sm:px-6 overflow-hidden border-b border-[#342A21]/10 bg-gradient-to-b from-[#FCF9F5] via-white to-[#FCF9F5]">
         <div className="max-w-4xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#342A21]/5 border border-[#342A21]/15 text-[#342A21] text-xs font-semibold">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#342A21]/5 border border-[#342A21]/15 text-[#342A21] text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5 text-[#B45309]" />
-            <span>Delta State Premier Property Audience</span>
+            <span>Delta State Premier Property & Renter Audience</span>
           </div>
 
           <h1 className="font-display text-3xl sm:text-5xl md:text-6xl text-[#342A21] font-normal tracking-tight leading-[1.12]">
-            Put your brand in front of <em className="italic font-normal">Delta's active renters & investors.</em>
+            Put your brand in front of <em className="italic font-normal">Delta's active renters & property investors.</em>
           </h1>
 
           <p className="text-sm sm:text-base text-[#70798C] max-w-2xl mx-auto leading-relaxed">
-            Broadcast your business, developments, solar installations, interior decor, or hospitality services directly on Setlla's high-traffic rental feed across Asaba, Warri, and Abraka.
+            The dedicated ads platform for businesses, realtors, solar installers, interior decorators, and corporate platforms. Upload and manage your own campaigns self-serve, or integrate our enterprise REST API to push programmatic ads directly from your platform.
           </p>
+
+          {/* Admin Review Quality Guarantee Notice */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-600/20 text-amber-900 text-xs font-semibold shadow-2xs max-w-xl mx-auto text-left sm:text-center">
+            <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+            <span><strong>Admin Review Guarantee:</strong> Every campaign initiated by customers is reviewed and accepted by Setlla Admins before going live on the Explore Feed.</span>
+          </div>
+
+          {/* Primary Action Buttons for Ads Customers */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            {activeAdvertiser ? (
+              <button
+                onClick={() => setViewMode('advertiser-dashboard')}
+                className="py-3 px-6 rounded-2xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-sm flex items-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99]"
+              >
+                <Building2 className="w-4 h-4 text-amber-400" />
+                <span>Open {activeAdvertiser.companyName} Ads Dashboard</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setAuthModalInitialMode('signup');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="py-3 px-6 rounded-2xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-sm flex items-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99]"
+                >
+                  <Rocket className="w-4 h-4 text-amber-400" />
+                  <span>Create Advertiser Account</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => {
+                    setAuthModalInitialMode('login');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="py-3 px-5 rounded-2xl bg-white hover:bg-[#F6F3EF] text-[#342A21] border border-[#342A21]/20 font-bold text-sm flex items-center gap-2 shadow-subtle cursor-pointer transition-all"
+                >
+                  <KeyRound className="w-4 h-4 text-[#342A21]" />
+                  <span>Sign In to Ads Dashboard</span>
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={() => {
+                setActiveTab('packages');
+                const el = document.getElementById('ad-creation-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="py-3 px-4 rounded-2xl bg-[#342A21]/5 hover:bg-[#342A21]/10 text-[#342A21] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4 text-[#F95700]" />
+              <span>Upload Ad Self-Serve</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab('api');
+                const el = document.getElementById('ad-creation-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="py-3 px-4 rounded-2xl bg-[#342A21]/5 hover:bg-[#342A21]/10 text-[#342A21] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Code2 className="w-4 h-4 text-[#B45309]" />
+              <span>Enterprise API & Docs</span>
+            </button>
+          </div>
 
           {/* Key Value & Audience Metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 max-w-3xl mx-auto text-left">
@@ -667,49 +763,322 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               <span className="text-[11px] text-[#70798C] block mt-0.5">Official blue badge</span>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Advertiser Quick Gateway Access */}
-          <div className="pt-2">
-            <div className="inline-flex flex-wrap items-center justify-center gap-3 px-4 py-2 rounded-2xl bg-white border border-[#342A21]/15 shadow-subtle text-xs">
-              <span className="text-[#70798C]">Existing corporate advertiser or marketing agency?</span>
-              {activeAdvertiser ? (
-                <button
-                  onClick={() => setViewMode('advertiser-dashboard')}
-                  className="font-semibold text-[#342A21] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <span>Open {activeAdvertiser.companyName} Dashboard</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setAuthModalInitialMode('login');
-                      setIsAuthModalOpen(true);
-                    }}
-                    className="font-semibold text-[#342A21] hover:underline cursor-pointer"
-                  >
-                    Sign in to your Ads Dashboard →
-                  </button>
-                  <span className="text-stone-300">·</span>
-                  <button
-                    onClick={() => {
-                      setAuthModalInitialMode('signup');
-                      setIsAuthModalOpen(true);
-                    }}
-                    className="text-[#70798C] hover:text-[#342A21] cursor-pointer"
-                  >
-                    Create Account
-                  </button>
-                </div>
-              )}
+      {/* 3. The Two Core Customer Pathways: Self-Serve vs Enterprise API */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 max-w-6xl mx-auto border-b border-[#342A21]/10">
+        <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
+          <span className="text-xs uppercase tracking-widest font-bold text-[#B45309]">Built For Modern Advertisers</span>
+          <h2 className="font-display text-2xl sm:text-4xl text-[#342A21] font-normal">
+            Two Flexible Ways to Market on Setlla
+          </h2>
+          <p className="text-xs sm:text-sm text-[#70798C] leading-relaxed">
+            Whether you prefer to upload your ads directly through our self-serve studio or programmatically push campaigns via our REST API from your own platform, Setlla gives you complete control.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Pathway A: Self-Serve Upload */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#342A21]/15 shadow-subtle flex flex-col justify-between space-y-6 hover:shadow-card transition-all">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="px-3 py-1 rounded-full bg-[#342A21]/5 text-[#342A21] text-[11px] font-bold uppercase tracking-wider border border-[#342A21]/10">
+                  Option 1: Self-Service Studio
+                </span>
+                <span className="w-8 h-8 rounded-xl bg-amber-50 text-[#B45309] flex items-center justify-center">
+                  <Upload className="w-4 h-4" />
+                </span>
+              </div>
+
+              <h3 className="font-display text-2xl text-[#342A21] font-normal">
+                Upload & Launch Your Own Ads
+              </h3>
+
+              <p className="text-xs sm:text-sm text-[#70798C] leading-relaxed">
+                Ideal for real estate agencies, interior furnishers, solar companies, hospitality venues, and local merchants who want to upload their banners or flyers directly in minutes.
+              </p>
+
+              <ul className="space-y-2.5 text-xs text-[#342A21]/90 pt-2 border-t border-[#E5E7EB]">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                  <span><strong>Zero Technical Skills Needed:</strong> Upload image banners or vertical story videos with one click.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                  <span><strong>Dedicated Customer Dashboard:</strong> Private portal to monitor active flights, impressions, and click rates.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                  <span><strong>1-Click WhatsApp Routing:</strong> High-intent renter leads are sent directly to your phone.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                  <span><strong>Admin Quality Assurance:</strong> Every ad flight is reviewed and approved by Setlla Admins before going live.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="pt-4 border-t border-[#E5E7EB] flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={() => {
+                  if (activeAdvertiser) {
+                    setViewMode('advertiser-dashboard');
+                  } else {
+                    setAuthModalInitialMode('signup');
+                    setIsAuthModalOpen(true);
+                  }
+                }}
+                className="w-full sm:w-auto py-3 px-5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <Rocket className="w-3.5 h-3.5 text-amber-400" />
+                <span>{activeAdvertiser ? 'Open Your Ad Studio' : 'Create Advertiser Account'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('packages');
+                  const el = document.getElementById('ad-creation-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full sm:w-auto py-3 px-4 rounded-xl bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] border border-[#E5E7EB] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>View Flight Packages ↓</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Pathway B: Automated REST API */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#342A21]/15 shadow-subtle flex flex-col justify-between space-y-6 hover:shadow-card transition-all">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="px-3 py-1 rounded-full bg-[#342A21]/5 text-[#342A21] text-[11px] font-bold uppercase tracking-wider border border-[#342A21]/10">
+                  Option 2: Programmatic REST API
+                </span>
+                <span className="w-8 h-8 rounded-xl bg-stone-100 text-[#342A21] flex items-center justify-center">
+                  <Code2 className="w-4 h-4" />
+                </span>
+              </div>
+
+              <h3 className="font-display text-2xl text-[#342A21] font-normal">
+                Enterprise REST API & Ingestion
+              </h3>
+
+              <p className="text-xs sm:text-sm text-[#70798C] leading-relaxed">
+                Tailored for property portals, national brands, proptech apps, and marketing agencies with their own platforms who require automated campaign injection.
+              </p>
+
+              <ul className="space-y-2.5 text-xs text-[#342A21]/90 pt-2 border-t border-[#E5E7EB]">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                  <span><strong>Automated JSON Ingestion:</strong> Push campaigns directly using <code className="bg-[#FCF9F5] px-1 rounded text-[#342A21]">POST /rest/v1/adverts</code>.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                  <span><strong>Secure API Key Authentication:</strong> Generate and manage personal keys (<code className="bg-[#FCF9F5] px-1 rounded text-[#342A21]">X-Setlla-Partner-Key</code>).</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                  <span><strong>Admin Review Queue:</strong> API-pushed campaigns enter the admin verification queue automatically.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-700 font-bold shrink-0">✓</span>
+                  <span><strong>Interactive Sandbox:</strong> Test live payload delivery, curl snippets, and webhook integrations.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="pt-4 border-t border-[#E5E7EB] flex flex-col sm:flex-row items-center gap-3">
+              <button
+                onClick={() => {
+                  setActiveTab('api');
+                  const el = document.getElementById('ad-creation-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full sm:w-auto py-3 px-5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <Code2 className="w-3.5 h-3.5 text-amber-400" />
+                <span>Explore REST API Docs & Sandbox</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab('guide');
+                  const el = document.getElementById('ad-creation-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="w-full sm:w-auto py-3 px-4 rounded-xl bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] border border-[#E5E7EB] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>Read Integration Guide →</span>
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 3. Main Content Container */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      {/* 4. The 4-Step Review & Publishing Lifecycle */}
+      <section className="py-12 sm:py-16 px-4 sm:px-6 max-w-6xl mx-auto border-b border-[#342A21]/10">
+        <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
+          <span className="text-xs uppercase tracking-widest font-bold text-[#B45309]">Admin Review Workflow</span>
+          <h2 className="font-display text-2xl sm:text-4xl text-[#342A21] font-normal">
+            How Setlla Partner Ads Work
+          </h2>
+          <p className="text-xs sm:text-sm text-[#70798C] leading-relaxed">
+            Every sponsored ad passes through Setlla's verification desk to ensure brand safety, accurate pricing, and trust across Delta State.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-2xl p-5 border border-[#342A21]/10 shadow-subtle space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-[#342A21] text-white flex items-center justify-center font-bold text-xs">
+              01
+            </div>
+            <h4 className="font-display text-lg text-[#342A21] font-medium">Initiate Campaign</h4>
+            <p className="text-xs text-[#70798C] leading-relaxed">
+              Upload via your Customer Dashboard or push programmatically using our enterprise REST API with your partner key.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 border border-[#342A21]/10 shadow-subtle space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-[#B45309] text-white flex items-center justify-center font-bold text-xs">
+              02
+            </div>
+            <h4 className="font-display text-lg text-[#342A21] font-medium">Admin Review</h4>
+            <p className="text-xs text-[#70798C] leading-relaxed">
+              Setlla Super Admins inspect the creative, verify contact information, and ensure no fraudulent claims within 1-2 hours.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 border border-[#342A21]/10 shadow-subtle space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold text-xs">
+              03
+            </div>
+            <h4 className="font-display text-lg text-[#342A21] font-medium">Explore Feed Live</h4>
+            <p className="text-xs text-[#70798C] leading-relaxed">
+              Once accepted, your campaign status flips to <strong className="text-emerald-700">Active</strong> and broadcasts to 50,000+ Delta renters.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-2xl p-5 border border-[#342A21]/10 shadow-subtle space-y-3">
+            <div className="w-9 h-9 rounded-xl bg-[#342A21] text-white flex items-center justify-center font-bold text-xs">
+              04
+            </div>
+            <h4 className="font-display text-lg text-[#342A21] font-medium">Leads & Telemetry</h4>
+            <p className="text-xs text-[#70798C] leading-relaxed">
+              Renter inquiries route directly to your WhatsApp, while impressions and clicks update in your Customer Dashboard.
+            </p>
+          </div>
+        </div>
+
+        {/* Customer Dashboard vs Super Admin Notice Callout */}
+        <div className="mt-8 bg-gradient-to-r from-[#342A21] via-[#231C16] to-[#342A21] text-white rounded-3xl p-6 sm:p-8 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-amber-300 text-xs font-semibold">
+              <Shield className="w-3.5 h-3.5" />
+              <span>Customer Ads Management Dashboard</span>
+            </div>
+            <h3 className="font-display text-xl sm:text-2xl text-white font-normal">
+              Dedicated Client Portal for Ads Customers
+            </h3>
+            <p className="text-xs text-stone-300 leading-relaxed">
+              Please note: The <strong>Customer Ads Management Dashboard</strong> is your private portal to manage campaigns, flight schedules, and API credentials. It is completely distinct from the Setlla Super Admin moderation console.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+            {activeAdvertiser ? (
+              <button
+                onClick={() => setViewMode('advertiser-dashboard')}
+                className="w-full sm:w-auto py-3 px-5 rounded-xl bg-white hover:bg-stone-100 text-[#342A21] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+              >
+                <Building2 className="w-4 h-4 text-amber-600" />
+                <span>Open {activeAdvertiser.companyName} Dashboard →</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setAuthModalInitialMode('login');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="w-full sm:w-auto py-3 px-5 rounded-xl bg-white hover:bg-stone-100 text-[#342A21] font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-[#342A21]" />
+                  <span>Sign In to Dashboard</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setAuthModalInitialMode('signup');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="w-full sm:w-auto py-3 px-5 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                >
+                  <Rocket className="w-3.5 h-3.5" />
+                  <span>Create Account</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Main Interactive Workspace (Flight Packages, Placements, API, & Guide) */}
+      <main id="ad-creation-section" className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#342A21]/10 mb-8">
+          <div>
+            <h3 className="font-display text-2xl text-[#342A21] font-normal">
+              Explore Formats, Flight Rates & API Tools
+            </h3>
+            <p className="text-xs text-[#70798C] mt-0.5">
+              Select a section below to configure self-serve packages, inspect placements, or test the REST API.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-[#E5E7EB] self-start sm:self-auto overflow-x-auto max-w-full">
+            <button
+              onClick={() => setActiveTab('packages')}
+              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                activeTab === 'packages'
+                  ? 'bg-[#342A21] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#342A21]'
+              }`}
+            >
+              Flight Packages & Ad Builder
+            </button>
+            <button
+              onClick={() => setActiveTab('placements')}
+              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                activeTab === 'placements'
+                  ? 'bg-[#342A21] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#342A21]'
+              }`}
+            >
+              Showcase
+            </button>
+            <button
+              onClick={() => setActiveTab('api')}
+              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
+                activeTab === 'api'
+                  ? 'bg-[#342A21] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#342A21]'
+              }`}
+            >
+              REST API & Sandbox
+            </button>
+            <button
+              onClick={() => setActiveTab('guide')}
+              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
+                activeTab === 'guide'
+                  ? 'bg-[#342A21] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#342A21]'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Ads Guide</span>
+            </button>
+          </div>
+        </div>
         {/* ========================================================================= */}
         {/* TAB 1: CAMPAIGN PACKAGES & SELF-SERVICE BOOKING FORM                       */}
         {/* ========================================================================= */}

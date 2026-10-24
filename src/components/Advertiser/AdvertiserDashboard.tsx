@@ -22,7 +22,9 @@ import {
   Sparkles,
   MapPin,
   Play,
-  Pause
+  Pause,
+  ShieldCheck,
+  Shield
 } from 'lucide-react';
 import { AdvertiserUser, logoutAdvertiser } from '../../services/advertiserAuthService';
 import { AdvertStory } from '../../data/mockAdverts';
@@ -188,9 +190,14 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
             <div className="flex items-center gap-2.5">
               <img src="/images/setlla-logo.png" alt="Setlla" className="h-5 w-auto object-contain" />
-              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15">
-                Advertiser Console
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-[#342A21] text-[#FCF9F5]">
+                  Customer Ads Dashboard
+                </span>
+                <span className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-900 border border-amber-600/20">
+                  Client Portal · Not Setlla Admin
+                </span>
+              </div>
             </div>
           </div>
 
@@ -316,6 +323,14 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Leads</span>
               <span className="text-lg font-bold text-emerald-700">{totalClicks.toLocaleString()}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Admin Review Quality Notice Banner */}
+        <div className="bg-amber-500/10 border border-amber-600/20 rounded-2xl p-4 flex items-start sm:items-center gap-3 text-amber-950 shadow-2xs">
+          <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0 mt-0.5 sm:mt-0" />
+          <div className="text-xs leading-relaxed">
+            <strong>Admin Review & Approval Policy:</strong> Every ad flight and programmatic API push initiated by customers is reviewed and accepted by Setlla Admins before being displayed live on the explore page.
           </div>
         </div>
 
@@ -462,6 +477,10 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               <p className="text-xs text-[#70798C] mt-1">
                 Your company details are automatically connected to your advertiser account (<strong>{advertiser.companyName}</strong>).
               </p>
+              <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+                <span><strong>Admin Review Step:</strong> Once submitted, your flight is reviewed and approved by Setlla Admin before appearing on the Explore Feed.</span>
+              </div>
             </div>
 
             {submissionSuccess ? (
@@ -595,6 +614,10 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               <p className="text-xs text-[#70798C] mt-1">
                 Your private API key for programmatically creating and updating sponsored campaigns from your server or CMS.
               </p>
+              <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
+                <span><strong>API Verification Queue:</strong> All campaigns injected via this REST API enter the review queue and will be displayed on the Explore Feed once approved by Setlla Admin.</span>
+              </div>
             </div>
 
             <div className="p-5 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] space-y-3">

@@ -10,7 +10,8 @@ import {
   ArrowRight, 
   CheckCircle2, 
   Globe,
-  Briefcase
+  Briefcase,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   loginAdvertiser, 
@@ -122,17 +123,22 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 text-xs font-semibold mb-2">
             <Sparkles className="w-3.5 h-3.5 text-[#B45309]" />
-            <span>Setlla Advertiser Console</span>
+            <span>Customer Ads Portal · Separate from Setlla Admin</span>
           </div>
 
           <h2 className="font-display text-2xl text-[#342A21] font-normal tracking-tight">
-            {mode === 'login' ? 'Advertiser Account Log In' : 'Register Corporate Advertiser Account'}
+            {mode === 'login' ? 'Customer Ads Dashboard Sign In' : 'Register Customer Ads Account'}
           </h2>
           <p className="text-xs text-[#70798C] mt-1 leading-relaxed">
             {mode === 'login'
-              ? 'Access your private ad dashboard, view campaign impressions, lead routing, and manage flights.'
-              : 'Create a dedicated brand partner account to manage sponsored flights and receive direct tenant leads.'}
+              ? 'Access your dedicated advertiser dashboard to book flights, track impressions, leads, and manage API keys.'
+              : 'Create your private advertiser account to launch sponsored flights and connect programmatic campaigns.'}
           </p>
+
+          <div className="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-600/20 text-amber-900 text-[11px] flex items-center gap-2">
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            <span><strong>Admin Review Note:</strong> All campaigns initiated by customers are reviewed and approved by Setlla Admin before appearing on the Explore Feed.</span>
+          </div>
 
           {/* Mode Switcher Tabs */}
           <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#342A21]/10">
