@@ -189,7 +189,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         'Dual Placement: Stories Tray + Desktop Pinned Banner',
         'Verified Partner Blue Checkmark Trust Badge',
         'Priority targeting across Asaba, Warri & Abraka',
-        'Dedicated WhatsApp concierge lead routing',
+        'Direct WhatsApp lead routing',
         'Weekly campaign performance digest',
       ],
     },
@@ -2057,7 +2057,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         )}
       </main>
 
-      {/* 4. Luxury Footer & Partnerships Concierge */}
+      {/* 4. Footer & Partnerships Support */}
       <footer className="mt-20 border-t border-[#342A21]/10 bg-white py-12 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center sm:text-left">
@@ -2086,7 +2086,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               className="hover:text-[#342A21] flex items-center gap-1 transition-colors"
             >
               <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-              <span>WhatsApp Concierge</span>
+              <span>WhatsApp Support</span>
             </a>
             <span>·</span>
             <button

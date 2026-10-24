@@ -2046,7 +2046,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 </h3>
               </div>
               <p className="text-xs text-[#70798C] mt-1">
-                Oversee campaigns across 3 ingestion models: Direct Admin Concierge, Self-Service Partner Portal, and Programmatic REST API.
+                Oversee campaigns across 3 ingestion models: Direct Admin Upload, Self-Service Partner Portal, and Programmatic REST API.
               </p>
             </div>
 

@@ -236,7 +236,7 @@ export async function loginAdvertiser(email: string, _password?: string): Promis
   }
 
   if (user.accountStatus === 'suspended') {
-    throw new Error('This advertiser account has been suspended by Setlla Risk Operations. Please contact ad concierge.');
+    throw new Error('This advertiser account has been suspended by Setlla Risk Operations. Please contact ad support.');
   }
 
   user.lastLoginAt = new Date().toISOString();

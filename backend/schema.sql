@@ -252,7 +252,7 @@ end $$;
 -- =========================================================================
 -- 11. Advertising & Sponsored Campaigns Infrastructure
 -- Supports 3 ingestion methods:
---   1. Admin Direct Concierge (Super Admin entry)
+--   1. Admin Direct Upload (Super Admin entry)
 --   2. Self-Service Partner Portal (Web submissions with pending approval)
 --   3. Programmatic Push API / Webhook (Ingestion via partner API key)
 -- =========================================================================

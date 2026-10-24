@@ -268,7 +268,7 @@ print("Campaign Data:", response.json())`;
                   </div>
                   <div className="flex items-center gap-1.5 font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Dedicated VIP Account Concierge</span>
+                    <span>Dedicated VIP Account Manager</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -446,7 +446,7 @@ print("Campaign Data:", response.json())`;
                   <span>Need Immediate Priority Activation?</span>
                 </div>
                 <p className="text-xs text-emerald-900 leading-relaxed">
-                  Message our WhatsApp Ad Concierge with your tracking reference for expedited same-hour clearance.
+                  Message our WhatsApp Ad Support with your tracking reference for expedited same-hour clearance.
                 </p>
               </div>
               <a
@@ -455,7 +455,7 @@ print("Campaign Data:", response.json())`;
                 rel="noopener noreferrer"
                 className="py-2 px-3.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 shadow-xs cursor-pointer no-underline"
               >
-                <span>WhatsApp Concierge</span>
+                <span>WhatsApp Support</span>
                 <ExternalLink className="w-3 h-3 text-emerald-200" />
               </a>
             </div>
@@ -902,7 +902,7 @@ print("Campaign Data:", response.json())`;
           {/* 4. Fixed Footer */}
           <div className="px-4 sm:px-6 py-3 border-t border-[#E5E7EB] bg-[#FCF9F5] flex items-center justify-between gap-3 shrink-0">
             <span className="text-[11px] text-[#70798C] hidden sm:inline">
-              Need technical or campaign assistance? Our WhatsApp Ad Concierge is on standby.
+              Need technical or campaign assistance? Our WhatsApp Ad Support is on standby.
             </span>
             <div className="flex items-center gap-2 ml-auto">
               <a
@@ -912,7 +912,7 @@ print("Campaign Data:", response.json())`;
                 className="py-1.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer no-underline shrink-0"
               >
                 <MessageSquare className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Ad Concierge</span>
+                <span>Ad Support</span>
               </a>
               {onClose && (
                 <button

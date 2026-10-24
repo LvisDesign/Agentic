@@ -80,7 +80,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
       badge: '90 Days VIP',
       features: [
         'Permanent Top Feed Placement',
-        'Dedicated WhatsApp Concierge Routing',
+        'Direct WhatsApp Lead Routing',
         'Network-Wide Feed Broadcast',
         'Custom CTA + Direct Listing Integration',
       ],
@@ -228,7 +228,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                 className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all"
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>Chat Ad Concierge on WhatsApp</span>
+                <span>Chat Ad Support on WhatsApp</span>
               </a>
 
               <button
