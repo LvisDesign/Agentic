@@ -2053,10 +2053,32 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
             <div className="flex items-center gap-2 flex-wrap">
               <a
-                href={`${typeof window !== 'undefined' ? window.location.origin + window.location.pathname : ''}#/partner`}
+                href={`${typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?view=partner#/partner` : '#/partner'}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="py-2.5 px-3.5 rounded-xl border border-[#342A21]/20 bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer no-underline select-none"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  try {
+                    const targetUrl = new URL(window.location.href);
+                    targetUrl.searchParams.set('view', 'partner');
+                    targetUrl.hash = '#/partner';
+                    const win = window.open(targetUrl.toString(), '_blank');
+                    if (!win) {
+                      const a = document.createElement('a');
+                      a.href = targetUrl.toString();
+                      a.target = '_blank';
+                      a.rel = 'noopener noreferrer';
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                    }
+                  } catch (_) {
+                    const fallbackUrl = `${window.location.origin}${window.location.pathname}?view=partner#/partner`;
+                    window.open(fallbackUrl, '_blank');
+                  }
+                }}
+                className="py-2.5 px-3.5 rounded-xl border border-[#342A21]/20 bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer no-underline select-none active:scale-95"
                 title="Open live standalone Setlla Partner & Brand Advertising page in a new tab"
               >
                 <Globe className="w-4 h-4 text-emerald-700" />

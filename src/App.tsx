@@ -165,13 +165,23 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     return { role: isUserAdmin ? 'admin' : isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
   }
 
-  const hash = window.location.hash.toLowerCase();
-  const pathname = (window.location.pathname || '').toLowerCase();
+  const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
+  const pathname = typeof window !== 'undefined' ? (window.location.pathname || '').toLowerCase() : '';
+  const search = typeof window !== 'undefined' ? (window.location.search || '').toLowerCase() : '';
   const savedRole = (localStorage.getItem('setlla_active_role') || localStorage.getItem('deltarent_active_role')) as UserRole | null;
   const savedView = (localStorage.getItem('setlla_active_view') || localStorage.getItem('deltarent_active_view')) as ('dashboard' | 'feed' | 'partner') | null;
 
-  // 1. Explicit Routing (e.g. #/partner, #/advertise, #/advertiser, #/admin, #/agent, #/dashboard, #/explore, #/inspections)
-  if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser') || pathname.includes('/partner') || pathname.includes('/advertise') || pathname.includes('/advertiser')) {
+  // 1. Explicit Routing (e.g. #/partner, ?view=partner, #/admin, #/agent, #/dashboard, #/explore, #/inspections)
+  if (
+    hash.includes('partner') || 
+    hash.includes('advertise') || 
+    hash.includes('advertiser') || 
+    pathname.includes('/partner') || 
+    pathname.includes('/advertise') || 
+    pathname.includes('/advertiser') ||
+    search.includes('partner') ||
+    search.includes('advertise')
+  ) {
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
   if (hash.includes('admin')) {
@@ -580,10 +590,13 @@ export function App() {
   // For first-time visitors, open signup modal on arrival if they haven't skipped yet (NEVER on admin or partner pages)
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(() => {
     const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
+    const search = typeof window !== 'undefined' ? (window.location.search || '').toLowerCase() : '';
     if (
       hash.includes('admin') || 
       hash.includes('partner') || 
       hash.includes('advertise') || 
+      search.includes('partner') || 
+      search.includes('advertise') || 
       initialNav.role === 'admin' || 
       initialNav.view === 'partner' || 
       isSuperAdminAuthenticated()
@@ -1843,6 +1856,10 @@ export function App() {
                 window.location.hash = '#/explore';
               }}
               onBackToAdmin={isAdminAuthenticated ? () => {
+                if (typeof window !== 'undefined' && window.opener && !window.opener.closed) {
+                  window.close();
+                  return;
+                }
                 setCurrentRole('admin');
                 window.location.hash = '#/admin';
               } : undefined}
