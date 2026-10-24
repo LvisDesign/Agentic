@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowLeft,
   Sparkles, 
   CheckCircle2, 
   ShieldCheck, 
@@ -435,29 +434,16 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       {/* 1. Brand Top Navigation Bar (Partner & Customer Focused) */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#342A21]/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBackToExplore || handleReturn}
-              className="py-1.5 px-3 -ml-2 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
-              title="Return to property feed"
-            >
-              <ArrowLeft className="w-4 h-4 text-[#342A21]" />
-              <span>Explore Feed</span>
-            </button>
-
-            <div className="h-5 w-px bg-[#E5E7EB] hidden sm:block" />
-
-            <div className="flex items-center gap-2.5">
-              <img 
-                src="/images/setlla-logo.png" 
-                alt="Setlla" 
-                className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer" 
-                onClick={handleReturn}
-              />
-              <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15">
-                Partner Ads Network
-              </span>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <img 
+              src="/images/setlla-logo.png" 
+              alt="Setlla" 
+              className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer" 
+              onClick={handleReturn}
+            />
+            <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15">
+              Partner Ads Network
+            </span>
           </div>
 
           {/* Navigation Items */}
@@ -556,27 +542,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   <span>Register</span>
                 </button>
               </div>
-            )}
-
-            <a
-              href="https://wa.me/2348000000000?text=Hello%20Setlla%20Team%2C%20I%20am%20interested%20in%20becoming%20an%20advertising%20partner%20on%20Setlla."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden lg:flex px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-semibold items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Ad Concierge</span>
-            </a>
-
-            {/* Subtle Super Admin link for previewing staff */}
-            {onBackToAdmin && (
-              <button
-                onClick={onBackToAdmin}
-                className="text-[11px] text-[#70798C] hover:text-amber-900 hover:underline cursor-pointer hidden xl:inline-block pl-1"
-                title="Return to Super Admin Console"
-              >
-                Admin Console ↗
-              </button>
             )}
           </div>
         </div>
