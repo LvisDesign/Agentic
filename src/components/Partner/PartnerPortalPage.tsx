@@ -470,21 +470,21 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] font-body selection:bg-[#342A21]/10 selection:text-[#342A21]">
       {/* 1. Brand Top Navigation Bar (Partner & Customer Focused) */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#342A21]/10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-18 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
             <img 
               src="/images/setlla-logo.png" 
               alt="Setlla" 
-              className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer" 
+              className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer shrink-0" 
               onClick={handleReturn}
             />
-            <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15">
-              Partner Ads Network
+            <span className="hidden sm:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 whitespace-nowrap">
+              Partner Ads
             </span>
           </div>
 
           {/* Navigation Items */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <nav className="hidden md:flex items-center gap-1 p-1 bg-[#FCF9F5] rounded-xl border border-[#E5E7EB]">
               <button
                 onClick={() => {
@@ -549,33 +549,33 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             {activeAdvertiser ? (
               <button
                 onClick={() => setViewMode('advertiser-dashboard')}
-                className="px-3.5 py-2 rounded-xl bg-[#342A21] text-[#FCF9F5] hover:bg-[#231C16] text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+                className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-[#342A21] text-[#FCF9F5] hover:bg-[#231C16] text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
                 title="Go to your Customer Ads Dashboard"
               >
-                <Building2 className="w-3.5 h-3.5 text-amber-400" />
-                <span className="max-w-[110px] sm:max-w-[150px] truncate">{activeAdvertiser.companyName} Dashboard</span>
-                <ChevronRight className="w-3 h-3 text-stone-300" />
+                <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="max-w-[100px] sm:max-w-[150px] truncate">{activeAdvertiser.companyName}</span>
+                <ChevronRight className="w-3 h-3 text-stone-300 shrink-0" />
               </button>
             ) : (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   onClick={() => {
                     setAuthModalInitialMode('login');
                     setIsAuthModalOpen(true);
                   }}
-                  className="px-3 py-2 rounded-xl bg-white hover:bg-[#F6F3EF] text-[#342A21] border border-[#342A21]/20 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                  className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white hover:bg-[#F6F3EF] text-[#342A21] border border-[#342A21]/20 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
                 >
-                  <KeyRound className="w-3.5 h-3.5 text-[#342A21]" />
-                  <span>Sign In</span>
+                  <KeyRound className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
+                  <span className="whitespace-nowrap">Sign In</span>
                 </button>
                 <button
                   onClick={() => {
                     setAuthModalInitialMode('signup');
                     setIsAuthModalOpen(true);
                   }}
-                  className="px-3.5 py-2 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                  className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer whitespace-nowrap shrink-0"
                 >
-                  <span>Register</span>
+                  <span className="whitespace-nowrap">Register</span>
                 </button>
               </div>
             )}
@@ -583,15 +583,15 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         </div>
 
         {/* Mobile Sub-Navigation Bar */}
-        <div className="md:hidden border-t border-[#342A21]/5 bg-[#FCF9F5] px-4 py-2 flex items-center gap-2 overflow-x-auto text-xs no-scrollbar">
+        <div className="md:hidden border-t border-[#342A21]/5 bg-[#FCF9F5] px-3 py-2 flex items-center gap-1.5 overflow-x-auto text-xs no-scrollbar scroll-smooth">
           <button
             onClick={() => {
               setActiveTab('packages');
               const el = document.getElementById('ad-creation-section');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
-              activeTab === 'packages' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
+            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${
+              activeTab === 'packages' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
             }`}
           >
             Ad Packages
@@ -602,8 +602,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               const el = document.getElementById('ad-creation-section');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
-              activeTab === 'placements' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
+            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${
+              activeTab === 'placements' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
             }`}
           >
             Showcase
@@ -614,8 +614,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               const el = document.getElementById('ad-creation-section');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
-              activeTab === 'api' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
+            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${
+              activeTab === 'api' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
             }`}
           >
             REST API
@@ -626,30 +626,12 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               const el = document.getElementById('ad-creation-section');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className={`py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 ${
-              activeTab === 'guide' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
+            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${
+              activeTab === 'guide' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
             }`}
           >
             Ads Guide
           </button>
-          {activeAdvertiser ? (
-            <button
-              onClick={() => setViewMode('advertiser-dashboard')}
-              className="py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 bg-[#342A21] text-white"
-            >
-              My Dashboard
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                setAuthModalInitialMode('login');
-                setIsAuthModalOpen(true);
-              }}
-              className="py-1 px-2.5 rounded-lg font-medium transition-colors shrink-0 bg-white text-[#342A21] border border-[#342A21]/20"
-            >
-              Sign In
-            </button>
-          )}
         </div>
       </header>
 

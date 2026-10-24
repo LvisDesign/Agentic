@@ -193,10 +193,10 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto font-body">
       <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-card border border-[#342A21]/15 overflow-hidden my-auto animate-scale-up">
         {/* Modal Top Header: Warm Ivory & Serif Typography */}
-        <div className="relative bg-[#FCF9F5] p-6 sm:p-8 border-b border-[#342A21]/10">
+        <div className="relative bg-[#FCF9F5] p-4 sm:p-8 border-b border-[#342A21]/10">
           <div className="flex items-center justify-between">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 text-xs font-semibold">
-              <span>Setlla Partner & Advertiser Desk</span>
+            <div className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 text-xs font-semibold whitespace-nowrap">
+              <span>Setlla Partner Desk</span>
             </div>
 
             <button
@@ -283,7 +283,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="p-6 sm:p-8 space-y-6 max-h-[65vh] overflow-y-auto">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-5 sm:space-y-6 max-h-[70vh] sm:max-h-[65vh] overflow-y-auto">
             {/* Step 1: Package Selection */}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block mb-3">
@@ -615,17 +615,17 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
             )}
 
             {/* Bottom Actions */}
-            <div className="pt-5 border-t border-[#E5E7EB] flex items-center justify-between gap-3">
+            <div className="pt-5 border-t border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-[10px] text-[#70798C] uppercase tracking-wider block">Total Campaign Fee:</span>
                 <span className="text-lg font-bold text-[#342A21]">{currentTier.price}</span>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 self-end sm:self-auto">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#70798C] hover:text-[#342A21] cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#70798C] hover:text-[#342A21] cursor-pointer whitespace-nowrap"
                 >
                   Cancel
                 </button>
@@ -633,14 +633,14 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  className="px-4 sm:px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
                 >
                   {isSubmitting ? (
                     <span>Submitting Campaign...</span>
                   ) : (
                     <>
                       <span>Submit for Review</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-amber-300" />
+                      <ArrowRight className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                     </>
                   )}
                 </button>

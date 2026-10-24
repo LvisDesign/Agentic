@@ -111,7 +111,7 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto font-body">
       <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-card border border-[#342A21]/15 overflow-hidden my-auto animate-scale-up">
         {/* Header Bar */}
-        <div className="bg-[#FCF9F5] p-6 sm:p-7 border-b border-[#342A21]/10 relative">
+        <div className="bg-[#FCF9F5] p-5 sm:p-7 border-b border-[#342A21]/10 relative">
           <button
             onClick={onClose}
             className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white hover:bg-[#F6F3EF] border border-[#E5E7EB] text-[#70798C] hover:text-[#342A21] flex items-center justify-center transition-colors cursor-pointer"
@@ -161,7 +161,7 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
         </div>
 
         {/* Body Form */}
-        <form onSubmit={handleSubmit} className="p-6 sm:p-7 space-y-4 max-h-[65vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-7 space-y-4 max-h-[70vh] sm:max-h-[65vh] overflow-y-auto">
           {errorMsg && (
             <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
               {errorMsg}
@@ -315,12 +315,12 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
           </div>
 
           {/* Quick Demo Credentials */}
-          <div className="pt-3 border-t border-[#E5E7EB] flex items-center justify-between text-xs text-[#70798C]">
+          <div className="pt-3 border-t border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-[#70798C]">
             <span>Testing with registered brand?</span>
             <button
               type="button"
               onClick={handleQuickSeedLogin}
-              className="text-[#342A21] font-semibold hover:underline cursor-pointer"
+              className="text-[#342A21] font-semibold hover:underline cursor-pointer text-left sm:text-right"
             >
               Demo: Asaba Solar Ltd
             </button>
