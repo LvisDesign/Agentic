@@ -2191,7 +2191,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
             <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-xs">
               <span className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider block mb-1">
-                Active Live Campaigns
+                Active Campaigns
               </span>
               <span className="text-xl sm:text-2xl font-black text-[#000004]">
                 {localAdverts.filter((a) => (a.status || 'active') === 'active').length}

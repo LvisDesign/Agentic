@@ -190,7 +190,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
             <div className="flex items-center gap-2.5">
               <img src="/images/setlla-logo.png" alt="Setlla" className="h-5 w-auto object-contain" />
-              <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-[#342A21] text-[#FCF9F5]">
+              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-md bg-[#342A21] text-[#FCF9F5]">
                 Customer Ads Dashboard
               </span>
             </div>
@@ -287,12 +287,16 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
         {/* Top Banner Overview */}
         <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#342A21]/15 shadow-subtle flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <span className="font-display text-2xl text-[#342A21] font-normal">
                 {advertiser.companyName}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-semibold border border-emerald-200">
-                Verified Advertiser
+              <span 
+                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80 text-xs font-medium"
+                title="Verified Partner Account"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 fill-[#2081E2] text-white shrink-0" />
+                <span className="text-[11px] font-semibold text-slate-700">Verified Partner</span>
               </span>
             </div>
             <p className="text-xs text-[#70798C] mt-1">
@@ -403,18 +407,18 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                             </span>
 
                             {ad.status === 'pending_review' ? (
-                              <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200 flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-amber-600" />
-                                <span>Pending Review</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 text-[10px] font-semibold border border-amber-200/80">
+                                <Clock className="w-3 h-3 text-amber-700 shrink-0" />
+                                <span>In Review</span>
                               </span>
                             ) : ad.status === 'expired' ? (
-                              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">
-                                Expired
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 text-[10px] font-semibold border border-stone-200">
+                                Ended
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-                                <span>Active Live</span>
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-900 text-[10px] font-semibold border border-emerald-200/80">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0" />
+                                <span>Active</span>
                               </span>
                             )}
                           </div>

@@ -12,7 +12,7 @@ interface DesktopAdvertSidebarProps {
 const VerifiedBadge: React.FC = () => (
   <span 
     className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#2081E2] text-white shrink-0 ml-1 shadow-xs" 
-    title="Verified Advertiser"
+    title="Verified Partner"
   >
     <svg 
       className="w-2 h-2" 
