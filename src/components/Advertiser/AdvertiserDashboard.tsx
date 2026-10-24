@@ -190,14 +190,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
             <div className="flex items-center gap-2.5">
               <img src="/images/setlla-logo.png" alt="Setlla" className="h-5 w-auto object-contain" />
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-[#342A21] text-[#FCF9F5]">
-                  Customer Ads Dashboard
-                </span>
-                <span className="hidden sm:inline-block text-[10px] uppercase font-semibold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-900 border border-amber-600/20">
-                  Client Portal · Not Setlla Admin
-                </span>
-              </div>
+              <span className="text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full bg-[#342A21] text-[#FCF9F5]">
+                Customer Ads Dashboard
+              </span>
             </div>
           </div>
 

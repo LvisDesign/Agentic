@@ -120,7 +120,7 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
           </button>
 
           <div className="inline-flex items-center px-3 py-1 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 text-xs font-semibold mb-2">
-            <span>Customer Ads Portal · Separate from Setlla Admin</span>
+            <span>Customer Ads Portal</span>
           </div>
 
           <h2 className="font-display text-2xl text-[#342A21] font-normal tracking-tight">
