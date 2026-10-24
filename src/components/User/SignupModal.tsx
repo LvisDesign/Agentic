@@ -514,8 +514,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
-  const isTenantOptionalOpen = showOptionalTenantFields || Boolean(seekerEmail) || seekerState !== 'Delta State';
-  const isAgentOptionalOpen = showOptionalAgentFields || Boolean(agentEmail) || Boolean(agentCac) || agentState !== 'Delta State';
+  const isTenantOptionalOpen = showOptionalTenantFields || Boolean(seekerEmail);
+  const isAgentOptionalOpen = showOptionalAgentFields || Boolean(agentEmail) || Boolean(agentCac);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/65 backdrop-blur-sm overflow-y-auto animate-fade-in">
@@ -935,98 +935,91 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Preferred City in Delta State */}
+                    {/* State & Preferred City (Both Compulsory - NEVER Hidden) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                      <div>
+                        <StateDropdown
+                          value={seekerState}
+                          onChange={(val) => {
+                            setSeekerState(val);
+                            if (val !== 'Delta State' && seekerCity === 'Asaba') {
+                              setSeekerCity('');
+                            }
+                          }}
+                          label="Choose State"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-[#70798C]">
+                            {seekerState === 'Delta State' ? 'Preferred City' : 'Preferred City / Town'} <span className="text-[#F0544F]">*</span>
+                          </label>
+                          {seekerCity && (
+                            <span className="text-[10px] text-[#342A21] font-semibold bg-[#342A21]/5 px-1.5 py-0.5 rounded">
+                              {seekerCity}
+                            </span>
+                          )}
+                        </div>
+                        {seekerState === 'Delta State' ? (
+                          <CustomDropdown
+                            options={DELTA_CITY_OPTIONS}
+                            value={seekerCity}
+                            onChange={(c) => setSeekerCity(c)}
+                            headerTitle="Delta State Cities & Towns"
+                            placeholder="Select City (e.g. Asaba, Warri, Ughelli)"
+                            icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                            variant="form"
+                            allowCustomInput={true}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            required
+                            placeholder={`e.g. City in ${seekerState}`}
+                            value={seekerCity}
+                            onChange={(e) => setSeekerCity(e.target.value)}
+                            className="w-full px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Email Address (Optional) */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs font-semibold text-[#70798C]">
-                          Preferred City in Delta State <span className="text-[#F0544F]">*</span>
+                          Email Address
                         </label>
-                        {seekerCity && (
-                          <span className="text-[10px] text-[#342A21] font-semibold bg-[#342A21]/5 px-1.5 py-0.5 rounded">
-                            {seekerCity}, Delta
-                          </span>
-                        )}
+                        <span className="text-[10px] text-[#70798C] font-normal">(Optional)</span>
                       </div>
-                      <CustomDropdown
-                        options={DELTA_CITY_OPTIONS}
-                        value={seekerCity}
-                        onChange={(c) => setSeekerCity(c)}
-                        headerTitle="Delta State Cities & Towns"
-                        placeholder="Select City (e.g. Asaba, Warri, Ughelli)"
-                        icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
-                        variant="form"
-                        allowCustomInput={true}
-                      />
-                    </div>
-
-                    {/* Optional Email & State Expandable */}
-                    <div className="pt-0.5">
-                      {!isTenantOptionalOpen ? (
-                        <button
-                          type="button"
-                          onClick={() => setShowOptionalTenantFields(true)}
-                          className="text-xs font-semibold text-[#F95700] hover:text-[#E65100] inline-flex items-center gap-1 cursor-pointer py-1"
-                        >
-                          <ChevronDown className="w-3.5 h-3.5" />
-                          <span>Add Email & State (Optional)</span>
-                        </button>
-                      ) : (
-                        <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] animate-fade-in">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-[#000004]">Additional Details (Optional)</span>
-                            <button
-                              type="button"
-                              onClick={() => setShowOptionalTenantFields(false)}
-                              className="text-[11px] text-[#70798C] hover:text-[#000004] inline-flex items-center gap-0.5 cursor-pointer"
-                            >
-                              <ChevronUp className="w-3 h-3" />
-                              <span>Hide</span>
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
-                            <div>
-                              <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                                Email Address
-                              </label>
-                              <div className="relative">
-                                <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                                  duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                    ? 'text-[#F0544F]'
-                                    : 'text-[#70798C]'
-                                }`} />
-                                <input
-                                  type="email"
-                                  placeholder="name@email.com"
-                                  value={seekerEmail}
-                                  onChange={(e) => {
-                                    setSeekerEmail(e.target.value);
-                                    if (duplicateError) setDuplicateError(null);
-                                  }}
-                                  className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                                    duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                      ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20'
-                                      : 'border-[#E5E7EB]'
-                                  }`}
-                                />
-                              </div>
-                              {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                                <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                  <span>Email already registered.</span>
-                                </p>
-                              )}
-                            </div>
-
-                            <div>
-                              <StateDropdown
-                                value={seekerState}
-                                onChange={(val) => setSeekerState(val)}
-                                label="Choose State"
-                                required
-                              />
-                            </div>
-                          </div>
-                        </div>
+                      <div className="relative">
+                        <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                          duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                            ? 'text-[#F0544F]'
+                            : 'text-[#70798C]'
+                        }`} />
+                        <input
+                          type="email"
+                          placeholder="name@email.com"
+                          value={seekerEmail}
+                          onChange={(e) => {
+                            setSeekerEmail(e.target.value);
+                            if (duplicateError) setDuplicateError(null);
+                          }}
+                          className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                              ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                              : 'border-[#E5E7EB]'
+                          }`}
+                        />
+                      </div>
+                      {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                        <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Email already registered.</span>
+                        </p>
                       )}
                     </div>
 
@@ -1219,74 +1212,91 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       )}
                     </div>
 
-                    {/* Operating City */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-[#70798C]">
-                          Operating City in Delta State <span className="text-[#F0544F]">*</span>
-                        </label>
-                        {agentCitySelection && agentCitySelection !== 'Others' && (
-                          <span className="text-[10px] text-[#70798C] font-semibold">
-                            {agentCitySelection}, Delta
-                          </span>
-                        )}
+                    {/* Operating State & City (Both Compulsory - NEVER Hidden) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                      <div>
+                        <StateDropdown
+                          value={agentState}
+                          onChange={(val) => {
+                            setAgentState(val);
+                            if (val !== 'Delta State') {
+                              setAgentCitySelection('');
+                              setAgentCity('');
+                            }
+                          }}
+                          label="Operating State"
+                          required
+                        />
                       </div>
-                      {agentState === 'Delta State' ? (
-                        <div className="space-y-1.5">
-                          <CustomDropdown
-                            options={[
-                              ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
-                              {
-                                value: 'Others',
-                                label: 'Others (Enter City Manually)',
-                                subtitle: 'If your town or community is not listed above',
-                                badge: 'Manual Entry',
-                              },
-                            ]}
-                            value={agentCitySelection}
-                            onChange={(val) => {
-                              setAgentCitySelection(val);
-                              if (val !== 'Others') {
-                                setAgentCity(val);
-                              } else {
-                                setAgentCity(customAgentCity || '');
-                              }
-                            }}
-                            headerTitle="Delta State Cities & Towns"
-                            placeholder="Select Operating City (e.g. Asaba, Warri)"
-                            icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
-                            variant="form"
-                            allowCustomInput={true}
-                          />
-                          {agentCitySelection === 'Others' && (
-                            <div className="animate-fade-in">
-                              <input
-                                type="text"
-                                required
-                                placeholder="Enter town or community name"
-                                value={customAgentCity}
-                                onChange={(e) => {
-                                  setCustomAgentCity(e.target.value);
-                                  setAgentCity(e.target.value);
-                                }}
-                                className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F95700]/5 focus:bg-white"
-                              />
-                            </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-[#70798C]">
+                            {agentState === 'Delta State' ? 'Operating City' : 'Operating City / Town'} <span className="text-[#F0544F]">*</span>
+                          </label>
+                          {agentCitySelection && agentCitySelection !== 'Others' && (
+                            <span className="text-[10px] text-[#70798C] font-semibold">
+                              {agentCitySelection}
+                            </span>
                           )}
                         </div>
-                      ) : (
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Ikeja, Benin City, Port Harcourt"
-                          value={agentCity}
-                          onChange={(e) => setAgentCity(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white"
-                        />
-                      )}
+                        {agentState === 'Delta State' ? (
+                          <div className="space-y-1.5">
+                            <CustomDropdown
+                              options={[
+                                ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
+                                {
+                                  value: 'Others',
+                                  label: 'Others (Enter City Manually)',
+                                  subtitle: 'If your town or community is not listed above',
+                                  badge: 'Manual Entry',
+                                },
+                              ]}
+                              value={agentCitySelection}
+                              onChange={(val) => {
+                                setAgentCitySelection(val);
+                                if (val !== 'Others') {
+                                  setAgentCity(val);
+                                } else {
+                                  setAgentCity(customAgentCity || '');
+                                }
+                              }}
+                              headerTitle="Delta State Cities & Towns"
+                              placeholder="Select Operating City (e.g. Asaba, Warri)"
+                              icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                              variant="form"
+                              allowCustomInput={true}
+                            />
+                            {agentCitySelection === 'Others' && (
+                              <div className="animate-fade-in">
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="Enter town or community name"
+                                  value={customAgentCity}
+                                  onChange={(e) => {
+                                    setCustomAgentCity(e.target.value);
+                                    setAgentCity(e.target.value);
+                                  }}
+                                  className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F95700]/5 focus:bg-white"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            required
+                            placeholder={`e.g. City in ${agentState}`}
+                            value={agentCity}
+                            onChange={(e) => setAgentCity(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white"
+                          />
+                        )}
+                      </div>
                     </div>
 
-                    {/* Optional CAC, Email & State Section */}
+                    {/* Optional CAC & Email Section (Only Truly Optional Details) */}
                     <div className="pt-0.5">
                       {!isAgentOptionalOpen ? (
                         <button
@@ -1364,14 +1374,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 </p>
                               )}
                             </div>
-                          </div>
-                          <div>
-                            <StateDropdown
-                              value={agentState}
-                              onChange={(val) => setAgentState(val)}
-                              label="Operating State"
-                              required
-                            />
                           </div>
                         </div>
                       )}
