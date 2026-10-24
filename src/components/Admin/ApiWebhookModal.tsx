@@ -10,8 +10,7 @@ import {
   Trash2, 
   Zap, 
   CheckCircle2, 
-  AlertCircle,
-  ExternalLink
+  AlertCircle
 } from 'lucide-react';
 import { 
   getPartnerApiKeys, 
@@ -230,24 +229,12 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
               <span>Programmatic Push API & Webhook Ingestion</span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleOpenPage}
-                className="text-xs font-semibold text-[#342A21] hover:underline flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-white transition-colors cursor-pointer"
-                title="Open dedicated partner page"
-              >
-                <span>Open Full Page</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white hover:bg-[#F6F3EF] border border-[#E5E7EB] text-[#70798C] hover:text-[#342A21] flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-white hover:bg-[#F6F3EF] border border-[#E5E7EB] text-[#70798C] hover:text-[#342A21] flex items-center justify-center transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           <h2 className="font-display text-2xl sm:text-3xl text-[#342A21] font-normal tracking-tight mt-3">
