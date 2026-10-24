@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Sparkles, 
   CheckCircle2, 
   MessageSquare,
   Globe, 
@@ -24,8 +23,7 @@ import {
   KeyRound,
   BookOpen,
   ArrowRight,
-  Upload,
-  Shield
+  Upload
 } from 'lucide-react';
 import { 
   submitPartnerAdvert, 
@@ -617,8 +615,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       {/* 2. Hero Section: Marketing Presentation & Direct Action Buttons */}
       <section className="relative pt-10 sm:pt-14 pb-14 px-4 sm:px-6 overflow-hidden border-b border-[#342A21]/10 bg-gradient-to-b from-[#FCF9F5] via-white to-[#FCF9F5]">
         <div className="max-w-4xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#342A21]/5 border border-[#342A21]/15 text-[#342A21] text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5 text-[#B45309]" />
+          <div className="inline-flex items-center px-3.5 py-1 rounded-full bg-[#342A21]/5 border border-[#342A21]/15 text-[#342A21] text-xs font-semibold">
             <span>Premier Property & Renter Audience</span>
           </div>
 
@@ -927,8 +924,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         {/* Customer Dashboard vs Super Admin Notice Callout */}
         <div className="mt-8 bg-gradient-to-r from-[#342A21] via-[#231C16] to-[#342A21] text-white rounded-3xl p-6 sm:p-8 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-amber-300 text-xs font-semibold">
-              <Shield className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 text-amber-300 text-xs font-semibold">
               <span>Customer Ads Management Dashboard</span>
             </div>
             <h3 className="font-display text-xl sm:text-2xl text-white font-normal">

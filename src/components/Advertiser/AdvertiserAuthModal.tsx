@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   X, 
-  Sparkles, 
   Building2, 
   Mail, 
   Phone, 
@@ -120,8 +119,7 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
             <X className="w-4 h-4" />
           </button>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 text-xs font-semibold mb-2">
-            <Sparkles className="w-3.5 h-3.5 text-[#B45309]" />
+          <div className="inline-flex items-center px-3 py-1 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 text-xs font-semibold mb-2">
             <span>Customer Ads Portal · Separate from Setlla Admin</span>
           </div>
 
