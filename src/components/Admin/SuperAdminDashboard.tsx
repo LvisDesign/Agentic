@@ -2062,13 +2062,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                   e.preventDefault();
                   e.stopPropagation();
                   try {
-                    const targetUrl = new URL(window.location.href);
-                    targetUrl.searchParams.set('view', 'partner');
-                    targetUrl.hash = '#/partner';
-                    const win = window.open(targetUrl.toString(), '_blank');
+                    const cleanOrigin = window.location.origin;
+                    const cleanPath = window.location.pathname || '/';
+                    const targetUrl = `${cleanOrigin}${cleanPath}?view=partner#/partner`;
+                    const win = window.open(targetUrl, '_blank');
                     if (!win) {
                       const a = document.createElement('a');
-                      a.href = targetUrl.toString();
+                      a.href = targetUrl;
                       a.target = '_blank';
                       a.rel = 'noopener noreferrer';
                       document.body.appendChild(a);

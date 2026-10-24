@@ -448,12 +448,12 @@ export function App() {
       localStorage.setItem('setlla_active_view', userView);
     } catch (_) {}
 
-    const targetHash = currentRole === 'admin'
+    const targetHash = userView === 'partner'
+      ? '#/partner'
+      : currentRole === 'admin'
       ? '#/admin'
       : currentRole === 'agent'
       ? '#/agent'
-      : userView === 'partner'
-      ? '#/partner'
       : userView === 'dashboard'
       ? '#/dashboard'
       : '#/explore';
@@ -468,10 +468,10 @@ export function App() {
     const handleHashChange = () => {
       const hash = window.location.hash.toLowerCase();
       if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser')) {
-        setCurrentRole('tenant');
         setUserView('partner');
       } else if (hash.includes('admin')) {
         setCurrentRole('admin');
+        setUserView('feed');
       } else if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
         setCurrentRole('agent');
       } else if (hash.includes('dashboard')) {
@@ -1626,8 +1626,32 @@ export function App() {
           savedListingIds: [],
           createdAt: new Date().toISOString(),
         };
-        handleAdminAuthSuccess(adminProfile);
-        window.location.hash = '#/admin';
+
+        const currentHash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
+        const currentSearch = typeof window !== 'undefined' ? window.location.search.toLowerCase() : '';
+        const currentPath = typeof window !== 'undefined' ? (window.location.pathname || '').toLowerCase() : '';
+        const isPartnerTarget = 
+          currentHash.includes('partner') || 
+          currentHash.includes('advertise') || 
+          currentSearch.includes('partner') || 
+          currentSearch.includes('advertise') || 
+          currentPath.includes('/partner') || 
+          userView === 'partner';
+
+        setIsAdminAuthenticated(true);
+        setActiveAdminUser(adminProfile);
+        setCurrentUser(adminProfile);
+
+        if (isPartnerTarget) {
+          setUserView('partner');
+          return;
+        }
+
+        const isExplicitAdminTarget = currentHash.includes('admin') || currentHash.includes('access_token') || currentSearch.includes('admin');
+        if (isExplicitAdminTarget || (!currentHash.includes('explore') && !currentHash.includes('agent') && !currentHash.includes('dashboard'))) {
+          setCurrentRole('admin');
+          window.location.hash = '#/admin';
+        }
       }
     };
 
@@ -1801,7 +1825,27 @@ export function App() {
       )}
 
       {/* 2. Main Content Area */}
-      {currentRole === 'admin' ? (
+      {userView === 'partner' ? (
+        /* Setlla Partner & Brand Advertising Dedicated Standalone Page */
+        <main className="flex-1 w-full min-h-screen">
+          <PartnerPortalPage
+            onBackToExplore={() => {
+              setUserView('feed');
+              window.location.hash = '#/explore';
+            }}
+            onBackToAdmin={isAdminAuthenticated ? () => {
+              if (typeof window !== 'undefined' && window.opener && !window.opener.closed) {
+                window.close();
+                return;
+              }
+              setCurrentRole('admin');
+              setUserView('feed');
+              window.location.hash = '#/admin';
+            } : undefined}
+            onAdSubmitted={handleAddAdvert}
+          />
+        </main>
+      ) : currentRole === 'admin' ? (
         /* Super Admin Control Center or Admin Authentication Portal */
         isAdminAuthenticated ? (
           <main className="flex-1 w-full">
@@ -1828,7 +1872,6 @@ export function App() {
                 setUserView('dashboard');
               }}
               onSwitchToPartner={() => {
-                setCurrentRole('tenant');
                 setUserView('partner');
                 window.location.hash = '#/partner';
               }}
@@ -1847,26 +1890,7 @@ export function App() {
           </main>
         )
       ) : (currentRole === 'tenant' || currentRole === 'seeker') ? (
-        userView === 'partner' ? (
-          /* Setlla Partner & Brand Advertising Dedicated Standalone Page */
-          <main className="flex-1 w-full min-h-screen">
-            <PartnerPortalPage
-              onBackToExplore={() => {
-                setUserView('feed');
-                window.location.hash = '#/explore';
-              }}
-              onBackToAdmin={isAdminAuthenticated ? () => {
-                if (typeof window !== 'undefined' && window.opener && !window.opener.closed) {
-                  window.close();
-                  return;
-                }
-                setCurrentRole('admin');
-                window.location.hash = '#/admin';
-              } : undefined}
-              onAdSubmitted={handleAddAdvert}
-            />
-          </main>
-        ) : userView === 'dashboard' && isAuthenticated ? (
+        userView === 'dashboard' && isAuthenticated ? (
           currentUser.isAgent ? (
             /* If the user is an agent, their dashboard is the Agent Dashboard */
             <main className="flex-1 w-full">
