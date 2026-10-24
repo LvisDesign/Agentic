@@ -1,15 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, 
   CheckCircle2, 
-  Clock,
+  Clock, 
   ArrowRight, 
-  Check
+  Check,
+  Upload,
+  Plus,
+  ImageIcon,
+  Film,
+  AlertCircle,
+  Globe
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { submitPartnerAdvert, PartnerSubmissionPayload } from '../../services/adService';
 import { AdvertStory } from '../../data/mockAdverts';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
+import { processUploadedFile } from '../../utils/mediaStorage';
 
 interface PartnerAdSubmissionModalProps {
   isOpen: boolean;
@@ -34,11 +41,52 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('All Regions (Network-Wide)');
   const [price, setPrice] = useState('');
-  const [mediaUrl, setMediaUrl] = useState('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80');
+  const [mediaUrl, setMediaUrl] = useState('');
   const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
   const [actionType, setActionType] = useState<'website' | 'contact' | 'property'>('website');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [ctaText, setCtaText] = useState('Visit Website');
+
+  const [mediaSourceMode, setMediaSourceMode] = useState<'upload' | 'url'>('upload');
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      setFormError('The selected file exceeds the 50MB limit.');
+      return;
+    }
+
+    setIsUploadingMedia(true);
+    setFormError(null);
+    try {
+      const processed = await processUploadedFile(file, 0);
+      setMediaUrl(processed.url);
+      setMediaType(processed.type);
+      setUploadedFileName(file.name);
+    } catch (err) {
+      console.error('Failed to process creative asset:', err);
+      setFormError('Failed to upload file. Please verify format and try again.');
+    } finally {
+      setIsUploadingMedia(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleMediaPreset = (url: string, type: 'image' | 'video' = 'image') => {
+    setMediaUrl(url);
+    setMediaType(type);
+    setUploadedFileName(null);
+  };
+
+  const handleClearMedia = () => {
+    setMediaUrl('');
+    setUploadedFileName(null);
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<{ trackingRef: string; advert: AdvertStory } | null>(null);
@@ -88,11 +136,6 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
   ];
 
   const currentTier = TIERS.find((t) => t.id === packageTier) || TIERS[1];
-
-  const handleMediaPreset = (url: string, type: 'image' | 'video' = 'image') => {
-    setMediaUrl(url);
-    setMediaType(type);
-  };
 
   const handleOpenPage = () => {
     onClose();
@@ -392,44 +435,142 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                 />
               </div>
 
-              {/* Media URL & Presets */}
-              <div>
-                <label className="text-xs font-medium text-[#342A21] block mb-1">
-                  Creative Image / Video Media URL *
-                </label>
+              {/* Media Upload & Presets */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-[#342A21] block">
+                    Creative Image / Video Media *
+                  </label>
+                  <div className="inline-flex rounded-lg border border-[#E5E7EB] bg-[#FCF9F5] p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setMediaSourceMode('upload')}
+                      className={`px-2.5 py-0.5 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 cursor-pointer ${
+                        mediaSourceMode === 'upload'
+                          ? 'bg-white text-[#342A21] shadow-2xs font-semibold'
+                          : 'text-[#70798C] hover:text-[#342A21]'
+                      }`}
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>Upload</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMediaSourceMode('url')}
+                      className={`px-2.5 py-0.5 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 cursor-pointer ${
+                        mediaSourceMode === 'url'
+                          ? 'bg-white text-[#342A21] shadow-2xs font-semibold'
+                          : 'text-[#70798C] hover:text-[#342A21]'
+                      }`}
+                    >
+                      <Globe className="w-3 h-3" />
+                      <span>URL</span>
+                    </button>
+                  </div>
+                </div>
+
                 <input
-                  type="url"
-                  required
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  placeholder="https://... image or video URL (9:16 or 16:9)"
-                  className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] font-mono focus:outline-none focus:border-[#342A21]"
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
                 />
 
-                <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                  <span className="text-[10px] text-[#70798C]">Sample Presets:</span>
-                  <button
-                    type="button"
-                    onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80')}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                  >
-                    Penthouse
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1080&q=80')}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                  >
-                    Estate Villa
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1080&q=80')}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                  >
-                    Solar Power
-                  </button>
-                </div>
+                {mediaSourceMode === 'upload' ? (
+                  <div className="space-y-2.5">
+                    <div
+                      onClick={() => !isUploadingMedia && fileInputRef.current?.click()}
+                      className={`p-5 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center ${
+                        isUploadingMedia
+                          ? 'bg-amber-50/60 border-amber-300 cursor-wait'
+                          : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] border-[#E5E7EB] hover:border-[#342A21]/40'
+                      }`}
+                    >
+                      {isUploadingMedia ? (
+                        <div className="py-3 space-y-2">
+                          <div className="w-6 h-6 border-2 border-[#342A21] border-t-transparent rounded-full animate-spin mx-auto" />
+                          <p className="text-xs font-semibold text-[#342A21]">Uploading media asset...</p>
+                        </div>
+                      ) : (
+                        <div className="py-1 space-y-1.5">
+                          <Upload className="w-6 h-6 text-[#342A21] mx-auto" />
+                          <p className="text-xs font-bold text-[#342A21]">Click to upload photo or video from device</p>
+                          <p className="text-[10px] text-[#70798C]">JPG, PNG, WEBP or MP4 (up to 50MB · 9:16 or 16:9)</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {mediaUrl && (
+                      <div className="p-3 rounded-xl bg-white border border-[#E5E7EB] flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-lg overflow-hidden bg-black shrink-0 relative flex items-center justify-center">
+                          {mediaType === 'video' ? (
+                            <video src={mediaUrl} className="w-full h-full object-cover" muted playsInline />
+                          ) : (
+                            <img src={mediaUrl} alt="Preview" className="w-full h-full object-cover" />
+                          )}
+                          <span className="absolute bottom-0.5 right-0.5 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
+                            {mediaType === 'video' ? 'VIDEO' : 'IMAGE'}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-xs font-bold text-[#342A21] block truncate">
+                            {uploadedFileName || 'Uploaded Creative Asset'}
+                          </span>
+                          <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium inline-block mt-0.5">
+                            ✓ Ready
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-2.5 py-1 rounded-lg border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-medium text-[#342A21] cursor-pointer"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="url"
+                      required
+                      value={mediaUrl}
+                      onChange={(e) => {
+                        setMediaUrl(e.target.value);
+                        setUploadedFileName(null);
+                      }}
+                      placeholder="https://... image or video URL (9:16 or 16:9)"
+                      className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] font-mono focus:outline-none focus:border-[#342A21]"
+                    />
+
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] text-[#70798C]">Sample Presets:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80')}
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
+                      >
+                        Penthouse
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1080&q=80')}
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
+                      >
+                        Estate Villa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1080&q=80')}
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
+                      >
+                        Solar Power
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Action Type & CTA */}
