@@ -57,6 +57,7 @@ import { AdvertStory } from '../../data/mockAdverts';
 import { ApiWebhookModal } from './ApiWebhookModal';
 import { PartnerAdSubmissionModal } from '../Adverts/PartnerAdSubmissionModal';
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
+import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { 
   approvePartnerAdvert, 
   rejectPartnerAdvert, 
@@ -1781,15 +1782,16 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
                           {/* Status */}
                           <td className="py-3.5 px-3">
-                            <select
+                            <AdminCustomSelect
                               value={listing.availabilityStatus || 'Available'}
-                              onChange={(e) => onUpdateListingAvailability(listing.id, e.target.value as ListingAvailability)}
-                              className="text-[11px] font-bold py-1 px-2 rounded-lg border border-[#E5E7EB] bg-white text-[#000004] focus:outline-none cursor-pointer"
-                            >
-                              <option value="Available">Available</option>
-                              <option value="Under Inspection">Under Inspection</option>
-                              <option value="Rented Out">Rented Out</option>
-                            </select>
+                              onChange={(val) => onUpdateListingAvailability(listing.id, val as ListingAvailability)}
+                              options={[
+                                { value: 'Available', label: 'Available', dotColor: '#10B981' },
+                                { value: 'Under Inspection', label: 'Under Inspection', dotColor: '#F59E0B' },
+                                { value: 'Rented Out', label: 'Rented Out', dotColor: '#EF4444' },
+                              ]}
+                              variant="table"
+                            />
                             {isFlagged && (
                               <p className="text-[10px] text-amber-700 font-semibold mt-1 flex items-center gap-1">
                                 <AlertTriangle className="w-2.5 h-2.5" />
@@ -2258,26 +2260,28 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <select
+              <AdminCustomSelect
                 value={advertsStatusFilter}
-                onChange={(e) => setAdvertsStatusFilter(e.target.value as any)}
-                className="py-1.5 px-3 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold text-[#000004] focus:outline-none cursor-pointer"
-              >
-                <option value="all">All Campaign Statuses</option>
-                <option value="active">Live Active Only</option>
-                <option value="pending_review">Pending Review</option>
-                <option value="expired">Expired Campaigns</option>
-              </select>
+                onChange={(val) => setAdvertsStatusFilter(val as any)}
+                options={[
+                  { value: 'all', label: 'All Campaign Statuses' },
+                  { value: 'active', label: 'Live Active Only', dotColor: '#10B981' },
+                  { value: 'pending_review', label: 'Pending Review', dotColor: '#F59E0B' },
+                  { value: 'expired', label: 'Expired Campaigns', dotColor: '#9CA3AF' },
+                ]}
+                variant="filter"
+              />
 
-              <select
+              <AdminCustomSelect
                 value={advertsVerifiedFilter}
-                onChange={(e) => setAdvertsVerifiedFilter(e.target.value as any)}
-                className="py-1.5 px-3 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold text-[#000004] focus:outline-none cursor-pointer"
-              >
-                <option value="all">All Verification</option>
-                <option value="verified">Verified Only</option>
-                <option value="unverified">Unverified Only</option>
-              </select>
+                onChange={(val) => setAdvertsVerifiedFilter(val as any)}
+                options={[
+                  { value: 'all', label: 'All Verification' },
+                  { value: 'verified', label: 'Verified Only', dotColor: '#2081E2' },
+                  { value: 'unverified', label: 'Unverified Only', dotColor: '#9CA3AF' },
+                ]}
+                variant="filter"
+              />
             </div>
           </div>
 
@@ -3014,19 +3018,20 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
               <div>
                 <label className="font-bold text-[#000004] block mb-1">Target Property Listing</label>
-                <select
+                <AdminCustomSelect
                   value={directPassSelectedListingId}
-                  onChange={(e) => setDirectPassSelectedListingId(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold text-[#000004] focus:outline-none"
-                  required
-                >
-                  <option value="">Select a property listing...</option>
-                  {listings.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.title} ({l.city}) - ₦{(l.fees.baseRent / 1000000).toFixed(1)}M/yr
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setDirectPassSelectedListingId(val)}
+                  options={[
+                    { value: '', label: 'Select a property listing...' },
+                    ...listings.map((l) => ({
+                      value: l.id,
+                      label: `${l.title} (${l.city}) - ₦${(l.fees.baseRent / 1000000).toFixed(1)}M/yr`,
+                    })),
+                  ]}
+                  placeholder="Select a property listing..."
+                  searchable={true}
+                  variant="form"
+                />
               </div>
 
               <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-1">
@@ -3196,16 +3201,17 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="font-bold text-[#000004] block mb-1">Category</label>
-                  <select
+                  <AdminCustomSelect
                     value={advertForm.category || 'Property'}
-                    onChange={(e) => setAdvertForm({ ...advertForm, category: e.target.value as any })}
-                    className="w-full p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-semibold focus:outline-none cursor-pointer"
-                  >
-                    <option value="Property">Property</option>
-                    <option value="Estate">Estate</option>
-                    <option value="Promo">Promo</option>
-                    <option value="Service">Service</option>
-                  </select>
+                    onChange={(val) => setAdvertForm({ ...advertForm, category: val as any })}
+                    options={[
+                      { value: 'Property', label: 'Property' },
+                      { value: 'Estate', label: 'Estate' },
+                      { value: 'Promo', label: 'Promo' },
+                      { value: 'Service', label: 'Service' },
+                    ]}
+                    variant="form"
+                  />
                 </div>
 
                 <div>

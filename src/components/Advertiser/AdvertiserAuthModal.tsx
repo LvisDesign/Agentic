@@ -18,6 +18,7 @@ import {
   AdvertiserUser,
   AdvertiserSignupPayload 
 } from '../../services/advertiserAuthService';
+import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 
 interface AdvertiserAuthModalProps {
   isOpen: boolean;
@@ -203,32 +204,34 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-[#342A21] block mb-1">Industry Sector</label>
-                  <select
+                  <AdminCustomSelect
                     value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
-                  >
-                    <option value="Real Estate & Properties">Real Estate & Properties</option>
-                    <option value="Clean Energy & Solar Power">Solar & Energy Solutions</option>
-                    <option value="Interior Decor & Furnishing">Interior Decor & Furnishing</option>
-                    <option value="Hospitality & Shortlets">Hospitality & Shortlets</option>
-                    <option value="Logistics & Moving">Logistics & Moving</option>
-                    <option value="Corporate Services">Corporate Brand</option>
-                  </select>
+                    onChange={(val) => setIndustry(val)}
+                    options={[
+                      { value: 'Real Estate & Properties', label: 'Real Estate & Properties' },
+                      { value: 'Clean Energy & Solar Power', label: 'Solar & Energy Solutions' },
+                      { value: 'Interior Decor & Furnishing', label: 'Interior Decor & Furnishing' },
+                      { value: 'Hospitality & Shortlets', label: 'Hospitality & Shortlets' },
+                      { value: 'Logistics & Moving', label: 'Logistics & Moving' },
+                      { value: 'Corporate Services', label: 'Corporate Brand' },
+                    ]}
+                    variant="form"
+                  />
                 </div>
 
                 <div>
                   <label className="text-xs font-medium text-[#342A21] block mb-1">Primary Operating City</label>
-                  <select
+                  <AdminCustomSelect
                     value={operatingCity}
-                    onChange={(e) => setOperatingCity(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
-                  >
-                    <option value="Asaba">Asaba</option>
-                    <option value="Warri">Warri</option>
-                    <option value="Abraka">Abraka</option>
-                    <option value="All Delta State">Delta Wide</option>
-                  </select>
+                    onChange={(val) => setOperatingCity(val)}
+                    options={[
+                      { value: 'Asaba', label: 'Asaba' },
+                      { value: 'Warri', label: 'Warri' },
+                      { value: 'Abraka', label: 'Abraka' },
+                      { value: 'All Delta State', label: 'Delta Wide' },
+                    ]}
+                    variant="form"
+                  />
                 </div>
               </div>
             </>

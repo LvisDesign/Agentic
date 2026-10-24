@@ -24,6 +24,7 @@ import {
 } from '../../services/adService';
 import { AdvertStory } from '../../data/mockAdverts';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
+import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 
 interface ApiWebhookModalProps {
   isOpen: boolean;
@@ -582,17 +583,16 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
                   <label className="text-xs font-medium text-[#342A21] block mb-1">
                     Select Test Partner API Key
                   </label>
-                  <select
+                  <AdminCustomSelect
                     value={simSelectedKey}
-                    onChange={(e) => setSimSelectedKey(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-mono text-[#000004] focus:outline-none"
-                  >
-                    {keys.map((k) => (
-                      <option key={k.id} value={k.apiKey}>
-                        {k.companyName} ({k.apiKey.slice(0, 16)}...)
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSimSelectedKey(val)}
+                    options={keys.map((k) => ({
+                      value: k.apiKey,
+                      label: `${k.companyName} (${k.apiKey.slice(0, 16)}...)`,
+                    }))}
+                    placeholder="Select API Key..."
+                    variant="form"
+                  />
                 </div>
 
                 <div>
@@ -617,16 +617,17 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
 
                 <div>
                   <label className="text-xs font-medium text-[#342A21] block mb-1">Category</label>
-                  <select
+                  <AdminCustomSelect
                     value={simCategory}
-                    onChange={(e) => setSimCategory(e.target.value as any)}
-                    className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004]"
-                  >
-                    <option value="Service">Service</option>
-                    <option value="Property">Property</option>
-                    <option value="Estate">Estate</option>
-                    <option value="Promo">Promo</option>
-                  </select>
+                    onChange={(val) => setSimCategory(val as any)}
+                    options={[
+                      { value: 'Service', label: 'Service' },
+                      { value: 'Property', label: 'Property' },
+                      { value: 'Estate', label: 'Estate' },
+                      { value: 'Promo', label: 'Promo' },
+                    ]}
+                    variant="form"
+                  />
                 </div>
 
                 <div className="sm:col-span-2">

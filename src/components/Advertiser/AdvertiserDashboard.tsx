@@ -33,6 +33,7 @@ import {
   togglePartnerApiKey 
 } from '../../services/adService';
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
+import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 
 interface AdvertiserDashboardProps {
   advertiser: AdvertiserUser;
@@ -524,16 +525,17 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
                   <div>
                     <label className="text-xs font-medium text-[#342A21] block mb-1">Category</label>
-                    <select
+                    <AdminCustomSelect
                       value={category}
-                      onChange={(e) => setCategory(e.target.value as any)}
-                      className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
-                    >
-                      <option value="Promo">Promo & Brand Campaign</option>
-                      <option value="Property">Property Rental</option>
-                      <option value="Estate">Estate Development</option>
-                      <option value="Service">Service (Solar, Interior, Moving)</option>
-                    </select>
+                      onChange={(val) => setCategory(val as any)}
+                      options={[
+                        { value: 'Promo', label: 'Promo & Brand Campaign' },
+                        { value: 'Property', label: 'Property Rental' },
+                        { value: 'Estate', label: 'Estate Development' },
+                        { value: 'Service', label: 'Service (Solar, Interior, Moving)' },
+                      ]}
+                      variant="form"
+                    />
                   </div>
 
                   <div className="sm:col-span-2">

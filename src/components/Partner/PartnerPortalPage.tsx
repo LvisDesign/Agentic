@@ -39,6 +39,7 @@ import {
 } from '../../services/adService';
 import { AdvertStory } from '../../data/mockAdverts';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
+import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { AdvertiserUser, getActiveAdvertiser, logoutAdvertiser } from '../../services/advertiserAuthService';
 import { AdvertiserAuthModal } from '../Advertiser/AdvertiserAuthModal';
 import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
@@ -972,16 +973,17 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                         <label className="text-xs font-medium text-[#342A21] block mb-1.5">
                           Business / Campaign Category
                         </label>
-                        <select
+                        <AdminCustomSelect
                           value={category}
-                          onChange={(e) => setCategory(e.target.value as any)}
-                          className="w-full px-4 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21] focus:ring-1 focus:ring-[#342A21]"
-                        >
-                          <option value="Promo">Brand Campaign & Special Offers</option>
-                          <option value="Property">Direct Property Rental</option>
-                          <option value="Estate">Estate Development & Plots</option>
-                          <option value="Service">Home Services (Solar, Interiors, Logistics)</option>
-                        </select>
+                          onChange={(val) => setCategory(val as any)}
+                          options={[
+                            { value: 'Promo', label: 'Brand Campaign & Special Offers' },
+                            { value: 'Property', label: 'Direct Property Rental' },
+                            { value: 'Estate', label: 'Estate Development & Plots' },
+                            { value: 'Service', label: 'Home Services (Solar, Interiors, Logistics)' },
+                          ]}
+                          variant="form"
+                        />
                       </div>
                     </div>
 
@@ -1046,19 +1048,20 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
                       <div>
                         <label className="text-xs font-medium text-[#342A21] block mb-1.5">Lead Destination</label>
-                        <select
+                        <AdminCustomSelect
                           value={actionType}
-                          onChange={(e) => {
-                            const val = e.target.value as any;
-                            setActionType(val);
-                            if (val === 'website') setCtaText('Visit Website');
+                          onChange={(val) => {
+                            const v = val as any;
+                            setActionType(v);
+                            if (v === 'website') setCtaText('Visit Website');
                             else setCtaText('Chat on WhatsApp');
                           }}
-                          className="w-full px-4 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
-                        >
-                          <option value="website">Send to Website</option>
-                          <option value="contact">1-Click WhatsApp Chat</option>
-                        </select>
+                          options={[
+                            { value: 'website', label: 'Send to Website' },
+                            { value: 'contact', label: '1-Click WhatsApp Chat' },
+                          ]}
+                          variant="form"
+                        />
                       </div>
 
                       {actionType === 'website' ? (
@@ -1634,17 +1637,16 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   <label className="text-xs font-medium text-[#342A21] block mb-1.5">
                     Select Test API Key
                   </label>
-                  <select
+                  <AdminCustomSelect
                     value={simSelectedKey}
-                    onChange={(e) => setSimSelectedKey(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-mono text-[#000004] focus:outline-none"
-                  >
-                    {keys.map((k) => (
-                      <option key={k.id} value={k.apiKey}>
-                        {k.companyName} ({k.apiKey.slice(0, 16)}...)
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSimSelectedKey(val)}
+                    options={keys.map((k) => ({
+                      value: k.apiKey,
+                      label: `${k.companyName} (${k.apiKey.slice(0, 16)}...)`,
+                    }))}
+                    placeholder="Select API Key..."
+                    variant="form"
+                  />
                 </div>
 
                 <div>
@@ -1669,16 +1671,17 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
                 <div>
                   <label className="text-xs font-medium text-[#342A21] block mb-1.5">Category</label>
-                  <select
+                  <AdminCustomSelect
                     value={simCategory}
-                    onChange={(e) => setSimCategory(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004]"
-                  >
-                    <option value="Service">Service</option>
-                    <option value="Property">Property</option>
-                    <option value="Estate">Estate</option>
-                    <option value="Promo">Promo</option>
-                  </select>
+                    onChange={(val) => setSimCategory(val as any)}
+                    options={[
+                      { value: 'Service', label: 'Service' },
+                      { value: 'Property', label: 'Property' },
+                      { value: 'Estate', label: 'Estate' },
+                      { value: 'Promo', label: 'Promo' },
+                    ]}
+                    variant="form"
+                  />
                 </div>
 
                 <div className="sm:col-span-2">

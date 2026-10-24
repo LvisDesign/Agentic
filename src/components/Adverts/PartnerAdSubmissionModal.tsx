@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { submitPartnerAdvert, PartnerSubmissionPayload } from '../../services/adService';
 import { AdvertStory } from '../../data/mockAdverts';
+import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 
 interface PartnerAdSubmissionModalProps {
   isOpen: boolean;
@@ -381,16 +382,17 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
 
                 <div>
                   <label className="text-xs font-medium text-[#342A21] block mb-1">Category</label>
-                  <select
+                  <AdminCustomSelect
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
-                  >
-                    <option value="Property">Property Rental</option>
-                    <option value="Estate">Estate & Real Estate</option>
-                    <option value="Promo">Promo & Brand Campaign</option>
-                    <option value="Service">Service (Solar, Interior, Moving)</option>
-                  </select>
+                    onChange={(val) => setCategory(val as any)}
+                    options={[
+                      { value: 'Property', label: 'Property Rental' },
+                      { value: 'Estate', label: 'Estate & Real Estate' },
+                      { value: 'Promo', label: 'Promo & Brand Campaign' },
+                      { value: 'Service', label: 'Service (Solar, Interior, Moving)' },
+                    ]}
+                    variant="form"
+                  />
                 </div>
               </div>
 
@@ -449,19 +451,19 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 <div>
                   <label className="text-xs font-medium text-[#342A21] block mb-1">Target Action</label>
-                  <select
+                  <AdminCustomSelect
                     value={actionType}
-                    onChange={(e) => {
-                      const val = e.target.value as any;
-                      setActionType(val);
+                    onChange={(val) => {
+                      setActionType(val as any);
                       if (val === 'website') setCtaText('Visit Website');
                       else setCtaText('Contact on WhatsApp');
                     }}
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none"
-                  >
-                    <option value="website">Send to Website</option>
-                    <option value="contact">Direct WhatsApp Chat</option>
-                  </select>
+                    options={[
+                      { value: 'website', label: 'Send to Website' },
+                      { value: 'contact', label: 'Direct WhatsApp Chat' },
+                    ]}
+                    variant="form"
+                  />
                 </div>
 
                 {actionType === 'website' && (
