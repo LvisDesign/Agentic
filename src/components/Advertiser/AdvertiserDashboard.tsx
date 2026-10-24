@@ -23,7 +23,13 @@ import {
   Play,
   Pause,
   ShieldCheck,
-  Shield
+  Shield,
+  Phone,
+  Globe,
+  Tag,
+  ImageIcon,
+  Film,
+  AlertCircle
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertiserUser, logoutAdvertiser } from '../../services/advertiserAuthService';
@@ -65,10 +71,18 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   const [actionType, setActionType] = useState<'website' | 'contact' | 'property'>('website');
   const [websiteUrl, setWebsiteUrl] = useState(advertiser.websiteUrl || '');
   const [ctaText, setCtaText] = useState('Visit Website');
-  const [location, setLocation] = useState('Network Wide');
+  const [location, setLocation] = useState(advertiser.operatingCity || 'Nationwide');
   const [price, setPrice] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState(advertiser.whatsapp || advertiser.phone || '');
+  const [phone, setPhone] = useState(advertiser.phone || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const handleMediaPreset = (url: string, type: 'image' | 'video' = 'image') => {
+    setMediaUrl(url);
+    setMediaType(type);
+  };
 
   useEffect(() => {
     loadCampaigns();
@@ -118,24 +132,41 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
   const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!headline || !mediaUrl) return;
+    setFormError(null);
+
+    if (!headline.trim()) {
+      setFormError('Please enter a campaign headline.');
+      return;
+    }
+    if (!mediaUrl.trim()) {
+      setFormError('Please provide a creative media URL.');
+      return;
+    }
+    if (actionType === 'website' && !websiteUrl.trim()) {
+      setFormError('Please provide a destination website URL for your campaign.');
+      return;
+    }
+    if (actionType === 'contact' && !whatsappNumber.trim()) {
+      setFormError('Please provide a WhatsApp business number to receive leads.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const payload: PartnerSubmissionPayload = {
         companyName: advertiser.companyName,
-        headline,
-        description,
+        headline: headline.trim(),
+        description: description.trim(),
         category,
-        mediaUrl,
+        mediaUrl: mediaUrl.trim(),
         mediaType,
-        ctaText,
+        ctaText: ctaText.trim() || (actionType === 'website' ? 'Visit Website' : 'Chat on WhatsApp'),
         actionType,
-        websiteUrl: actionType === 'website' ? websiteUrl : undefined,
-        whatsappNumber: advertiser.whatsapp || advertiser.phone,
-        phone: advertiser.phone,
-        location,
-        price: price || undefined,
+        websiteUrl: actionType === 'website' ? websiteUrl.trim() : undefined,
+        whatsappNumber: whatsappNumber.trim() || advertiser.whatsapp || advertiser.phone || undefined,
+        phone: phone.trim() || advertiser.phone || undefined,
+        location: location.trim() || advertiser.operatingCity || 'Nationwide',
+        price: price.trim() || undefined,
         partnerEmail: advertiser.email,
         packageTier,
         durationDays: currentTier.durationDays,
@@ -151,8 +182,10 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       // Reset form
       setHeadline('');
       setDescription('');
+      setPrice('');
     } catch (e) {
       console.error('Failed to submit ad:', e);
+      setFormError('Could not submit campaign. Please check your network connection and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -493,11 +526,14 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               </div>
             ) : (
               <form onSubmit={handleCreateCampaign} className="space-y-6">
-                {/* Duration & Package Selection */}
+                {/* 1. Duration & Package Selection */}
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block mb-2">
-                    1. Select Campaign Duration
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C]">
+                      1. Select Campaign Duration & Package
+                    </label>
+                    <span className="text-[11px] text-[#70798C]">Setlla Verified Placement</span>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {TIERS.map((tier) => (
                       <div
@@ -505,11 +541,14 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                         onClick={() => setPackageTier(tier.id)}
                         className={`p-4 rounded-2xl border transition-all cursor-pointer ${
                           packageTier === tier.id
-                            ? 'border-[#342A21] bg-[#FCF9F5] ring-2 ring-[#342A21]/15'
+                            ? 'border-[#342A21] bg-[#FCF9F5] ring-2 ring-[#342A21]/15 shadow-subtle'
                             : 'border-[#E5E7EB] hover:border-[#342A21]/30 bg-white'
                         }`}
                       >
-                        <span className="text-xs font-semibold text-[#342A21] block">{tier.name}</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-[#342A21] block">{tier.name}</span>
+                          {packageTier === tier.id && <Check className="w-4 h-4 text-emerald-700" />}
+                        </div>
                         <span className="text-lg font-bold text-[#342A21] mt-0.5 block">{tier.price}</span>
                         <span className="text-[11px] text-[#70798C]">{tier.durationDays} Days Duration</span>
                       </div>
@@ -517,53 +556,149 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Campaign Copy */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                  <div>
-                    <label className="text-xs font-medium text-[#342A21] block mb-1">
-                      Campaign Headline * (Max 60 chars)
+                {/* 2. Campaign Details & Targeting */}
+                <div className="pt-4 border-t border-[#E5E7EB] space-y-4">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block">
+                    2. Campaign Details & Targeting
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-[#342A21] block mb-1">
+                        Campaign Headline * (Max 60 chars)
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        maxLength={65}
+                        value={headline}
+                        onChange={(e) => setHeadline(e.target.value)}
+                        placeholder="e.g. 24/7 Solar Backup Power for Modern Homes"
+                        className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-[#342A21] block mb-1">Business / Campaign Category</label>
+                      <AdminCustomSelect
+                        value={category}
+                        onChange={(val) => setCategory(val as any)}
+                        options={[
+                          { value: 'Promo', label: 'Promo & Brand Campaign' },
+                          { value: 'Property', label: 'Property Rental' },
+                          { value: 'Estate', label: 'Estate Development' },
+                          { value: 'Service', label: 'Service (Solar, Interior, Moving)' },
+                        ]}
+                        variant="form"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-[#342A21] block mb-1">
+                        Target Location / City
+                      </label>
+                      <div className="relative">
+                        <MapPin className="w-3.5 h-3.5 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          placeholder="e.g. Network Wide, Asaba, Warri, Lagos"
+                          className="w-full pl-9 pr-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        <span className="text-[10px] text-[#70798C]">Quick Fill:</span>
+                        {['Network Wide', 'Asaba', 'Warri', 'Lagos', 'Abuja', 'Port Harcourt'].map((loc) => (
+                          <button
+                            key={loc}
+                            type="button"
+                            onClick={() => setLocation(loc)}
+                            className={`text-[10px] px-2 py-0.5 rounded-lg border transition-colors cursor-pointer ${
+                              location === loc
+                                ? 'bg-[#342A21] text-white border-[#342A21]'
+                                : 'bg-[#FCF9F5] border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21]'
+                            }`}
+                          >
+                            {loc}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-[#342A21] block mb-1">
+                        Offer Price or Discount Tag <span className="text-[#70798C] font-normal">(Optional)</span>
+                      </label>
+                      <div className="relative">
+                        <Tag className="w-3.5 h-3.5 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={price}
+                          onChange={(e) => setPrice(e.target.value)}
+                          placeholder="e.g. From ₦45,000 or 20% Off"
+                          className="w-full pl-9 pr-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
+                        />
+                      </div>
+                      <span className="text-[10px] text-[#70798C] block mt-1">
+                        Displayed as a spotlight badge or pricing highlight on the explore feed.
+                      </span>
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-medium text-[#342A21] block mb-1">Offer Description & Value Proposition</label>
+                      <textarea
+                        rows={2}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Detail your special offer, pricing advantages, or why renters should choose your company..."
+                        className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21] leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Creative Media Asset */}
+                <div className="pt-4 border-t border-[#E5E7EB] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C]">
+                      3. Creative Media Asset *
                     </label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={65}
-                      value={headline}
-                      onChange={(e) => setHeadline(e.target.value)}
-                      placeholder="e.g. 24/7 Solar Backup Power for Modern Homes"
-                      className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
-                    />
+                    <div className="inline-flex rounded-lg border border-[#E5E7EB] bg-[#FCF9F5] p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setMediaType('image')}
+                        className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 cursor-pointer ${
+                          mediaType === 'image'
+                            ? 'bg-white text-[#342A21] shadow-xs'
+                            : 'text-[#70798C] hover:text-[#342A21]'
+                        }`}
+                      >
+                        <ImageIcon className="w-3 h-3" />
+                        <span>Image</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMediaType('video')}
+                        className={`px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors flex items-center gap-1 cursor-pointer ${
+                          mediaType === 'video'
+                            ? 'bg-white text-[#342A21] shadow-xs'
+                            : 'text-[#70798C] hover:text-[#342A21]'
+                        }`}
+                      >
+                        <Film className="w-3 h-3" />
+                        <span>Video (MP4)</span>
+                      </button>
+                    </div>
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-[#342A21] block mb-1">Category</label>
-                    <AdminCustomSelect
-                      value={category}
-                      onChange={(val) => setCategory(val as any)}
-                      options={[
-                        { value: 'Promo', label: 'Promo & Brand Campaign' },
-                        { value: 'Property', label: 'Property Rental' },
-                        { value: 'Estate', label: 'Estate Development' },
-                        { value: 'Service', label: 'Service (Solar, Interior, Moving)' },
-                      ]}
-                      variant="form"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-[#342A21] block mb-1">Offer Description</label>
-                    <textarea
-                      rows={2}
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Detail your special offer or pricing advantages..."
-                      className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-[#342A21] block mb-1">
-                      Creative Image / Video Media URL *
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-medium text-[#342A21]">
+                        Creative Media URL *
+                      </label>
+                      <span className="text-[11px] text-[#70798C]">Recommended ratio: 9:16 vertical or 16:9 landscape</span>
+                    </div>
                     <input
                       type="url"
                       required
@@ -572,21 +707,167 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                       placeholder="https://... direct image or MP4 URL"
                       className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-mono text-[#000004] focus:outline-none focus:border-[#342A21]"
                     />
+
+                    {/* Presets */}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span className="text-[10px] text-[#70798C]">Sample Presets:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80', 'image')}
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
+                      >
+                        Modern Penthouse
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1080&q=80', 'image')}
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
+                      >
+                        Luxury Estate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1080&q=80', 'image')}
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
+                      >
+                        Solar Power
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1080&q=80', 'image')}
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
+                      >
+                        Interior Design
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-[#E5E7EB] flex items-center justify-between">
-                  <span className="text-xs text-[#70798C]">
-                    Campaign Fee: <strong className="text-[#342A21]">{currentTier.price}</strong> ({currentTier.durationDays} Days)
-                  </span>
+                {/* 4. Lead Destination & Contact Routing */}
+                <div className="pt-4 border-t border-[#E5E7EB] space-y-4">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block">
+                    4. Lead Destination & Contact Routing
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-medium text-[#342A21] block mb-1">
+                        Lead Action / Destination *
+                      </label>
+                      <AdminCustomSelect
+                        value={actionType}
+                        onChange={(val) => {
+                          const v = val as any;
+                          setActionType(v);
+                          if (v === 'website') {
+                            setCtaText('Visit Website');
+                          } else {
+                            setCtaText('Chat on WhatsApp');
+                          }
+                        }}
+                        options={[
+                          { value: 'website', label: 'Send to Website / Landing Page' },
+                          { value: 'contact', label: 'Direct WhatsApp Chat' },
+                        ]}
+                        variant="form"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-[#342A21] block mb-1">
+                        Call to Action Button Label *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={ctaText}
+                        onChange={(e) => setCtaText(e.target.value)}
+                        placeholder={actionType === 'website' ? 'Visit Website' : 'Chat on WhatsApp'}
+                        className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
+                      />
+                    </div>
+
+                    {actionType === 'website' && (
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-medium text-[#342A21] block mb-1">
+                          Destination Website URL *
+                        </label>
+                        <div className="relative">
+                          <Globe className="w-3.5 h-3.5 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type="url"
+                            required={actionType === 'website'}
+                            value={websiteUrl}
+                            onChange={(e) => setWebsiteUrl(e.target.value)}
+                            placeholder="https://yourbrand.ng/promo"
+                            className="w-full pl-9 pr-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-mono text-[#000004] focus:outline-none focus:border-[#342A21]"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-xs font-medium text-[#342A21] block mb-1 flex items-center gap-1.5">
+                        <WhatsAppIcon className="w-3.5 h-3.5" />
+                        <span>WhatsApp Business Number (for Leads) {actionType === 'contact' ? '*' : '(Optional)'}</span>
+                      </label>
+                      <input
+                        type="tel"
+                        required={actionType === 'contact'}
+                        value={whatsappNumber}
+                        onChange={(e) => setWhatsappNumber(e.target.value)}
+                        placeholder="e.g. 08012345678"
+                        className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
+                      />
+                      <span className="text-[10px] text-[#70798C] block mt-1">
+                        Renters can tap to instantly start a WhatsApp conversation with your sales desk.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-[#342A21] block mb-1 flex items-center gap-1.5">
+                        <Phone className="w-3.5 h-3.5 text-[#70798C]" />
+                        <span>Alternate Phone Call Line <span className="text-[#70798C] font-normal">(Optional)</span></span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="e.g. 08123456789"
+                        className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
+                      />
+                      <span className="text-[10px] text-[#70798C] block mt-1">
+                        Allows interested renters to directly call your line from the mobile ad card.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Error Banner */}
+                {formError && (
+                  <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" />
+                    <span>{formError}</span>
+                  </div>
+                )}
+
+                {/* Bottom Action Bar */}
+                <div className="pt-5 border-t border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="text-[11px] text-[#70798C] uppercase tracking-wider block">Total Campaign Fee</span>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                      <span className="text-xl font-bold text-[#342A21]">{currentTier.price}</span>
+                      <span className="text-xs text-[#70798C]">({currentTier.durationDays} Days Duration)</span>
+                    </div>
+                  </div>
 
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="py-2.5 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                    className="py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-card cursor-pointer disabled:opacity-50 transition-all"
                   >
                     <span>{isSubmitting ? 'Submitting Campaign...' : 'Submit Campaign for Review'}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-amber-300" />
+                    <ChevronRight className="w-4 h-4 text-amber-300" />
                   </button>
                 </div>
               </form>

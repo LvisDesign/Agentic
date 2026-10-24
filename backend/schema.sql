@@ -270,7 +270,7 @@ create table if not exists public.adverts (
   media_url text not null,
   media_type text not null default 'image' check (media_type in ('image', 'video')),
   description text,
-  location text default 'Delta State',
+  location text default 'Nationwide',
   price text,
   cta_text text default 'Learn More',
   website_url text,

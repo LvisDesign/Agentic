@@ -571,7 +571,7 @@ export const submitPartnerAdvert = async (payload: PartnerSubmissionPayload): Pr
     mediaUrl: payload.mediaUrl,
     mediaType: payload.mediaType,
     description: payload.description,
-    location: payload.location || 'Delta State',
+    location: payload.location || 'Nationwide',
     price: payload.price,
     ctaText: payload.ctaText || 'Learn More',
     actionType: payload.actionType,
