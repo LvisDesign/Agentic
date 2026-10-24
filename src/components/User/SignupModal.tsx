@@ -20,7 +20,9 @@ import {
   AlertCircle,
   AlertTriangle,
   Globe,
-  Loader2
+  Loader2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { DeltaCity, UserProfile, UserRole } from '../../types/marketplace';
 import { StateDropdown } from '../UI/StateDropdown';
@@ -130,9 +132,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         setAgentCity('');
         setCustomAgentCity('');
         setAgentCac('');
+        setShowOptionalTenantFields(false);
+        setShowOptionalAgentFields(false);
       }
     }
   }, [isOpen, initialRole, initialMode, isAuthenticated]);
+
+  // Collapsible optional sections for mobile simplification
+  const [showOptionalTenantFields, setShowOptionalTenantFields] = useState(false);
+  const [showOptionalAgentFields, setShowOptionalAgentFields] = useState(false);
 
   // Seeker / Tenant Form Fields - Start completely blank for new tenants
   const [seekerFullName, setSeekerFullName] = useState('');
@@ -506,6 +514,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
+  const isTenantOptionalOpen = showOptionalTenantFields || Boolean(seekerEmail) || seekerState !== 'Delta State';
+  const isAgentOptionalOpen = showOptionalAgentFields || Boolean(agentEmail) || Boolean(agentCac) || agentState !== 'Delta State';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/65 backdrop-blur-sm overflow-y-auto animate-fade-in">
       {showPostSignupPrompt ? (
@@ -650,18 +661,18 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Authentication Form (Responsive for Mobile & Desktop) */}
-          <div className="flex-1 flex flex-col justify-between p-5 sm:p-6 md:p-7 lg:p-8 bg-white overflow-y-auto max-h-[min(94dvh,780px)] no-scrollbar">
+          {/* RIGHT COLUMN: Authentication Form (Responsive & Streamlined for Mobile) */}
+          <div className="flex-1 flex flex-col justify-between p-4 sm:p-6 md:p-7 lg:p-8 bg-white overflow-y-auto max-h-[min(94dvh,780px)] no-scrollbar">
             <div>
               {/* Notice Banner (If triggered by attempting to book inspection) */}
               {notice && (
-                <div className="mb-3 bg-[#342A21]/5 border border-[#342A21]/15 rounded-2xl px-3.5 py-2 flex items-center gap-2.5 text-[#342A21]">
-                  <div className="w-6 h-6 rounded-lg bg-[#342A21]/10 text-[#F95700] flex items-center justify-center shrink-0">
+                <div className="mb-2.5 sm:mb-3 bg-[#342A21]/5 border border-[#342A21]/15 rounded-xl sm:rounded-2xl px-3 py-2 flex items-center gap-2 text-[#342A21]">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-[#342A21]/10 text-[#F95700] flex items-center justify-center shrink-0">
                     <CalendarCheck className="w-3.5 h-3.5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold leading-tight">{notice.title}</p>
-                    <p className="text-[11px] text-amber-800 leading-tight mt-0.5 truncate sm:whitespace-normal">
+                    <p className="text-[11px] sm:text-xs font-bold leading-tight">{notice.title}</p>
+                    <p className="text-[10px] sm:text-[11px] text-amber-800 leading-tight mt-0.5 truncate sm:whitespace-normal">
                       {notice.message}
                     </p>
                   </div>
@@ -669,8 +680,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               )}
 
               {/* Header Bar: Brand Logo & Close Button */}
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-between mb-2.5 sm:mb-3.5">
+                <div className="flex items-center gap-2">
                   <img 
                     src="/images/setlla-logo.png" 
                     alt="Setlla" 
@@ -681,126 +692,93 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] hover:text-[#000004] flex items-center justify-center cursor-pointer transition-colors"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] hover:text-[#000004] flex items-center justify-center cursor-pointer transition-colors"
                   title="Close"
                   aria-label="Close"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
 
-              {/* Title & Subtitle matching sample */}
-              <div className="mb-3">
-                <h1 className="font-display text-xl sm:text-2xl font-extrabold text-[#000004] tracking-tight">
-                  {authMode === 'login' ? 'Welcome back' : 'Get Started'}
-                </h1>
-                <p className="text-xs sm:text-sm text-[#70798C] mt-0.5">
-                  {authMode === 'login'
-                    ? 'Sign in to manage your bookings, passes, and account'
-                    : 'Welcome to Setlla — Let’s get started'}
-                </p>
-              </div>
-
-              <div className="w-full h-px bg-[#E5E7EB] mb-3 sm:mb-3.5" />
-
-              {/* 1. Primary Segmented Pill Switcher (Matching Sample 2) */}
-              <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-2 mb-3">
+              {/* Unified 3-Way Segmented Switcher (Consolidated 1-Row Navigation) */}
+              <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-3 gap-1 mb-2.5 sm:mb-3">
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthMode('login');
+                    setAuthMode('signup');
+                    setActiveRoleTab('seeker');
                     setDuplicateError(null);
                   }}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    authMode === 'login'
+                  className={`py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
+                    authMode === 'signup' && activeRoleTab === 'seeker'
                       ? 'bg-white text-[#000004] shadow-xs'
                       : 'text-[#70798C] hover:text-[#000004]'
                   }`}
                 >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Sign In</span>
+                  <User className={`w-3.5 h-3.5 ${authMode === 'signup' && activeRoleTab === 'seeker' ? 'text-[#F95700]' : ''}`} />
+                  <span>Tenant</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => {
                     setAuthMode('signup');
+                    setActiveRoleTab('agent');
                     setDuplicateError(null);
                   }}
-                  className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                    authMode === 'signup'
+                  className={`py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
+                    authMode === 'signup' && activeRoleTab === 'agent'
                       ? 'bg-white text-[#000004] shadow-xs'
                       : 'text-[#70798C] hover:text-[#000004]'
                   }`}
                 >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Create Account</span>
+                  <Building2 className={`w-3.5 h-3.5 ${authMode === 'signup' && activeRoleTab === 'agent' ? 'text-[#F95700]' : ''}`} />
+                  <span>Agent</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setDuplicateError(null);
+                  }}
+                  className={`py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
+                    authMode === 'login'
+                      ? 'bg-white text-[#000004] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#000004]'
+                  }`}
+                >
+                  <LogIn className={`w-3.5 h-3.5 ${authMode === 'login' ? 'text-[#F95700]' : ''}`} />
+                  <span>Sign In</span>
                 </button>
               </div>
 
-              {/* 2. Secondary Role Switcher Pills: Tenant vs Agent (Shown during Create Account) */}
-              {authMode === 'signup' && (
-                <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-2 mb-3 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveRoleTab('seeker');
-                      setDuplicateError(null);
-                    }}
-                    className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      activeRoleTab === 'seeker'
-                        ? 'bg-white text-[#000004] shadow-xs'
-                        : 'text-[#70798C] hover:text-[#000004]'
-                    }`}
-                  >
-                    <User className={`w-3.5 h-3.5 ${activeRoleTab === 'seeker' ? 'text-[#F95700]' : ''}`} />
-                    <span>Tenant</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveRoleTab('agent');
-                      setDuplicateError(null);
-                    }}
-                    className={`py-1.5 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      activeRoleTab === 'agent'
-                        ? 'bg-white text-[#000004] shadow-xs'
-                        : 'text-[#70798C] hover:text-[#000004]'
-                    }`}
-                  >
-                    <Building2 className={`w-3.5 h-3.5 ${activeRoleTab === 'agent' ? 'text-[#F95700]' : ''}`} />
-                    <span>Agent</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Subhead instructions matching mobile sample */}
-              <div className="mb-3">
-                <h3 className="font-bold text-xs sm:text-sm text-[#000004]">
+              {/* Single Clear Headline & Subtitle */}
+              <div className="mb-2.5 sm:mb-3">
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
                   {authMode === 'login'
-                    ? 'Sign in to continue'
+                    ? 'Welcome back'
                     : activeRoleTab === 'seeker'
-                      ? 'Tenant registration'
-                      : 'Agent partner registration'}
-                </h3>
+                      ? 'Create Tenant Account'
+                      : 'Agent Partner Registration'}
+                </h2>
                 <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
                   {authMode === 'login'
-                    ? 'Access your dashboard, verified passes, and saved listings.'
+                    ? 'Sign in to access your bookings, passes, and account.'
                     : activeRoleTab === 'seeker'
-                      ? 'Unlock direct inspection passes and secure apartment bookings.'
-                      : 'List your verified properties and connect with tenants across Delta.'}
+                      ? 'Direct access to verified homes & scam-free inspections.'
+                      : 'List verified rentals and connect directly with tenants.'}
                 </p>
               </div>
 
               {/* Content Area */}
               <div>
                 {isSuccess ? (
-                  <div className="py-10 px-4 text-center space-y-3.5 my-auto animate-fade-in">
-                    <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm animate-bounce">
-                      <CheckCircle2 className="w-10 h-10" />
+                  <div className="py-8 sm:py-10 px-4 text-center space-y-3.5 my-auto animate-fade-in">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-sm animate-bounce">
+                      <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
-                    <h4 className="font-display text-xl font-bold text-[#000004]">
+                    <h4 className="font-display text-lg sm:text-xl font-bold text-[#000004]">
                       {successMessage.title}
                     </h4>
                     <p className="text-xs text-[#70798C] max-w-sm mx-auto leading-relaxed">
@@ -809,7 +787,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   </div>
                 ) : authMode === 'login' ? (
                   /* --- 1. SIGN IN FORM --- */
-                  <form onSubmit={handleLogin} className="space-y-4 py-1 text-xs">
+                  <form onSubmit={handleLogin} className="space-y-3 py-1 text-xs">
                     {loginError && (
                       <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#F0544F] text-[11px] flex items-start gap-2 animate-fade-in shadow-2xs">
                         <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
@@ -820,6 +798,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               type="button"
                               onClick={() => {
                                 setAuthMode('signup');
+                                setActiveRoleTab('seeker');
                                 setLoginError(null);
                               }}
                               className="font-bold underline text-[#F0544F] hover:text-[#000004] cursor-pointer"
@@ -832,11 +811,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     )}
 
                     <div>
-                      <label className="block text-xs font-semibold text-[#70798C] mb-1.5">
-                        Your email or phone <span className="text-[#F0544F]">*</span>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                        Phone number or email <span className="text-[#F0544F]">*</span>
                       </label>
                       <div className="relative">
-                        <Phone className="w-4 h-4 text-[#70798C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
                           type="text"
                           required
@@ -847,7 +826,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setLoginPhoneOrEmail(e.target.value);
                             if (loginError) setLoginError(null);
                           }}
-                          className="w-full pl-10 pr-4 py-3 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                          className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
                         />
                       </div>
                     </div>
@@ -856,7 +835,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <button
                         type="submit"
                         disabled={isLoggingIn}
-                        className="w-full py-3.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                       >
                         {isLoggingIn ? (
                           <>
@@ -874,13 +853,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   </form>
                 ) : activeRoleTab === 'seeker' ? (
                   /* --- 2. TENANT SIGNUP FORM --- */
-                  <form onSubmit={handleSeekerSignup} className="space-y-3.5 text-xs">
+                  <form onSubmit={handleSeekerSignup} className="space-y-2.5 sm:space-y-3 text-xs">
                     {/* Duplicate Account Alert Banner */}
                     {duplicateError && (
-                      <div className="p-3.5 rounded-2xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-2 animate-fade-in shadow-xs">
-                        <div className="flex items-start gap-2.5">
-                          <div className="w-7 h-7 rounded-xl bg-[#FEECEB] text-[#F0544F] flex items-center justify-center shrink-0 mt-0.5">
-                            <AlertTriangle className="w-4 h-4" />
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
+                        <div className="flex items-start gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-[#FEECEB] text-[#F0544F] flex items-center justify-center shrink-0 mt-0.5">
+                            <AlertTriangle className="w-3.5 h-3.5" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <h5 className="font-bold text-xs text-[#000004] leading-tight">Account Already Exists</h5>
@@ -893,7 +872,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                            className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                            className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
                           >
                             <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
                             <span>Sign In With This Account</span>
@@ -902,8 +881,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     )}
 
-                    {/* Full Name & Phone Number in 2-Column Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                    {/* Full Name & Phone Number */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
                           Full Name <span className="text-[#F0544F]">*</span>
@@ -956,93 +935,114 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Email & State in 2-Column Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#70798C]">
-                            Your email
-                          </label>
-                          <span className="text-[10px] text-[#70798C] font-semibold bg-[#F4F5F7] px-1.5 py-0.5 rounded">
-                            Optional
+                    {/* Preferred City in Delta State */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-[#70798C]">
+                          Preferred City in Delta State <span className="text-[#F0544F]">*</span>
+                        </label>
+                        {seekerCity && (
+                          <span className="text-[10px] text-[#342A21] font-semibold bg-[#342A21]/5 px-1.5 py-0.5 rounded">
+                            {seekerCity}, Delta
                           </span>
-                        </div>
-                        <div className="relative">
-                          <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                              ? 'text-[#F0544F]'
-                              : 'text-[#70798C]'
-                          }`} />
-                          <input
-                            type="email"
-                            placeholder="name@email.com"
-                            value={seekerEmail}
-                            onChange={(e) => {
-                              setSeekerEmail(e.target.value);
-                              if (duplicateError) setDuplicateError(null);
-                            }}
-                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                              duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
-                                : 'border-[#E5E7EB]'
-                            }`}
-                          />
-                        </div>
-                        {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>Email already registered.</span>
-                          </p>
                         )}
                       </div>
-
-                      <div>
-                        <StateDropdown
-                          value={seekerState}
-                          onChange={(val) => setSeekerState(val)}
-                          label="Choose State"
-                          required
-                        />
-                      </div>
+                      <CustomDropdown
+                        options={DELTA_CITY_OPTIONS}
+                        value={seekerCity}
+                        onChange={(c) => setSeekerCity(c)}
+                        headerTitle="Delta State Cities & Towns"
+                        placeholder="Select City (e.g. Asaba, Warri, Ughelli)"
+                        icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                        variant="form"
+                        allowCustomInput={true}
+                      />
                     </div>
 
-                    {/* If Delta State selected, provide city option */}
-                    {seekerState === 'Delta State' && (
-                      <div>
-                        <label className="block text-xs font-semibold text-[#70798C] mb-1 flex items-center justify-between">
-                          <span>Preferred City in Delta State</span>
-                          {seekerCity ? (
-                            <span className="text-[11px] text-[#342A21] font-semibold">{seekerCity}, Delta</span>
-                          ) : null}
-                        </label>
-                        <CustomDropdown
-                          options={DELTA_CITY_OPTIONS}
-                          value={seekerCity}
-                          onChange={(c) => setSeekerCity(c)}
-                          headerTitle="Delta State Cities & Towns"
-                          placeholder="Select City / Town"
-                          icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
-                          variant="form"
-                          allowCustomInput={true}
-                        />
-                      </div>
-                    )}
+                    {/* Optional Email & State Expandable */}
+                    <div className="pt-0.5">
+                      {!isTenantOptionalOpen ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowOptionalTenantFields(true)}
+                          className="text-xs font-semibold text-[#F95700] hover:text-[#E65100] inline-flex items-center gap-1 cursor-pointer py-1"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                          <span>Add Email & State (Optional)</span>
+                        </button>
+                      ) : (
+                        <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] animate-fade-in">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#000004]">Additional Details (Optional)</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowOptionalTenantFields(false)}
+                              className="text-[11px] text-[#70798C] hover:text-[#000004] inline-flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <ChevronUp className="w-3 h-3" />
+                              <span>Hide</span>
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                            <div>
+                              <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                                Email Address
+                              </label>
+                              <div className="relative">
+                                <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                                  duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                    ? 'text-[#F0544F]'
+                                    : 'text-[#70798C]'
+                                }`} />
+                                <input
+                                  type="email"
+                                  placeholder="name@email.com"
+                                  value={seekerEmail}
+                                  onChange={(e) => {
+                                    setSeekerEmail(e.target.value);
+                                    if (duplicateError) setDuplicateError(null);
+                                  }}
+                                  className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                                    duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                      ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20'
+                                      : 'border-[#E5E7EB]'
+                                  }`}
+                                />
+                              </div>
+                              {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                                <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Email already registered.</span>
+                                </p>
+                              )}
+                            </div>
 
-                    {/* Quick Info Box */}
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-[#F4F5F7] border border-[#E5E7EB] flex items-start gap-2 text-[11px] text-[#70798C]">
-                      <Info className="w-4 h-4 text-[#10B981] shrink-0 mt-0.5" />
-                      <span>
-                        Signing up unlocks instant booking for verified inspection slots. No inspection fees are charged until your booking is officially accepted.
-                      </span>
+                            <div>
+                              <StateDropdown
+                                value={seekerState}
+                                onChange={(val) => setSeekerState(val)}
+                                label="Choose State"
+                                required
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quick 1-line Info Notice */}
+                    <div className="px-2.5 py-1.5 rounded-lg bg-[#F4F5F7] border border-[#E5E7EB] flex items-center gap-2 text-[11px] text-[#70798C]">
+                      <Info className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
+                      <span>Zero inspection fees are charged until booking acceptance.</span>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                       >
-                        <span>Create new account</span>
+                        <span>Create Tenant Account</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -1052,9 +1052,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   <form onSubmit={handleAgentSignup} className="space-y-2.5 sm:space-y-3 text-xs">
                     {/* Duplicate Account Alert Banner */}
                     {duplicateError && (
-                      <div className="p-3 rounded-2xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
-                        <div className="flex items-start gap-2.5">
-                          <div className="w-6 h-6 rounded-xl bg-[#FEECEB] text-[#F0544F] flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
+                        <div className="flex items-start gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-[#FEECEB] text-[#F0544F] flex items-center justify-center shrink-0 mt-0.5">
                             <AlertTriangle className="w-3.5 h-3.5" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -1080,13 +1080,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     {/* Account Type Selector */}
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Agent / Listing Category <span className="text-[#F0544F]">*</span>
+                        Listing Category <span className="text-[#F0544F]">*</span>
                       </label>
-                      <div className="grid grid-cols-3 gap-1.5">
+                      <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
                         <button
                           type="button"
                           onClick={() => setAgentType('agency')}
-                          className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
                             agentType === 'agency'
                               ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
                               : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
@@ -1097,7 +1097,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setAgentType('individual')}
-                          className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
                             agentType === 'individual'
                               ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
                               : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
@@ -1108,7 +1108,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <button
                           type="button"
                           onClick={() => setAgentType('landlord')}
-                          className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                          className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
                             agentType === 'landlord'
                               ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
                               : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
@@ -1120,7 +1120,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     </div>
 
                     {/* Full Name & Agency Name */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
                           Agent Full Name <span className="text-[#F0544F]">*</span>
@@ -1156,230 +1156,235 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Direct Phone & WhatsApp */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                      <div>
-                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                    {/* Direct Phone & WhatsApp Toggle */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-[#70798C]">
                           Direct Phone Number <span className="text-[#F0544F]">*</span>
                         </label>
-                        <div className="relative">
-                          <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                            duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                              ? 'text-[#F0544F]'
-                              : 'text-[#70798C]'
-                          }`} />
+                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[10px] text-[#70798C] hover:text-[#000004]">
                           <input
-                            type="tel"
-                            required
-                            placeholder="0803 123 4567"
-                            value={agentPhone}
-                            onChange={(e) => handleAgentPhoneChange(e.target.value)}
-                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
-                                : 'border-[#E5E7EB]'
-                            }`}
+                            type="checkbox"
+                            checked={sameAsPhone}
+                            onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
+                            className="w-3.5 h-3.5 rounded accent-[#F95700]"
                           />
-                        </div>
-                        {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
-                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>Phone already registered.</span>
-                          </p>
-                        )}
+                          <span>WhatsApp is same</span>
+                        </label>
                       </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#70798C]">
-                            WhatsApp Number
-                          </label>
-                          <label className="flex items-center gap-1 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={sameAsPhone}
-                              onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
-                              className="w-3.5 h-3.5 rounded accent-[#F95700]"
-                            />
-                            <span className="text-[10px] text-[#70798C] font-semibold">
-                              Same as phone
-                            </span>
-                          </label>
-                        </div>
+                      <div className="relative">
+                        <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                          duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                            ? 'text-[#F0544F]'
+                            : 'text-[#70798C]'
+                        }`} />
                         <input
                           type="tel"
-                          disabled={sameAsPhone}
-                          placeholder={sameAsPhone ? (agentPhone || 'Synced with phone') : '0803 000 0000'}
-                          value={sameAsPhone ? agentPhone : agentWhatsapp}
-                          onChange={(e) => setAgentWhatsapp(e.target.value)}
-                          className={`w-full px-3 py-2 rounded-xl border text-xs sm:text-sm text-[#000004] outline-none transition-all ${
-                            sameAsPhone 
-                              ? 'bg-[#F4F5F7] text-[#70798C] border-[#E5E7EB] cursor-not-allowed' 
-                              : 'bg-[#F9FAFB] border-[#E5E7EB] focus:bg-white focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]'
+                          required
+                          placeholder="0803 123 4567"
+                          value={agentPhone}
+                          onChange={(e) => handleAgentPhoneChange(e.target.value)}
+                          className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                            duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                              ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                              : 'border-[#E5E7EB]'
                           }`}
                         />
                       </div>
+                      {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                        <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Phone already registered.</span>
+                        </p>
+                      )}
+
+                      {/* Display separate WhatsApp input ONLY when unchecked */}
+                      {!sameAsPhone && (
+                        <div className="mt-2 animate-fade-in">
+                          <label className="block text-[11px] font-semibold text-[#70798C] mb-1">
+                            WhatsApp Number <span className="text-[#F0544F]">*</span>
+                          </label>
+                          <div className="relative">
+                            <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type="tel"
+                              required={!sameAsPhone}
+                              placeholder="0803 000 0000"
+                              value={agentWhatsapp}
+                              onChange={(e) => setAgentWhatsapp(e.target.value)}
+                              className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Operating State & City */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                      <div>
-                        <StateDropdown
-                          value={agentState}
-                          onChange={(val) => setAgentState(val)}
-                          label="Operating State"
-                          required
-                        />
+                    {/* Operating City */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-[#70798C]">
+                          Operating City in Delta State <span className="text-[#F0544F]">*</span>
+                        </label>
+                        {agentCitySelection && agentCitySelection !== 'Others' && (
+                          <span className="text-[10px] text-[#70798C] font-semibold">
+                            {agentCitySelection}, Delta
+                          </span>
+                        )}
                       </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#70798C]">
-                            Operating City / Towns <span className="text-[#F0544F]">*</span>
-                          </label>
-                          {agentState === 'Delta State' && agentCitySelection && agentCitySelection !== 'Others' && (
-                            <span className="text-[11px] text-[#70798C] font-semibold">
-                              {agentCitySelection}, Delta
-                            </span>
+                      {agentState === 'Delta State' ? (
+                        <div className="space-y-1.5">
+                          <CustomDropdown
+                            options={[
+                              ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
+                              {
+                                value: 'Others',
+                                label: 'Others (Enter City Manually)',
+                                subtitle: 'If your town or community is not listed above',
+                                badge: 'Manual Entry',
+                              },
+                            ]}
+                            value={agentCitySelection}
+                            onChange={(val) => {
+                              setAgentCitySelection(val);
+                              if (val !== 'Others') {
+                                setAgentCity(val);
+                              } else {
+                                setAgentCity(customAgentCity || '');
+                              }
+                            }}
+                            headerTitle="Delta State Cities & Towns"
+                            placeholder="Select Operating City (e.g. Asaba, Warri)"
+                            icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                            variant="form"
+                            allowCustomInput={true}
+                          />
+                          {agentCitySelection === 'Others' && (
+                            <div className="animate-fade-in">
+                              <input
+                                type="text"
+                                required
+                                placeholder="Enter town or community name"
+                                value={customAgentCity}
+                                onChange={(e) => {
+                                  setCustomAgentCity(e.target.value);
+                                  setAgentCity(e.target.value);
+                                }}
+                                className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F95700]/5 focus:bg-white"
+                              />
+                            </div>
                           )}
                         </div>
-                        {agentState === 'Delta State' ? (
-                          <div className="space-y-1.5">
-                            <CustomDropdown
-                              options={[
-                                ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
-                                {
-                                  value: 'Others',
-                                  label: 'Others (Enter City Manually)',
-                                  subtitle: 'If your town or community is not listed above',
-                                  badge: 'Manual Entry',
-                                },
-                              ]}
-                              value={agentCitySelection}
-                              onChange={(val) => {
-                                setAgentCitySelection(val);
-                                if (val !== 'Others') {
-                                  setAgentCity(val);
-                                } else {
-                                  setAgentCity(customAgentCity || '');
-                                }
-                              }}
-                              headerTitle="Delta State Cities & Towns"
-                              placeholder="Select City / Town"
-                              icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
-                              variant="form"
-                              allowCustomInput={true}
-                            />
-                            {agentCitySelection === 'Others' && (
-                              <div className="animate-fade-in">
-                                <label className="block text-[11px] font-semibold text-[#70798C] mb-1">
-                                  Enter Your City / Town Name <span className="text-[#F0544F]">*</span>
+                      ) : (
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Ikeja, Benin City, Port Harcourt"
+                          value={agentCity}
+                          onChange={(e) => setAgentCity(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white"
+                        />
+                      )}
+                    </div>
+
+                    {/* Optional CAC, Email & State Section */}
+                    <div className="pt-0.5">
+                      {!isAgentOptionalOpen ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowOptionalAgentFields(true)}
+                          className="text-xs font-semibold text-[#F95700] hover:text-[#E65100] inline-flex items-center gap-1 cursor-pointer py-1"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                          <span>Add CAC / Reg No. & Email (Optional)</span>
+                        </button>
+                      ) : (
+                        <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] animate-fade-in">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#000004]">Business Verification (Optional)</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowOptionalAgentFields(false)}
+                              className="text-[11px] text-[#70798C] hover:text-[#000004] inline-flex items-center gap-0.5 cursor-pointer"
+                            >
+                              <ChevronUp className="w-3 h-3" />
+                              <span>Hide</span>
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="text-xs font-semibold text-[#70798C]">
+                                  CAC / License No.
                                 </label>
+                                <span className="text-[10px] text-[#342A21] bg-[#342A21]/5 px-1 py-0.5 rounded font-semibold">
+                                  Badge
+                                </span>
+                              </div>
+                              <div className="relative">
+                                <FileText className="w-4 h-4 text-[#F95700] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 <input
                                   type="text"
-                                  required
-                                  placeholder="e.g. Effurun, Oghara, Jesse, Kwale"
-                                  value={customAgentCity}
-                                  onChange={(e) => {
-                                    setCustomAgentCity(e.target.value);
-                                    setAgentCity(e.target.value);
-                                  }}
-                                  className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F95700]/5 focus:bg-white"
+                                  placeholder="e.g. RC-182903"
+                                  value={agentCac}
+                                  onChange={(e) => setAgentCac(e.target.value)}
+                                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]"
                                 />
                               </div>
-                            )}
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                                Email Address
+                              </label>
+                              <div className="relative">
+                                <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                                  duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                    ? 'text-[#F0544F]'
+                                    : 'text-[#70798C]'
+                                }`} />
+                                <input
+                                  type="email"
+                                  placeholder="agency@domain.com"
+                                  value={agentEmail}
+                                  onChange={(e) => {
+                                    setAgentEmail(e.target.value);
+                                    if (duplicateError) setDuplicateError(null);
+                                  }}
+                                  className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                                    duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                      ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20'
+                                      : 'border-[#E5E7EB]'
+                                  }`}
+                                />
+                              </div>
+                              {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                                <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                  <span>Email already registered.</span>
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        ) : (
-                          <input
-                            type="text"
-                            required
-                            placeholder="e.g. Ikeja, Benin City, Port Harcourt"
-                            value={agentCity}
-                            onChange={(e) => setAgentCity(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white"
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Optional Email & CAC */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#70798C]">
-                            Email Address
-                          </label>
-                          <span className="text-[10px] text-[#70798C] font-semibold bg-[#F4F5F7] px-1.5 py-0.5 rounded">
-                            Optional
-                          </span>
+                          <div>
+                            <StateDropdown
+                              value={agentState}
+                              onChange={(val) => setAgentState(val)}
+                              label="Operating State"
+                              required
+                            />
+                          </div>
                         </div>
-                        <div className="relative">
-                          <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                              ? 'text-[#F0544F]'
-                              : 'text-[#70798C]'
-                          }`} />
-                          <input
-                            type="email"
-                            placeholder="agency@domain.com"
-                            value={agentEmail}
-                            onChange={(e) => {
-                              setAgentEmail(e.target.value);
-                              if (duplicateError) setDuplicateError(null);
-                            }}
-                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                              duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
-                                : 'border-[#E5E7EB]'
-                            }`}
-                          />
-                        </div>
-                        {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>Email already registered.</span>
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#70798C]">
-                            CAC / License No.
-                          </label>
-                          <span className="text-[10px] text-[#342A21] bg-[#342A21]/5 px-1.5 py-0.5 rounded font-semibold border border-[#342A21]/20">
-                            Verified Badge
-                          </span>
-                        </div>
-                        <div className="relative">
-                          <FileText className="w-4 h-4 text-[#F95700] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <input
-                            type="text"
-                            placeholder="e.g. RC-182903 or Reg No."
-                            value={agentCac}
-                            onChange={(e) => setAgentCac(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Notice */}
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-[#342A21]/5 border border-[#342A21]/15 flex items-start gap-2 text-[11px] text-[#342A21]">
-                      <Check className="w-3.5 h-3.5 text-[#F95700] shrink-0 mt-0.5" />
-                      <span>
-                        As an Agent, you will receive real-time inspection requests from pre-screened tenants directly in your Agent Portal.
-                      </span>
+                      )}
                     </div>
 
                     {/* Submit Button */}
                     <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                       >
                         <Building2 className="w-4 h-4" />
-                        <span>Register as Agent & Open Portal</span>
+                        <span>Register as Agent</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -1388,8 +1393,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               </div>
             </div>
 
-            {/* Bottom Footer Switcher matching samples */}
-            <div className="pt-3.5 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3.5 space-y-1.5">
+            {/* Bottom Footer Switcher */}
+            <div className="pt-3 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3 space-y-1">
               {authMode === 'login' ? (
                 <p>
                   No account yet?{' '}
@@ -1397,16 +1402,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     type="button"
                     onClick={() => {
                       setAuthMode('signup');
+                      setActiveRoleTab('seeker');
                       setLoginError(null);
                     }}
                     className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
                   >
-                    Create one
+                    Create Account
                   </button>
                 </p>
               ) : (
                 <p>
-                  Already have account?{' '}
+                  Already have an account?{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -1415,7 +1421,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     }}
                     className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
                   >
-                    Login
+                    Sign In
                   </button>
                 </p>
               )}
