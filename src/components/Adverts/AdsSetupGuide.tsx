@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   BookOpen, 
-  Sparkles, 
+  Target, 
   Layers, 
   CheckCircle2, 
   Image as ImageIcon, 
@@ -43,7 +43,7 @@ export const AdsSetupGuide: React.FC<AdsSetupGuideProps> = ({
   };
 
   const navItems = [
-    { id: 'tiers' as const, label: '1. Campaign Strategy & Tiers', icon: Sparkles },
+    { id: 'tiers' as const, label: '1. Campaign Strategy & Tiers', icon: Target },
     { id: 'specs' as const, label: '2. Creative Dimensions & Specs', icon: ImageIcon },
     { id: 'sla' as const, label: '3. Verification & 1-Hour SLA', icon: Clock },
     { id: 'leads' as const, label: '4. WhatsApp Lead Conversion', icon: MessageSquare },
