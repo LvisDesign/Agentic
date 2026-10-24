@@ -406,7 +406,7 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
                         <td className="p-3 font-mono font-semibold">durationDays</td>
                         <td className="p-3 text-[#70798C]">integer</td>
                         <td className="p-3 text-[#70798C]">Optional</td>
-                        <td className="p-3">Campaign flight length in days (defaults to 30 days).</td>
+                        <td className="p-3">Campaign duration in days (defaults to 30 days).</td>
                       </tr>
                     </tbody>
                   </table>

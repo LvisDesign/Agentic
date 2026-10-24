@@ -50,12 +50,12 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   onBackToExplore,
   onCampaignCreated,
 }) => {
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'new-flight' | 'api-keys' | 'guide'>('campaigns');
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'new-campaign' | 'api-keys' | 'guide'>('campaigns');
   const [adverts, setAdverts] = useState<AdvertStory[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'expired'>('all');
   const [copiedKey, setCopiedKey] = useState(false);
 
-  // New Flight Form State (Prefilled from Advertiser profile)
+  // New Campaign Form State (Prefilled from Advertiser profile)
   const [packageTier, setPackageTier] = useState<'starter' | 'growth' | 'corporate'>('growth');
   const [headline, setHeadline] = useState('');
   const [description, setDescription] = useState('');
@@ -116,7 +116,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
   const currentTier = TIERS.find((t) => t.id === packageTier) || TIERS[1];
 
-  const handleCreateFlight = async (e: React.FormEvent) => {
+  const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!headline || !mediaUrl) return;
 
@@ -231,15 +231,15 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               </button>
 
               <button
-                onClick={() => setActiveTab('new-flight')}
+                onClick={() => setActiveTab('new-campaign')}
                 className={`py-1.5 px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  activeTab === 'new-flight'
+                  activeTab === 'new-campaign'
                     ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
                     : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
                 }`}
               >
                 <Plus className="w-3.5 h-3.5 text-amber-500" />
-                <span>+ Launch New Flight</span>
+                <span>+ Create Campaign</span>
               </button>
 
               <button
@@ -269,7 +269,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
             <a
               href={`https://wa.me/2348000000000?text=${encodeURIComponent(
-                `Hello Setlla Team, I am logged in as advertiser "${advertiser.companyName}". I need assistance with my ad flight.`
+                `Hello Setlla Team, I am logged in as advertiser "${advertiser.companyName}". I need assistance with my ad campaign.`
               )}`}
               target="_blank"
               rel="noopener noreferrer"
@@ -334,10 +334,10 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h3 className="font-display text-xl text-[#342A21] font-normal">
-                  Your Sponsored Campaigns & Flights
+                  Your Sponsored Campaigns
                 </h3>
                 <p className="text-xs text-[#70798C] mt-0.5">
-                  Track real-time impressions, lead routing, and flight status across Setlla's network.
+                  Track real-time impressions, lead routing, and campaign status across Setlla's network.
                 </p>
               </div>
 
@@ -366,15 +366,15 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 <div>
                   <h4 className="font-display text-base text-[#342A21]">No campaigns in this view</h4>
                   <p className="text-xs text-[#70798C] mt-1 max-w-sm mx-auto">
-                    Launch a new sponsored flight to put your brand in front of 50,000+ active property seekers.
+                    Launch a new sponsored campaign to put your brand in front of 50,000+ active property seekers.
                   </p>
                 </div>
                 <button
-                  onClick={() => setActiveTab('new-flight')}
+                  onClick={() => setActiveTab('new-campaign')}
                   className="py-2.5 px-5 rounded-xl bg-[#342A21] text-[#FCF9F5] text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Plus className="w-4 h-4 text-amber-300" />
-                  <span>Launch New Campaign Flight</span>
+                  <span>Create New Campaign</span>
                 </button>
               </div>
             ) : (
@@ -458,20 +458,20 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
         )}
 
         {/* ===================================================================== */}
-        {/* TAB 2: LAUNCH NEW FLIGHT                                              */}
+        {/* TAB 2: CREATE NEW CAMPAIGN                                            */}
         {/* ===================================================================== */}
-        {activeTab === 'new-flight' && (
+        {activeTab === 'new-campaign' && (
           <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#342A21]/15 shadow-card space-y-6 animate-fade-in">
             <div className="max-w-xl">
               <h3 className="font-display text-2xl text-[#342A21] font-normal">
-                Book a New Campaign Flight
+                Create a New Campaign
               </h3>
               <p className="text-xs text-[#70798C] mt-1">
                 Your company details are automatically connected to your advertiser account (<strong>{advertiser.companyName}</strong>).
               </p>
               <div className="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
-                <span><strong>Admin Review Step:</strong> Once submitted, your flight is reviewed and approved by Setlla Admin before appearing on the Explore Feed.</span>
+                <span><strong>Admin Review Step:</strong> Once submitted, your campaign is reviewed and approved by Setlla Admin before appearing on the Explore Feed.</span>
               </div>
             </div>
 
@@ -480,7 +480,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h4 className="font-display text-xl text-[#342A21]">Campaign Flight Queued!</h4>
+                <h4 className="font-display text-xl text-[#342A21]">Campaign Submitted for Review!</h4>
                 <p className="text-xs text-[#70798C]">
                   Reference ID: <code className="font-mono font-bold text-[#342A21]">{submissionSuccess}</code>. Our review desk verifies creatives within 1 hour.
                 </p>
@@ -492,11 +492,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleCreateFlight} className="space-y-6">
-                {/* Flight Package Selection */}
+              <form onSubmit={handleCreateCampaign} className="space-y-6">
+                {/* Duration & Package Selection */}
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block mb-2">
-                    1. Select Flight Package
+                    1. Select Campaign Duration
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {TIERS.map((tier) => (
@@ -511,7 +511,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                       >
                         <span className="text-xs font-semibold text-[#342A21] block">{tier.name}</span>
                         <span className="text-lg font-bold text-[#342A21] mt-0.5 block">{tier.price}</span>
-                        <span className="text-[11px] text-[#70798C]">{tier.durationDays} Days Flight</span>
+                        <span className="text-[11px] text-[#70798C]">{tier.durationDays} Days Duration</span>
                       </div>
                     ))}
                   </div>
@@ -577,7 +577,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
                 <div className="pt-4 border-t border-[#E5E7EB] flex items-center justify-between">
                   <span className="text-xs text-[#70798C]">
-                    Flight Fee: <strong className="text-[#342A21]">{currentTier.price}</strong> ({currentTier.durationDays} Days)
+                    Campaign Fee: <strong className="text-[#342A21]">{currentTier.price}</strong> ({currentTier.durationDays} Days)
                   </span>
 
                   <button
@@ -585,7 +585,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                     disabled={isSubmitting}
                     className="py-2.5 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
                   >
-                    <span>{isSubmitting ? 'Submitting Flight...' : 'Submit Flight for Review'}</span>
+                    <span>{isSubmitting ? 'Submitting Campaign...' : 'Submit Campaign for Review'}</span>
                     <ChevronRight className="w-3.5 h-3.5 text-amber-300" />
                   </button>
                 </div>

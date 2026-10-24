@@ -128,8 +128,8 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
           </h2>
           <p className="text-xs text-[#70798C] mt-1 leading-relaxed">
             {mode === 'login'
-              ? 'Access your dedicated advertiser dashboard to book flights, track impressions, leads, and manage API keys.'
-              : 'Create your private advertiser account to launch sponsored flights and connect programmatic campaigns.'}
+              ? 'Access your dedicated advertiser dashboard to create campaigns, track impressions, leads, and manage API keys.'
+              : 'Create your private advertiser account to launch sponsored campaigns and connect programmatic ads.'}
           </p>
 
 

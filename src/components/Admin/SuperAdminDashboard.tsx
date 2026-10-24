@@ -388,7 +388,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
         updated.id,
         updated.headline,
         currentUser.fullName,
-        `Approved submission from ${updated.advertiserName}. Flight active for 30 days.`
+        `Approved submission from ${updated.advertiserName}. Campaign active for 30 days.`
       );
     }
   };
@@ -2463,7 +2463,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                               title: 'Delete Sponsored Campaign?',
                               message: 'Are you sure you want to delete this sponsored partner campaign from the platform? It will immediately stop appearing in the stories tray and carousel.',
                               itemTitle: ad.headline || ad.title,
-                              itemSubtitle: `${ad.advertiserName} • ${ad.category} • Flight: ${ad.badgeText || 'SPONSORED'}`,
+                              itemSubtitle: `${ad.advertiserName} • ${ad.category} • Plan: ${ad.badgeText || 'SPONSORED'}`,
                               badge: 'SPONSORED CAMPAIGN',
                               confirmText: 'Yes, Delete Campaign',
                               cancelText: 'Cancel',

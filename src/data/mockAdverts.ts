@@ -25,7 +25,7 @@ export interface AdvertStory {
   isVerified: boolean;
   propertyId?: string;
 
-  // Ingestion & Campaign Flight Metadata
+  // Ingestion & Campaign Metadata
   status?: 'pending_review' | 'active' | 'paused' | 'expired' | 'rejected' | 'deleted';
   submissionSource?: 'admin' | 'partner_portal' | 'api_webhook';
   partnerEmail?: string;

@@ -155,22 +155,22 @@ print("Campaign Data:", response.json())`;
               <div className="flex items-center gap-2 mb-1">
                 <Target className="w-4 h-4 text-[#B45309] shrink-0" />
                 <h3 className="font-display text-lg sm:text-xl text-[#342A21] font-semibold">
-                  Choosing the Right Campaign Flight Package
+                  Choosing the Right Campaign Package
                 </h3>
               </div>
               <p className="text-xs text-[#70798C] leading-relaxed">
-                Setlla offers three transparent flight packages matched to campaign objectives, business scale, and budget.
+                Setlla offers three transparent campaign packages matched to objectives, business scale, and budget.
               </p>
             </div>
 
-            {/* 3 Flight Cards */}
+            {/* 3 Package Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Starter Spotlight */}
               <div className="bg-[#FCF9F5] p-4 sm:p-5 rounded-2xl border border-[#E5E7EB] flex flex-col justify-between space-y-3">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#70798C] bg-white px-2 py-0.5 rounded-md border border-[#E5E7EB]">
-                      7-Day Flight
+                      7-Day Plan
                     </span>
                     <span className="text-xs font-bold px-2 py-0.5 rounded bg-white border border-[#342A21]/20 text-[#342A21]">
                       ₦15,000
@@ -539,7 +539,7 @@ print("Campaign Data:", response.json())`;
                 </h3>
               </div>
               <p className="text-xs text-[#70798C] leading-relaxed">
-                Automate ad flights directly from your company CRM, website backend, or property management software using secure REST endpoints.
+                Automate ad campaigns directly from your company CRM, website backend, or property management software using secure REST endpoints.
               </p>
             </div>
 
@@ -571,7 +571,7 @@ print("Campaign Data:", response.json())`;
                 </span>
                 <h5 className="font-semibold text-xs text-[#342A21]">POST Payload</h5>
                 <p className="text-[11px] text-[#70798C] leading-relaxed">
-                  Send JSON with media URL, headline, WhatsApp phone, and flight days.
+                  Send JSON with media URL, headline, WhatsApp phone, and duration days.
                 </p>
               </div>
 
@@ -706,7 +706,7 @@ print("Campaign Data:", response.json())`;
                         <td className="py-2 px-3 font-mono font-medium">durationDays</td>
                         <td className="py-2 px-3 text-[#70798C]">number</td>
                         <td className="py-2 px-3"><span className="text-amber-700 font-bold">Yes</span></td>
-                        <td className="py-2 px-3">Flight duration: 7, 30, or 90 days</td>
+                        <td className="py-2 px-3">Campaign duration: 7, 30, or 90 days</td>
                       </tr>
                       <tr>
                         <td className="py-2 px-3 font-mono font-medium">location</td>
@@ -770,7 +770,7 @@ print("Campaign Data:", response.json())`;
                   </li>
                   <li className="flex items-start gap-1.5">
                     <span className="font-bold text-[#342A21]">3.</span>
-                    <span><strong>Payment Match:</strong> Verify proof of payment matches the selected flight tier (₦15k, ₦45k, ₦120k).</span>
+                    <span><strong>Payment Match:</strong> Verify proof of payment matches the selected campaign tier (₦15k, ₦45k, ₦120k).</span>
                   </li>
                   <li className="flex items-start gap-1.5">
                     <span className="font-bold text-[#342A21]">4.</span>

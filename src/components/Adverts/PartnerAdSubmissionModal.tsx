@@ -53,7 +53,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
       durationDays: 7,
       price: '₦15,000',
       budgetAmount: 15000,
-      badge: '7-Day Flight',
+      badge: '7-Day Plan',
       features: ['Feed Stories Tray Rotation', 'Click & WhatsApp Lead Routing', 'Basic Impression Analytics'],
     },
     {
@@ -214,7 +214,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                 <span>Next Step: Priority Creative Verification</span>
               </div>
               <p className="text-[#70798C] text-[11px] leading-relaxed">
-                Our partnership desk reviews creatives within 1 hour. You can message our desk on WhatsApp with your reference number for instant flight activation.
+                Our partnership desk reviews creatives within 1 hour. You can message our desk on WhatsApp with your reference number for instant campaign activation.
               </p>
             </div>
 
@@ -244,7 +244,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
             {/* Step 1: Package Selection */}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block mb-3">
-                1. Select Campaign Flight Duration & Package
+                1. Select Campaign Duration & Package
               </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -476,7 +476,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
             {/* Bottom Actions */}
             <div className="pt-5 border-t border-[#E5E7EB] flex items-center justify-between gap-3">
               <div>
-                <span className="text-[10px] text-[#70798C] uppercase tracking-wider block">Total Flight Package:</span>
+                <span className="text-[10px] text-[#70798C] uppercase tracking-wider block">Total Campaign Fee:</span>
                 <span className="text-lg font-bold text-[#342A21]">{currentTier.price}</span>
               </div>
 
@@ -495,7 +495,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                   className="px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    <span>Submitting Flight...</span>
+                    <span>Submitting Campaign...</span>
                   ) : (
                     <>
                       <span>Submit for Review</span>

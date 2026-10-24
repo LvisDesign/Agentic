@@ -168,7 +168,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       price: '₦15,000',
       budgetAmount: 15000,
       description: 'Ideal for shortlet promos, flash discounts, or weekend property launches.',
-      badge: '7-Day Flight',
+      badge: '7-Day Plan',
       features: [
         'Feed Stories Tray prominent rotation',
         'Direct 1-Click WhatsApp & call routing',
@@ -457,7 +457,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     : 'text-[#70798C] hover:text-[#342A21]'
                 }`}
               >
-                Flight Packages
+                Ad Packages
               </button>
               <button
                 onClick={() => {
@@ -553,7 +553,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               activeTab === 'packages' ? 'bg-[#342A21] text-white' : 'text-[#70798C]'
             }`}
           >
-            Flight Packages
+            Ad Packages
           </button>
           <button
             onClick={() => {
@@ -758,7 +758,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-700 font-bold shrink-0">✓</span>
-                  <span><strong>Dedicated Customer Dashboard:</strong> Private portal to monitor active flights, impressions, and click rates.</span>
+                  <span><strong>Dedicated Customer Dashboard:</strong> Private portal to monitor active campaigns, impressions, and click rates.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-700 font-bold shrink-0">✓</span>
@@ -766,7 +766,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-emerald-700 font-bold shrink-0">✓</span>
-                  <span><strong>Admin Quality Assurance:</strong> Every ad flight is reviewed and approved by Setlla Admins before going live.</span>
+                  <span><strong>Admin Quality Assurance:</strong> Every ad campaign is reviewed and approved by Setlla Admins before going live.</span>
                 </li>
               </ul>
             </div>
@@ -794,7 +794,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 }}
                 className="w-full sm:w-auto py-3 px-4 rounded-xl bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] border border-[#E5E7EB] text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
-                <span>View Flight Packages ↓</span>
+                <span>View Ad Packages ↓</span>
               </button>
             </div>
           </div>
@@ -931,7 +931,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               Dedicated Client Portal for Ads Customers
             </h3>
             <p className="text-xs text-stone-300 leading-relaxed">
-              Please note: The <strong>Customer Ads Management Dashboard</strong> is your private portal to manage campaigns, flight schedules, and API credentials. It is completely distinct from the Setlla Super Admin moderation console.
+              Please note: The <strong>Customer Ads Management Dashboard</strong> is your private portal to manage campaigns, schedules, and API credentials. It is completely distinct from the Setlla Super Admin moderation console.
             </p>
           </div>
 
@@ -972,12 +972,12 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         </div>
       </section>
 
-      {/* 5. Main Interactive Workspace (Flight Packages, Placements, API, & Guide) */}
+      {/* 5. Main Interactive Workspace (Ad Packages, Placements, API, & Guide) */}
       <main id="ad-creation-section" className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#342A21]/10 mb-8">
           <div>
             <h3 className="font-display text-2xl text-[#342A21] font-normal">
-              Explore Formats, Flight Rates & API Tools
+              Explore Formats, Ad Rates & API Tools
             </h3>
             <p className="text-xs text-[#70798C] mt-0.5">
               Select a section below to configure self-serve packages, inspect placements, or test the REST API.
@@ -993,7 +993,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   : 'text-[#70798C] hover:text-[#342A21]'
               }`}
             >
-              Flight Packages & Ad Builder
+              Ad Packages & Campaign Builder
             </button>
             <button
               onClick={() => setActiveTab('placements')}
@@ -1038,10 +1038,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               <div className="text-center max-w-xl mx-auto mb-8 space-y-1">
                 <span className="text-xs uppercase tracking-widest font-semibold text-[#70798C]">Step 1 of 2</span>
                 <h2 className="font-display text-2xl sm:text-3xl text-[#342A21] font-normal">
-                  Select your campaign flight duration
+                  Select your campaign duration
                 </h2>
                 <p className="text-xs sm:text-sm text-[#70798C]">
-                  Choose an upfront flight package. All campaigns include real-time engagement and lead routing.
+                  Choose an upfront ad package. All campaigns include real-time engagement and lead routing.
                 </p>
               </div>
 
@@ -1067,7 +1067,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       <div>
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-semibold text-[#70798C] uppercase tracking-wider">
-                            {tier.durationDays} Days Flight
+                            {tier.durationDays} Days Duration
                           </span>
                           {isSelected && (
                             <span className="w-5 h-5 rounded-full bg-[#342A21] text-white flex items-center justify-center">
@@ -1108,7 +1108,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                               : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] border border-[#E5E7EB]'
                           }`}
                         >
-                          {isSelected ? 'Selected Flight' : 'Choose Flight'}
+                          {isSelected ? 'Selected Plan' : 'Choose Plan'}
                         </button>
                       </div>
                     </div>
@@ -1131,7 +1131,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       Campaign Queued for Priority Desk Review
                     </span>
                     <h3 className="font-display text-2xl sm:text-3xl text-[#342A21] font-normal">
-                      Campaign Flight Successfully Submitted!
+                      Campaign Successfully Submitted!
                     </h3>
                     <p className="text-xs sm:text-sm text-[#70798C] mt-2 leading-relaxed">
                       We have logged your sponsored campaign for <strong className="text-[#342A21]">"{submittedResult.advert.advertiserName}"</strong>. Your private tracking reference is:
@@ -1148,7 +1148,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       <span>Next Step: Fast-Track Creative Review (Typical turn: ~1 hour)</span>
                     </div>
                     <p className="text-[11px] text-[#70798C] leading-relaxed">
-                      Our partnership desk verifies creative aspect ratios and business registration before flight activation. For instant activation, message our WhatsApp desk with your reference code.
+                      Our partnership desk verifies creative aspect ratios and business registration before campaign activation. For instant activation, message our WhatsApp desk with your reference code.
                     </p>
                   </div>
 
@@ -1170,7 +1170,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
                     <a
                       href={`https://wa.me/2348000000000?text=${encodeURIComponent(
-                        `Hello Setlla Team, I submitted an ad flight with Ref: ${submittedResult.trackingRef} for ${submittedResult.advert.advertiserName}. Please review and activate.`
+                        `Hello Setlla Team, I submitted an ad campaign with Ref: ${submittedResult.trackingRef} for ${submittedResult.advert.advertiserName}. Please review and activate.`
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -1194,7 +1194,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   <div>
                     <span className="text-xs uppercase tracking-widest font-semibold text-[#70798C]">Step 2 of 2</span>
                     <h3 className="font-display text-2xl text-[#342A21] font-normal mt-1">
-                      Campaign flight & creative details
+                      Campaign & creative details
                     </h3>
                     <p className="text-xs text-[#70798C] mt-1">
                       You are booking <strong className="text-[#342A21]">{currentTier.name}</strong> ({currentTier.price} for {currentTier.durationDays} days).
@@ -1418,10 +1418,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   {/* Bottom Submission Bar */}
                   <div className="pt-6 border-t border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <span className="text-[11px] text-[#70798C] uppercase tracking-wider block">Flight Duration & Fee</span>
+                      <span className="text-[11px] text-[#70798C] uppercase tracking-wider block">Campaign Duration & Fee</span>
                       <div className="flex items-baseline gap-2 mt-0.5">
                         <span className="text-2xl font-bold text-[#342A21]">{currentTier.price}</span>
-                        <span className="text-xs text-[#70798C]">({currentTier.durationDays} Days Flight)</span>
+                        <span className="text-xs text-[#70798C]">({currentTier.durationDays} Days Duration)</span>
                       </div>
                     </div>
 
@@ -1443,7 +1443,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           <span>Submitting Campaign...</span>
                         ) : (
                           <>
-                            <span>Submit Flight for Review</span>
+                            <span>Submit Campaign for Review</span>
                             <ChevronRight className="w-4 h-4 text-amber-300" />
                           </>
                         )}

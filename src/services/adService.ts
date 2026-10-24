@@ -508,7 +508,7 @@ export const subscribeToAdvertChanges = (callback: (adverts: AdvertStory[]) => v
 
 /**
  * Method 1: Admin Direct Approval
- * Approves a pending partner submission and sets live flight dates
+ * Approves a pending partner submission and sets live campaign dates
  */
 export const approvePartnerAdvert = async (id: string, durationDays = 30): Promise<AdvertStory | null> => {
   const all = await loadAllAdverts();
