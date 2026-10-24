@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
-  MessageCircle, 
   Phone, 
   MapPin 
 } from 'lucide-react';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertStory } from '../../data/mockAdverts';
 
 interface AdvertStoryModalProps {
@@ -237,7 +237,7 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
                 className="w-11 h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors shadow-lg active:scale-95 shrink-0"
                 title="Chat on WhatsApp"
               >
-                <MessageCircle className="w-5 h-5" />
+                <WhatsAppIcon className="w-5 h-5" />
               </a>
             )}
 

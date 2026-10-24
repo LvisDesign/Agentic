@@ -27,6 +27,7 @@ import {
 import { DeltaCity, UserProfile, UserRole } from '../../types/marketplace';
 import { StateDropdown } from '../UI/StateDropdown';
 import { CustomDropdown } from '../UI/CustomDropdown';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { usePWA } from '../../utils/pwa';
 import { isLocalUrl } from '../../utils/environment';
@@ -1198,7 +1199,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             WhatsApp Number <span className="text-[#F0544F]">*</span>
                           </label>
                           <div className="relative">
-                            <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <WhatsAppIcon className="w-4 h-4 text-emerald-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                             <input
                               type="tel"
                               required={!sameAsPhone}

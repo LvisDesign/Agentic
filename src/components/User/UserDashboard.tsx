@@ -14,13 +14,13 @@ import {
   Bookmark, 
   BookmarkCheck, 
   ExternalLink,
-  MessageSquare,
   AlertCircle,
   XCircle,
   UserCheck,
   Copy,
   Check
 } from 'lucide-react';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { PropertyListing, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
@@ -423,7 +423,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                           rel="noreferrer"
                           className="w-full sm:w-auto py-2.5 px-3 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-xs font-semibold text-emerald-800 transition-colors flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap min-w-0"
                         >
-                          <MessageSquare className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <span className="truncate">WhatsApp</span>
                         </a>
 

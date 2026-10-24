@@ -4,9 +4,9 @@ import {
   CheckCircle2, 
   Clock,
   ArrowRight, 
-  MessageSquare, 
   Check
 } from 'lucide-react';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { submitPartnerAdvert, PartnerSubmissionPayload } from '../../services/adService';
 import { AdvertStory } from '../../data/mockAdverts';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
@@ -227,7 +227,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                 rel="noopener noreferrer"
                 className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all"
               >
-                <MessageSquare className="w-4 h-4" />
+                <WhatsAppIcon className="w-4 h-4" />
                 <span>Chat Ad Support on WhatsApp</span>
               </a>
 

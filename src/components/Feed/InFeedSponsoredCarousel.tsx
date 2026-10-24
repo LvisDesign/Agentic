@@ -15,6 +15,7 @@ import {
   Globe,
   RotateCcw
 } from 'lucide-react';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertStory, getAdvertCtaConfig } from '../../data/mockAdverts';
 import { PropertyListing } from '../../types/marketplace';
 
@@ -548,7 +549,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                             </>
                           )}
                           {cta.type === 'contact' && (
-                            <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                            <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-400" />
                           )}
                           {cta.type === 'property' && (
                             <ChevronRight className="w-3.5 h-3.5" />
@@ -571,7 +572,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                           title="Direct WhatsApp Chat"
                           aria-label="Direct WhatsApp Chat"
                         >
-                          <MessageCircle className="w-4 h-4" />
+                          <WhatsAppIcon className="w-4 h-4" />
                         </button>
                       )}
                     </>

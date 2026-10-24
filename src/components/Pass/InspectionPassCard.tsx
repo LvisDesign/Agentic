@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   Phone, 
-  MessageSquare, 
   MapPin, 
   Calendar, 
   CheckCircle, 
@@ -9,6 +8,7 @@ import {
   Check, 
   ShieldCheck
 } from 'lucide-react';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { BookingRecord, PropertyListing } from '../../types/marketplace';
 import { formatNigerianPhone, getWhatsAppUrl } from '../../utils/formatters';
 
@@ -146,7 +146,7 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold shadow-md transition-all active:scale-[0.98]"
             >
-              <MessageSquare className="w-4 h-4" />
+              <WhatsAppIcon className="w-4 h-4" />
               <span>WhatsApp Agent</span>
             </a>
           </div>

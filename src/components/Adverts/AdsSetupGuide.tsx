@@ -6,7 +6,6 @@ import {
   CheckCircle2, 
   Image as ImageIcon, 
   Clock, 
-  MessageSquare, 
   ShieldCheck, 
   Code2, 
   Copy, 
@@ -21,6 +20,7 @@ import {
   Globe,
   Sparkles
 } from 'lucide-react';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 
 interface AdsSetupGuideProps {
   mode?: 'customer' | 'admin' | 'all';
@@ -53,7 +53,7 @@ export const AdsSetupGuide: React.FC<AdsSetupGuideProps> = ({
     { id: 'tiers' as const, label: '1. Strategy & Tiers', icon: Target },
     { id: 'specs' as const, label: '2. Creative Specs', icon: ImageIcon },
     { id: 'sla' as const, label: '3. 1-Hour SLA', icon: Clock },
-    { id: 'leads' as const, label: '4. WhatsApp Leads', icon: MessageSquare },
+    { id: 'leads' as const, label: '4. WhatsApp Leads', icon: WhatsAppIcon },
     { id: 'api' as const, label: '5. REST API Connection', icon: Code2 },
     { id: 'admin' as const, label: '6. Admin Operations', icon: ShieldCheck, adminOnly: true },
   ].filter((item) => mode !== 'customer' || !item.adminOnly);
@@ -442,7 +442,7 @@ print("Campaign Data:", response.json())`;
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-1">
                 <div className="font-semibold text-xs text-emerald-950 flex items-center gap-1.5">
-                  <MessageSquare className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <WhatsAppIcon className="w-4 h-4 text-emerald-700 shrink-0" />
                   <span>Need Immediate Priority Activation?</span>
                 </div>
                 <p className="text-xs text-emerald-900 leading-relaxed">
@@ -467,7 +467,7 @@ print("Campaign Data:", response.json())`;
           <div className="space-y-6 animate-fade-in">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <MessageSquare className="w-4 h-4 text-[#B45309] shrink-0" />
+                <WhatsAppIcon className="w-4 h-4 text-[#B45309] shrink-0" />
                 <h3 className="font-display text-lg sm:text-xl text-[#342A21] font-semibold">
                   WhatsApp Lead Conversion Playbook
                 </h3>
@@ -911,7 +911,7 @@ print("Campaign Data:", response.json())`;
                 rel="noopener noreferrer"
                 className="py-1.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer no-underline shrink-0"
               >
-                <MessageSquare className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>Ad Support</span>
               </a>
               {onClose && (

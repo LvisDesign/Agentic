@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle2, 
-  MessageSquare,
   Globe, 
   Copy, 
   Check, 
@@ -43,6 +42,7 @@ import { AdvertiserUser, getActiveAdvertiser, logoutAdvertiser } from '../../ser
 import { AdvertiserAuthModal } from '../Advertiser/AdvertiserAuthModal';
 import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 
 interface PartnerPortalPageProps {
   onBackToExplore?: () => void;
@@ -1176,7 +1176,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       rel="noopener noreferrer"
                       className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
                     >
-                      <MessageSquare className="w-4 h-4" />
+                      <WhatsAppIcon className="w-4 h-4" />
                       <span>Fast-Track on WhatsApp</span>
                     </a>
 
@@ -1657,7 +1657,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           Keep your inverter and fans running 24/7. Flexible monthly lease-to-own plans.
                         </p>
                         <button className="w-full py-2 rounded-xl bg-[#25D366] text-white text-xs font-semibold flex items-center justify-center gap-1.5">
-                          <MessageSquare className="w-3.5 h-3.5" />
+                          <WhatsAppIcon className="w-3.5 h-3.5" />
                           <span>Chat on WhatsApp</span>
                         </button>
                       </div>
@@ -2085,7 +2085,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               rel="noopener noreferrer"
               className="hover:text-[#342A21] flex items-center gap-1 transition-colors"
             >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+              <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600" />
               <span>WhatsApp Support</span>
             </a>
             <span>·</span>

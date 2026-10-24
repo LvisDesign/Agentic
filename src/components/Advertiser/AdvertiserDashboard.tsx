@@ -7,7 +7,6 @@ import {
   KeyRound, 
   LogOut, 
   ExternalLink, 
-  MessageSquare, 
   CheckCircle2, 
   Clock, 
   Eye, 
@@ -26,6 +25,7 @@ import {
   ShieldCheck,
   Shield
 } from 'lucide-react';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertiserUser, logoutAdvertiser } from '../../services/advertiserAuthService';
 import { AdvertStory } from '../../data/mockAdverts';
 import { 
@@ -275,7 +275,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               rel="noopener noreferrer"
               className="hidden md:flex items-center gap-1.5 text-xs text-[#342A21] font-semibold hover:underline shrink-0"
             >
-              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+              <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600" />
               <span>WhatsApp Ad Desk</span>
             </a>
           </div>

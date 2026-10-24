@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   X, 
   Phone, 
-  MessageSquare, 
   MapPin, 
   Calendar, 
   Clock, 
@@ -14,6 +13,7 @@ import {
   ExternalLink,
   QrCode
 } from 'lucide-react';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { PropertyListing, BookingRecord } from '../../types/marketplace';
 import { formatNigerianPhone } from '../../utils/formatters';
 
@@ -204,7 +204,7 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
                 rel="noopener noreferrer"
                 className="py-2.5 px-3 rounded-[8px] bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
               >
-                <MessageSquare className="w-3.5 h-3.5 fill-white" />
+                <WhatsAppIcon className="w-3.5 h-3.5" />
                 <span>Chat on WhatsApp</span>
               </a>
             </div>

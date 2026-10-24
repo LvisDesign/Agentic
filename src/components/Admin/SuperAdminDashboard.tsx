@@ -58,6 +58,7 @@ import { ApiWebhookModal } from './ApiWebhookModal';
 import { PartnerAdSubmissionModal } from '../Adverts/PartnerAdSubmissionModal';
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { 
   approvePartnerAdvert, 
   rejectPartnerAdvert, 
@@ -2161,7 +2162,12 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                         <p className="text-[11px] text-[#70798C] line-clamp-1 mt-0.5">{sub.description}</p>
                         <div className="flex items-center gap-3 mt-1 text-[11px] text-[#70798C]">
                           {sub.partnerEmail && <span>{sub.partnerEmail}</span>}
-                          {sub.whatsappNumber && <span>WA: {sub.whatsappNumber}</span>}
+                          {sub.whatsappNumber && (
+                            <span className="inline-flex items-center gap-1 text-emerald-800 font-medium">
+                              <WhatsAppIcon className="w-3 h-3 text-emerald-600 shrink-0" />
+                              <span>{sub.whatsappNumber}</span>
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

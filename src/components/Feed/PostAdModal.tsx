@@ -20,6 +20,7 @@ import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { formatNaira } from '../../utils/formatters';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { CustomDropdown } from '../UI/CustomDropdown';
+import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 
 interface PostAdModalProps {
   isOpen: boolean;
@@ -384,7 +385,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                       : 'border-[#E5E7EB] bg-slate-50 text-[#70798C] hover:bg-slate-100'
                   }`}
                 >
-                  <MessageCircle className="w-3.5 h-3.5" />
+                  <WhatsAppIcon className="w-3.5 h-3.5" />
                   <span>Direct Contact</span>
                 </button>
 
