@@ -10,8 +10,7 @@ import {
   ArrowRight, 
   CheckCircle2, 
   Globe,
-  Briefcase,
-  ShieldCheck
+  Briefcase
 } from 'lucide-react';
 import { 
   loginAdvertiser, 
@@ -135,10 +134,6 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
               : 'Create your private advertiser account to launch sponsored flights and connect programmatic campaigns.'}
           </p>
 
-          <div className="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-600/20 text-amber-900 text-[11px] flex items-center gap-2">
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-            <span><strong>Admin Review Note:</strong> All campaigns initiated by customers are reviewed and approved by Setlla Admin before appearing on the Explore Feed.</span>
-          </div>
 
           {/* Mode Switcher Tabs */}
           <div className="flex items-center gap-2 mt-4 pt-3 border-t border-[#342A21]/10">

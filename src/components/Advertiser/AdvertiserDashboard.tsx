@@ -326,13 +326,6 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
           </div>
         </div>
 
-        {/* Admin Review Quality Notice Banner */}
-        <div className="bg-amber-500/10 border border-amber-600/20 rounded-2xl p-4 flex items-start sm:items-center gap-3 text-amber-950 shadow-2xs">
-          <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0 mt-0.5 sm:mt-0" />
-          <div className="text-xs leading-relaxed">
-            <strong>Admin Review & Approval Policy:</strong> Every ad flight and programmatic API push initiated by customers is reviewed and accepted by Setlla Admins before being displayed live on the explore page.
-          </div>
-        </div>
 
         {/* ===================================================================== */}
         {/* TAB 1: CAMPAIGNS LIST                                                 */}

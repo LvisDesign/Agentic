@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Sparkles, 
   CheckCircle2, 
-  ShieldCheck, 
-  MessageSquare, 
+  MessageSquare,
   Globe, 
   Copy, 
   Check, 
@@ -25,7 +24,6 @@ import {
   KeyRound,
   BookOpen,
   ArrowRight,
-  Rocket,
   Upload,
   Shield
 } from 'lucide-react';
@@ -538,7 +536,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   }}
                   className="px-3.5 py-2 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                 >
-                  <Rocket className="w-3.5 h-3.5 text-amber-400" />
                   <span>Register</span>
                 </button>
               </div>
@@ -633,12 +630,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             The dedicated ads platform for businesses, realtors, solar installers, interior decorators, and corporate platforms. Upload and manage your own campaigns self-serve, or integrate our enterprise REST API to push programmatic ads directly from your platform.
           </p>
 
-          {/* Admin Review Quality Guarantee Notice */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-500/10 border border-amber-600/20 text-amber-900 text-xs font-semibold shadow-2xs max-w-xl mx-auto text-left sm:text-center">
-            <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0" />
-            <span><strong>Admin Review Guarantee:</strong> Every campaign initiated by customers is reviewed and accepted by Setlla Admins before going live on the Explore Feed.</span>
-          </div>
-
           {/* Primary Action Buttons for Ads Customers */}
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             {activeAdvertiser ? (
@@ -659,7 +650,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   }}
                   className="py-3 px-6 rounded-2xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-sm flex items-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99]"
                 >
-                  <Rocket className="w-4 h-4 text-amber-400" />
                   <span>Create Advertiser Account</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -796,7 +786,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 }}
                 className="w-full sm:w-auto py-3 px-5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
               >
-                <Rocket className="w-3.5 h-3.5 text-amber-400" />
                 <span>{activeAdvertiser ? 'Open Your Ad Studio' : 'Create Advertiser Account'}</span>
               </button>
 
@@ -979,7 +968,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   }}
                   className="w-full sm:w-auto py-3 px-5 rounded-xl bg-[#F95700] hover:bg-[#E65100] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
                 >
-                  <Rocket className="w-3.5 h-3.5" />
                   <span>Create Account</span>
                 </button>
               </>
