@@ -12,7 +12,8 @@ import {
   Volume2,
   VolumeX,
   MessageCircle,
-  Globe
+  Globe,
+  RotateCcw
 } from 'lucide-react';
 import { AdvertStory, getAdvertCtaConfig } from '../../data/mockAdverts';
 import { PropertyListing } from '../../types/marketplace';
@@ -34,6 +35,7 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [hasEnded, setHasEnded] = useState(false);
   const isInitialMount = useRef(true);
 
   useEffect(() => {
@@ -60,6 +62,9 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
         if (!entry) return;
 
         if (entry.isIntersecting && entry.intersectionRatio >= 0.25) {
+          // If already ended while in view, do not auto-replay
+          if (hasEnded) return;
+
           const playPromise = video.play();
           if (playPromise !== undefined) {
             playPromise
@@ -79,6 +84,9 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
             video.pause();
             setIsPlaying(false);
           }
+          // When scrolled past (out of view), reset ended state so it plays fresh when returned
+          setHasEnded(false);
+          video.currentTime = 0;
         }
       },
       {
@@ -102,7 +110,7 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
       observer.disconnect();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [hasEnded]);
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -118,19 +126,44 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
     setIsMuted(nextMuted);
   };
 
+  const handlePlayAgain = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = 0;
+    setHasEnded(false);
+    video.play()
+      .then(() => setIsPlaying(true))
+      .catch(() => {});
+  };
+
+  const handleEnded = () => {
+    setHasEnded(true);
+    setIsPlaying(false);
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+    }
+  };
+
   return (
-    <div ref={containerRef} className="w-full h-full relative">
+    <div ref={containerRef} className="w-full h-full relative cursor-pointer" onClick={() => {
+      if (hasEnded) handlePlayAgain();
+    }}>
       <video
         ref={videoRef}
         src={mediaUrl}
         className="w-full h-full object-cover"
         muted={isMuted}
         playsInline
-        loop
         preload="auto"
         onVolumeChange={(e) => setIsMuted(e.currentTarget.muted || e.currentTarget.volume === 0)}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        onEnded={handleEnded}
       />
 
       {/* Floating Mute / Unmute Button */}
@@ -155,13 +188,29 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
         )}
       </button>
 
-      {!isPlaying && (
+      {/* Replay Overlay when video finishes without scrolling past */}
+      {hasEnded ? (
+        <div 
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] transition-all"
+          onClick={handlePlayAgain}
+        >
+          <button
+            type="button"
+            onClick={handlePlayAgain}
+            className="group/replay px-3 py-1.5 rounded-full bg-black/80 hover:bg-black/95 text-white border border-white/30 shadow-lg flex items-center gap-1.5 text-xs font-semibold backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            title="Replay video"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-amber-300 group-hover/replay:-rotate-45 transition-transform duration-300" />
+            <span>Replay</span>
+          </button>
+        </div>
+      ) : !isPlaying ? (
         <div className="absolute inset-0 bg-black/20 group-hover/media:bg-transparent transition-colors flex items-center justify-center pointer-events-none">
           <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/40 flex items-center justify-center text-white group-hover/media:scale-110 transition-transform">
             <Film className="w-4 h-4 text-white" />
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

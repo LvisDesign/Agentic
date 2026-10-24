@@ -49,6 +49,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [hasEnded, setHasEnded] = useState(false);
   const [videoSource, setVideoSource] = useState(() => resolveVideoSource(url));
   const isInitialMount = useRef(true);
 
@@ -63,6 +64,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
             console.log('[Setlla Video] Loaded authentic agent-uploaded video from local device cache:', id);
             setVideoSource(localBlobUrl);
             setHasError(false);
+            setHasEnded(false);
           } catch (e) {
             console.warn('[Setlla Video] Could not create local blob URL:', e);
           }
@@ -80,6 +82,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
     if (!videoSource.startsWith('blob:')) {
       setVideoSource(resolveVideoSource(url));
       setHasError(false);
+      setHasEnded(false);
     }
   }, [url]);
 
@@ -103,6 +106,10 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
     if (!video || hasError) return;
 
     if (isInView && isActive) {
+      // If the user has already watched the video to the end without scrolling past it,
+      // do NOT automatically replay it. Wait for manual play/replay click.
+      if (hasEnded) return;
+
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.catch(() => {
@@ -118,8 +125,14 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
       if (!video.paused) {
         video.pause();
       }
+      // When the user scrolls past this listing card (no longer in view) or switches carousel slide,
+      // reset ended status and rewind so that if they scroll back to it later, it plays fresh.
+      if ((!isInView || !isActive) && hasEnded) {
+        setHasEnded(false);
+        video.currentTime = 0;
+      }
     }
-  }, [isInView, isActive, hasError, videoSource]);
+  }, [isInView, isActive, hasError, videoSource, hasEnded]);
 
   // Synchronize native volume and mute changes with state
   const handleVolumeChange = () => {
@@ -145,13 +158,39 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
     setIsMuted(nextMuted);
   };
 
+  // Replay video from the beginning when user clicks play/replay
+  const handlePlayAgain = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = 0;
+    setHasEnded(false);
+    video.play().catch(() => {});
+  };
+
   // Toggle play/pause when user clicks the video area
   const handleVideoClick = () => {
     const video = videoRef.current;
     if (!video) return;
+    if (hasEnded) {
+      handlePlayAgain();
+      return;
+    }
     if (video.paused) {
       video.play().catch(() => {});
     } else {
+      video.pause();
+    }
+  };
+
+  // When video reaches the end without being scrolled past, pause and require user click to replay
+  const handleVideoEnded = () => {
+    setHasEnded(true);
+    const video = videoRef.current;
+    if (video) {
       video.pause();
     }
   };
@@ -166,7 +205,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
         if (!video.paused) {
           video.pause();
         }
-      } else if (isInView && isActive) {
+      } else if (isInView && isActive && !hasEnded) {
         video.play().catch(() => {});
       }
     };
@@ -175,7 +214,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isInView, isActive, hasError]);
+  }, [isInView, isActive, hasError, hasEnded]);
 
   const handleVideoError = () => {
     console.warn('[Setlla Video] Video source failed to play:', videoSource);
@@ -239,19 +278,40 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
         poster={poster || DEFAULT_FALLBACK_IMAGE}
         className="w-full h-full object-cover"
         muted={isMuted}
-        loop
         playsInline
         preload="auto"
         title={caption}
         onError={handleVideoError}
         onVolumeChange={handleVolumeChange}
+        onEnded={handleVideoEnded}
         onCanPlay={() => {
-          // If ready and currently active in view, ensure playback starts immediately
-          if (isInView && isActive && videoRef.current && videoRef.current.paused) {
+          // If ready, active, in view, and not already ended, ensure playback starts immediately
+          if (isInView && isActive && !hasEnded && videoRef.current && videoRef.current.paused) {
             videoRef.current.play().catch(() => {});
           }
         }}
       />
+
+      {/* Replay Overlay when video finishes without scrolling past */}
+      {hasEnded && (
+        <div 
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] transition-all"
+          onClick={handlePlayAgain}
+        >
+          <button
+            type="button"
+            onClick={handlePlayAgain}
+            className="group/replay px-4 py-2.5 rounded-full bg-black/80 hover:bg-black/95 text-white border border-white/30 shadow-xl flex items-center gap-2 text-xs font-semibold backdrop-blur-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            title="Watch video walkthrough again"
+          >
+            <RotateCcw className="w-4 h-4 text-amber-300 group-hover/replay:-rotate-45 transition-transform duration-300" />
+            <span>Replay Video</span>
+          </button>
+          <span className="text-[11px] text-white/80 mt-1.5 font-medium tracking-tight">
+            Click to watch again
+          </span>
+        </div>
+      )}
 
       {/* Floating Sound Toggle Pill Button (Active Mute / Unmute Control) */}
       <button
