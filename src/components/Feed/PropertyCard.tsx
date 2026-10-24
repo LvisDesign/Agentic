@@ -59,6 +59,15 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [isReported, setIsReported] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [activeMediaRatio, setActiveMediaRatio] = useState<number | null>(null);
+  const [isListingExpanded, setIsListingExpanded] = useState(false);
+
+  // Dynamic aspect ratio calculation based on real uploaded dimensions
+  const containerAspectRatio = activeMediaRatio
+    ? Math.max(0.5625, Math.min(1.7778, activeMediaRatio))
+    : (listing.media?.[0]?.type === 'video' ? 0.8 : 1.6);
+
+  const isPortrait = containerAspectRatio < 1;
 
   // Primary slot to display capacity badge
   const primarySlot = listing.inspectionSlots[0];
@@ -241,9 +250,19 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
         )}
 
-        {/* TOP SECTION: Media Carousel with Responsive Aspect Ratio */}
-        <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] max-h-[380px] shrink-0 overflow-hidden bg-slate-900">
-          <MediaCarousel media={listing.media} title={listing.title} />
+        {/* TOP SECTION: Media Carousel with Exact Natural Dimensions & Adaptive Aspect Ratio */}
+        <div 
+          className="relative w-full shrink-0 overflow-hidden bg-slate-950 transition-all duration-300"
+          style={{ 
+            aspectRatio: `${containerAspectRatio}`,
+            maxHeight: isPortrait ? '560px' : '400px'
+          }}
+        >
+          <MediaCarousel 
+            media={listing.media} 
+            title={listing.title} 
+            onAspectRatioChange={(ratio) => setActiveMediaRatio(ratio)}
+          />
 
           {/* Rented Out Backdrop Overlay */}
           {isRentedOut && (
@@ -259,9 +278,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           )}
         </div>
 
-        {/* MIDDLE SECTION: Descriptions Outside the Image (NO vertical scrolling into image container) */}
+        {/* MIDDLE SECTION: Descriptions Outside the Image with Collapsible Details */}
         <div className="px-3.5 sm:px-5 py-3 sm:py-3.5 flex flex-col space-y-2.5 sm:space-y-3 bg-white text-[#000004]">
-          <div className="space-y-1.5 sm:space-y-2">
+          <div className="space-y-2">
             {/* 1. Agent Pill */}
             <div className="flex items-center justify-between flex-wrap gap-1.5">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FCF9F5] border border-[#E5E7EB] text-[11px]">
@@ -307,12 +326,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               <h2 className="font-display text-sm sm:text-base font-bold text-[#000004] mt-0.5 line-clamp-2 break-words leading-snug">
                 {listing.title}
               </h2>
-              <p className="text-[11px] sm:text-xs text-[#70798C] line-clamp-1 sm:line-clamp-2 mt-0.5 leading-relaxed">
-                {listing.description}
-              </p>
             </div>
 
-            {/* 3. Feature Highlights & Amenity Pills */}
+            {/* 3. Essential Quick Summary Pills (Bedrooms & Bathrooms) */}
             <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
               <span className="px-2 py-0.5 rounded-md bg-[#FCF9F5] border border-[#E5E7EB] text-[#000004] font-medium flex items-center gap-1">
                 <Bed className="w-3 h-3 text-[#70798C]" />
@@ -322,51 +338,119 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 <Bath className="w-3 h-3 text-[#70798C]" />
                 {listing.bathrooms} Bath
               </span>
-              {listing.electricityStatus && (
+              {listing.electricityStatus && !isListingExpanded && (
                 <span className="px-2 py-0.5 rounded-md bg-amber-50/80 border border-amber-200 text-amber-900 font-medium flex items-center gap-1">
                   <Zap className="w-3 h-3 text-amber-600" />
                   {listing.electricityStatus}
                 </span>
               )}
-              {listing.waterSupply && (
-                <span className="px-2 py-0.5 rounded-md bg-[#00C3F7]/10 border border-[#00C3F7]/30 text-[#075985] font-medium flex items-center gap-1">
-                  <Droplet className="w-3 h-3 text-[#0284c7]" />
-                  {listing.waterSupply}
-                </span>
-              )}
-              {listing.addons && listing.addons.length > 0 && (
-                listing.addons.map((addon) => (
-                  <span
-                    key={addon}
-                    className="px-2 py-0.5 rounded-md bg-purple-50 border border-purple-200/80 text-purple-900 font-medium shrink-0"
-                  >
-                    {addon}
-                  </span>
-                ))
-              )}
             </div>
 
-            {/* 4. Transparent Move-in Cost Schedule Preview Card */}
-            <div 
-              onClick={() => setShowFeeDrawer(true)}
-              className="cursor-pointer p-2 sm:p-2.5 rounded-xl bg-[#FCF9F5] hover:bg-[#F4F5F7] border border-[#E5E7EB] flex items-center justify-between text-xs transition-colors group"
-            >
-              <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-md bg-[#342A21]/10 text-[#342A21] flex items-center justify-center">
-                  <Receipt className="w-3 h-3" />
-                </div>
-                <span className="text-[#000004] text-[11px] sm:text-xs">
-                  Total Move-in Package:{' '}
-                  <strong className="text-[#000004] font-display text-xs sm:text-sm">
-                    {formatNaira(listing.fees.totalMoveInPackage)}
-                  </strong>
-                </span>
-              </div>
-              <span className="text-[#342A21] font-semibold text-[10px] sm:text-[11px] flex items-center gap-0.5 group-hover:underline">
-                View Breakdown
-                <ChevronDown className="w-3 h-3" />
-              </span>
+            {/* 4. Description Preview (1 line when collapsed, full text when expanded) */}
+            <div>
+              <p 
+                onClick={() => setIsListingExpanded(!isListingExpanded)}
+                className={`text-[11px] sm:text-xs text-[#70798C] mt-0.5 leading-relaxed cursor-pointer hover:text-[#342A21] transition-colors ${
+                  isListingExpanded ? 'break-words' : 'line-clamp-1'
+                }`}
+                title="Click to toggle full listing details"
+              >
+                {listing.description}
+              </p>
             </div>
+
+            {/* 5. Collapsible Full Details Area (Features, Addons & Move-in Package) */}
+            {isListingExpanded && (
+              <div className="space-y-3 pt-2.5 border-t border-[#E5E7EB] animate-fade-in">
+                {/* Full Verified Amenities & Features */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#70798C] block">
+                    Verified Amenities & Features
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                    {listing.electricityStatus && (
+                      <span className="px-2 py-0.5 rounded-md bg-amber-50/80 border border-amber-200 text-amber-900 font-medium flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-amber-600" />
+                        {listing.electricityStatus}
+                      </span>
+                    )}
+                    {listing.waterSupply && (
+                      <span className="px-2 py-0.5 rounded-md bg-[#00C3F7]/10 border border-[#00C3F7]/30 text-[#075985] font-medium flex items-center gap-1">
+                        <Droplet className="w-3 h-3 text-[#0284c7]" />
+                        {listing.waterSupply}
+                      </span>
+                    )}
+                    {listing.isServiced && (
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-900 font-medium">
+                        Serviced Property
+                      </span>
+                    )}
+                    {listing.isFurnished && (
+                      <span className="px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-900 font-medium">
+                        Fully Furnished
+                      </span>
+                    )}
+                    {listing.addons && listing.addons.map((addon) => (
+                      <span
+                        key={addon}
+                        className="px-2 py-0.5 rounded-md bg-purple-50 border border-purple-200/80 text-purple-900 font-medium shrink-0"
+                      >
+                        {addon}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Move-in Cost Breakdown Schedule Card */}
+                <div 
+                  onClick={() => setShowFeeDrawer(true)}
+                  className="cursor-pointer p-2.5 rounded-xl bg-[#FCF9F5] hover:bg-[#F4F5F7] border border-[#E5E7EB] flex items-center justify-between text-xs transition-colors group"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-5 h-5 rounded-md bg-[#342A21]/10 text-[#342A21] flex items-center justify-center">
+                      <Receipt className="w-3 h-3" />
+                    </div>
+                    <span className="text-[#000004] text-[11px] sm:text-xs">
+                      Total Move-in Package:{' '}
+                      <strong className="text-[#000004] font-display text-xs sm:text-sm">
+                        {formatNaira(listing.fees.totalMoveInPackage)}
+                      </strong>
+                    </span>
+                  </div>
+                  <span className="text-[#342A21] font-semibold text-[10px] sm:text-[11px] flex items-center gap-0.5 group-hover:underline">
+                    View Breakdown
+                    <ChevronDown className="w-3 h-3" />
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* 6. Expand / Collapse Trigger Bar */}
+            <button
+              type="button"
+              onClick={() => setIsListingExpanded(!isListingExpanded)}
+              className="w-full py-1.5 px-3 rounded-xl bg-[#FCF9F5] hover:bg-[#F4F5F7] text-[#342A21] text-xs font-semibold flex items-center justify-between border border-[#E5E7EB] transition-colors cursor-pointer group/toggle"
+            >
+              <span className="text-[11px] sm:text-xs font-bold text-[#342A21] flex items-center gap-1.5">
+                {isListingExpanded ? (
+                  <span>Hide listing details</span>
+                ) : (
+                  <>
+                    <span>View full listing</span>
+                    {((listing.addons?.length || 0) > 0 || listing.waterSupply) && (
+                      <span className="text-[10px] font-medium text-[#70798C] bg-white border border-[#E5E7EB] px-1.5 py-0.5 rounded-full">
+                        +{(listing.addons?.length || 0) + (listing.waterSupply ? 1 : 0)} features & package
+                      </span>
+                    )}
+                  </>
+                )}
+              </span>
+              <ChevronDown 
+                className={`w-3.5 h-3.5 text-[#70798C] group-hover/toggle:text-[#342A21] transition-transform duration-200 ${
+                  isListingExpanded ? 'rotate-180' : ''
+                }`} 
+              />
+            </button>
           </div>
         </div>
 

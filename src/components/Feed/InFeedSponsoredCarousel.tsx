@@ -150,13 +150,20 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
   };
 
   return (
-    <div ref={containerRef} className="w-full h-full relative cursor-pointer" onClick={() => {
+    <div ref={containerRef} className="w-full h-full relative cursor-pointer flex items-center justify-center overflow-hidden bg-slate-950" onClick={() => {
       if (hasEnded) handlePlayAgain();
     }}>
+      {/* Ambient blurred backdrop so letterboxing (if any) looks seamless */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center filter blur-xl opacity-30 scale-110 pointer-events-none"
+        style={{ backgroundImage: `url(${mediaUrl})` }}
+      />
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+
       <video
         ref={videoRef}
         src={mediaUrl}
-        className="w-full h-full object-cover"
+        className="relative z-10 w-full h-full object-contain mx-auto"
         muted={isMuted}
         playsInline
         preload="auto"

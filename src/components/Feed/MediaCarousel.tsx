@@ -13,6 +13,7 @@ interface MediaItem {
 interface MediaCarouselProps {
   media: MediaItem[];
   title: string;
+  onAspectRatioChange?: (ratio: number, isPortrait: boolean) => void;
 }
 
 interface CarouselVideoItemProps {
@@ -22,6 +23,7 @@ interface CarouselVideoItemProps {
   caption: string;
   isActive: boolean;
   isInView: boolean;
+  onRatioDetected?: (ratio: number) => void;
 }
 
 function resolveVideoSource(src?: string): string {
@@ -45,6 +47,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   caption,
   isActive,
   isInView,
+  onRatioDetected,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
@@ -195,6 +198,17 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
     }
   };
 
+  // Detect intrinsic aspect ratio once metadata is available so feed card can match exact video dimensions
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget;
+    if (video && video.videoWidth && video.videoHeight) {
+      const ratio = video.videoWidth / video.videoHeight;
+      if (ratio > 0 && !isNaN(ratio)) {
+        onRatioDetected?.(ratio);
+      }
+    }
+  };
+
   // Pause playback when the user switches browser tabs or minimizes window
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -269,18 +283,26 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
 
   return (
     <div 
-      className="relative w-full h-full bg-slate-950 cursor-pointer"
+      className="relative w-full h-full bg-slate-950 cursor-pointer flex items-center justify-center overflow-hidden"
       onClick={handleVideoClick}
     >
+      {/* Ambient blurred backdrop so letterboxing (if any) looks seamless and modern */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center filter blur-2xl opacity-35 scale-110 pointer-events-none"
+        style={{ backgroundImage: `url(${poster || DEFAULT_FALLBACK_IMAGE})` }}
+      />
+      <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+
       <video
         ref={videoRef}
         src={videoSource}
         poster={poster || DEFAULT_FALLBACK_IMAGE}
-        className="w-full h-full object-cover"
+        className="relative z-10 w-full h-full object-contain mx-auto"
         muted={isMuted}
         playsInline
         preload="auto"
         title={caption}
+        onLoadedMetadata={handleLoadedMetadata}
         onError={handleVideoError}
         onVolumeChange={handleVolumeChange}
         onEnded={handleVideoEnded}
@@ -343,10 +365,28 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
   );
 };
 
-export const MediaCarousel: React.FC<MediaCarouselProps> = ({ media, title }) => {
+export const MediaCarousel: React.FC<MediaCarouselProps> = ({ media, title, onAspectRatioChange }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isInView, setIsInView] = useState(false);
+  const [detectedRatios, setDetectedRatios] = useState<Record<number, number>>({});
+
+  const handleRatioDetected = (idx: number, ratio: number) => {
+    setDetectedRatios((prev) => {
+      if (prev[idx] === ratio) return prev;
+      return { ...prev, [idx]: ratio };
+    });
+    if (idx === currentIndex && onAspectRatioChange) {
+      onAspectRatioChange(ratio, ratio < 1);
+    }
+  };
+
+  useEffect(() => {
+    const r = detectedRatios[currentIndex];
+    if (r && onAspectRatioChange) {
+      onAspectRatioChange(r, r < 1);
+    }
+  }, [currentIndex, detectedRatios, onAspectRatioChange]);
 
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -480,18 +520,32 @@ export const MediaCarousel: React.FC<MediaCarouselProps> = ({ media, title }) =>
                 caption={item.caption || title}
                 isActive={idx === currentIndex}
                 isInView={isInView}
+                onRatioDetected={(ratio) => handleRatioDetected(idx, ratio)}
               />
             ) : (
-              <img
-                src={item.url || DEFAULT_FALLBACK_IMAGE}
-                alt={item.caption || title}
-                onError={(e) => {
-                  e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
-                }}
-                className="w-full h-full object-cover pointer-events-none"
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                draggable={false}
-              />
+              <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-slate-950">
+                <div 
+                  className="absolute inset-0 bg-cover bg-center filter blur-2xl opacity-35 scale-110 pointer-events-none"
+                  style={{ backgroundImage: `url(${item.url || DEFAULT_FALLBACK_IMAGE})` }}
+                />
+                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                <img
+                  src={item.url || DEFAULT_FALLBACK_IMAGE}
+                  alt={item.caption || title}
+                  onLoad={(e) => {
+                    const img = e.currentTarget;
+                    if (img.naturalWidth && img.naturalHeight) {
+                      handleRatioDetected(idx, img.naturalWidth / img.naturalHeight);
+                    }
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                  }}
+                  className="relative z-10 w-full h-full object-contain pointer-events-none"
+                  loading={idx === 0 ? 'eager' : 'lazy'}
+                  draggable={false}
+                />
+              </div>
             )}
           </div>
         ))}
