@@ -35,6 +35,9 @@ export interface AdvertStory {
   endDate?: string;
   impressionsCount?: number;
   clicksCount?: number;
+  paymentReference?: string;
+  paymentMethod?: string;
+  paymentStatus?: 'paid' | 'pending' | 'free';
   apiKeyRef?: string;
   createdAt?: string;
 }

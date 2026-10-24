@@ -32,7 +32,8 @@ import {
   AlertCircle,
   Upload,
   X,
-  FileText
+  FileText,
+  Lock
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertiserUser, logoutAdvertiser } from '../../services/advertiserAuthService';
@@ -46,6 +47,7 @@ import {
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { processUploadedFile } from '../../utils/mediaStorage';
+import { PaystackModal } from '../Booking/PaystackModal';
 
 interface AdvertiserDashboardProps {
   advertiser: AdvertiserUser;
@@ -82,6 +84,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showPaystackModal, setShowPaystackModal] = useState(false);
+  const [latestPaymentRef, setLatestPaymentRef] = useState<string | null>(null);
+  const [latestPaymentMethod, setLatestPaymentMethod] = useState<string | null>(null);
 
   // Creative Media Upload & Preset State
   const [mediaSourceMode, setMediaSourceMode] = useState<'upload' | 'url'>('upload');
@@ -180,7 +185,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       return;
     }
     if (!mediaUrl.trim()) {
-      setFormError('Please provide a creative media URL.');
+      setFormError('Please provide a creative media URL or upload a file.');
       return;
     }
     if (actionType === 'website' && !websiteUrl.trim()) {
@@ -192,7 +197,14 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       return;
     }
 
+    // Lead advertiser directly to the Paystack payment gateway
+    setShowPaystackModal(true);
+  };
+
+  const handlePaystackSuccess = async (paymentReference: string, paymentMethod: 'Card' | 'Bank Transfer' | 'USSD') => {
+    setShowPaystackModal(false);
     setIsSubmitting(true);
+    setFormError(null);
     try {
       const payload: PartnerSubmissionPayload = {
         companyName: advertiser.companyName,
@@ -212,10 +224,14 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
         packageTier,
         durationDays: currentTier.durationDays,
         budgetAmount: currentTier.budgetAmount,
+        paymentReference,
+        paymentMethod,
       };
 
       const result = await submitPartnerAdvert(payload);
       setSubmissionSuccess(result.trackingRef);
+      setLatestPaymentRef(paymentReference);
+      setLatestPaymentMethod(paymentMethod);
       await loadCampaigns();
       if (onCampaignCreated) {
         onCampaignCreated(result.advert);
@@ -228,7 +244,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       setUploadedFileName(null);
     } catch (e) {
       console.error('Failed to submit ad:', e);
-      setFormError('Could not submit campaign. Please check your network connection and try again.');
+      setFormError('Payment confirmed, but could not register campaign. Please contact support with payment ref: ' + paymentReference);
     } finally {
       setIsSubmitting(false);
     }
@@ -556,9 +572,35 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h4 className="font-display text-xl text-[#342A21]">Campaign Submitted for Review!</h4>
-                <p className="text-xs text-[#70798C]">
-                  Reference ID: <code className="font-mono font-bold text-[#342A21]">{submissionSuccess}</code>. Our review desk verifies creatives within 1 hour.
+                <h4 className="font-display text-xl text-[#342A21]">Campaign Funded & Submitted!</h4>
+                
+                <div className="p-3.5 bg-[#FCF9F5] rounded-2xl border border-[#E5E7EB] text-left text-xs space-y-2">
+                  <div className="flex justify-between items-center pb-2 border-b border-[#E5E7EB]">
+                    <span className="text-[#70798C]">Setlla Campaign Ref:</span>
+                    <code className="font-mono font-bold text-[#342A21]">{submissionSuccess}</code>
+                  </div>
+                  {latestPaymentRef && (
+                    <div className="flex justify-between items-center pb-2 border-b border-[#E5E7EB]">
+                      <span className="text-[#70798C]">Paystack Reference:</span>
+                      <code className="font-mono font-bold text-emerald-700">{latestPaymentRef}</code>
+                    </div>
+                  )}
+                  {latestPaymentMethod && (
+                    <div className="flex justify-between items-center pb-2 border-b border-[#E5E7EB]">
+                      <span className="text-[#70798C]">Payment Method:</span>
+                      <span className="font-semibold text-[#342A21]">{latestPaymentMethod} (Verified)</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#70798C]">Payment Status:</span>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase">
+                      ✓ Paid via Paystack
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-[#70798C] leading-relaxed">
+                  Your ad is paid and queued for verification. Our review desk verifies creatives within 1 hour.
                 </p>
                 <button
                   onClick={() => { setSubmissionSuccess(null); setActiveTab('campaigns'); }}
@@ -1063,14 +1105,21 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-card cursor-pointer disabled:opacity-50 transition-all"
-                  >
-                    <span>{isSubmitting ? 'Submitting Campaign...' : 'Submit Campaign for Review'}</span>
-                    <ChevronRight className="w-4 h-4 text-amber-300" />
-                  </button>
+                  <div className="flex flex-col items-stretch sm:items-end gap-1.5 w-full sm:w-auto">
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-card cursor-pointer disabled:opacity-50 transition-all active:scale-[0.99] whitespace-nowrap"
+                    >
+                      <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                      <span>Proceed to Pay {currentTier.price} via Paystack</span>
+                      <ChevronRight className="w-4 h-4 text-amber-300 shrink-0" />
+                    </button>
+                    <span className="text-[10px] text-[#70798C] flex items-center gap-1.5 self-center sm:self-end">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Secured by Paystack · Cards, Bank Transfer & USSD</span>
+                    </span>
+                  </div>
                 </div>
               </form>
             )}
@@ -1144,6 +1193,20 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
           </div>
         )}
       </main>
+
+      {/* Paystack Checkout Gateway Modal */}
+      <PaystackModal
+        isOpen={showPaystackModal}
+        onClose={() => setShowPaystackModal(false)}
+        amount={currentTier.budgetAmount}
+        applicantEmail={advertiser.email}
+        applicantName={advertiser.companyName}
+        applicantPhone={whatsappNumber || phone || advertiser.phone}
+        merchantName="Setlla Media & Ads Network"
+        purposeTitle={`Campaign Ad · ${currentTier.name} (${currentTier.durationDays} Days)`}
+        buttonText={`Pay ${currentTier.price} & Submit Campaign`}
+        onSuccess={handlePaystackSuccess}
+      />
     </div>
   );
 };

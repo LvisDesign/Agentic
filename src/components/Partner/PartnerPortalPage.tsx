@@ -26,8 +26,11 @@ import {
   ImageIcon,
   Film,
   AlertCircle,
-  X
+  X,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
+import { PaystackModal } from '../Booking/PaystackModal';
 import { 
   submitPartnerAdvert, 
   PartnerSubmissionPayload,
@@ -127,8 +130,14 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedResult, setSubmittedResult] = useState<{ trackingRef: string; advert: AdvertStory } | null>(null);
+  const [submittedResult, setSubmittedResult] = useState<{
+    trackingRef: string;
+    advert: AdvertStory;
+    paymentRef?: string;
+    paymentMethod?: string;
+  } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [showPaystackModal, setShowPaystackModal] = useState(false);
 
   // Placements Preview State
   const [previewPlacement, setPreviewPlacement] = useState<'stories' | 'sidebar' | 'feed'>('stories');
@@ -267,7 +276,14 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       return;
     }
 
+    // Lead advertiser directly to the Paystack payment platform
+    setShowPaystackModal(true);
+  };
+
+  const handlePaystackSuccess = async (paymentReference: string, paymentMethod: 'Card' | 'Bank Transfer' | 'USSD') => {
+    setShowPaystackModal(false);
     setIsSubmitting(true);
+    setFormError(null);
     try {
       const payload: PartnerSubmissionPayload = {
         companyName,
@@ -287,16 +303,23 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         packageTier,
         durationDays: currentTier.durationDays,
         budgetAmount: currentTier.budgetAmount,
+        paymentReference,
+        paymentMethod,
       };
 
       const result = await submitPartnerAdvert(payload);
-      setSubmittedResult({ trackingRef: result.trackingRef, advert: result.advert });
+      setSubmittedResult({
+        trackingRef: result.trackingRef,
+        advert: result.advert,
+        paymentRef: paymentReference,
+        paymentMethod,
+      });
       if (onAdSubmitted) {
         onAdSubmitted(result.advert);
       }
     } catch (err) {
       console.error('Submission failed:', err);
-      setFormError('Could not process submission. Please verify your connection and try again.');
+      setFormError('Payment confirmed, but could not register campaign. Please contact support with payment ref: ' + paymentReference);
     } finally {
       setIsSubmitting(false);
     }
@@ -1160,8 +1183,29 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       We have logged your sponsored campaign for <strong className="text-[#342A21]">"{submittedResult.advert.advertiserName}"</strong>. Your private tracking reference is:
                     </p>
 
-                    <div className="mt-4 inline-block bg-[#FCF9F5] border border-dashed border-[#342A21]/20 px-5 py-2.5 rounded-2xl font-mono text-sm font-bold text-[#342A21]">
-                      {submittedResult.trackingRef}
+                    <div className="mt-4 p-3.5 bg-[#FCF9F5] rounded-2xl border border-[#E5E7EB] text-left text-xs space-y-2 max-w-sm mx-auto">
+                      <div className="flex justify-between items-center pb-2 border-b border-[#E5E7EB]">
+                        <span className="text-[#70798C]">Setlla Reference:</span>
+                        <code className="font-mono font-bold text-[#342A21]">{submittedResult.trackingRef}</code>
+                      </div>
+                      {submittedResult.paymentRef && (
+                        <div className="flex justify-between items-center pb-2 border-b border-[#E5E7EB]">
+                          <span className="text-[#70798C]">Paystack Reference:</span>
+                          <code className="font-mono font-bold text-emerald-700">{submittedResult.paymentRef}</code>
+                        </div>
+                      )}
+                      {submittedResult.paymentMethod && (
+                        <div className="flex justify-between items-center pb-2 border-b border-[#E5E7EB]">
+                          <span className="text-[#70798C]">Payment Method:</span>
+                          <span className="font-semibold text-[#342A21]">{submittedResult.paymentMethod} (Verified)</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#70798C]">Payment Status:</span>
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px] uppercase">
+                          ✓ Paid via Paystack
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -1600,29 +1644,30 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleReturn}
-                        className="py-3 px-5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F6F3EF] text-xs font-semibold text-[#70798C] hover:text-[#342A21] transition-colors cursor-pointer"
-                      >
-                        Cancel
-                      </button>
+                    <div className="flex flex-col items-stretch sm:items-end gap-1.5 w-full sm:w-auto">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleReturn}
+                          className="py-3 px-5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F6F3EF] text-xs font-semibold text-[#70798C] hover:text-[#342A21] transition-colors cursor-pointer"
+                        >
+                          Cancel
+                        </button>
 
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="py-3 px-7 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-card transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                      >
-                        {isSubmitting ? (
-                          <span>Submitting Campaign...</span>
-                        ) : (
-                          <>
-                            <span>Submit Campaign for Review</span>
-                            <ChevronRight className="w-4 h-4 text-amber-300" />
-                          </>
-                        )}
-                      </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="py-3 px-7 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-card transition-all active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                        >
+                          <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                          <span>Proceed to Pay {currentTier.price} via Paystack</span>
+                          <ChevronRight className="w-4 h-4 text-amber-300 shrink-0" />
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-[#70798C] flex items-center gap-1.5 self-center sm:self-end">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Secured by Paystack · Cards, Bank Transfer & USSD</span>
+                      </span>
                     </div>
                   </div>
                 </form>
@@ -2302,6 +2347,19 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           onCancel={() => setConfirmModal(null)}
         />
       )}
+      {/* Paystack Checkout Gateway Modal */}
+      <PaystackModal
+        isOpen={showPaystackModal}
+        onClose={() => setShowPaystackModal(false)}
+        amount={currentTier.budgetAmount}
+        applicantEmail={partnerEmail}
+        applicantName={companyName}
+        applicantPhone={whatsappNumber || phone}
+        merchantName="Setlla Media & Ads Network"
+        purposeTitle={`Campaign Ad · ${currentTier.name} (${currentTier.durationDays} Days)`}
+        buttonText={`Pay ${currentTier.price} & Submit Campaign`}
+        onSuccess={handlePaystackSuccess}
+      />
     </div>
   );
 };

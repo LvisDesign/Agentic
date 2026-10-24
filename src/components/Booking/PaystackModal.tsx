@@ -35,6 +35,7 @@ interface PaystackModalProps {
   agentName?: string;
   merchantName?: string;
   purposeTitle?: string;
+  buttonText?: string;
   onSuccess: (paymentReference: string, paymentMethod: 'Card' | 'Bank Transfer' | 'USSD') => void;
 }
 
@@ -49,6 +50,7 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
   agentName,
   merchantName,
   purposeTitle,
+  buttonText,
   onSuccess,
 }) => {
   const [activeTab, setActiveTab] = useState<'card' | 'bank' | 'ussd'>('card');
@@ -220,7 +222,9 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
 
               <div className="p-2.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] text-[11px] text-[#70798C] flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#342A21] shrink-0" />
-                <span>Zero Risk: Held in Setlla Escrow until physical inspection takes place.</span>
+                <span>
+                  {purposeTitle ? `Secured by Paystack · ${purposeTitle}` : 'Zero Risk: Held in Setlla Escrow until physical inspection takes place.'}
+                </span>
               </div>
             </div>
           )}
@@ -314,7 +318,9 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
               ) : (
                 <>
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Pay {formatNaira(amount)} & Unlock Contact</span>
+                  <span>
+                    {buttonText || (purposeTitle ? `Pay ${formatNaira(amount)} & Activate` : `Pay ${formatNaira(amount)} & Unlock Contact`)}
+                  </span>
                 </>
               )}
             </button>

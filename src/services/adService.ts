@@ -32,6 +32,8 @@ export interface PartnerSubmissionPayload {
   packageTier: 'starter' | 'growth' | 'corporate';
   durationDays: number;
   budgetAmount: number;
+  paymentReference?: string;
+  paymentMethod?: string;
 }
 
 export interface ProgrammaticPushPayload {
@@ -584,6 +586,9 @@ export const submitPartnerAdvert = async (payload: PartnerSubmissionPayload): Pr
     partnerEmail: payload.partnerEmail,
     packageTier: payload.packageTier,
     budgetAmount: payload.budgetAmount,
+    paymentReference: payload.paymentReference,
+    paymentMethod: payload.paymentMethod,
+    paymentStatus: payload.paymentReference ? 'paid' : 'pending',
     startDate: now.toISOString(),
     endDate: end.toISOString(),
     impressionsCount: 0,
