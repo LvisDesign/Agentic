@@ -156,7 +156,7 @@ create table if not exists public.platform_users (
   city text default 'Asaba',
   preferred_property_type text,
   budget numeric default 0,
-  nin text,
+  -- nin removed from platform requirements
   is_verified_tenant boolean default false,
   is_agent boolean default false,
   agency_name text,

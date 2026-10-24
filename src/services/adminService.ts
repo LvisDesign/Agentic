@@ -188,7 +188,7 @@ export function toggleTenantVerification(
     updated.id,
     updated.fullName,
     adminName,
-    `Tenant verification status: ${updated.isVerifiedTenant ? 'Verified NIN' : 'Unverified'}`
+    `Tenant verification status: ${updated.isVerifiedTenant ? 'Verified Account' : 'Unverified'}`
   );
   return updated;
 }

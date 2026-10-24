@@ -1070,7 +1070,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               </div>
               <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#70798C]">
                 <span className="font-bold text-blue-600">
-                  {tenantsList.filter((t) => t.isVerifiedTenant).length} NIN Verified
+                  {tenantsList.filter((t) => t.isVerifiedTenant).length} Verified Tenants
                 </span>
               </div>
             </div>
@@ -1456,7 +1456,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             <div className="flex items-center gap-2 flex-wrap">
               {[
                 { id: 'all', label: `All Tenants (${tenantsList.length})` },
-                { id: 'verified', label: `NIN Verified (${tenantsList.filter((t) => t.isVerifiedTenant).length})` },
+                { id: 'verified', label: `Verified (${tenantsList.filter((t) => t.isVerifiedTenant).length})` },
                 { id: 'suspended', label: `Suspended (${tenantsList.filter((t) => t.isSuspended).length})` },
               ].map((f) => (
                 <button
@@ -1487,7 +1487,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                     <th className="py-3.5 px-4">Tenant Name</th>
                     <th className="py-3.5 px-3">City & Preference</th>
                     <th className="py-3.5 px-3">Contact Coordinates</th>
-                    <th className="py-3.5 px-3">NIN Identity</th>
+                    <th className="py-3.5 px-3">Account Status</th>
                     <th className="py-3.5 px-3">Passes & Bookings</th>
                     <th className="py-3.5 px-4 text-right">Super Controls</th>
                   </tr>
@@ -1550,20 +1550,17 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                             )}
                           </td>
 
-                          {/* NIN Verification */}
+                          {/* Account Verification Status */}
                           <td className="py-3.5 px-3">
                             {isVerified ? (
                               <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[10px] font-bold border border-blue-200 flex items-center gap-1 w-max">
                                 <Check className="w-3 h-3 text-blue-600" />
-                                Verified NIN
+                                Verified Account
                               </span>
                             ) : (
                               <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[#70798C] text-[10px] font-medium border border-slate-200">
                                 Unverified
                               </span>
-                            )}
-                            {tenant.nin && (
-                              <p className="text-[10px] text-[#70798C] font-mono mt-0.5">{tenant.nin}</p>
                             )}
                           </td>
 
@@ -2766,13 +2763,6 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB]">
-                <span className="text-[11px] text-[#70798C] font-semibold">National Identity Number (NIN):</span>
-                <p className="font-mono font-bold text-sm text-[#000004] mt-0.5">
-                  {inspectingKycUser.kycDocuments?.ninNumber || inspectingKycUser.nin || 'NIN-1029-***-4821'}
-                </p>
-              </div>
-
               <div className="p-3 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB]">
                 <span className="text-[11px] text-[#70798C] font-semibold">CAC Registration Certificate:</span>
                 <p className="font-mono font-bold text-sm text-[#000004] mt-0.5">

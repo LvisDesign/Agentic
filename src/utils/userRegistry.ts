@@ -29,7 +29,6 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     city: 'Asaba',
     preferredPropertyType: 'Bedseater',
     budget: 2000000,
-    nin: 'NIN-2910-***-9021',
     isVerifiedTenant: true,
     isAgent: false,
     savedListingIds: ['prop-asaba-01'],
@@ -52,7 +51,6 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     isAgent: true,
     kycStatus: 'verified',
     kycDocuments: {
-      ninNumber: 'NIN-8910-***-2011',
       cacCertificateUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
       submittedAt: '2026-09-15T12:00:00.000Z',
     },
@@ -76,7 +74,6 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     isAgent: true,
     kycStatus: 'verified',
     kycDocuments: {
-      ninNumber: 'NIN-1029-***-4821',
       cacCertificateUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80',
       submittedAt: '2026-09-10T10:30:00.000Z',
     },
@@ -100,7 +97,6 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     isAgent: true,
     kycStatus: 'pending',
     kycDocuments: {
-      ninNumber: 'NIN-5521-***-9018',
       submittedAt: '2026-10-18T14:20:00.000Z',
     },
     savedListingIds: [],

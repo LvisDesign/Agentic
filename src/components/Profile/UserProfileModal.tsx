@@ -85,7 +85,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [editWhatsapp, setEditWhatsapp] = useState(currentUser.whatsapp || currentUser.phone || '');
   const [editEmail, setEditEmail] = useState(currentUser.email || '');
   const [editCity, setEditCity] = useState(currentUser.city || currentUser.operatingCity || 'Asaba');
-  const [editNin, setEditNin] = useState(currentUser.nin || '');
 
   // Eligibility: 7 days after signup, 14 days after last edit
   const now = Date.now();
@@ -124,7 +123,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     setEditWhatsapp(currentUser.whatsapp || currentUser.phone || '');
     setEditEmail(currentUser.email || (isAgent ? 'victor@apexrealty.ng' : 'chinedu.okafor@gmail.com'));
     setEditCity(currentUser.city || currentUser.operatingCity || 'Asaba');
-    setEditNin(currentUser.nin || '');
     setEditMode('verify');
   };
 
@@ -158,7 +156,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         whatsapp: editWhatsapp.trim() || editPhone.trim(),
         operatingCity: editCity,
       } : {
-        nin: editNin.trim() || currentUser.nin,
+        whatsapp: editWhatsapp.trim() || editPhone.trim(),
       }),
       lastProfileEditAt: new Date().toISOString(),
     };
@@ -588,29 +586,16 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       required
                     />
                   </div>
-                  {isAgent ? (
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#70798C] mb-1">WhatsApp Number</label>
-                      <input
-                        type="text"
-                        value={editWhatsapp}
-                        onChange={(e) => setEditWhatsapp(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#000004] focus:border-[#000004] outline-none"
-                        placeholder="e.g. 0803 555 1234"
-                      />
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#70798C] mb-1">NIN / National ID</label>
-                      <input
-                        type="text"
-                        value={editNin}
-                        onChange={(e) => setEditNin(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#000004] focus:border-[#000004] outline-none"
-                        placeholder="NIN-2910-***-9021"
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#70798C] mb-1">WhatsApp Number</label>
+                    <input
+                      type="text"
+                      value={editWhatsapp}
+                      onChange={(e) => setEditWhatsapp(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#000004] focus:border-[#000004] outline-none"
+                      placeholder="e.g. 0803 555 1234"
+                    />
+                  </div>
                 </div>
 
                 {/* Email */}
@@ -799,10 +784,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-xs py-1">
                     <span className="text-[#70798C] flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" /> NIN / Identity
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" /> Account Status
                     </span>
-                    <span className="font-semibold text-[#000004]">
-                      {currentUser.nin || 'NIN-2910-***-9021'}
+                    <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
+                      {currentUser.isVerifiedTenant ? 'Verified Tenant' : 'Active Account'}
                     </span>
                   </div>
                 </>

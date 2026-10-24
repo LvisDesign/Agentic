@@ -66,7 +66,6 @@ const INITIAL_USER: UserProfile = {
   city: 'Asaba',
   preferredPropertyType: 'Bedseater',
   budget: 2000000,
-  nin: 'NIN-2910-***-9021',
   isVerifiedTenant: true,
   isAgent: false,
   savedListingIds: ['prop-asaba-01'],
