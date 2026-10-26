@@ -220,6 +220,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [directPassModalTenant, setDirectPassModalTenant] = useState<UserProfile | null>(null);
   const [directPassSelectedListingId, setDirectPassSelectedListingId] = useState<string>('');
 
+  // Decline Advert Feedback Modal state
+  const [decliningAd, setDecliningAd] = useState<AdvertStory | null>(null);
+  const [declineReason, setDeclineReason] = useState<string>('Banner creative is low quality, pixelated, or contains watermarks.');
+
   // Custom Confirm & Alert Dialog state
   const [confirmModalState, setConfirmModalState] = useState<{
     isOpen: boolean;
@@ -396,20 +400,43 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     }
   };
 
-  const handleRejectPartnerSubmission = async (adId: string) => {
-    const updated = await rejectPartnerAdvert(adId);
+  const PRESET_AD_DECLINE_REASONS = [
+    'Banner creative is low quality, pixelated, or contains watermarks.',
+    'Misleading rental pricing, inaccurate specs, or unverified claims.',
+    'Destination link is invalid, broken, or directs to an unrelated page.',
+    'Unauthorized trademark usage or third-party brand impersonation.',
+    'Content violates platform guidelines or contains prohibited financial schemes.',
+  ];
+
+  const handleOpenDeclineAdModal = (ad: AdvertStory) => {
+    setDecliningAd(ad);
+    setDeclineReason(PRESET_AD_DECLINE_REASONS[0]);
+  };
+
+  const handleConfirmDeclineAdvert = async () => {
+    if (!decliningAd) return;
+    const finalReason = declineReason.trim() || 'This campaign does not meet Setlla advertising and verification guidelines.';
+    const updated = await rejectPartnerAdvert(decliningAd.id, finalReason);
     if (updated) {
-      setLocalAdverts((prev) => prev.map((a) => (a.id === adId ? updated : a)));
+      setLocalAdverts((prev) => prev.map((a) => (a.id === decliningAd.id ? updated : a)));
       onUpdateAdvert?.(updated);
-      showToast(`Campaign rejected.`);
+      showToast(`Campaign declined. Feedback recorded for ${updated.advertiserName}.`);
       recordAuditLog(
         'ADVERT_REJECTED',
         'system',
         updated.id,
         updated.headline,
         currentUser.fullName,
-        `Rejected partner submission from ${updated.advertiserName}.`
+        `Declined campaign "${updated.headline}" from ${updated.advertiserName}. Feedback: ${finalReason}`
       );
+    }
+    setDecliningAd(null);
+  };
+
+  const handleRejectPartnerSubmission = (adId: string) => {
+    const target = localAdverts.find((a) => a.id === adId);
+    if (target) {
+      handleOpenDeclineAdModal(target);
     }
   };
 
@@ -2441,6 +2468,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                   { value: 'all', label: 'All Campaign Statuses' },
                   { value: 'active', label: 'Live Active Only', dotColor: '#10B981' },
                   { value: 'pending_review', label: 'Pending Review', dotColor: '#F59E0B' },
+                  { value: 'rejected', label: 'Declined Campaigns', dotColor: '#EF4444' },
                   { value: 'expired', label: 'Expired Campaigns', dotColor: '#9CA3AF' },
                 ]}
                 variant="filter"
@@ -2562,6 +2590,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                             <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-bold text-[10px] shrink-0">
                               Pending Review
                             </span>
+                          ) : ad.status === 'rejected' ? (
+                            <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-900 font-bold text-[10px] shrink-0">
+                              Declined
+                            </span>
                           ) : ad.status === 'expired' ? (
                             <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-900 font-bold text-[10px] shrink-0">
                               Expired
@@ -2576,6 +2608,19 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                         <p className="text-xs text-[#70798C] line-clamp-2 leading-relaxed">
                           {ad.description}
                         </p>
+
+                        {/* If declined, display decline reason on card */}
+                        {ad.status === 'rejected' && ad.rejectionReason && (
+                          <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200/90 text-rose-900 text-[11px] space-y-0.5">
+                            <span className="font-bold text-[10px] uppercase tracking-wider text-rose-800 flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3 text-rose-600" />
+                              <span>Decline Reason</span>
+                            </span>
+                            <p className="text-xs text-rose-950 font-medium leading-tight">
+                              {ad.rejectionReason}
+                            </p>
+                          </div>
+                        )}
 
                         {/* Meta pills */}
                         <div className="pt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-[#70798C]">
@@ -2602,26 +2647,57 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                     <div className="p-3 bg-[#FCF9F5] border-t border-[#E5E7EB] flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5">
                         {ad.status === 'pending_review' ? (
-                          <button
-                            onClick={() => handleApprovePartnerSubmission(ad.id)}
-                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 shadow-xs cursor-pointer"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Approve</span>
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleApprovePartnerSubmission(ad.id)}
+                              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 shadow-xs cursor-pointer"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Approve</span>
+                            </button>
+                            <button
+                              onClick={() => handleOpenDeclineAdModal(ad)}
+                              className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-rose-200 text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="Decline this pending campaign with feedback"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        ) : ad.status === 'rejected' ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2.5 py-1 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px] font-bold">
+                              Declined
+                            </span>
+                            <button
+                              onClick={() => handleApprovePartnerSubmission(ad.id)}
+                              className="px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100 text-[11px] font-bold cursor-pointer transition-colors"
+                              title="Re-approve and activate this advert"
+                            >
+                              Re-Approve
+                            </button>
+                          </div>
                         ) : (
-                          <button
-                            onClick={() => handleToggleAdvertVerification(ad.id)}
-                            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                              ad.isVerified
-                                ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                                : 'bg-white text-[#70798C] hover:bg-slate-100 border border-[#E5E7EB]'
-                            }`}
-                            title="Toggle verified badge"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>{ad.isVerified ? 'Verified' : 'Verify'}</span>
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleToggleAdvertVerification(ad.id)}
+                              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                                ad.isVerified
+                                  ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                                  : 'bg-white text-[#70798C] hover:bg-slate-100 border border-[#E5E7EB]'
+                              }`}
+                              title="Toggle verified badge"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>{ad.isVerified ? 'Verified' : 'Verify'}</span>
+                            </button>
+                            <button
+                              onClick={() => handleOpenDeclineAdModal(ad)}
+                              className="px-2 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 cursor-pointer transition-colors"
+                              title="Decline / Suspend this advert with feedback"
+                            >
+                              Decline
+                            </button>
+                          </div>
                         )}
                       </div>
 
@@ -3557,6 +3633,107 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           isModal={true}
           onClose={() => setIsAdsGuideOpen(false)}
         />
+      )}
+
+      {/* Decline Advert Modal with Reason & Feedback Input */}
+      {decliningAd && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-[#000004]">Decline Sponsored Campaign</h3>
+                  <p className="text-xs text-[#70798C]">Provide feedback so the advertiser understands why and how to fix it.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDecliningAd(null)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Campaign Summary Pill */}
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
+              <img
+                src={decliningAd.thumbnailUrl || decliningAd.mediaUrl}
+                alt={decliningAd.headline}
+                className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80';
+                }}
+              />
+              <div className="min-w-0 flex-1">
+                <span className="font-bold text-xs text-[#000004] block truncate">{decliningAd.headline}</span>
+                <span className="text-[11px] text-[#70798C] block truncate">
+                  {decliningAd.advertiserName} · {decliningAd.category} · {decliningAd.partnerEmail || 'Partner Submission'}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Reason Presets */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 block">Select Common Feedback Reason</label>
+              <div className="flex flex-wrap gap-1.5">
+                {PRESET_AD_DECLINE_REASONS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setDeclineReason(preset)}
+                    className={`text-[11px] px-2.5 py-1 rounded-lg border text-left transition-all cursor-pointer ${
+                      declineReason === preset
+                        ? 'bg-rose-50 border-rose-300 text-rose-800 font-bold shadow-2xs'
+                        : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Textarea for feedback */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700 block">
+                Detailed Feedback for Customer <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                rows={3}
+                className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all resize-none text-[#000004]"
+                placeholder="Type specific guidelines violation or required revisions..."
+              />
+              <p className="text-[11px] text-slate-500">
+                This explanation will be displayed on the customer's dashboard card with an <strong>"Edit & Resubmit"</strong> option.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDecliningAd(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeclineAdvert}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Confirm Decline & Send Feedback</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Custom Global Confirmation & Prompt Modal */}

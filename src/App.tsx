@@ -1140,6 +1140,20 @@ export function App() {
     return unsubscribe;
   }, []);
 
+  // Active, verified campaigns to broadcast on the public feed (filters out declined, pending, and expired ads)
+  const activePublicAdverts = useMemo(() => {
+    return adverts.filter(
+      (a) =>
+        a &&
+        a.id &&
+        a.status !== 'rejected' &&
+        a.status !== 'pending_review' &&
+        a.status !== 'deleted' &&
+        a.status !== 'expired' &&
+        (a.status === 'active' || !a.status)
+    );
+  }, [adverts]);
+
   const [isPostAdOpen, setIsPostAdOpen] = useState(false);
   const [isPartnerPortalOpen, setIsPartnerPortalOpen] = useState(false);
 
@@ -1949,7 +1963,7 @@ export function App() {
               onSelectMaxRent={setMaxRent}
               totalFiltered={filteredListings.length}
               listings={listings}
-              adverts={adverts}
+              adverts={activePublicAdverts}
               onSelectAdvert={handleSelectAdvert}
               onOpenPostAd={() => setIsPostAdOpen(true)}
             />
@@ -1958,7 +1972,7 @@ export function App() {
             <div className="w-full max-w-7xl mx-auto h-[calc(100dvh-112px)] mt-[112px] flex items-center justify-center gap-6 px-2 sm:px-6 overflow-hidden">
               {/* Desktop Left Side Sponsored Ads */}
               <DesktopAdvertSidebar
-                adverts={adverts}
+                adverts={activePublicAdverts}
                 onSelectAdvert={handleSelectAdvert}
                 onOpenPostAd={() => setIsPostAdOpen(true)}
               />
@@ -1976,7 +1990,7 @@ export function App() {
                   onUpdateAvailability={handleUpdateListingAvailability}
                   onConfirmFreshness={handleConfirmListingFreshness}
                   onResetFilters={handleResetFilters}
-                  adverts={adverts}
+                  adverts={activePublicAdverts}
                   onSelectAdvert={handleSelectAdvert}
                   onOpenPostAd={() => setIsPostAdOpen(true)}
                   totalListingsCount={listings.length}

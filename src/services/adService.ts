@@ -253,6 +253,8 @@ export const mapDbToAdvert = (row: any): AdvertStory => ({
   pendingChanges: typeof row.pending_changes === 'string' ? JSON.parse(row.pending_changes) : (row.pending_changes || row.pendingChanges || undefined),
   changesReviewStatus: row.changes_review_status || row.changesReviewStatus || null,
   changesRejectionReason: row.changes_rejection_reason || row.changesRejectionReason || undefined,
+  rejectionReason: row.rejection_reason || row.rejectionReason || undefined,
+  rejectedAt: row.rejected_at || row.rejectedAt || undefined,
 });
 
 /**
@@ -297,6 +299,8 @@ export const mapAdvertToDb = (ad: AdvertStory) => ({
   pending_changes: ad.pendingChanges ? ad.pendingChanges : null,
   changes_review_status: ad.changesReviewStatus || null,
   changes_rejection_reason: ad.changesRejectionReason || null,
+  rejection_reason: ad.rejectionReason || null,
+  rejected_at: ad.rejectedAt || null,
 });
 
 /**
@@ -543,14 +547,21 @@ export const approvePartnerAdvert = async (id: string, durationDays = 30): Promi
 /**
  * Method 1: Admin Rejection
  */
-export const rejectPartnerAdvert = async (id: string, _reason?: string): Promise<AdvertStory | null> => {
+export const rejectPartnerAdvert = async (id: string, reason?: string): Promise<AdvertStory | null> => {
   const all = await loadAllAdverts();
   const target = all.find((item) => item.id === id);
   if (!target) return null;
 
+  const rejectionFeedback = reason?.trim() || 'This campaign does not meet Setlla advertising and brand safety guidelines.';
+
   const rejectedAd: AdvertStory = {
     ...target,
     status: 'rejected',
+    rejectionReason: rejectionFeedback,
+    rejectedAt: new Date().toISOString(),
+    hasPendingChanges: false,
+    pendingChanges: undefined,
+    changesReviewStatus: null,
   };
 
   return await saveAdvert(rejectedAd);
@@ -562,7 +573,7 @@ export const rejectPartnerAdvert = async (id: string, _reason?: string): Promise
  * - Sensitive Fields (Media creative, Headline, Description, Location, Category, Price):
  *   If the ad is currently active/paused, sensitive updates are saved to `pendingChanges` shadow record
  *   for Admin re-approval without disrupting the live campaign runtime.
- *   If the ad is in pending_review, updates are applied directly to the pending ad.
+ *   If the ad is in pending_review or rejected, updates are applied directly and submitted for review.
  */
 export const editAdvert = async (
   id: string,
@@ -590,13 +601,16 @@ export const editAdvert = async (
 
   let updatedAd: AdvertStory;
 
-  if (existing.status === 'pending_review') {
-    // If not live yet, update everything directly without shadow record
+  if (existing.status === 'pending_review' || existing.status === 'rejected') {
+    // If not live yet or previously rejected, update everything directly and submit for review
     updatedAd = {
       ...existing,
       ...updates,
       title: (updates.headline || existing.headline).slice(0, 24),
       thumbnailUrl: updates.thumbnailUrl || updates.mediaUrl || existing.thumbnailUrl,
+      status: 'pending_review',
+      rejectionReason: undefined,
+      rejectedAt: undefined,
       hasPendingChanges: false,
       pendingChanges: undefined,
       changesReviewStatus: null,

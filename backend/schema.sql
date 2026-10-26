@@ -304,6 +304,10 @@ create table if not exists public.adverts (
   pending_changes jsonb default null,
   changes_review_status text default null check (changes_review_status in ('pending', 'rejected', null)),
   changes_rejection_reason text,
+
+  -- Admin Rejection Reason & Feedback
+  rejection_reason text,
+  rejected_at timestamp with time zone,
   
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
@@ -483,7 +487,6 @@ begin
   end if;
 end $$;
 
-
-
-
-
+-- 14. Idempotent Migration Helpers for Existing Supabase Databases
+alter table public.adverts add column if not exists rejection_reason text;
+alter table public.adverts add column if not exists rejected_at timestamp with time zone;

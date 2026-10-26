@@ -41,6 +41,10 @@ export interface AdvertStory {
   apiKeyRef?: string;
   createdAt?: string;
 
+  // Campaign Rejection & Platform Review Feedback
+  rejectionReason?: string;
+  rejectedAt?: string;
+
   // Shadow / Draft Edit Pattern (Safe vs Sensitive Edits)
   hasPendingChanges?: boolean;
   pendingChanges?: AdvertPendingChanges;

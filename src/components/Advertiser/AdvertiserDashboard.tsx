@@ -80,7 +80,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   const [currentAdvertiser, setCurrentAdvertiser] = useState<AdvertiserUser>(() => getActiveAdvertiser() || advertiser);
   const [activeTab, setActiveTab] = useState<'campaigns' | 'new-campaign' | 'wallet' | 'api-keys' | 'guide'>('campaigns');
   const [adverts, setAdverts] = useState<AdvertStory[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'expired'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'declined' | 'expired'>('all');
   const [copiedKey, setCopiedKey] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -382,7 +382,10 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       const { advert: updated, hasSensitiveChanges } = await editAdvert(editingAdvert.id, updates);
       await loadCampaigns();
 
-      if (hasSensitiveChanges && updated.status !== 'pending_review') {
+      if (editingAdvert.status === 'rejected') {
+        setToastMessage('Campaign updated and resubmitted for admin review!');
+        setEditingAdvert(null);
+      } else if (hasSensitiveChanges && updated.status !== 'pending_review') {
         setToastMessage('Creative updates sent for Admin approval! Your live ad will continue running.');
         setEditStatusMessage({
           type: 'warning',
@@ -419,14 +422,16 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   };
 
   // Metrics calculation
-  const activeCount = adverts.filter((a) => (a.status || 'active') === 'active').length;
+  const activeCount = adverts.filter((a) => a.status === 'active').length;
   const pendingCount = adverts.filter((a) => a.status === 'pending_review').length;
+  const declinedCount = adverts.filter((a) => a.status === 'rejected').length;
   const totalImpressions = adverts.reduce((acc, a) => acc + (a.impressionsCount || 0), 0);
   const totalClicks = adverts.reduce((acc, a) => acc + (a.clicksCount || 0), 0);
 
   const filteredAdverts = adverts.filter((a) => {
-    if (statusFilter === 'active') return (a.status || 'active') === 'active';
+    if (statusFilter === 'active') return a.status === 'active';
     if (statusFilter === 'pending') return a.status === 'pending_review';
+    if (statusFilter === 'declined') return a.status === 'rejected';
     if (statusFilter === 'expired') return a.status === 'expired';
     return true;
   });
@@ -602,6 +607,19 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Pending</span>
               <span className="text-lg font-bold text-amber-700">{pendingCount}</span>
             </div>
+            {declinedCount > 0 && (
+              <div 
+                onClick={() => setStatusFilter('declined')}
+                className="bg-rose-50/90 p-3 rounded-2xl border border-rose-200 min-w-[75px] cursor-pointer hover:border-rose-300 transition-all text-left"
+                title="View declined campaigns with review feedback"
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[10px] uppercase font-bold text-rose-900 block">Declined</span>
+                  <AlertCircle className="w-3 h-3 text-rose-600" />
+                </div>
+                <span className="text-lg font-bold text-rose-700">{declinedCount}</span>
+              </div>
+            )}
             <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[75px]">
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Views</span>
               <span className="text-lg font-bold text-[#342A21]">{totalImpressions.toLocaleString()}</span>
@@ -630,17 +648,24 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-[#E5E7EB]">
-                {(['all', 'active', 'pending', 'expired'] as const).map((filter) => (
+                {(['all', 'active', 'pending', 'declined', 'expired'] as const).map((filter) => (
                   <button
                     key={filter}
                     onClick={() => setStatusFilter(filter)}
-                    className={`py-1 px-3 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer ${
+                    className={`py-1 px-3 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer flex items-center gap-1.5 ${
                       statusFilter === filter
-                        ? 'bg-[#342A21] text-white shadow-xs'
+                        ? filter === 'declined'
+                          ? 'bg-rose-600 text-white shadow-xs'
+                          : 'bg-[#342A21] text-white shadow-xs'
+                        : filter === 'declined' && declinedCount > 0
+                        ? 'text-rose-700 hover:text-rose-900 hover:bg-rose-50'
                         : 'text-[#70798C] hover:text-[#342A21]'
                     }`}
                   >
-                    {filter}
+                    <span>{filter}</span>
+                    {filter === 'declined' && declinedCount > 0 && (
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusFilter === 'declined' ? 'bg-white' : 'bg-rose-500'}`} />
+                    )}
                   </button>
                 ))}
               </div>
@@ -672,6 +697,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                     ? Math.ceil((new Date(ad.endDate).getTime() - Date.now()) / 86400000)
                     : null;
                   const isPaused = ad.status === 'paused';
+                  const isAdDeclined = ad.status === 'rejected';
                   const isPendingCreativeReview = Boolean(ad.hasPendingChanges && ad.changesReviewStatus === 'pending');
                   const isCreativeRejected = ad.changesReviewStatus === 'rejected';
                   const isDraftPreviewOpen = previewDraftAdId === ad.id;
@@ -679,7 +705,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   return (
                     <div
                       key={ad.id}
-                      className="bg-white rounded-2xl border border-[#342A21]/15 p-5 shadow-subtle flex flex-col justify-between gap-4 hover:border-[#342A21]/40 transition-colors"
+                      className={`bg-white rounded-2xl border p-5 shadow-subtle flex flex-col justify-between gap-4 transition-colors ${
+                        isAdDeclined
+                          ? 'border-rose-300/80 hover:border-rose-400 ring-1 ring-rose-200/50'
+                          : 'border-[#342A21]/15 hover:border-[#342A21]/40'
+                      }`}
                     >
                       {/* Alert banner for shadow / draft changes */}
                       {isPendingCreativeReview && (
@@ -725,6 +755,34 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                         </div>
                       )}
 
+                      {/* Declined Feedback Callout Banner */}
+                      {isAdDeclined && (
+                        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 text-xs flex flex-col gap-2 shadow-2xs animate-fade-in">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-xs flex items-center gap-1.5 text-rose-800">
+                              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                              <span>Campaign Declined by Platform Review</span>
+                            </span>
+                            {ad.rejectedAt && (
+                              <span className="text-[10px] text-rose-600 font-medium">
+                                {new Date(ad.rejectedAt).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="bg-white/90 p-2.5 rounded-xl border border-rose-200 text-rose-900">
+                            <span className="text-[10px] uppercase font-bold text-rose-700 block mb-0.5 tracking-wider">
+                              Review Feedback from Admin:
+                            </span>
+                            <p className="text-xs font-semibold leading-relaxed">
+                              {ad.rejectionReason || 'This campaign does not meet Setlla advertising and brand safety guidelines.'}
+                            </p>
+                          </div>
+                          <p className="text-[11px] text-rose-800 leading-tight">
+                            Click <strong>"Edit & Resubmit"</strong> below to correct the feedback and submit your ad for immediate re-approval.
+                          </p>
+                        </div>
+                      )}
+
                       {isCreativeRejected && (
                         <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex flex-col gap-1">
                           <span className="font-bold text-[11px] flex items-center gap-1.5 text-rose-800">
@@ -758,6 +816,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 text-[10px] font-semibold border border-amber-200/80">
                                 <Clock className="w-3 h-3 text-amber-700 shrink-0" />
                                 <span>In Review</span>
+                              </span>
+                            ) : isAdDeclined ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-800 text-[10px] font-bold border border-rose-200">
+                                <AlertCircle className="w-3 h-3 text-rose-600 shrink-0" />
+                                <span>Declined</span>
                               </span>
                             ) : ad.status === 'expired' ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 text-[10px] font-semibold border border-stone-200">
@@ -806,8 +869,8 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                       {/* Action Bar: Pause/Resume Toggle Switch & Edit Ad Button */}
                       <div className="pt-2 border-t border-[#E5E7EB]/70 flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5">
-                          {/* Safe Pause / Resume Switch */}
-                          {(ad.status === 'active' || ad.status === 'paused') && (
+                          {/* Safe Pause / Resume Switch (Only for active or paused campaigns, not declined) */}
+                          {!isAdDeclined && (ad.status === 'active' || ad.status === 'paused') && (
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(ad)}
@@ -844,14 +907,19 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                           )}
                         </div>
 
-                        {/* Edit Ad Button */}
+                        {/* Edit Ad Button / Edit & Resubmit */}
                         <button
                           type="button"
                           onClick={() => handleOpenEditModal(ad)}
-                          className="py-1.5 px-3 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                          className={`py-1.5 px-3 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer ${
+                            isAdDeclined
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white font-bold'
+                              : 'bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5]'
+                          }`}
+                          title={isAdDeclined ? 'Edit campaign and resubmit for admin review' : 'Edit campaign parameters'}
                         >
                           <Edit3 className="w-3.5 h-3.5 text-amber-300" />
-                          <span>Edit Ad</span>
+                          <span>{isAdDeclined ? 'Edit & Resubmit' : 'Edit Ad'}</span>
                         </button>
                       </div>
                     </div>
@@ -1839,18 +1907,39 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               </button>
             </div>
 
-            {/* Platform Integrity & Shadow Runtime Guarantee Notice */}
-            <div className="p-3.5 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] text-xs text-[#342A21] space-y-1.5">
-              <div className="flex items-center gap-2 font-bold text-xs text-[#342A21]">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Setlla Platform Integrity & Runtime Guarantee</span>
+            {/* Addressing Review Feedback Notice if previously declined */}
+            {editingAdvert.status === 'rejected' ? (
+              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-bold text-xs text-rose-800">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>Correcting Campaign Review Feedback</span>
+                </div>
+                <div className="p-3 bg-white/90 rounded-xl border border-rose-200 text-rose-900">
+                  <span className="text-[10px] uppercase font-bold text-rose-700 block mb-0.5 tracking-wider">
+                    Admin Decline Reason:
+                  </span>
+                  <p className="text-xs font-semibold leading-relaxed">
+                    {editingAdvert.rejectionReason || 'This campaign does not meet Setlla advertising and verification guidelines.'}
+                  </p>
+                </div>
+                <p className="text-[11px] text-rose-800 leading-tight">
+                  Update your creative, headline, or campaign parameters below. Once submitted, your updated ad will be placed directly in the admin queue for immediate re-approval.
+                </p>
               </div>
-              <p className="text-[11px] text-[#70798C] leading-relaxed">
-                <strong>Safe fields</strong> (destination URL, WhatsApp number, CTA) take effect <strong>instantly</strong> in the public feed without interruption.
-                <br />
-                <strong>Sensitive updates</strong> (banner flyers, headlines, target zones) create a <strong>shadow record</strong> submitted for Admin review. Your current live ad remains actively running until approved.
-              </p>
-            </div>
+            ) : (
+              /* Platform Integrity & Shadow Runtime Guarantee Notice */
+              <div className="p-3.5 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] text-xs text-[#342A21] space-y-1.5">
+                <div className="flex items-center gap-2 font-bold text-xs text-[#342A21]">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Setlla Platform Integrity & Runtime Guarantee</span>
+                </div>
+                <p className="text-[11px] text-[#70798C] leading-relaxed">
+                  <strong>Safe fields</strong> (destination URL, WhatsApp number, CTA) take effect <strong>instantly</strong> in the public feed without interruption.
+                  <br />
+                  <strong>Sensitive updates</strong> (banner flyers, headlines, target zones) create a <strong>shadow record</strong> submitted for Admin review. Your current live ad remains actively running until approved.
+                </p>
+              </div>
+            )}
 
             {editStatusMessage && (
               <div className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
@@ -2089,14 +2178,18 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 <button
                   type="submit"
                   disabled={isSavingEdit}
-                  className="px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5 transition-colors ${
+                    editingAdvert.status === 'rejected'
+                      ? 'bg-rose-600 hover:bg-rose-700'
+                      : 'bg-[#342A21] hover:bg-[#231C16]'
+                  }`}
                 >
                   {isSavingEdit ? (
-                    <span>Saving Edits...</span>
+                    <span>{editingAdvert.status === 'rejected' ? 'Resubmitting Campaign...' : 'Saving Edits...'}</span>
                   ) : (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Save & Apply Updates</span>
+                      <Check className="w-3.5 h-3.5 text-white" />
+                      <span>{editingAdvert.status === 'rejected' ? 'Update & Resubmit for Review' : 'Save & Apply Updates'}</span>
                     </>
                   )}
                 </button>
