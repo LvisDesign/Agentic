@@ -33,6 +33,21 @@ export async function getAllJobs(): Promise<JobListing[]> {
     try {
       localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(localJobs));
     } catch (_) {}
+  } else {
+    // Ensure any newly added initial job listings (e.g. PPA corper roles) are synced in
+    const existingIds = new Set(localJobs.map((j) => j.id));
+    let hasNew = false;
+    INITIAL_JOB_LISTINGS.forEach((initJob) => {
+      if (!existingIds.has(initJob.id)) {
+        localJobs.push(initJob);
+        hasNew = true;
+      }
+    });
+    if (hasNew) {
+      try {
+        localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(localJobs));
+      } catch (_) {}
+    }
   }
 
   // If Supabase is configured, attempt background sync with `job_listings` table
@@ -274,10 +289,14 @@ export async function submitJobApplication(params: ApplicationSubmissionParams):
 
 export type JobsFeedItem = 
   | { type: 'job'; job: JobListing; key: string }
-  | { type: 'advert'; advert: AdvertStory; key: string };
+  | { type: 'advert'; advert: AdvertStory; key: string }
+  | { type: 'carousel'; adverts: AdvertStory[]; key: string };
 
 /**
- * Injects a sponsored Billboard card every 6th card (e.g. index 5, 11, 17...) into the Jobs Feed.
+ * Injects sponsored ads directly among job offers as users scroll:
+ * - After 2nd job card (idx === 1) or 1st job if only 1 exists: in-feed sponsored promotions carousel
+ * - After 5th job card (idx === 4): featured native billboard card
+ * - Every 3-4 cards thereafter: alternating in-feed promos and billboard cards
  */
 export function injectNativeBillboardAds(
   jobs: JobListing[], 
@@ -285,7 +304,7 @@ export function injectNativeBillboardAds(
 ): JobsFeedItem[] {
   if (!jobs || jobs.length === 0) return [];
   if (!adverts || adverts.length === 0) {
-    return jobs.map((j) => ({ type: 'job', job: j, key: `job-${j.id}` }));
+    return jobs.map((j, idx) => ({ type: 'job', job: j, key: `job-${j.id}-${idx}` }));
   }
 
   const items: JobsFeedItem[] = [];
@@ -294,13 +313,41 @@ export function injectNativeBillboardAds(
   jobs.forEach((job, idx) => {
     items.push({ type: 'job', job, key: `job-${job.id}-${idx}` });
 
-    // Inject native billboard ad card every 6th card (e.g., after 6 items at index 5, 11, etc.)
-    if ((idx + 1) % 6 === 0) {
-      const ad = adverts[adIndex % adverts.length];
-      items.push({ type: 'advert', advert: ad, key: `ad-${ad.id}-${idx}` });
-      adIndex++;
+    // Seat sponsored ads among job offers as users scroll:
+    // 1. After 2nd job card (idx === 1), or after 1st job if only 1 exists
+    // 2. After 5th job card (idx === 4)
+    // 3. Every 3-4 cards thereafter as users continue scrolling down
+    const isFirstAdSlot = idx === 1 || (jobs.length === 1 && idx === 0);
+    const isSubsequentAdSlot = idx > 1 && (idx - 1) % 3 === 0;
+
+    if (isFirstAdSlot || isSubsequentAdSlot) {
+      if (isFirstAdSlot) {
+        // First in-feed ad slot: Rich swipeable sponsored carousel of Delta State promotions
+        items.push({
+          type: 'carousel',
+          adverts,
+          key: `ad-carousel-${idx}`,
+        });
+      } else if (Math.floor((idx - 1) / 3) % 2 === 1) {
+        // Prominent full partner billboard ad card
+        const ad = adverts[adIndex % adverts.length];
+        items.push({
+          type: 'advert',
+          advert: ad,
+          key: `ad-billboard-${ad.id}-${idx}`,
+        });
+        adIndex++;
+      } else {
+        // Secondary carousel rotation
+        items.push({
+          type: 'carousel',
+          adverts: [...adverts].reverse(),
+          key: `ad-carousel-${idx}`,
+        });
+      }
     }
   });
 
   return items;
 }
+

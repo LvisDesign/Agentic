@@ -296,5 +296,77 @@ export const INITIAL_JOB_LISTINGS: JobListing[] = [
     slotsAvailable: 2,
     contactEmail: 'hello@bluecrestmedia.ng',
     isFeatured: true
+  },
+  {
+    id: 'job-asaba-ppa-01',
+    title: 'Graduate NYSC Intern / PPA Associate (Tech & Media)',
+    companyName: 'Delta Heritage Tech Labs',
+    companyInitial: 'DH',
+    state: 'Delta State',
+    city: 'Asaba',
+    address: '67 Okpanam Road, Opposite Zenith Bank, GRA, Asaba',
+    workplaceType: 'Hybrid',
+    roleType: 'PPA (Corpers)',
+    salaryRange: '₦70,000 – ₦100,000 / month (PPA Allowance)',
+    postedDate: 'Posted Today',
+    createdAt: '2026-10-26T14:00:00.000Z',
+    category: 'Technology & Software',
+    summary: 'NYSC Place of Primary Assignment (PPA) opportunity for serving corps members in computer science, software engineering, or UI/UX design.',
+    description: 'Delta Heritage Tech Labs is accepting motivated NYSC Corps Members seeking a fast-paced, high-learning Place of Primary Assignment (PPA) in Asaba. You will work alongside senior software engineers on modern web applications and client fintech tools.',
+    responsibilities: [
+      'Assist engineering teams in developing and styling responsive web interfaces using modern frameworks.',
+      'Participate in daily agile standups, bug tracking, and automated UI testing.',
+      'Help maintain internal documentation and user testing logs.'
+    ],
+    requirements: [
+      'Currently deployed to Delta State (NYSC Batch A/B/C) with valid call-up number.',
+      'Background in Computer Science, Software Engineering, IT, or related degree.',
+      'Basic familiarity with JavaScript/TypeScript, React, or modern web technologies.',
+      'Enthusiasm to learn and deliver high-impact digital products.'
+    ],
+    benefits: [
+      'Monthly PPA allowance + performance learning stipends',
+      'High-speed internet access and modern workstation in GRA Asaba',
+      'Direct pathway to full-time post-NYSC employment'
+    ],
+    slotsAvailable: 3,
+    contactEmail: 'nysc@deltaheritagetech.com',
+    isFeatured: true
+  },
+  {
+    id: 'job-warri-ppa-02',
+    title: 'NYSC Legal & Administrative PPA Associate',
+    companyName: 'Zenith Haulage & Logistics Ltd',
+    companyInitial: 'ZH',
+    state: 'Delta State',
+    city: 'Warri',
+    address: 'Effurun Commercial Hub, Near Delta Mall, Warri',
+    workplaceType: 'On-Site',
+    roleType: 'PPA (Corpers)',
+    salaryRange: '₦65,000 – ₦85,000 / month (Stipend + Housing Support)',
+    postedDate: 'Posted Today',
+    createdAt: '2026-10-26T13:30:00.000Z',
+    category: 'Legal & Administration',
+    summary: 'NYSC PPA slot for serving corps members in Law, Transport Management, or Business Administration with accommodation assistance.',
+    description: 'Zenith Haulage & Logistics is opening PPA placement slots for Corps Members posted to Warri/Effurun corridor. You will gain hands-on experience in corporate transit compliance, vendor contracts, and client dispatch administration.',
+    responsibilities: [
+      'Review and catalogue logistics consignment agreements and transit documentation.',
+      'Liaise with corporate clients and assist the operations desk with official correspondence.',
+      'Support administrative filing and digital record keeping.'
+    ],
+    requirements: [
+      'Serving NYSC Corps Member posted to Delta State.',
+      'Graduate degree in Law (LL.B), Business Administration, or Social Sciences.',
+      'Proficiency in Microsoft Office Suite (Word, Excel) and clear written communication.',
+      'Punctual, professional demeanor.'
+    ],
+    benefits: [
+      'Guaranteed monthly PPA allowance paid promptly on the 25th of every month',
+      'Corpers lodge accommodation assistance',
+      'Official NYSC clearance signed promptly each month'
+    ],
+    slotsAvailable: 2,
+    contactEmail: 'nysc-desk@zenithhaulage.ng',
+    isFeatured: true
   }
 ];

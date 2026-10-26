@@ -1858,8 +1858,8 @@ export function App() {
   };
 
   // Determine root container layout:
-  // Tenant Feed is viewport locked for snap reels; Setlla Jobs, Tenant Dashboard, Agent Dashboard, and Partner Portal are naturally scrolling pages.
-  const isFeedView = activeRoom === 'rentals' && (currentRole === 'tenant' || currentRole === 'seeker') && userView === 'feed';
+  // Feed view is viewport-locked for continuous momentum feeds (both Rentals and Setlla Jobs) so desktop ad sidebars stay static while feeds scroll
+  const isFeedView = (activeRoom === 'rentals' || activeRoom === 'jobs') && (currentRole === 'tenant' || currentRole === 'seeker') && userView === 'feed';
 
   return (
     <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#342A21]/15 selection:text-[#342A21] ${
@@ -2037,7 +2037,7 @@ export function App() {
         )
       ) : activeRoom === 'jobs' ? (
         /* Setlla Jobs Continuous Feed */
-        <main className="flex-1 w-full pt-16">
+        <main className="flex-1 w-full h-[calc(100dvh-4rem)] mt-16 flex flex-col overflow-hidden bg-[#FCF9F5]">
           <JobsFeed
             currentUser={currentUser}
             adverts={activePublicAdverts}

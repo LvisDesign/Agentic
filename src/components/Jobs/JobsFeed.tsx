@@ -22,6 +22,7 @@ import { JobListingCard } from './JobListingCard';
 import { JobDetailsSheet } from './JobDetailsSheet';
 import { JobApplicationDrawer } from './JobApplicationDrawer';
 import { NativeBillboardAdCard } from './NativeBillboardAdCard';
+import { InFeedSponsoredCarousel } from '../Feed/InFeedSponsoredCarousel';
 import { DesktopAdvertSidebar } from '../Feed/DesktopAdvertSidebar';
 import { AdvertStoriesTray } from '../Feed/AdvertStoriesTray';
 import { 
@@ -42,7 +43,7 @@ interface JobsFeedProps {
 }
 
 const DELTA_JOB_CITIES = ['All Delta Cities', 'Asaba', 'Warri', 'Effurun', 'Sapele', 'Ughelli'];
-const ROLE_TYPES = ['All Types', 'Full-Time', 'Contract', 'Internship'];
+const ROLE_TYPES = ['All Types', 'Full-Time', 'Contract', 'Internship', 'PPA (Corpers)'];
 
 export const JobsFeed: React.FC<JobsFeedProps> = ({
   currentUser,
@@ -136,7 +137,16 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
       // Role type filter
       if (selectedRoleType !== 'All Types') {
         if (job.roleType !== selectedRoleType) {
-          return false;
+          const isPpaFilter = selectedRoleType.toLowerCase().includes('ppa') || selectedRoleType.toLowerCase().includes('corper');
+          const isJobPpa = 
+            job.roleType.toLowerCase().includes('ppa') || 
+            job.roleType.toLowerCase().includes('corper') || 
+            job.title.toLowerCase().includes('ppa') || 
+            job.title.toLowerCase().includes('nysc') || 
+            job.title.toLowerCase().includes('corper');
+          if (!isPpaFilter || !isJobPpa) {
+            return false;
+          }
         }
       }
 
@@ -150,9 +160,9 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
   }, [filteredJobs, adverts]);
 
   return (
-    <div className="w-full flex-1 flex flex-col items-center bg-[#FCF9F5]">
-      {/* Sticky Top Filter & Search Bar */}
-      <div className="w-full bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] sticky top-16 z-30 py-3 px-3 sm:px-6 shadow-2xs">
+    <div className="w-full h-full flex flex-col items-center bg-[#FCF9F5] overflow-hidden">
+      {/* Pinned Top Filter & Search Bar */}
+      <div className="w-full bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] shrink-0 z-30 py-2.5 px-3 sm:px-6 shadow-2xs">
         <div className="max-w-2xl lg:max-w-5xl xl:max-w-7xl mx-auto space-y-2.5">
           {/* Search Input Bar */}
           <div className="relative w-full">
@@ -205,6 +215,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
                   { value: 'Full-Time', label: 'Full-Time', subtitle: 'Permanent positions' },
                   { value: 'Contract', label: 'Contract', subtitle: 'Contractual & freelance' },
                   { value: 'Internship', label: 'Internship', subtitle: 'Entry-level & internships' },
+                  { value: 'PPA (Corpers)', label: 'PPA (Corpers)', subtitle: 'NYSC primary assignment' },
                 ]}
                 value={selectedRoleType}
                 onChange={setSelectedRoleType}
@@ -260,10 +271,10 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
         </div>
       )}
 
-      {/* Responsive Main Layout Container: Left Ad Sidebar + Center Jobs Stream + Right Ad & Employer Spotlight */}
-      <div className="w-full max-w-6xl xl:max-w-7xl mx-auto flex items-start justify-center gap-6 px-3 sm:px-6 py-4 sm:py-6">
-        {/* Desktop Left Side Sponsored Ads */}
-        <div className="hidden lg:block sticky top-44 shrink-0 h-[calc(100vh-190px)] max-h-[820px]">
+      {/* Responsive Main Layout Container: Left Ad Sidebar (Fixed) + Center Jobs Stream (Scrollable) + Right Ad & Employer Hub (Fixed) */}
+      <div className="w-full max-w-6xl xl:max-w-7xl mx-auto flex-1 min-h-0 flex items-start justify-center gap-5 xl:gap-6 px-3 sm:px-6 py-3 overflow-hidden">
+        {/* Desktop Left Side Sponsored Ads - Fixed/anchored, does NOT scroll along as user scrolls */}
+        <div className="hidden lg:flex flex-col shrink-0 h-full max-h-full w-[300px] xl:w-[320px] overflow-hidden">
           <DesktopAdvertSidebar
             adverts={adverts}
             onSelectAdvert={onSelectAdvert}
@@ -271,8 +282,8 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
           />
         </div>
 
-        {/* Center Main Jobs Feed Container */}
-        <main className="w-full max-w-2xl flex-1 min-w-0 space-y-4 sm:space-y-5">
+        {/* Center Main Jobs Feed Container - The ONLY scrolling column on desktop */}
+        <main className="w-full max-w-2xl flex-1 min-w-0 h-full overflow-y-auto feed-scroll-container no-scrollbar space-y-4 sm:space-y-5 px-1 pb-16 overscroll-contain">
           {/* Mobile Ad Stories Tray (Visible only on < lg screens) */}
           {adverts && adverts.length > 0 && (
             <div className="lg:hidden w-full pb-2">
@@ -362,7 +373,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
               </button>
             </div>
           ) : (
-            /* Stream of Jobs + Native Billboard Ads */
+            /* Stream of Jobs + In-Feed Ads Seated Directly Among Offers */
             feedItems.map((item) => {
               if (item.type === 'job') {
                 const hasApplied = appliedJobIds.has(item.job.id);
@@ -382,6 +393,15 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
                     onShareJob={handleShareJob}
                   />
                 );
+              } else if (item.type === 'carousel') {
+                return (
+                  <InFeedSponsoredCarousel
+                    key={item.key}
+                    adverts={item.adverts}
+                    onSelectAdvert={onSelectAdvert}
+                    onOpenPostAd={onOpenPostAd}
+                  />
+                );
               } else {
                 return (
                   <NativeBillboardAdCard
@@ -395,8 +415,8 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
           )}
         </main>
 
-        {/* Extra-Wide Desktop Right Column: Sponsored Spotlight & Employer Hub */}
-        <aside className="hidden xl:flex flex-col w-[290px] shrink-0 sticky top-44 space-y-4">
+        {/* Extra-Wide Desktop Right Column: Sponsored Spotlight & Employer Hub - Fixed/anchored, does NOT scroll along */}
+        <aside className="hidden xl:flex flex-col w-[290px] shrink-0 h-full max-h-full overflow-y-auto no-scrollbar space-y-3.5 pr-0.5">
           {/* 1. Featured Advert / Partner Spotlight (if adverts available) */}
           {adverts.length > 0 && (
             <div className="bg-white rounded-3xl border border-[#342A21]/15 shadow-card p-4 overflow-hidden relative group">

@@ -1,4 +1,4 @@
-export type JobRoleType = 'Full-Time' | 'Contract' | 'Internship' | 'Part-Time';
+export type JobRoleType = 'Full-Time' | 'Contract' | 'Internship' | 'Part-Time' | 'PPA (Corpers)' | (string & {});
 export type JobWorkplaceType = 'On-Site' | 'Hybrid' | 'Remote';
 
 export type UserPersona = 'job_seeker' | 'employer' | 'tenant' | 'lister';
