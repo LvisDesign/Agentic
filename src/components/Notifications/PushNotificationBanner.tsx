@@ -71,7 +71,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     badgeColor = 'text-rose-400';
     if (!notification.actionText) actionLabel = 'Tap to explore available properties';
   } else if (notifType === 'new_listing') {
-    badgeLabel = 'New Verified Property';
+    badgeLabel = 'New Property';
     badgeColor = 'text-sky-400';
     if (!notification.actionText) actionLabel = 'Tap to inspect in Explore feed';
   }

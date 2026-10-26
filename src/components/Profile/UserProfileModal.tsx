@@ -352,7 +352,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     <MapPin className="w-3 h-3 text-[#342A21]" /> {currentUser.city || currentUser.operatingCity || 'Asaba'}
                   </span>
                   <span>•</span>
-                  <span>{isAgent ? (currentUser.agencyName || 'Partner Agency') : 'Verified Tenant'}</span>
+                  <span>{isAgent ? (currentUser.agencyName || 'Partner Agency') : 'Tenant'}</span>
                 </div>
               </div>
             </div>
@@ -787,7 +787,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" /> Account Status
                     </span>
                     <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
-                      {currentUser.isVerifiedTenant ? 'Verified Tenant' : 'Active Account'}
+                      Active Account
                     </span>
                   </div>
                 </>

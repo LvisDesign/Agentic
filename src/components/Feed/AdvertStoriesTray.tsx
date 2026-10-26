@@ -61,7 +61,7 @@ export const AdvertStoriesTray: React.FC<AdvertStoriesTrayProps> = ({
                 {/* Price / Subtext */}
                 <div className="mt-auto">
                   <span className="text-[11px] font-bold text-[#342A21] tracking-tight">
-                    {ad.price || 'Verified Listing'}
+                    {ad.price || 'Featured Listing'}
                   </span>
                 </div>
               </div>

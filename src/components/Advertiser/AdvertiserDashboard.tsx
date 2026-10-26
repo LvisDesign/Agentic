@@ -568,13 +568,6 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               <span className="font-display text-2xl text-[#342A21] font-normal">
                 {currentAdvertiser.companyName}
               </span>
-              <span 
-                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80 text-xs font-medium"
-                title="Verified Partner Account"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 fill-[#2081E2] text-white shrink-0" />
-                <span className="text-[11px] font-semibold text-slate-700">Verified Partner</span>
-              </span>
             </div>
             <p className="text-xs text-[#70798C] mt-1">
               {currentAdvertiser.industry} · Operating in {currentAdvertiser.operatingCity} · Registered email: <strong>{currentAdvertiser.email}</strong>
@@ -998,7 +991,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                     <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C]">
                       1. Select Campaign Duration & Package
                     </label>
-                    <span className="text-[11px] text-[#70798C]">Setlla Verified Placement</span>
+                    <span className="text-[11px] text-[#70798C]">Setlla Placement</span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {TIERS.map((tier) => (

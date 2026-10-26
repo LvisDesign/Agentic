@@ -236,7 +236,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       badge: 'Most Popular · 30 Days',
       features: [
         'Dual Placement: Stories Tray + Desktop Pinned Banner',
-        'Verified Partner Blue Checkmark Trust Badge',
+        'Featured Partner Placement',
         'Priority targeting across Asaba, Warri & Abraka',
         'Direct WhatsApp lead routing',
         'Weekly campaign performance digest',
@@ -1860,9 +1860,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                             <span className="text-[10px] text-[#70798C]">Sponsored Partner</span>
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">
-                          Verified
-                        </span>
                       </div>
                       <img
                         src="https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=600&q=80"

@@ -258,7 +258,7 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
           <div className="w-11 h-11 rounded-full bg-black/70 border border-white/20 flex items-center justify-center text-amber-300 mb-2 shadow-lg">
             <Film className="w-5 h-5" />
           </div>
-          <span className="text-white text-xs font-bold tracking-tight">Verified Property Walkthrough</span>
+          <span className="text-white text-xs font-bold tracking-tight">Property Walkthrough</span>
           <span className="text-white/70 text-[11px] mt-0.5 max-w-xs truncate">{caption}</span>
           <button
             type="button"

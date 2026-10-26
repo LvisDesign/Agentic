@@ -9,24 +9,6 @@ interface DesktopAdvertSidebarProps {
   activeStoryId?: string | null;
 }
 
-const VerifiedBadge: React.FC = () => (
-  <span 
-    className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#2081E2] text-white shrink-0 ml-1 shadow-xs" 
-    title="Verified Partner"
-  >
-    <svg 
-      className="w-2 h-2" 
-      viewBox="0 0 12 12" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2.5" 
-      strokeLinecap="round" 
-      strokeLinejoin="round"
-    >
-      <polyline points="2.5 6 4.8 8.5 9.5 3.5" />
-    </svg>
-  </span>
-);
 
 export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
   adverts,
@@ -128,12 +110,11 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
 
               {/* Bottom Details Overlay */}
               <div className="absolute inset-x-0 bottom-0 p-3 pt-6 flex flex-col justify-end z-10">
-                {/* Title & Verified Checkmark */}
+                {/* Title */}
                 <div className="flex items-center gap-1 min-w-0">
                   <h4 className="text-[13px] font-bold text-white tracking-tight truncate leading-tight group-hover:text-white/95">
                     {ad.title}
                   </h4>
-                  {ad.isVerified && <VerifiedBadge />}
                 </div>
 
                 {/* Secondary details: Advertiser name & Floor/Price */}

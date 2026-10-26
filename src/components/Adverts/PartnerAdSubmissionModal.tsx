@@ -123,7 +123,7 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
       popular: true,
       features: [
         'Feed Stories + Desktop Pinned Banner',
-        'Verified Partner Blue Badge',
+        'Featured Partner Placement',
         'Priority Region Targeting',
         'Weekly Campaign Analytics Report',
       ],

@@ -214,7 +214,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                     <span className="text-[10px] font-semibold text-emerald-600">₦15,000</span>
                   </div>
                   <p className="text-[10px] text-[#70798C] mt-1">
-                    Top placement with verified ring
+                    Top placement with featured ring
                   </p>
                 </button>
               </div>

@@ -454,9 +454,6 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                       <span className="text-[#70798C] text-xs shrink-0">
                         {ad.timeAgo || '2d'}
                       </span>
-                      {ad.isVerified && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                      )}
                     </div>
                   </div>
 

@@ -162,9 +162,6 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
                     alt={listing.agent.fullName}
                     className="w-12 h-12 rounded-full object-cover border border-[#342A21]/20"
                   />
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#342A21] text-white flex items-center justify-center ring-2 ring-white">
-                    <CheckCircle2 className="w-3 h-3" />
-                  </div>
                 </div>
 
                 <div className="min-w-0">
@@ -172,9 +169,6 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
                     <h4 className="font-bold text-sm sm:text-base text-[#000004] truncate">
                       {listing.agent.fullName}
                     </h4>
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[#342A21]/10 text-[#342A21]">
-                      Verified Agent
-                    </span>
                   </div>
                   <p className="text-xs text-[#70798C] truncate">
                     {listing.agent.agencyName || 'Independent Property Agent'}

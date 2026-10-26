@@ -93,7 +93,7 @@ export const getAdvertCtaConfig = (ad: AdvertStory): AdvertCtaConfig => {
     return {
       label: ad.ctaText && ad.ctaText !== 'Learn More' ? ad.ctaText : 'View Property',
       type: 'property',
-      destinationHint: 'Verified Listing',
+      destinationHint: 'Active Listing',
     };
   }
 

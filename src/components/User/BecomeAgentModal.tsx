@@ -88,7 +88,7 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-display text-lg font-bold text-white">
-                  Become a Verified Agent
+                  Become a Partner Agent
                 </h3>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-[#000004]">
                   Partner

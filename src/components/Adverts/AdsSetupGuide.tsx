@@ -229,7 +229,7 @@ print("Campaign Data:", response.json())`;
                   </div>
                   <div className="flex items-center gap-1.5 font-medium">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Verified Blue Checkmark Trust Badge</span>
+                    <span>Featured Partner Placement</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />

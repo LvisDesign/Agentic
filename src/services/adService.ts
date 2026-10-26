@@ -538,7 +538,7 @@ export const approvePartnerAdvert = async (id: string, durationDays = 30): Promi
     isVerified: true,
     startDate: now.toISOString(),
     endDate: end.toISOString(),
-    badgeText: target.packageTier === 'corporate' ? 'VERIFIED PARTNER' : 'SPONSORED',
+    badgeText: target.packageTier === 'corporate' ? 'FEATURED' : 'SPONSORED',
   };
 
   return await saveAdvert(approvedAd);
@@ -829,7 +829,7 @@ export const pushProgrammaticAdvert = async (
     advertiserName: payload.companyName,
     advertiserHandle: `@${payload.companyName.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
     category: payload.category || 'Promo',
-    badgeText: 'VERIFIED SPONSOR',
+    badgeText: 'SPONSORED',
     thumbnailUrl: payload.mediaUrl,
     mediaUrl: payload.mediaUrl,
     mediaType: payload.mediaType || 'image',

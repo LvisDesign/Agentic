@@ -103,20 +103,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               {isAuthenticated ? (
                 currentUser.isAgent ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#000004] text-amber-300 text-xs font-semibold">
-                    <ShieldCheck className="w-3 h-3" />
-                    Verified Partner Agent
+                    <Building className="w-3 h-3" />
+                    Partner Agent
                   </span>
                 ) : (
-                  <>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
-                      <UserCheck className="w-3 h-3" />
-                      Verified Tenant
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200">
-                      <AlertCircle className="w-3 h-3 text-amber-600" />
-                      Tenant Account
-                    </span>
-                  </>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-[#342A21] text-xs font-semibold border border-slate-200">
+                    <UserCheck className="w-3 h-3" />
+                    Tenant Account
+                  </span>
                 )
               ) : (
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-[#70798C] text-xs font-semibold border border-slate-200">
@@ -128,8 +122,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               {isAuthenticated
                 ? currentUser.isAgent
                   ? `${currentUser.agencyName || 'Partner Agency'} • Agent ID: ${currentUser.id} • Operating in ${currentUser.operatingCity || currentUser.city || 'Network'}`
-                  : `${currentUser.state || 'Verified'} Tenant • Member ID: ${currentUser.id} • Looking in ${currentUser.city || 'All Cities'}`
-                : 'Browsing rentals as guest • Create an account to book verified inspection appointments'}
+                  : `${currentUser.state || 'Active'} Tenant • Member ID: ${currentUser.id} • Looking in ${currentUser.city || 'All Cities'}`
+                : 'Browsing rentals as guest • Create an account to book inspection appointments'}
             </p>
             <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-[#70798C]">
               {isAuthenticated ? (
@@ -216,7 +210,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             </div>
             <div>
               <h4 className="font-bold text-[#000004]">
-                Tenant Access: Direct Browsing of Verified Agent Rentals
+                Tenant Access: Direct Browsing of Agent Rentals
               </h4>
               <p className="text-[11px] text-[#70798C] mt-0.5">
                 You are signed in as a tenant. You can book as many property inspections as you want! Only agents are restricted to 5 bookings per window to prevent overcrowding and ensure they never waste your time.
@@ -282,7 +276,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             {listings.length}
           </div>
           <span className="text-[10px] text-[#70798C] truncate mt-0.5">
-            Verified Agents
+            Active Listings
           </span>
         </div>
       </div>
@@ -589,7 +583,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#342A21] shrink-0" />
               <span className="text-[#000004] font-medium leading-relaxed">
-                Browsing <strong>{listings.length} verified apartments</strong> uploaded by verified partner agents.
+                Browsing <strong>{listings.length} apartments</strong> uploaded by partner agents.
               </span>
             </div>
             <button

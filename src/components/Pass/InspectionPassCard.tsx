@@ -99,9 +99,6 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
                 <span className="font-bold text-sm sm:text-base text-[#000004] truncate">
                   {listing.agent.fullName}
                 </span>
-                <span className="px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold shrink-0">
-                  Verified
-                </span>
               </div>
               <div className="text-xs text-[#70798C] truncate">
                 {listing.agent.agencyName} • CAC: {listing.agent.cacNumber}

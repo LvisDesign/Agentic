@@ -164,7 +164,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               {agentProfile.reviewCount > 0 ? (
                 <span>Rating {agentProfile.rating}★ ({agentProfile.reviewCount} reviews)</span>
               ) : (
-                <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">New Verified Partner</span>
+                <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">Partner Agent</span>
               )}
             </p>
             <div className="flex items-center gap-2 mt-1.5 sm:mt-2 text-xs text-[#70798C] flex-wrap">
