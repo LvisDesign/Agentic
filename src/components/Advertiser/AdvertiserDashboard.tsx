@@ -457,26 +457,6 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Ad Credits Wallet Pill */}
-            <button
-              onClick={() => setActiveTab('wallet')}
-              className="flex items-center gap-2 py-1 px-2.5 sm:py-1.5 sm:px-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/80 text-[#342A21] hover:border-amber-400 transition-all cursor-pointer shadow-2xs group"
-              title="View and top up your Ad Credits wallet"
-            >
-              <div className="w-5 h-5 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
-                <Wallet className="w-3 h-3" />
-              </div>
-              <div className="text-left">
-                <span className="text-[9px] sm:text-[10px] text-amber-900 font-medium block leading-none">Ad Credits</span>
-                <span className="text-xs sm:text-xs font-black text-[#342A21] leading-none font-mono">
-                  ₦{(currentAdvertiser.walletBalance || 0).toLocaleString()}
-                </span>
-              </div>
-              <span className="hidden sm:inline-block text-[10px] font-bold text-amber-700 bg-amber-100/90 px-1.5 py-0.5 rounded ml-1 group-hover:bg-amber-200 transition-colors">
-                + Top Up
-              </span>
-            </button>
-
             <div className="hidden md:flex flex-col text-right">
               <span className="font-semibold text-xs text-[#342A21] truncate max-w-[200px]">
                 {currentAdvertiser.companyName}
