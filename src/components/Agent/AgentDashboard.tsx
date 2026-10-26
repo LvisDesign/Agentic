@@ -18,7 +18,8 @@ import {
   Database,
   UploadCloud,
   Edit3,
-  Trash2
+  Trash2,
+  Megaphone
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, AgentProfile, UserProfile, ListingAvailability } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
@@ -40,6 +41,7 @@ interface AgentDashboardProps {
   onConfirmFreshness?: (listingId: string) => void;
   onSwitchToSeeker?: () => void;
   onSwitchToTenant?: () => void;
+  onOpenAdsPortal?: () => void;
 }
 
 export const AgentDashboard: React.FC<AgentDashboardProps> = ({
@@ -55,6 +57,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   onConfirmFreshness,
   onSwitchToSeeker,
   onSwitchToTenant,
+  onOpenAdsPortal,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
@@ -176,6 +179,16 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]">
+          {onOpenAdsPortal && (
+            <button
+              onClick={onOpenAdsPortal}
+              className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              title="Open Customer Ads Dashboard to promote listings & reach more tenants"
+            >
+              <Megaphone className="w-3.5 h-3.5 text-amber-700" />
+              <span>Ads Portal</span>
+            </button>
+          )}
           <button
             onClick={() => setShowCreateModal(true)}
             className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"

@@ -45,6 +45,7 @@ import {
   ProgrammaticPushPayload
 } from '../../services/adService';
 import { AdvertStory } from '../../data/mockAdverts';
+import { UserProfile } from '../../types/marketplace';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { AdvertiserUser, getActiveAdvertiser, logoutAdvertiser } from '../../services/advertiserAuthService';
@@ -58,11 +59,13 @@ import { processUploadedFile } from '../../utils/mediaStorage';
 interface PartnerPortalPageProps {
   onBackToExplore?: () => void;
   onAdSubmitted?: (ad: AdvertStory) => void;
+  currentUser?: UserProfile;
 }
 
 export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   onBackToExplore,
   onAdSubmitted,
+  currentUser,
 }) => {
   const [activeTab, setActiveTab] = useState<'packages' | 'placements' | 'api' | 'guide'>('packages');
   const [activeAdvertiser, setActiveAdvertiser] = useState<AdvertiserUser | null>(() => getActiveAdvertiser());
@@ -2361,6 +2364,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       <AdvertiserAuthModal
         isOpen={isAuthModalOpen}
         initialMode={authModalInitialMode}
+        initialEmail={currentUser?.email || ''}
+        initialName={currentUser?.fullName || ''}
+        initialPhone={currentUser?.phone || ''}
+        initialCompanyName={currentUser?.agencyName || currentUser?.fullName || ''}
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={(user: AdvertiserUser) => {
           setActiveAdvertiser(user);

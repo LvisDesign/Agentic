@@ -37,6 +37,8 @@ import { loadAllAdverts, saveAdvert, removeAdvert, subscribeToAdvertChanges, get
 import { PostAdModal } from './components/Feed/PostAdModal';
 import { PartnerAdSubmissionModal } from './components/Adverts/PartnerAdSubmissionModal';
 import { PartnerPortalPage } from './components/Partner/PartnerPortalPage';
+import { AdvertiserAuthModal } from './components/Advertiser/AdvertiserAuthModal';
+import { getActiveAdvertiser } from './services/advertiserAuthService';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
@@ -598,6 +600,7 @@ export function App() {
   // Modals & Navigation state
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isBecomeAgentOpen, setIsBecomeAgentOpen] = useState(false);
+  const [isAdvertiserAuthOpen, setIsAdvertiserAuthOpen] = useState(false);
 
   // For first-time visitors, open signup modal on arrival if they haven't skipped yet (NEVER on admin or partner pages)
   const [isSignupOpen, setIsSignupOpen] = useState<boolean>(() => {
@@ -1624,6 +1627,15 @@ export function App() {
     setUserView('feed');
   };
 
+  const handleOpenAdsPortal = useCallback(() => {
+    if (getActiveAdvertiser()) {
+      setUserView('partner');
+      window.location.hash = '#/partner';
+    } else {
+      setIsAdvertiserAuthOpen(true);
+    }
+  }, []);
+
   const handleAdminAuthSuccess = useCallback((admin: UserProfile) => {
     setIsAdminAuthenticated(true);
     setActiveAdminUser(admin);
@@ -1837,6 +1849,7 @@ export function App() {
           onOpenLogin={handleOpenLogin}
           isAuthenticated={isAuthenticated}
           onOpenAgentSignup={handleOpenAgentSignup}
+          onOpenAdsPortal={handleOpenAdsPortal}
         />
       )}
 
@@ -1853,6 +1866,7 @@ export function App() {
         /* Setlla Partner & Brand Advertising Dedicated Standalone Page */
         <main className="flex-1 w-full min-h-screen">
           <PartnerPortalPage
+            currentUser={currentUser}
             onBackToExplore={() => {
               // Strictly ensure any admin state is purged so Explore Feed NEVER opens with admin privileges
               setIsAdminAuthenticated(false);
@@ -1935,6 +1949,7 @@ export function App() {
                   setCurrentRole('tenant');
                   setUserView('feed');
                 }}
+                onOpenAdsPortal={handleOpenAdsPortal}
               />
             </main>
           ) : (
@@ -1954,6 +1969,7 @@ export function App() {
                 onSwitchToFeed={() => setUserView('feed')}
                 onSwitchToAgent={() => setCurrentRole('agent')}
                 isAuthenticated={isAuthenticated}
+                onOpenAdsPortal={handleOpenAdsPortal}
               />
             </main>
           )
@@ -2037,6 +2053,7 @@ export function App() {
               setCurrentRole('tenant');
               setUserView('feed');
             }}
+            onOpenAdsPortal={handleOpenAdsPortal}
           />
         </main>
       )}
@@ -2063,6 +2080,23 @@ export function App() {
         onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
         onOpenSignup={handleOpenSignup}
         onSignOut={handleSignOut}
+        onOpenAdsPortal={handleOpenAdsPortal}
+      />
+
+      {/* Customer Ads Authentication & OTP Verification Modal */}
+      <AdvertiserAuthModal
+        isOpen={isAdvertiserAuthOpen}
+        onClose={() => setIsAdvertiserAuthOpen(false)}
+        initialMode="signup"
+        initialEmail={currentUser?.email || ''}
+        initialName={currentUser?.fullName || ''}
+        initialPhone={currentUser?.phone || ''}
+        initialCompanyName={currentUser?.agencyName || currentUser?.fullName || ''}
+        onAuthSuccess={(_advertiser) => {
+          setIsAdvertiserAuthOpen(false);
+          setUserView('partner');
+          window.location.hash = '#/partner';
+        }}
       />
 
       <BecomeAgentModal

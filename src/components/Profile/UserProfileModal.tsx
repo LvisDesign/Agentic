@@ -24,7 +24,8 @@ import {
   Key,
   Clock,
   Check,
-  ArrowRight
+  ArrowRight,
+  Megaphone
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNigerianPhone } from '../../utils/formatters';
@@ -47,6 +48,7 @@ interface UserProfileModalProps {
   onOpenBecomeAgent: () => void;
   onOpenSignup?: () => void;
   onSignOut?: () => void;
+  onOpenAdsPortal?: () => void;
 }
 
 export const UserProfileModal: React.FC<UserProfileModalProps> = ({
@@ -62,6 +64,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onOpenBecomeAgent,
   onOpenSignup,
   onSignOut,
+  onOpenAdsPortal,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [showArchitectureGuide, setShowArchitectureGuide] = useState(false);
@@ -1030,6 +1033,33 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </button>
             </div>
           ) : null}
+
+          {/* Customer Ads Portal (Available to every registered user: tenant or agent) */}
+          {onOpenAdsPortal && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50/70 to-orange-50/70 border border-amber-200/80 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                  <Megaphone className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="font-bold text-xs text-[#000004]">Customer Ads Dashboard</div>
+                  <div className="text-[11px] text-[#70798C]">
+                    Create sponsor ads, boost listings & promote your brand
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenAdsPortal();
+                }}
+                className="px-3 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs flex items-center gap-1"
+              >
+                <span>Open Ads</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          )}
 
           {/* Collapsible Architecture Guide */}
           <div className="border border-[#E5E7EB] rounded-2xl overflow-hidden">

@@ -18,7 +18,9 @@ import {
   XCircle,
   UserCheck,
   Copy,
-  Check
+  Check,
+  Megaphone,
+  Building2
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { PropertyListing, BookingRecord, UserProfile } from '../../types/marketplace';
@@ -38,6 +40,7 @@ interface UserDashboardProps {
   onOpenSignup: () => void;
   onSwitchToFeed: () => void;
   onSwitchToAgent?: () => void;
+  onOpenAdsPortal?: () => void;
   isAuthenticated?: boolean;
 }
 
@@ -54,6 +57,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   onOpenSignup,
   onSwitchToFeed,
   onSwitchToAgent,
+  onOpenAdsPortal,
   isAuthenticated = true,
 }) => {
   const [activeTab, setActiveTab] = useState<'passes' | 'inventory' | 'saved'>('passes');
@@ -168,6 +172,15 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               <span>Become an Agent</span>
             </button>
           )}
+
+          <button
+            onClick={() => onOpenAdsPortal?.()}
+            className="py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50/90 hover:bg-amber-100 text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+            title="Launch Customer Ads & Campaigns"
+          >
+            <Megaphone className="w-3.5 h-3.5 text-amber-700" />
+            <span>Ads Portal</span>
+          </button>
 
           <button
             onClick={onSwitchToFeed}

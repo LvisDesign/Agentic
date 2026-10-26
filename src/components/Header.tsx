@@ -8,7 +8,8 @@ import {
   UserPlus, 
   Download,
   Briefcase,
-  Building2
+  Building2,
+  Megaphone
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 import { usePWA } from '../utils/pwa';
@@ -29,6 +30,7 @@ interface HeaderProps {
   onOpenLogin?: () => void;
   isAuthenticated: boolean;
   onOpenAgentSignup?: () => void;
+  onOpenAdsPortal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -45,6 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLogin,
   isAuthenticated,
   onOpenAgentSignup,
+  onOpenAdsPortal,
 }) => {
   const confirmedPassesCount = activeBookings.filter(
     (b) => b.status === 'CONFIRMED_UNLOCKED'
@@ -220,19 +223,27 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* TAB 4.2: Customer Ads Account (Rendered when logged in as an Advertiser/Ads Customer) */}
-          {activeAdvertiser && (
+          {/* TAB 4.2: Customer Ads Portal (Rendered when logged in as an Advertiser or registered tenant/agent) */}
+          {(activeAdvertiser || (isAuthenticated && onOpenAdsPortal)) && (
             <button
               onClick={() => {
-                window.location.hash = '#/partner';
+                if (onOpenAdsPortal) {
+                  onOpenAdsPortal();
+                } else {
+                  window.location.hash = '#/partner';
+                }
               }}
-              className="relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 hover:shadow-xs"
-              aria-label="Ads Account"
-              title={`Customer Ads Dashboard (${activeAdvertiser.companyName})`}
+              className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
+                userView === 'partner'
+                  ? 'bg-amber-500 text-white shadow-xs border border-amber-600'
+                  : 'bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 hover:shadow-xs'
+              }`}
+              aria-label="Ads Portal"
+              title={activeAdvertiser ? `Customer Ads Dashboard (${activeAdvertiser.companyName})` : 'Access Customer Ads Portal'}
             >
-              <Building2 className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 text-amber-700" />
+              <Megaphone className={`w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 ${userView === 'partner' ? 'text-white' : 'text-amber-700'}`} />
               <span className="hidden md:inline font-bold text-xs whitespace-nowrap">
-                Ads Account
+                {activeAdvertiser ? 'Ads Account' : 'Ads Portal'}
               </span>
             </button>
           )}

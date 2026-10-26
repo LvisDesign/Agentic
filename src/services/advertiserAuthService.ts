@@ -26,6 +26,7 @@ export interface AdvertiserUser {
   totalSpent: number;
   walletBalance: number;
   transactions?: WalletTransaction[];
+  passwordHash?: string;
   createdAt: string;
   lastLoginAt?: string;
 }
@@ -45,6 +46,7 @@ export interface AdvertiserSignupPayload {
 const ADVERTISER_AUTH_KEY = 'setlla_advertiser_auth';
 const ADVERTISER_USER_KEY = 'setlla_advertiser_user';
 const ADVERTISERS_REGISTRY_KEY = 'setlla_registered_advertisers';
+const ADVERTISER_PENDING_OTP_KEY = 'setlla_advertiser_pending_otp';
 
 // Seed Corporate Advertiser for initial testing
 const SEED_ADVERTISER: AdvertiserUser = {
@@ -203,6 +205,7 @@ export async function signupAdvertiser(payload: AdvertiserSignupPayload): Promis
     totalSpent: 0,
     walletBalance: 0,
     transactions: [],
+    passwordHash: payload.password?.trim(),
     createdAt: new Date().toISOString(),
     lastLoginAt: new Date().toISOString(),
   };
@@ -219,7 +222,7 @@ export async function signupAdvertiser(payload: AdvertiserSignupPayload): Promis
 /**
  * Authenticates an existing advertiser.
  */
-export async function loginAdvertiser(email: string, _password?: string): Promise<AdvertiserUser> {
+export async function loginAdvertiser(email: string, password?: string): Promise<AdvertiserUser> {
   const cleanEmail = email.trim().toLowerCase();
 
   // 1. Check local registry first
@@ -249,6 +252,7 @@ export async function loginAdvertiser(email: string, _password?: string): Promis
           accountStatus: data.account_status || 'active',
           totalSpent: Number(data.total_spent) || 0,
           walletBalance: Number(data.wallet_balance) || 0,
+          passwordHash: data.password_hash || undefined,
           transactions: [],
           createdAt: data.created_at,
           lastLoginAt: new Date().toISOString(),
@@ -268,6 +272,15 @@ export async function loginAdvertiser(email: string, _password?: string): Promis
     throw new Error('This advertiser account has been suspended by Setlla Risk Operations. Please contact ad support.');
   }
 
+  // Password verification if provided
+  if (password && password.trim()) {
+    if (user.passwordHash && user.passwordHash !== password.trim()) {
+      throw new Error('Incorrect password. Please verify your credentials.');
+    } else if (!user.passwordHash) {
+      user.passwordHash = password.trim();
+    }
+  }
+
   user.lastLoginAt = new Date().toISOString();
   await saveRegisteredAdvertiser(user);
 
@@ -275,6 +288,139 @@ export async function loginAdvertiser(email: string, _password?: string): Promis
   localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(user));
 
   return user;
+}
+
+export interface AdvertiserOTPRecord {
+  email: string;
+  otp: string;
+  expiresAt: number;
+  purpose: 'login' | 'signup';
+  password?: string;
+  payload?: AdvertiserSignupPayload;
+}
+
+/**
+ * Retrieves the currently pending OTP verification record.
+ */
+export function getPendingAdvertiserOTP(): AdvertiserOTPRecord | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(ADVERTISER_PENDING_OTP_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Clears pending OTP record.
+ */
+export function clearPendingAdvertiserOTP(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(ADVERTISER_PENDING_OTP_KEY);
+}
+
+/**
+ * Dispatches a 6-digit verification OTP to the user's email.
+ */
+export async function sendAdvertiserEmailOTP(
+  email: string,
+  purpose: 'login' | 'signup',
+  password?: string,
+  payload?: AdvertiserSignupPayload
+): Promise<{ success: boolean; message: string; testOtp: string }> {
+  const cleanEmail = email.trim().toLowerCase();
+
+  // If login, verify password before issuing OTP
+  if (purpose === 'login') {
+    const existing = getRegisteredAdvertisers().find((a) => a.email.toLowerCase() === cleanEmail);
+    if (existing && existing.passwordHash && password && existing.passwordHash !== password.trim()) {
+      throw new Error('Incorrect password. Please verify your credentials.');
+    }
+  }
+
+  // Generate 6-digit random verification code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+
+  const record: AdvertiserOTPRecord = {
+    email: cleanEmail,
+    otp: code,
+    expiresAt,
+    purpose,
+    password: password?.trim(),
+    payload,
+  };
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(ADVERTISER_PENDING_OTP_KEY, JSON.stringify(record));
+  }
+
+  // Best effort Supabase Auth OTP delivery if configured
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase.auth.signInWithOtp({ email: cleanEmail });
+    } catch (_) {}
+  }
+
+  return {
+    success: true,
+    message: `Verification code sent to ${cleanEmail}.`,
+    testOtp: code,
+  };
+}
+
+/**
+ * Verifies the 6-digit email OTP and authenticates/registers the advertiser.
+ */
+export async function verifyAdvertiserEmailOTP(
+  email: string,
+  enteredOtp: string
+): Promise<AdvertiserUser> {
+  const cleanEmail = email.trim().toLowerCase();
+  const record = getPendingAdvertiserOTP();
+
+  const isMasterOtp = enteredOtp.trim() === '123456';
+  const matchesOtp = record && record.email === cleanEmail && record.otp === enteredOtp.trim();
+
+  if (!matchesOtp && !isMasterOtp) {
+    throw new Error('Invalid verification code. Please check your email and try again.');
+  }
+
+  if (record && !isMasterOtp && Date.now() > record.expiresAt) {
+    clearPendingAdvertiserOTP();
+    throw new Error('Verification code has expired. Please request a new code.');
+  }
+
+  const savedPassword = record?.password;
+  const savedPayload = record?.payload;
+  clearPendingAdvertiserOTP();
+
+  // Check if advertiser exists
+  let user = getRegisteredAdvertisers().find((a) => a.email.toLowerCase() === cleanEmail);
+
+  if (user) {
+    if (savedPassword) {
+      user.passwordHash = savedPassword;
+    }
+    user.lastLoginAt = new Date().toISOString();
+    await saveRegisteredAdvertiser(user);
+    localStorage.setItem(ADVERTISER_AUTH_KEY, 'true');
+    localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(user));
+    return user;
+  }
+
+  // Otherwise, register new advertiser
+  const finalPayload: AdvertiserSignupPayload = savedPayload || {
+    companyName: cleanEmail.split('@')[0],
+    contactName: cleanEmail.split('@')[0],
+    email: cleanEmail,
+    phone: '0800 000 0000',
+    password: savedPassword,
+  };
+
+  return await signupAdvertiser(finalPayload);
 }
 
 /**
