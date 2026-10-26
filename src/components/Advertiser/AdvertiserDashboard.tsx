@@ -711,44 +711,45 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                           : 'border-[#342A21]/15 hover:border-[#342A21]/40'
                       }`}
                     >
-                      {/* Alert banner for shadow / draft changes */}
+                      {/* Creative revision status */}
                       {isPendingCreativeReview && (
-                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200/90 text-amber-950 text-xs flex flex-col gap-1.5">
+                        <div className="px-3.5 py-2.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] text-xs flex flex-col gap-2">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="inline-flex items-center gap-1.5 font-bold text-[11px] text-amber-900">
-                              <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                              <span>Updated Creative In Review</span>
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setPreviewDraftAdId(isDraftPreviewOpen ? null : ad.id)}
-                              className="text-[10px] font-bold text-amber-800 hover:text-amber-950 underline cursor-pointer"
-                            >
-                              {isDraftPreviewOpen ? 'Hide Comparison' : 'Compare Live vs Draft'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                              <span className="font-semibold text-xs text-[#342A21]">
+                                Creative revision in review
+                              </span>
+                            </div>
+                            {ad.pendingChanges && (
+                              <button
+                                type="button"
+                                onClick={() => setPreviewDraftAdId(isDraftPreviewOpen ? null : ad.id)}
+                                className="text-[11px] font-medium text-[#70798C] hover:text-[#342A21] cursor-pointer"
+                              >
+                                {isDraftPreviewOpen ? 'Hide comparison' : 'Compare with live'}
+                              </button>
+                            )}
                           </div>
-                          <p className="text-[11px] text-amber-800 leading-tight">
-                            Your live ad remains actively displayed in the public feed so runtime is never disrupted. Once approved by Admin, the live card will seamlessly swap over.
-                          </p>
 
-                          {/* Side-by-side Live vs Draft comparison */}
+                          {/* Side-by-side Live vs Proposed comparison */}
                           {isDraftPreviewOpen && ad.pendingChanges && (
-                            <div className="mt-2 pt-2 border-t border-amber-200/80 grid grid-cols-2 gap-2 text-[11px]">
-                              <div className="p-2 bg-white/80 rounded-lg border border-amber-200">
-                                <span className="font-bold text-slate-700 block text-[10px] uppercase mb-1">Live in Feed</span>
-                                <div className="w-full h-14 rounded overflow-hidden mb-1 bg-black">
+                            <div className="mt-1 pt-2 border-t border-[#E5E7EB] grid grid-cols-2 gap-2.5 text-[11px]">
+                              <div className="p-2.5 bg-white rounded-lg border border-[#E5E7EB]">
+                                <span className="font-bold text-[#70798C] block text-[10px] uppercase mb-1">Live in feed</span>
+                                <div className="w-full h-14 rounded overflow-hidden mb-1.5 bg-black">
                                   <img src={ad.thumbnailUrl || ad.mediaUrl} alt="Live" className="w-full h-full object-cover" />
                                 </div>
-                                <span className="font-semibold text-slate-900 block truncate">{ad.headline}</span>
-                                <span className="text-[10px] text-slate-500 block truncate">{ad.location}</span>
+                                <span className="font-semibold text-[#000004] block truncate">{ad.headline}</span>
+                                <span className="text-[10px] text-[#70798C] block truncate">{ad.location}</span>
                               </div>
-                              <div className="p-2 bg-amber-100/60 rounded-lg border border-amber-300">
-                                <span className="font-bold text-amber-900 block text-[10px] uppercase mb-1">Proposed Draft (In Review)</span>
-                                <div className="w-full h-14 rounded overflow-hidden mb-1 bg-black">
+                              <div className="p-2.5 bg-white rounded-lg border border-amber-300">
+                                <span className="font-bold text-amber-800 block text-[10px] uppercase mb-1">Proposed revision</span>
+                                <div className="w-full h-14 rounded overflow-hidden mb-1.5 bg-black">
                                   <img src={ad.pendingChanges.thumbnailUrl || ad.pendingChanges.mediaUrl || ad.mediaUrl} alt="Draft" className="w-full h-full object-cover" />
                                 </div>
-                                <span className="font-semibold text-amber-950 block truncate">{ad.pendingChanges.headline || ad.headline}</span>
-                                <span className="text-[10px] text-amber-800 block truncate">{ad.pendingChanges.location || ad.location}</span>
+                                <span className="font-semibold text-[#000004] block truncate">{ad.pendingChanges.headline || ad.headline}</span>
+                                <span className="text-[10px] text-[#70798C] block truncate">{ad.pendingChanges.location || ad.location}</span>
                               </div>
                             </div>
                           )}
@@ -1884,19 +1885,19 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
         </div>
       )}
 
-      {/* Edit Ad Modal: Safe vs Sensitive Fields (Draft / Shadow Edit Pattern) */}
+      {/* Edit Ad Modal */}
       {editingAdvert && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in">
           <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-8 border border-[#342A21]/20 shadow-2xl space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex items-start justify-between pb-3 border-b border-[#E5E7EB]">
+            <div className="flex items-start justify-between pb-4 border-b border-[#E5E7EB]">
               <div>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  Advertiser Campaign Editor
-                </span>
-                <h3 className="font-display font-bold text-lg text-[#342A21] mt-1 line-clamp-1">
-                  Edit Ad: {editingAdvert.headline}
+                <h3 className="font-display font-bold text-lg text-[#342A21]">
+                  Edit Campaign
                 </h3>
+                <p className="text-xs text-[#70798C] mt-0.5 line-clamp-1">
+                  {editingAdvert.headline}
+                </p>
               </div>
               <button
                 type="button"
@@ -1907,36 +1908,23 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               </button>
             </div>
 
-            {/* Addressing Review Feedback Notice if previously declined */}
-            {editingAdvert.status === 'rejected' ? (
-              <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 text-xs space-y-2">
-                <div className="flex items-center gap-2 font-bold text-xs text-rose-800">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>Correcting Campaign Review Feedback</span>
+            {/* Review Feedback Notice if previously declined */}
+            {editingAdvert.status === 'rejected' && (
+              <div className="p-3.5 rounded-xl bg-rose-50/80 border border-rose-200 text-rose-950 text-xs space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-rose-800">
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span>Review Feedback</span>
                 </div>
-                <div className="p-3 bg-white/90 rounded-xl border border-rose-200 text-rose-900">
-                  <span className="text-[10px] uppercase font-bold text-rose-700 block mb-0.5 tracking-wider">
-                    Admin Decline Reason:
+                <div className="p-2.5 bg-white rounded-lg border border-rose-200/80 text-rose-900">
+                  <span className="text-[10px] uppercase font-bold text-rose-600 block mb-0.5 tracking-wider">
+                    Reason from reviewer:
                   </span>
-                  <p className="text-xs font-semibold leading-relaxed">
+                  <p className="text-xs font-medium leading-relaxed">
                     {editingAdvert.rejectionReason || 'This campaign does not meet Setlla advertising and verification guidelines.'}
                   </p>
                 </div>
-                <p className="text-[11px] text-rose-800 leading-tight">
-                  Update your creative, headline, or campaign parameters below. Once submitted, your updated ad will be placed directly in the admin queue for immediate re-approval.
-                </p>
-              </div>
-            ) : (
-              /* Platform Integrity & Shadow Runtime Guarantee Notice */
-              <div className="p-3.5 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] text-xs text-[#342A21] space-y-1.5">
-                <div className="flex items-center gap-2 font-bold text-xs text-[#342A21]">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>Setlla Platform Integrity & Runtime Guarantee</span>
-                </div>
-                <p className="text-[11px] text-[#70798C] leading-relaxed">
-                  <strong>Safe fields</strong> (destination URL, WhatsApp number, CTA) take effect <strong>instantly</strong> in the public feed without interruption.
-                  <br />
-                  <strong>Sensitive updates</strong> (banner flyers, headlines, target zones) create a <strong>shadow record</strong> submitted for Admin review. Your current live ad remains actively running until approved.
+                <p className="text-[11px] text-rose-700">
+                  Please update your campaign details below and submit for re-review.
                 </p>
               </div>
             )}
@@ -1955,19 +1943,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
             )}
 
             <form onSubmit={handleSaveEditAd} className="space-y-6">
-              {/* SECTION A: SAFE FIELDS */}
-              <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-200/80 space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-950">
-                      1. Safe Fields (Instant Live Updates — No Review Needed)
-                    </h4>
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
-                    ✓ Instant Live
-                  </span>
-                </div>
+              {/* Call to Action & Destination */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-[#342A21] uppercase tracking-wider">
+                  Call to Action & Links
+                </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
@@ -2032,19 +2012,14 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 </div>
               </div>
 
-              {/* SECTION B: SENSITIVE FIELDS */}
-              <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-200/90 space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-950">
-                      2. Sensitive Fields (Triggers Admin Re-approval via Shadow Record)
-                    </h4>
-                  </div>
-                  <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
-                    🛡 Shadow Review
-                  </span>
-                </div>
+              {/* Divider */}
+              <div className="border-t border-[#E5E7EB]" />
+
+              {/* Creative & Campaign Details */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-[#342A21] uppercase tracking-wider">
+                  Creative & Details
+                </h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div className="sm:col-span-2">
@@ -2151,7 +2126,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                     )}
 
                     {editMediaUrl && (
-                      <div className="flex items-center gap-3 p-2 bg-white rounded-xl border border-[#E5E7EB]">
+                      <div className="flex items-center gap-3 p-2 bg-[#FCF9F5] rounded-xl border border-[#E5E7EB]">
                         <div className="w-12 h-12 rounded overflow-hidden bg-black shrink-0">
                           {editMediaType === 'video' ? (
                             <video src={editMediaUrl} className="w-full h-full object-cover" muted />
@@ -2167,32 +2142,37 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               </div>
 
               {/* Bottom Buttons */}
-              <div className="pt-3 border-t border-[#E5E7EB] flex items-center justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setEditingAdvert(null)}
-                  className="px-4 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#70798C] hover:bg-[#F6F3EF] cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingEdit}
-                  className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5 transition-colors ${
-                    editingAdvert.status === 'rejected'
-                      ? 'bg-rose-600 hover:bg-rose-700'
-                      : 'bg-[#342A21] hover:bg-[#231C16]'
-                  }`}
-                >
-                  {isSavingEdit ? (
-                    <span>{editingAdvert.status === 'rejected' ? 'Resubmitting Campaign...' : 'Saving Edits...'}</span>
-                  ) : (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-white" />
-                      <span>{editingAdvert.status === 'rejected' ? 'Update & Resubmit for Review' : 'Save & Apply Updates'}</span>
-                    </>
-                  )}
-                </button>
+              <div className="pt-3 border-t border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <p className="text-[11px] text-[#70798C]">
+                  Changes to headlines or media will be verified by Setlla before going live.
+                </p>
+                <div className="flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditingAdvert(null)}
+                    className="px-4 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#70798C] hover:bg-[#F6F3EF] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5 transition-colors ${
+                      editingAdvert.status === 'rejected'
+                        ? 'bg-rose-600 hover:bg-rose-700'
+                        : 'bg-[#342A21] hover:bg-[#231C16]'
+                    }`}
+                  >
+                    {isSavingEdit ? (
+                      <span>{editingAdvert.status === 'rejected' ? 'Resubmitting Campaign...' : 'Saving Changes...'}</span>
+                    ) : (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-white" />
+                        <span>{editingAdvert.status === 'rejected' ? 'Update & Resubmit for Review' : 'Save Changes'}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

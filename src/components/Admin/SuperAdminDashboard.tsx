@@ -2266,20 +2266,20 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
           )}
 
-          {/* Pending Creative Changes (Shadow Updates) Review Queue */}
+          {/* Pending Creative Changes Review Queue */}
           {pendingCreativeUpdates.length > 0 && (
-            <div className="bg-indigo-50/70 border border-indigo-200 rounded-3xl p-5 shadow-xs space-y-4">
+            <div className="bg-[#FCF9F5] border border-[#E5E7EB] rounded-3xl p-5 shadow-xs space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  <div className="w-8 h-8 rounded-xl bg-[#342A21] text-white flex items-center justify-center font-bold text-xs shadow-xs">
                     {pendingCreativeUpdates.length}
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm text-indigo-950">
-                      Pending Creative Changes Awaiting Re-Approval (Shadow Updates)
+                    <h4 className="font-bold text-sm text-[#342A21]">
+                      Proposed Creative Revisions
                     </h4>
-                    <p className="text-xs text-indigo-800">
-                      Advertisers submitted updated creatives/headlines for actively running ads. The live ad continues running without runtime disruption until you approve these changes.
+                    <p className="text-xs text-[#70798C]">
+                      Advertisers requested updates to live campaign headlines or creatives.
                     </p>
                   </div>
                 </div>
@@ -2289,12 +2289,12 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 {pendingCreativeUpdates.map((ad) => {
                   const p = ad.pendingChanges!;
                   return (
-                    <div key={ad.id} className="bg-white rounded-2xl p-4 sm:p-5 border border-indigo-200/80 shadow-xs space-y-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-indigo-100">
+                    <div key={ad.id} className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] shadow-xs space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#E5E7EB]">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-sm text-[#000004]">{ad.advertiserName}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold uppercase">
-                            Shadow Creative Update
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#FCF9F5] text-[#342A21] font-bold uppercase border border-[#E5E7EB]">
+                            Creative Revision
                           </span>
                         </div>
                         <span className="text-[11px] text-[#70798C]">
@@ -2308,10 +2308,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                         <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
-                              Currently Live in Feed (Active)
+                              Currently Live in Feed
                             </span>
                             <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
-                              ● Live Runtime Protected
+                              ● Current Live Version
                             </span>
                           </div>
                           <div className="flex gap-3">
@@ -2334,13 +2334,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                         </div>
 
                         {/* 2. Proposed Version */}
-                        <div className="p-3.5 bg-indigo-50/60 rounded-xl border-2 border-indigo-300 space-y-2">
+                        <div className="p-3.5 bg-amber-50/50 rounded-xl border border-amber-200 space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-950">
-                              Proposed New Creative (Pending Review)
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#342A21]">
+                              Proposed Revision (Pending Review)
                             </span>
-                            <span className="text-[10px] font-bold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded">
-                              Proposed Update
+                            <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                              Revision
                             </span>
                           </div>
                           <div className="flex gap-3">
@@ -2364,23 +2364,23 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                       </div>
 
                       {/* Approval Actions */}
-                      <div className="flex items-center justify-between pt-3 border-t border-indigo-100">
+                      <div className="flex items-center justify-between pt-3 border-t border-[#E5E7EB]">
                         <span className="text-xs text-[#70798C]">
-                          Alert: <strong>{ad.advertiserName}</strong> submitted updated ad banner for review.
+                          Advertiser: <strong className="text-[#342A21]">{ad.advertiserName}</strong>
                         </span>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleRejectCreativeChanges(ad.id)}
                             className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer"
                           >
-                            Decline Changes
+                            Decline
                           </button>
                           <button
                             onClick={() => handleApproveCreativeChanges(ad.id)}
-                            className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                            className="px-4 py-1.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>Approve & Swap Creative</span>
+                            <span>Approve & Apply</span>
                           </button>
                         </div>
                       </div>
