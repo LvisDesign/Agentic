@@ -1809,8 +1809,8 @@ export function App() {
     <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#342A21]/15 selection:text-[#342A21] ${
       isFeedView ? 'h-screen h-[100dvh] overflow-hidden' : 'min-h-screen overflow-x-hidden'
     }`}>
-      {/* 1. Global Navigation Header (Hidden on unauthenticated Admin login/signup portal and on dedicated Partner Portal page) */}
-      {!(currentRole === 'admin' && !isAdminAuthenticated) && userView !== 'partner' && (
+      {/* 1. Global Navigation Header (Strictly rendered for public pages, never for admin portal) */}
+      {currentRole !== 'admin' && userView !== 'partner' && (
         <Header
           currentRole={currentRole}
           onChangeRole={setCurrentRole}
@@ -1831,19 +1831,17 @@ export function App() {
             }
             setIsProfileOpen(true);
           }}
-          currentUser={isAdminAuthenticated && activeAdminUser ? activeAdminUser : currentUser}
+          currentUser={currentUser}
           onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
           onOpenSignup={handleOpenSignup}
           onOpenLogin={handleOpenLogin}
-          isAuthenticated={isAuthenticated || isAdminAuthenticated}
-          isAdminAuthenticated={isAdminAuthenticated}
+          isAuthenticated={isAuthenticated}
           onOpenAgentSignup={handleOpenAgentSignup}
-          onAdminSignOut={handleAdminSignOut}
         />
       )}
 
       {/* Platform Emergency Announcement Banner */}
-      {!(currentRole === 'admin' && !isAdminAuthenticated) && userView !== 'partner' && platformSettings.emergencyAnnouncementActive && platformSettings.emergencyAnnouncement && (
+      {currentRole !== 'admin' && userView !== 'partner' && platformSettings.emergencyAnnouncementActive && platformSettings.emergencyAnnouncement && (
         <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-600 text-white px-4 py-2.5 text-xs font-bold text-center shadow-xs flex items-center justify-center gap-2 border-b border-amber-800 z-40">
           <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping shrink-0" />
           <span>{platformSettings.emergencyAnnouncement}</span>
@@ -1856,19 +1854,16 @@ export function App() {
         <main className="flex-1 w-full min-h-screen">
           <PartnerPortalPage
             onBackToExplore={() => {
+              // Strictly ensure any admin state is purged so Explore Feed NEVER opens with admin privileges
+              setIsAdminAuthenticated(false);
+              try {
+                localStorage.removeItem('setlla_admin_auth');
+                localStorage.removeItem('setlla_admin_user');
+              } catch (_) {}
               setCurrentRole(currentUser.isAgent ? 'agent' : 'tenant');
               setUserView('feed');
               window.location.hash = '#/explore';
             }}
-            onBackToAdmin={isAdminAuthenticated ? () => {
-              if (typeof window !== 'undefined' && window.opener && !window.opener.closed) {
-                window.close();
-                return;
-              }
-              setCurrentRole('admin');
-              setUserView('feed');
-              window.location.hash = '#/admin';
-            } : undefined}
             onAdSubmitted={handleAddAdvert}
           />
         </main>

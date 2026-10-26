@@ -57,13 +57,11 @@ import { processUploadedFile } from '../../utils/mediaStorage';
 
 interface PartnerPortalPageProps {
   onBackToExplore?: () => void;
-  onBackToAdmin?: () => void;
   onAdSubmitted?: (ad: AdvertStory) => void;
 }
 
 export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   onBackToExplore,
-  onBackToAdmin,
   onAdSubmitted,
 }) => {
   const [activeTab, setActiveTab] = useState<'packages' | 'placements' | 'api' | 'guide'>('packages');
@@ -446,6 +444,13 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   };
 
   const handleReturn = () => {
+    // Strictly clear any admin tokens from storage so explore feed is 100% public
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('setlla_admin_auth');
+        localStorage.removeItem('setlla_admin_user');
+      } catch (_) {}
+    }
     if (onBackToExplore) {
       onBackToExplore();
     } else {
