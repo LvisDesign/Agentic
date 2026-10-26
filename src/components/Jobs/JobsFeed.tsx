@@ -10,7 +10,10 @@ import {
   X,
   Building2,
   CheckCircle2,
-  Share2
+  Share2,
+  Plus,
+  Megaphone,
+  ArrowUpRight
 } from 'lucide-react';
 import { JobListing } from '../../types/jobs';
 import { AdvertStory } from '../../data/mockAdverts';
@@ -19,6 +22,8 @@ import { JobListingCard } from './JobListingCard';
 import { JobDetailsSheet } from './JobDetailsSheet';
 import { JobApplicationDrawer } from './JobApplicationDrawer';
 import { NativeBillboardAdCard } from './NativeBillboardAdCard';
+import { DesktopAdvertSidebar } from '../Feed/DesktopAdvertSidebar';
+import { AdvertStoriesTray } from '../Feed/AdvertStoriesTray';
 import { 
   getAllJobs, 
   hasUserApplied, 
@@ -31,6 +36,7 @@ interface JobsFeedProps {
   currentUser: UserProfile;
   adverts?: AdvertStory[];
   onSelectAdvert?: (ad: AdvertStory) => void;
+  onOpenPostAd?: () => void;
   onTriggerSignup?: () => void;
   isAuthenticated: boolean;
 }
@@ -42,6 +48,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
   currentUser,
   adverts = [],
   onSelectAdvert = () => {},
+  onOpenPostAd = () => {},
   onTriggerSignup,
   isAuthenticated,
 }) => {
@@ -146,7 +153,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
     <div className="w-full flex-1 flex flex-col items-center bg-[#FCF9F5]">
       {/* Sticky Top Filter & Search Bar */}
       <div className="w-full bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] sticky top-16 z-30 py-3 px-3 sm:px-6 shadow-2xs">
-        <div className="max-w-2xl mx-auto space-y-2.5">
+        <div className="max-w-2xl lg:max-w-5xl xl:max-w-7xl mx-auto space-y-2.5">
           {/* Search Input Bar */}
           <div className="relative w-full">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#70798C]" />
@@ -169,7 +176,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
             )}
           </div>
 
-          {/* Simplified Filter Controls: 2 Dropdown Pills + Clear */}
+          {/* Simplified Filter Controls: 2 Dropdown Pills + Clear + Live Count + Quick Post Ad */}
           <div className="flex items-center justify-between gap-2 pt-0.5">
             <div className="flex items-center gap-2 flex-wrap">
               {/* Location Dropdown */}
@@ -226,9 +233,20 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
               )}
             </div>
 
-            {/* Live Count Pill */}
-            <div className="text-[11px] font-semibold text-[#70798C] shrink-0 hidden sm:block">
-              <span className="font-bold text-[#000004]">{filteredJobs.length}</span> {filteredJobs.length === 1 ? 'vacancy' : 'vacancies'}
+            {/* Live Count Pill & Post Ad Button */}
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="text-[11px] font-semibold text-[#70798C] shrink-0 hidden sm:block">
+                <span className="font-bold text-[#000004]">{filteredJobs.length}</span> {filteredJobs.length === 1 ? 'vacancy' : 'vacancies'}
+              </div>
+              <button
+                type="button"
+                onClick={onOpenPostAd}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                title="Post an advert on Setlla"
+              >
+                <Plus className="w-3 h-3 text-amber-400" />
+                <span>Post Ad</span>
+              </button>
             </div>
           </div>
         </div>
@@ -242,106 +260,274 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
         </div>
       )}
 
-      {/* Main Jobs Feed Container */}
-      <main className="w-full max-w-2xl px-2 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-5">
-        {/* Results Counter / Active Filter Bar Summary */}
-        <div className="flex items-center justify-between px-1 text-xs text-[#70798C]">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-bold text-[#000004]">
-              {filteredJobs.length} {filteredJobs.length === 1 ? 'Career Opportunity' : 'Career Opportunities'}
-            </span>
-            <span>in Delta State</span>
-          </div>
-
-          {(searchQuery || selectedCity !== 'All Delta Cities' || selectedRoleType !== 'All Types') && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCity('All Delta Cities');
-                setSelectedRoleType('All Types');
-              }}
-              className="text-[#000004] hover:underline font-bold text-[11px] cursor-pointer"
-            >
-              Reset Filters
-            </button>
-          )}
+      {/* Responsive Main Layout Container: Left Ad Sidebar + Center Jobs Stream + Right Ad & Employer Spotlight */}
+      <div className="w-full max-w-6xl xl:max-w-7xl mx-auto flex items-start justify-center gap-6 px-3 sm:px-6 py-4 sm:py-6">
+        {/* Desktop Left Side Sponsored Ads */}
+        <div className="hidden lg:block sticky top-44 shrink-0 h-[calc(100vh-190px)] max-h-[820px]">
+          <DesktopAdvertSidebar
+            adverts={adverts}
+            onSelectAdvert={onSelectAdvert}
+            onOpenPostAd={onOpenPostAd}
+          />
         </div>
 
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="space-y-4 py-10">
-            {[1, 2, 3].map((n) => (
-              <div key={n} className="w-full h-48 rounded-3xl bg-white border border-[#E5E7EB] p-5 animate-pulse space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-200" />
-                  <div className="space-y-2 flex-1">
-                    <div className="w-1/2 h-4 bg-slate-200 rounded-md" />
-                    <div className="w-1/3 h-3 bg-slate-100 rounded-md" />
-                  </div>
-                </div>
-                <div className="w-full h-10 bg-slate-100 rounded-md" />
+        {/* Center Main Jobs Feed Container */}
+        <main className="w-full max-w-2xl flex-1 min-w-0 space-y-4 sm:space-y-5">
+          {/* Mobile Ad Stories Tray (Visible only on < lg screens) */}
+          {adverts && adverts.length > 0 && (
+            <div className="lg:hidden w-full pb-2">
+              <div className="flex items-center justify-between px-1 pb-1.5">
+                <span className="text-[11px] font-bold text-[#70798C] uppercase tracking-wider">
+                  Sponsored Promotions
+                </span>
+                <button
+                  type="button"
+                  onClick={onOpenPostAd}
+                  className="text-[11px] font-bold text-[#342A21] hover:underline cursor-pointer"
+                >
+                  + Post Ad
+                </button>
               </div>
-            ))}
-          </div>
-        ) : feedItems.length === 0 ? (
-          /* Empty Search Results */
-          <div className="py-16 text-center bg-white rounded-3xl border border-[#E5E7EB] p-8 space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-[#F4F5F7] text-[#000004] flex items-center justify-center mx-auto border border-[#E5E7EB]">
-              <Briefcase className="w-7 h-7" />
+              <AdvertStoriesTray
+                adverts={adverts}
+                onSelectAdvert={onSelectAdvert}
+                onOpenPostAd={onOpenPostAd}
+              />
             </div>
-            <h3 className="font-display font-bold text-base text-[#000004]">
-              No jobs matching your search criteria
-            </h3>
-            <p className="text-xs text-[#70798C] max-w-sm mx-auto">
-              Try adjusting your city filter or searching for broader terms like "developer", "logistics", or "manager".
+          )}
+
+          {/* Results Counter / Active Filter Bar Summary */}
+          <div className="flex items-center justify-between px-1 text-xs text-[#70798C]">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-bold text-[#000004]">
+                {filteredJobs.length} {filteredJobs.length === 1 ? 'Career Opportunity' : 'Career Opportunities'}
+              </span>
+              <span>in Delta State</span>
+            </div>
+
+            {(searchQuery || selectedCity !== 'All Delta Cities' || selectedRoleType !== 'All Types') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCity('All Delta Cities');
+                  setSelectedRoleType('All Types');
+                }}
+                className="text-[#000004] hover:underline font-bold text-[11px] cursor-pointer"
+              >
+                Reset Filters
+              </button>
+            )}
+          </div>
+
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="space-y-4 py-10">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="w-full h-48 rounded-3xl bg-white border border-[#E5E7EB] p-5 animate-pulse space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-200" />
+                    <div className="space-y-2 flex-1">
+                      <div className="w-1/2 h-4 bg-slate-200 rounded-md" />
+                      <div className="w-1/3 h-3 bg-slate-100 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="w-full h-10 bg-slate-100 rounded-md" />
+                </div>
+              ))}
+            </div>
+          ) : feedItems.length === 0 ? (
+            /* Empty Search Results */
+            <div className="py-16 text-center bg-white rounded-3xl border border-[#E5E7EB] p-8 space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-[#F4F5F7] text-[#000004] flex items-center justify-center mx-auto border border-[#E5E7EB]">
+                <Briefcase className="w-7 h-7" />
+              </div>
+              <h3 className="font-display font-bold text-base text-[#000004]">
+                No jobs matching your search criteria
+              </h3>
+              <p className="text-xs text-[#70798C] max-w-sm mx-auto">
+                Try adjusting your city filter or searching for broader terms like "developer", "logistics", or "manager".
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCity('All Delta Cities');
+                  setSelectedRoleType('All Types');
+                }}
+                className="mt-2 py-2 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+              >
+                View All Open Vacancies
+              </button>
+            </div>
+          ) : (
+            /* Stream of Jobs + Native Billboard Ads */
+            feedItems.map((item) => {
+              if (item.type === 'job') {
+                const hasApplied = appliedJobIds.has(item.job.id);
+                return (
+                  <JobListingCard
+                    key={item.key}
+                    job={item.job}
+                    hasApplied={hasApplied}
+                    onViewDetails={(j) => setActiveJobDetails(j)}
+                    onQuickApply={(j) => {
+                      if (!isAuthenticated && onTriggerSignup) {
+                        onTriggerSignup();
+                        return;
+                      }
+                      setActiveQuickApplyJob(j);
+                    }}
+                    onShareJob={handleShareJob}
+                  />
+                );
+              } else {
+                return (
+                  <NativeBillboardAdCard
+                    key={item.key}
+                    advert={item.advert}
+                    onSelectAdvert={onSelectAdvert}
+                  />
+                );
+              }
+            })
+          )}
+        </main>
+
+        {/* Extra-Wide Desktop Right Column: Sponsored Spotlight & Employer Hub */}
+        <aside className="hidden xl:flex flex-col w-[290px] shrink-0 sticky top-44 space-y-4">
+          {/* 1. Featured Advert / Partner Spotlight (if adverts available) */}
+          {adverts.length > 0 && (
+            <div className="bg-white rounded-3xl border border-[#342A21]/15 shadow-card p-4 overflow-hidden relative group">
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#E5E7EB]">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#70798C]">
+                    Partner Spotlight
+                  </span>
+                </div>
+                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                  Featured
+                </span>
+              </div>
+
+              {/* Advert Visual & Info */}
+              <div 
+                onClick={() => onSelectAdvert(adverts[0])}
+                className="mt-3 cursor-pointer select-none space-y-2.5"
+              >
+                <div className="w-full h-[140px] rounded-2xl overflow-hidden relative bg-black/10">
+                  <img
+                    src={adverts[0].thumbnailUrl || adverts[0].mediaUrl}
+                    alt={adverts[0].title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                  <span className="absolute bottom-2 left-2 text-[10px] font-bold text-white bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded-md border border-white/20">
+                    {adverts[0].badgeText || adverts[0].category}
+                  </span>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-xs font-bold text-[#000004]">
+                    <span className="truncate">{adverts[0].advertiserName}</span>
+                    {adverts[0].price && (
+                      <span className="text-[#342A21] shrink-0 ml-1">{adverts[0].price}</span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-[#70798C] line-clamp-2 mt-0.5 leading-snug">
+                    {adverts[0].headline || adverts[0].title}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="w-full py-2 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                >
+                  <span>Learn More</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 2. Promote on Setlla Card */}
+          <div className="bg-white rounded-3xl border border-[#342A21]/15 shadow-card p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-[#FCF9F5] border border-[#342A21]/15 flex items-center justify-center text-[#342A21] shrink-0">
+                <Megaphone className="w-4 h-4 text-[#342A21]" />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-[#000004]">Advertise on Setlla</h4>
+                <p className="text-[10px] text-[#70798C]">Delta State Marketplace</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#70798C] leading-relaxed">
+              Put your company, agency services, or products in front of thousands of active residents and job seekers daily.
+            </p>
+
+            <div className="space-y-1.5 pt-0.5">
+              <div className="flex items-center gap-2 text-[11px] text-[#342A21]">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Targeted Asaba, Warri & Delta reach</span>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-[#342A21]">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Verified partner business badge</span>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-[#342A21]">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>Direct WhatsApp & web inquiries</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onOpenPostAd}
+              className="w-full py-2.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer active:scale-95"
+            >
+              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <span>Create An Advert</span>
+            </button>
+          </div>
+
+          {/* 3. Employer Hiring Spotlight */}
+          <div className="bg-gradient-to-br from-[#FCF9F5] to-[#EFE8DF] rounded-3xl border border-[#342A21]/15 p-4 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#70798C]">
+                For Employers
+              </span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                Fast Hiring
+              </span>
+            </div>
+            <h4 className="text-xs font-bold text-[#000004]">
+              Hiring in Delta State?
+            </h4>
+            <p className="text-[11px] text-[#70798C] leading-relaxed">
+              Reach 10,000+ local professionals and get direct CV submissions delivered straight to your inbox.
             </p>
             <button
               type="button"
               onClick={() => {
-                setSearchQuery('');
-                setSelectedCity('All Delta Cities');
-                setSelectedRoleType('All Types');
+                if (!isAuthenticated && onTriggerSignup) {
+                  onTriggerSignup();
+                } else {
+                  setToastMessage('Employer vacancy portal is active. Contact support or post an ad.');
+                  setTimeout(() => setToastMessage(null), 3500);
+                }
               }}
-              className="mt-2 py-2 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+              className="w-full py-2 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
             >
-              View All Open Vacancies
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Post a Vacancy</span>
             </button>
           </div>
-        ) : (
-          /* Stream of Jobs + Native Billboard Ads */
-          feedItems.map((item) => {
-            if (item.type === 'job') {
-              const hasApplied = appliedJobIds.has(item.job.id);
-              return (
-                <JobListingCard
-                  key={item.key}
-                  job={item.job}
-                  hasApplied={hasApplied}
-                  onViewDetails={(j) => setActiveJobDetails(j)}
-                  onQuickApply={(j) => {
-                    if (!isAuthenticated && onTriggerSignup) {
-                      onTriggerSignup();
-                      return;
-                    }
-                    setActiveQuickApplyJob(j);
-                  }}
-                  onShareJob={handleShareJob}
-                />
-              );
-            } else {
-              return (
-                <NativeBillboardAdCard
-                  key={item.key}
-                  advert={item.advert}
-                  onSelectAdvert={onSelectAdvert}
-                />
-              );
-            }
-          })
-        )}
-      </main>
+        </aside>
+      </div>
 
       {/* Slide-Up Job Details Sheet */}
       <JobDetailsSheet

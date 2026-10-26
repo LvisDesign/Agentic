@@ -30,6 +30,7 @@ import { UserDashboard } from './components/User/UserDashboard';
 import { BecomeAgentModal } from './components/User/BecomeAgentModal';
 import { SignupModal } from './components/User/SignupModal';
 import { MyPassesModal } from './components/Pass/MyPassesModal';
+import { NotificationsModal } from './components/Notifications/NotificationsModal';
 import { UserProfileModal } from './components/Profile/UserProfileModal';
 import { InspectionBookingModal } from './components/Booking/InspectionBookingModal';
 import { AdvertStory } from './data/mockAdverts';
@@ -41,6 +42,7 @@ import { AdvertiserAuthModal } from './components/Advertiser/AdvertiserAuthModal
 import { getActiveAdvertiser } from './services/advertiserAuthService';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { JobsFeed } from './components/Jobs/JobsFeed';
+import { JobsDashboard } from './components/Jobs/JobsDashboard';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
 import { SuperAdminDashboard } from './components/Admin/SuperAdminDashboard';
@@ -1880,6 +1882,13 @@ export function App() {
             }
             setIsMyPassesOpen(true);
           }}
+          onOpenNotifications={() => {
+            if (!isAuthenticated) {
+              handleOpenSignup();
+              return;
+            }
+            setIsMyPassesOpen(true);
+          }}
           onOpenProfile={() => {
             if (!isAuthenticated) {
               handleOpenSignup();
@@ -1968,6 +1977,64 @@ export function App() {
             />
           </main>
         )
+      ) : userView === 'dashboard' && isAuthenticated ? (
+        activeRoom === 'jobs' ? (
+          /* Setlla Jobs Dashboard: Room-based dashboard */
+          <main className="flex-1 w-full pt-16">
+            <JobsDashboard
+              currentUser={currentUser}
+              onSwitchToFeed={() => setUserView('feed')}
+              onOpenSignup={handleOpenSignup}
+              onOpenPostAd={() => setIsPostAdOpen(true)}
+              isAuthenticated={isAuthenticated}
+            />
+          </main>
+        ) : currentUser.isAgent ? (
+          /* If the user is an agent, their dashboard is the Agent Dashboard */
+          <main className="flex-1 w-full">
+            <AgentDashboard
+              currentUser={currentUser}
+              listings={listings}
+              bookings={bookings}
+              onAcceptBooking={handleAcceptBooking}
+              onRejectBooking={handleRejectBooking}
+              onListingCreated={handleListingCreated}
+              onListingUpdated={handleListingUpdated}
+              onDeleteListing={handleDeleteListing}
+              onUpdateAvailability={handleUpdateListingAvailability}
+              onConfirmFreshness={handleConfirmListingFreshness}
+              onSwitchToSeeker={() => {
+                setCurrentRole('tenant');
+                setUserView('feed');
+              }}
+              onSwitchToTenant={() => {
+                setCurrentRole('tenant');
+                setUserView('feed');
+              }}
+              onOpenAdsPortal={handleOpenAdsPortal}
+            />
+          </main>
+        ) : (
+          /* Tenant / User Dashboard: Strictly for authenticated non-agent tenants */
+          <main className="flex-1 w-full">
+            <UserDashboard
+              currentUser={currentUser}
+              listings={listings}
+              bookings={userBookings}
+              savedPropertyIds={savedPropertyIds}
+              onToggleSaveProperty={handleToggleSaveProperty}
+              onOpenBookingModal={handleOpenBooking}
+              onCancelBooking={handleCancelBooking}
+              onOpenMyPasses={() => setIsMyPassesOpen(true)}
+              onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
+              onOpenSignup={handleOpenSignup}
+              onSwitchToFeed={() => setUserView('feed')}
+              onSwitchToAgent={() => setCurrentRole('agent')}
+              isAuthenticated={isAuthenticated}
+              onOpenAdsPortal={handleOpenAdsPortal}
+            />
+          </main>
+        )
       ) : activeRoom === 'jobs' ? (
         /* Setlla Jobs Continuous Feed */
         <main className="flex-1 w-full pt-16">
@@ -1977,57 +2044,10 @@ export function App() {
             onSelectAdvert={handleSelectAdvert}
             onTriggerSignup={handleOpenSignup}
             isAuthenticated={isAuthenticated}
+            onOpenPostAd={() => setIsPostAdOpen(true)}
           />
         </main>
       ) : (currentRole === 'tenant' || currentRole === 'seeker') ? (
-        userView === 'dashboard' && isAuthenticated ? (
-          currentUser.isAgent ? (
-            /* If the user is an agent, their dashboard is the Agent Dashboard */
-            <main className="flex-1 w-full">
-              <AgentDashboard
-                currentUser={currentUser}
-                listings={listings}
-                bookings={bookings}
-                onAcceptBooking={handleAcceptBooking}
-                onRejectBooking={handleRejectBooking}
-                onListingCreated={handleListingCreated}
-                onListingUpdated={handleListingUpdated}
-                onDeleteListing={handleDeleteListing}
-                onUpdateAvailability={handleUpdateListingAvailability}
-                onConfirmFreshness={handleConfirmListingFreshness}
-                onSwitchToSeeker={() => {
-                  setCurrentRole('tenant');
-                  setUserView('feed');
-                }}
-                onSwitchToTenant={() => {
-                  setCurrentRole('tenant');
-                  setUserView('feed');
-                }}
-                onOpenAdsPortal={handleOpenAdsPortal}
-              />
-            </main>
-          ) : (
-            /* Tenant / User Dashboard: Strictly for authenticated non-agent tenants */
-            <main className="flex-1 w-full">
-              <UserDashboard
-                currentUser={currentUser}
-                listings={listings}
-                bookings={userBookings}
-                savedPropertyIds={savedPropertyIds}
-                onToggleSaveProperty={handleToggleSaveProperty}
-                onOpenBookingModal={handleOpenBooking}
-                onCancelBooking={handleCancelBooking}
-                onOpenMyPasses={() => setIsMyPassesOpen(true)}
-                onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
-                onOpenSignup={handleOpenSignup}
-                onSwitchToFeed={() => setUserView('feed')}
-                onSwitchToAgent={() => setCurrentRole('agent')}
-                isAuthenticated={isAuthenticated}
-                onOpenAdsPortal={handleOpenAdsPortal}
-              />
-            </main>
-          )
-        ) : (
           /* Tenant Snap Feed View */
           <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">
             {/* Snap-Feed Filter Bar with Squared Rounded-Edges Adverts Tray */}
@@ -2084,7 +2104,6 @@ export function App() {
               </div>
             </div>
           </main>
-        )
       ) : (
         /* Agent Mode Portal */
         <main className="flex-1 w-full">
@@ -2113,11 +2132,12 @@ export function App() {
       )}
 
       {/* 3. Global Drawers & Modals */}
-      <MyPassesModal
+      <NotificationsModal
         isOpen={isMyPassesOpen}
         onClose={() => setIsMyPassesOpen(false)}
         bookings={userBookings}
         listings={listings}
+        currentUser={currentUser}
         onOpenBookingModal={handleOpenBooking}
       />
 
