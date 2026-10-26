@@ -68,6 +68,7 @@ interface AdvertiserDashboardProps {
   advertiser: AdvertiserUser;
   onLogout: () => void;
   onBackToExplore?: () => void;
+  onBackToPortal?: () => void;
   onCampaignCreated?: (ad: AdvertStory) => void;
 }
 
@@ -75,6 +76,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   advertiser,
   onLogout,
   onBackToExplore,
+  onBackToPortal,
   onCampaignCreated,
 }) => {
   const [currentAdvertiser, setCurrentAdvertiser] = useState<AdvertiserUser>(() => getActiveAdvertiser() || advertiser);
@@ -443,14 +445,14 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#342A21]/10">
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            {onBackToExplore && (
+            {(onBackToPortal || onBackToExplore) && (
               <button
-                onClick={onBackToExplore}
+                onClick={onBackToPortal || onBackToExplore}
                 className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0"
-                title="Return to property feed"
+                title="Return to Partner Portal"
               >
                 <ArrowLeft className="w-4 h-4 text-[#342A21]" />
-                <span className="hidden sm:inline">Explore Feed</span>
+                <span className="font-semibold text-xs text-[#342A21]">Partner Portal</span>
               </button>
             )}
 

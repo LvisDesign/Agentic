@@ -9,11 +9,13 @@ import {
   UserPlus, 
   Download,
   Briefcase,
-  LogOut
+  LogOut,
+  Building2
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 import { usePWA } from '../utils/pwa';
 import { CustomConfirmModal } from './UI/CustomConfirmModal';
+import { getActiveAdvertiser } from '../services/advertiserAuthService';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -59,6 +61,10 @@ export const Header: React.FC<HeaderProps> = ({
   ).length;
 
   const totalActivePasses = confirmedPassesCount + pendingCount;
+
+  // Retrieve active logged in advertiser (Customer Ads Account)
+  const activeAdvertiser = getActiveAdvertiser();
+  const isActuallyAdmin = isAdminAuthenticated && !activeAdvertiser;
 
   // Unobtrusive Header PWA Install hook
   const { isStandalone, isIOS, installApp } = usePWA();
@@ -221,8 +227,25 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* TAB 4.5: Super Admin Console (Rendered ONLY when actively authenticated as Admin) */}
-          {isAdminAuthenticated && (
+          {/* TAB 4.2: Customer Ads Account (Rendered when logged in as an Advertiser/Ads Customer) */}
+          {activeAdvertiser && (
+            <button
+              onClick={() => {
+                window.location.hash = '#/partner';
+              }}
+              className="relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 bg-amber-50 hover:bg-amber-100 text-amber-950 border border-amber-300/80 hover:shadow-xs"
+              aria-label="Ads Account"
+              title={`Customer Ads Dashboard (${activeAdvertiser.companyName})`}
+            >
+              <Building2 className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0 text-amber-700" />
+              <span className="hidden md:inline font-bold text-xs whitespace-nowrap">
+                Ads Account
+              </span>
+            </button>
+          )}
+
+          {/* TAB 4.5: Super Admin Console (Rendered ONLY when actively authenticated as Admin and NOT an advertiser) */}
+          {isActuallyAdmin && (
             <button
               onClick={() => onChangeRole('admin')}
               className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
@@ -244,7 +267,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* TAB 5: Admin Sign Out (when admin) OR User Profile (when authenticated user) OR Sign In + Signup (when unauthenticated guest) */}
-          {isAdminAuthenticated ? (
+          {isActuallyAdmin ? (
             <button
               type="button"
               onClick={() => {
@@ -257,6 +280,23 @@ export const Header: React.FC<HeaderProps> = ({
               <LogOut className="w-3.5 h-3.5 shrink-0 transition-transform group-hover:-translate-x-0.5 text-rose-600" />
               <span className="font-bold text-xs whitespace-nowrap">
                 Sign Out
+              </span>
+            </button>
+          ) : !isAuthenticated && activeAdvertiser ? (
+            <button
+              type="button"
+              onClick={() => {
+                window.location.hash = '#/partner';
+              }}
+              className="relative h-9 sm:h-10 md:h-11 px-2.5 sm:px-3.5 md:px-4 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-[#342A21] hover:bg-[#201914] text-white transition-all duration-200 active:scale-95 group cursor-pointer shadow-xs shrink-0"
+              aria-label="Partner Portal"
+              title={activeAdvertiser.companyName}
+            >
+              <div className="w-5 h-5 rounded-full bg-amber-400 text-[#342A21] text-[10px] font-black flex items-center justify-center shrink-0">
+                {activeAdvertiser.companyName.charAt(0).toUpperCase()}
+              </div>
+              <span className="hidden md:inline font-bold text-xs whitespace-nowrap max-w-[120px] truncate">
+                {activeAdvertiser.companyName}
               </span>
             </button>
           ) : !isAuthenticated ? (

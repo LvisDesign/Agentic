@@ -28,7 +28,9 @@ import {
   AlertCircle,
   X,
   Lock,
-  ShieldCheck
+  ShieldCheck,
+  Compass,
+  ArrowLeft
 } from 'lucide-react';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { 
@@ -463,7 +465,14 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             setViewMode('landing');
             window.location.hash = '#/partner';
           }}
-          onBackToExplore={onBackToExplore || (() => { window.location.hash = '#/explore'; })}
+          onBackToPortal={() => {
+            setViewMode('landing');
+            window.location.hash = '#/partner';
+          }}
+          onBackToExplore={() => {
+            setViewMode('landing');
+            window.location.hash = '#/partner';
+          }}
           onCampaignCreated={(newAd) => {
             if (onAdSubmitted) onAdSubmitted(newAd);
           }}
@@ -490,36 +499,31 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] font-body selection:bg-[#342A21]/10 selection:text-[#342A21]">
-      {/* Super Admin Return Banner - Only visible to an actively authenticated Super Admin previewing the portal */}
-      {onBackToAdmin && isSuperAdminAuthenticated() && (
-        <div className="bg-[#000004] text-amber-300 px-3.5 sm:px-6 py-2 text-xs font-semibold flex items-center justify-between border-b border-amber-400/20">
-          <div className="flex items-center gap-2">
-            <Lock className="w-3.5 h-3.5 text-amber-400" />
-            <span className="hidden sm:inline">Super Admin Preview Mode</span>
-            <span className="sm:hidden">Admin Preview</span>
-          </div>
-          <button
-            onClick={onBackToAdmin}
-            className="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-[#000004] rounded-lg font-bold text-xs transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
-          >
-            <span>← Return to Admin Console</span>
-          </button>
-        </div>
-      )}
-
       {/* 1. Brand Top Navigation Bar (Partner & Customer Focused) */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#342A21]/10">
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-            <img 
-              src="/images/setlla-logo.png" 
-              alt="Setlla" 
-              className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer shrink-0" 
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            {/* Dedicated Explore Feed Return Button / UI */}
+            <button
               onClick={handleReturn}
-            />
-            <span className="hidden sm:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 whitespace-nowrap">
-              Partner Ads
-            </span>
+              className="py-1.5 sm:py-2 px-2.5 sm:px-3.5 rounded-xl border border-[#342A21]/20 bg-white hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer shrink-0 group"
+              title="Return to property explore feed"
+            >
+              <Compass className="w-4 h-4 text-[#F95700] group-hover:rotate-45 transition-transform shrink-0" />
+              <span className="whitespace-nowrap">Explore Feed</span>
+            </button>
+
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <img 
+                src="/images/setlla-logo.png" 
+                alt="Setlla" 
+                className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer shrink-0" 
+                onClick={handleReturn}
+              />
+              <span className="hidden md:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 whitespace-nowrap">
+                Partner Ads
+              </span>
+            </div>
           </div>
 
           {/* Navigation Items */}
@@ -623,6 +627,13 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
         {/* Mobile Sub-Navigation Bar */}
         <div className="md:hidden border-t border-[#342A21]/5 bg-[#FCF9F5] px-3 py-2 flex items-center gap-1.5 overflow-x-auto text-xs no-scrollbar scroll-smooth">
+          <button
+            onClick={handleReturn}
+            className="py-1.5 px-3 rounded-lg font-bold transition-all shrink-0 whitespace-nowrap text-xs bg-white hover:bg-[#342A21] text-[#342A21] hover:text-white border border-[#342A21]/20 flex items-center gap-1.5 shadow-2xs cursor-pointer group active:scale-95"
+          >
+            <Compass className="w-3.5 h-3.5 text-[#F95700] group-hover:rotate-45 transition-transform shrink-0" />
+            <span>Explore Feed</span>
+          </button>
           <button
             onClick={() => {
               setActiveTab('packages');
@@ -748,6 +759,15 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             >
               <Code2 className="w-4 h-4 text-[#B45309]" />
               <span>Enterprise API & Docs</span>
+            </button>
+
+            <button
+              onClick={handleReturn}
+              className="py-3 px-4 rounded-2xl bg-white hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] border border-[#342A21]/15 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-all shadow-2xs hover:shadow-xs cursor-pointer group"
+              title="Preview listings and ads in the live property feed"
+            >
+              <Compass className="w-4 h-4 text-[#F95700] group-hover:rotate-45 transition-transform" />
+              <span>Explore Live Feed</span>
             </button>
           </div>
 
