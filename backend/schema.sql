@@ -298,6 +298,12 @@ create table if not exists public.adverts (
   -- Programmatic Integration Reference
   api_key_ref text,
   property_id text,
+
+  -- Shadow / Draft Edit Pattern (Platform Integrity & Re-Approval)
+  has_pending_changes boolean default false,
+  pending_changes jsonb default null,
+  changes_review_status text default null check (changes_review_status in ('pending', 'rejected', null)),
+  changes_rejection_reason text,
   
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now())
@@ -405,10 +411,18 @@ create table if not exists public.advertisers (
   api_key text,
   account_status text default 'active' check (account_status in ('active', 'suspended', 'pending')),
   total_spent numeric default 0,
+  wallet_balance numeric default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()),
   updated_at timestamp with time zone default timezone('utc'::text, now()),
   last_login_at timestamp with time zone
 );
+
+-- Idempotent migrations for existing deployments
+alter table public.advertisers add column if not exists wallet_balance numeric default 0;
+alter table public.adverts add column if not exists has_pending_changes boolean default false;
+alter table public.adverts add column if not exists pending_changes jsonb default null;
+alter table public.adverts add column if not exists changes_review_status text default null;
+alter table public.adverts add column if not exists changes_rejection_reason text default null;
 
 create index if not exists idx_advertisers_email on public.advertisers (email);
 create index if not exists idx_advertisers_status on public.advertisers (account_status);

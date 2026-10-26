@@ -62,6 +62,8 @@ import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { 
   approvePartnerAdvert, 
   rejectPartnerAdvert, 
+  approveAdvertPendingChanges,
+  rejectAdvertPendingChanges,
   saveAdvert, 
   removeAdvert, 
   loadAllAdverts,
@@ -411,8 +413,52 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     }
   };
 
+  const handleApproveCreativeChanges = async (adId: string) => {
+    const updated = await approveAdvertPendingChanges(adId);
+    if (updated) {
+      setLocalAdverts((prev) => prev.map((a) => (a.id === adId ? updated : a)));
+      onUpdateAdvert?.(updated);
+      showToast(`Creative changes approved for "${updated.advertiserName}". Live ad swapped over!`);
+      recordAuditLog(
+        'ADVERT_UPDATED',
+        'system',
+        updated.id,
+        updated.headline,
+        currentUser.fullName,
+        `Approved shadow creative changes for ${updated.advertiserName}. Live feed updated.`
+      );
+    }
+  };
+
+  const handleRejectCreativeChanges = async (adId: string) => {
+    const reason = prompt(
+      'Please enter feedback/reason for declining this creative update:',
+      'Banner creative does not meet brand verification guidelines.'
+    ) || 'Creative update does not comply with Setlla guidelines.';
+    const updated = await rejectAdvertPendingChanges(adId, reason);
+    if (updated) {
+      setLocalAdverts((prev) => prev.map((a) => (a.id === adId ? updated : a)));
+      onUpdateAdvert?.(updated);
+      showToast(`Creative changes declined for "${updated.advertiserName}". Previous version remains running.`);
+      recordAuditLog(
+        'ADVERT_REJECTED',
+        'system',
+        updated.id,
+        updated.headline,
+        currentUser.fullName,
+        `Declined shadow creative updates for ${updated.advertiserName}. Feedback: ${reason}`
+      );
+    }
+  };
+
   const pendingPartnerAdverts = useMemo(() => {
     return localAdverts.filter((a) => a.status === 'pending_review');
+  }, [localAdverts]);
+
+  const pendingCreativeUpdates = useMemo(() => {
+    return localAdverts.filter(
+      (a) => a.hasPendingChanges && a.pendingChanges && a.changesReviewStatus === 'pending'
+    );
   }, [localAdverts]);
 
   const filteredAdverts = useMemo(() => {
@@ -2189,6 +2235,131 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pending Creative Changes (Shadow Updates) Review Queue */}
+          {pendingCreativeUpdates.length > 0 && (
+            <div className="bg-indigo-50/70 border border-indigo-200 rounded-3xl p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    {pendingCreativeUpdates.length}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-indigo-950">
+                      Pending Creative Changes Awaiting Re-Approval (Shadow Updates)
+                    </h4>
+                    <p className="text-xs text-indigo-800">
+                      Advertisers submitted updated creatives/headlines for actively running ads. The live ad continues running without runtime disruption until you approve these changes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                {pendingCreativeUpdates.map((ad) => {
+                  const p = ad.pendingChanges!;
+                  return (
+                    <div key={ad.id} className="bg-white rounded-2xl p-4 sm:p-5 border border-indigo-200/80 shadow-xs space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-indigo-100">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-[#000004]">{ad.advertiserName}</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 font-bold uppercase">
+                            Shadow Creative Update
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[#70798C]">
+                          Submitted: {new Date(p.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {new Date(p.submittedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+
+                      {/* Side-by-side Live vs Proposed comparison */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* 1. Live Version */}
+                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                              Currently Live in Feed (Active)
+                            </span>
+                            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                              ● Live Runtime Protected
+                            </span>
+                          </div>
+                          <div className="flex gap-3">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-black shrink-0">
+                              {ad.mediaType === 'video' ? (
+                                <video src={ad.mediaUrl} className="w-full h-full object-cover" muted />
+                              ) : (
+                                <img src={ad.thumbnailUrl || ad.mediaUrl} alt="Live" className="w-full h-full object-cover" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <h5 className="font-bold text-xs text-slate-900 line-clamp-1">{ad.headline}</h5>
+                              <p className="text-[11px] text-slate-600 line-clamp-2">{ad.description || 'No description'}</p>
+                              <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                                <span>Zone: {ad.location || 'Nationwide'}</span>
+                                {ad.price && <span>Price: {ad.price}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 2. Proposed Version */}
+                        <div className="p-3.5 bg-indigo-50/60 rounded-xl border-2 border-indigo-300 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-950">
+                              Proposed New Creative (Pending Review)
+                            </span>
+                            <span className="text-[10px] font-bold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded">
+                              Proposed Update
+                            </span>
+                          </div>
+                          <div className="flex gap-3">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-black shrink-0 ring-2 ring-indigo-400">
+                              {p.mediaType === 'video' ? (
+                                <video src={p.mediaUrl} className="w-full h-full object-cover" muted controls />
+                              ) : (
+                                <img src={p.thumbnailUrl || p.mediaUrl} alt="Proposed" className="w-full h-full object-cover" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <h5 className="font-bold text-xs text-indigo-950 line-clamp-1">{p.headline || ad.headline}</h5>
+                              <p className="text-[11px] text-indigo-800 line-clamp-2">{p.description !== undefined ? p.description : ad.description}</p>
+                              <div className="flex items-center gap-2 text-[10px] text-indigo-700">
+                                <span>Zone: {p.location || ad.location}</span>
+                                {p.price && <span>Price: {p.price}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Approval Actions */}
+                      <div className="flex items-center justify-between pt-3 border-t border-indigo-100">
+                        <span className="text-xs text-[#70798C]">
+                          Alert: <strong>{ad.advertiserName}</strong> submitted updated ad banner for review.
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleRejectCreativeChanges(ad.id)}
+                            className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer"
+                          >
+                            Decline Changes
+                          </button>
+                          <button
+                            onClick={() => handleApproveCreativeChanges(ad.id)}
+                            className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Approve & Swap Creative</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -40,6 +40,24 @@ export interface AdvertStory {
   paymentStatus?: 'paid' | 'pending' | 'free';
   apiKeyRef?: string;
   createdAt?: string;
+
+  // Shadow / Draft Edit Pattern (Safe vs Sensitive Edits)
+  hasPendingChanges?: boolean;
+  pendingChanges?: AdvertPendingChanges;
+  changesReviewStatus?: 'pending' | 'rejected' | null;
+  changesRejectionReason?: string;
+}
+
+export interface AdvertPendingChanges {
+  headline?: string;
+  description?: string;
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video';
+  thumbnailUrl?: string;
+  location?: string;
+  category?: 'Property' | 'Estate' | 'Promo' | 'Service';
+  price?: string;
+  submittedAt: string;
 }
 
 export interface AdvertCtaConfig {

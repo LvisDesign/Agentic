@@ -1,6 +1,16 @@
 import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { createPartnerApiKey, getPartnerApiKeys } from './adService';
 
+export interface WalletTransaction {
+  id: string;
+  type: 'credit_purchase' | 'campaign_deduction' | 'refund';
+  amount: number;
+  description: string;
+  reference?: string;
+  paymentMethod?: string;
+  createdAt: string;
+}
+
 export interface AdvertiserUser {
   id: string;
   companyName: string;
@@ -14,6 +24,8 @@ export interface AdvertiserUser {
   apiKey: string;
   accountStatus: 'active' | 'pending' | 'suspended';
   totalSpent: number;
+  walletBalance: number;
+  transactions?: WalletTransaction[];
   createdAt: string;
   lastLoginAt?: string;
 }
@@ -48,6 +60,18 @@ const SEED_ADVERTISER: AdvertiserUser = {
   apiKey: 'stla_live_8f39a01b92c44de88a912bf7',
   accountStatus: 'active',
   totalSpent: 45000,
+  walletBalance: 45000,
+  transactions: [
+    {
+      id: 'tx-seed-01',
+      type: 'credit_purchase',
+      amount: 45000,
+      description: 'Paystack Ad Credits Initial Allocation',
+      reference: 'PSK_INIT_9812401',
+      paymentMethod: 'Bank Transfer',
+      createdAt: '2026-10-15T10:05:00.000Z',
+    },
+  ],
   createdAt: '2026-10-15T10:00:00.000Z',
   lastLoginAt: new Date().toISOString(),
 };
@@ -102,6 +126,7 @@ export async function saveRegisteredAdvertiser(advertiser: AdvertiserUser): Prom
           api_key: advertiser.apiKey,
           account_status: advertiser.accountStatus,
           total_spent: advertiser.totalSpent || 0,
+          wallet_balance: advertiser.walletBalance ?? 0,
           updated_at: new Date().toISOString(),
           last_login_at: advertiser.lastLoginAt || new Date().toISOString(),
         },
@@ -176,6 +201,8 @@ export async function signupAdvertiser(payload: AdvertiserSignupPayload): Promis
     apiKey: matchedKey.apiKey,
     accountStatus: 'active',
     totalSpent: 0,
+    walletBalance: 0,
+    transactions: [],
     createdAt: new Date().toISOString(),
     lastLoginAt: new Date().toISOString(),
   };
@@ -221,6 +248,8 @@ export async function loginAdvertiser(email: string, _password?: string): Promis
           apiKey: data.api_key || 'stla_live_key',
           accountStatus: data.account_status || 'active',
           totalSpent: Number(data.total_spent) || 0,
+          walletBalance: Number(data.wallet_balance) || 0,
+          transactions: [],
           createdAt: data.created_at,
           lastLoginAt: new Date().toISOString(),
         };
@@ -302,3 +331,143 @@ export async function updateAdvertiserProfile(
 
   return updated;
 }
+
+/**
+ * Tops up an advertiser's credit wallet balance.
+ */
+export async function topUpAdvertiserWallet(
+  advertiserId: string,
+  amount: number,
+  reference: string,
+  paymentMethod: string = 'Paystack'
+): Promise<AdvertiserUser> {
+  const list = getRegisteredAdvertisers();
+  const index = list.findIndex((a) => a.id === advertiserId);
+  if (index === -1) {
+    throw new Error('Advertiser account not found.');
+  }
+
+  const user = list[index];
+  const newBalance = (user.walletBalance || 0) + amount;
+  const newTx: WalletTransaction = {
+    id: `tx-topup-${Date.now()}`,
+    type: 'credit_purchase',
+    amount,
+    description: `Ad Credits Top Up (₦${amount.toLocaleString()})`,
+    reference,
+    paymentMethod,
+    createdAt: new Date().toISOString(),
+  };
+
+  const updatedTransactions = [newTx, ...(user.transactions || [])];
+
+  const updated: AdvertiserUser = {
+    ...user,
+    walletBalance: newBalance,
+    transactions: updatedTransactions,
+  };
+
+  list[index] = updated;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(ADVERTISERS_REGISTRY_KEY, JSON.stringify(list));
+    const active = getActiveAdvertiser();
+    if (active && active.id === advertiserId) {
+      localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(updated));
+    }
+  }
+
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase
+        .from('advertisers')
+        .update({
+          wallet_balance: newBalance,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', advertiserId);
+    } catch (e) {
+      console.warn('[AdvertiserAuth] Wallet balance sync warning:', e);
+    }
+  }
+
+  return updated;
+}
+
+/**
+ * Deducts campaign budget from advertiser's credit wallet balance.
+ */
+export async function deductAdvertiserWallet(
+  advertiserId: string,
+  amount: number,
+  campaignTitle: string
+): Promise<AdvertiserUser> {
+  const list = getRegisteredAdvertisers();
+  const index = list.findIndex((a) => a.id === advertiserId);
+  if (index === -1) {
+    throw new Error('Advertiser account not found.');
+  }
+
+  const user = list[index];
+  const currentBalance = user.walletBalance || 0;
+  if (currentBalance < amount) {
+    throw new Error(
+      `Insufficient ad credits in wallet. Current balance: ₦${currentBalance.toLocaleString()}. Required: ₦${amount.toLocaleString()}. Please top up your credits.`
+    );
+  }
+
+  const newBalance = currentBalance - amount;
+  const newTotalSpent = (user.totalSpent || 0) + amount;
+
+  const newTx: WalletTransaction = {
+    id: `tx-deduct-${Date.now()}`,
+    type: 'campaign_deduction',
+    amount,
+    description: `Campaign Runtime Funding: "${campaignTitle.slice(0, 36)}"`,
+    createdAt: new Date().toISOString(),
+  };
+
+  const updatedTransactions = [newTx, ...(user.transactions || [])];
+
+  const updated: AdvertiserUser = {
+    ...user,
+    walletBalance: newBalance,
+    totalSpent: newTotalSpent,
+    transactions: updatedTransactions,
+  };
+
+  list[index] = updated;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(ADVERTISERS_REGISTRY_KEY, JSON.stringify(list));
+    const active = getActiveAdvertiser();
+    if (active && active.id === advertiserId) {
+      localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(updated));
+    }
+  }
+
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase
+        .from('advertisers')
+        .update({
+          wallet_balance: newBalance,
+          total_spent: newTotalSpent,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', advertiserId);
+    } catch (e) {
+      console.warn('[AdvertiserAuth] Wallet deduction sync warning:', e);
+    }
+  }
+
+  return updated;
+}
+
+/**
+ * Retrieves transaction history for an advertiser.
+ */
+export function getAdvertiserTransactions(advertiserId: string): WalletTransaction[] {
+  const list = getRegisteredAdvertisers();
+  const user = list.find((a) => a.id === advertiserId);
+  return user?.transactions || [];
+}
+

@@ -1,4 +1,4 @@
-import { AdvertStory } from '../data/mockAdverts';
+import { AdvertStory, AdvertPendingChanges } from '../data/mockAdverts';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 
 export interface PartnerApiKey {
@@ -249,6 +249,10 @@ export const mapDbToAdvert = (row: any): AdvertStory => ({
   sharesCount: Number(row.shares_count ?? row.sharesCount ?? 0),
   apiKeyRef: row.api_key_ref || row.apiKeyRef,
   createdAt: row.created_at || row.createdAt,
+  hasPendingChanges: Boolean(row.has_pending_changes ?? row.hasPendingChanges ?? false),
+  pendingChanges: typeof row.pending_changes === 'string' ? JSON.parse(row.pending_changes) : (row.pending_changes || row.pendingChanges || undefined),
+  changesReviewStatus: row.changes_review_status || row.changesReviewStatus || null,
+  changesRejectionReason: row.changes_rejection_reason || row.changesRejectionReason || undefined,
 });
 
 /**
@@ -289,6 +293,10 @@ export const mapAdvertToDb = (ad: AdvertStory) => ({
   comments_count: ad.commentsCount || 0,
   shares_count: ad.sharesCount || 0,
   api_key_ref: ad.apiKeyRef || null,
+  has_pending_changes: Boolean(ad.hasPendingChanges),
+  pending_changes: ad.pendingChanges ? ad.pendingChanges : null,
+  changes_review_status: ad.changesReviewStatus || null,
+  changes_rejection_reason: ad.changesRejectionReason || null,
 });
 
 /**
@@ -546,6 +554,160 @@ export const rejectPartnerAdvert = async (id: string, _reason?: string): Promise
   };
 
   return await saveAdvert(rejectedAd);
+};
+
+/**
+ * Edits an advert following the Safe vs. Sensitive Fields & Shadow Edit Pattern.
+ * - Safe Fields (Destination link, WhatsApp, Phone, CTA text, Action type): applied immediately to live ad.
+ * - Sensitive Fields (Media creative, Headline, Description, Location, Category, Price):
+ *   If the ad is currently active/paused, sensitive updates are saved to `pendingChanges` shadow record
+ *   for Admin re-approval without disrupting the live campaign runtime.
+ *   If the ad is in pending_review, updates are applied directly to the pending ad.
+ */
+export const editAdvert = async (
+  id: string,
+  updates: Partial<AdvertStory>
+): Promise<{
+  advert: AdvertStory;
+  hasSensitiveChanges: boolean;
+}> => {
+  const all = await loadAllAdverts();
+  const existing = all.find((item) => item.id === id);
+  if (!existing) {
+    throw new Error('Advert not found');
+  }
+
+  // Detect sensitive field changes
+  const hasSensitiveChanges = Boolean(
+    (updates.headline && updates.headline.trim() !== existing.headline) ||
+    (updates.description !== undefined && updates.description.trim() !== (existing.description || '')) ||
+    (updates.mediaUrl && updates.mediaUrl.trim() !== existing.mediaUrl) ||
+    (updates.mediaType && updates.mediaType !== existing.mediaType) ||
+    (updates.location && updates.location.trim() !== (existing.location || '')) ||
+    (updates.category && updates.category !== existing.category) ||
+    (updates.price !== undefined && updates.price.trim() !== (existing.price || ''))
+  );
+
+  let updatedAd: AdvertStory;
+
+  if (existing.status === 'pending_review') {
+    // If not live yet, update everything directly without shadow record
+    updatedAd = {
+      ...existing,
+      ...updates,
+      title: (updates.headline || existing.headline).slice(0, 24),
+      thumbnailUrl: updates.thumbnailUrl || updates.mediaUrl || existing.thumbnailUrl,
+      hasPendingChanges: false,
+      pendingChanges: undefined,
+      changesReviewStatus: null,
+      changesRejectionReason: undefined,
+    };
+  } else {
+    // Live or paused ad: Apply Safe fields immediately to live record
+    updatedAd = {
+      ...existing,
+      websiteUrl: updates.websiteUrl !== undefined ? updates.websiteUrl : existing.websiteUrl,
+      whatsappNumber: updates.whatsappNumber !== undefined ? updates.whatsappNumber : existing.whatsappNumber,
+      phone: updates.phone !== undefined ? updates.phone : existing.phone,
+      ctaText: updates.ctaText !== undefined ? updates.ctaText : existing.ctaText,
+      actionType: updates.actionType !== undefined ? updates.actionType : existing.actionType,
+      status: updates.status !== undefined ? updates.status : existing.status,
+    };
+
+    if (hasSensitiveChanges) {
+      // Draft / Shadow Record Pattern:
+      // Live version continues running visible in feed uninterrupted.
+      // Customer's edits are saved into pendingChanges shadow record.
+      const pending: AdvertPendingChanges = {
+        headline: updates.headline?.trim() || existing.headline,
+        description: updates.description !== undefined ? updates.description.trim() : existing.description,
+        mediaUrl: updates.mediaUrl?.trim() || existing.mediaUrl,
+        mediaType: updates.mediaType || existing.mediaType,
+        thumbnailUrl: updates.thumbnailUrl || updates.mediaUrl || existing.thumbnailUrl,
+        location: updates.location?.trim() || existing.location,
+        category: updates.category || existing.category,
+        price: updates.price !== undefined ? updates.price.trim() : existing.price,
+        submittedAt: new Date().toISOString(),
+      };
+
+      updatedAd.hasPendingChanges = true;
+      updatedAd.pendingChanges = pending;
+      updatedAd.changesReviewStatus = 'pending';
+      updatedAd.changesRejectionReason = undefined;
+    }
+  }
+
+  const saved = await saveAdvert(updatedAd);
+  return { advert: saved, hasSensitiveChanges };
+};
+
+/**
+ * Super Admin approves pending shadow changes for a running advert.
+ * The live card instantly swaps over to the new creative via Supabase.
+ */
+export const approveAdvertPendingChanges = async (id: string): Promise<AdvertStory | null> => {
+  const all = await loadAllAdverts();
+  const target = all.find((item) => item.id === id);
+  if (!target || !target.pendingChanges) return null;
+
+  const p = target.pendingChanges;
+  const approvedAd: AdvertStory = {
+    ...target,
+    headline: p.headline || target.headline,
+    title: (p.headline || target.headline).slice(0, 24),
+    description: p.description !== undefined ? p.description : target.description,
+    mediaUrl: p.mediaUrl || target.mediaUrl,
+    mediaType: p.mediaType || target.mediaType,
+    thumbnailUrl: p.thumbnailUrl || p.mediaUrl || target.thumbnailUrl,
+    location: p.location || target.location,
+    category: p.category || target.category,
+    price: p.price !== undefined ? p.price : target.price,
+    hasPendingChanges: false,
+    pendingChanges: undefined,
+    changesReviewStatus: null,
+    changesRejectionReason: undefined,
+  };
+
+  return await saveAdvert(approvedAd);
+};
+
+/**
+ * Super Admin rejects pending shadow changes.
+ * The previous version remains running, and the advertiser receives feedback.
+ */
+export const rejectAdvertPendingChanges = async (
+  id: string,
+  reason?: string
+): Promise<AdvertStory | null> => {
+  const all = await loadAllAdverts();
+  const target = all.find((item) => item.id === id);
+  if (!target) return null;
+
+  const rejectedAd: AdvertStory = {
+    ...target,
+    hasPendingChanges: false,
+    changesReviewStatus: 'rejected',
+    changesRejectionReason: reason || 'Creative changes did not comply with platform advertising guidelines.',
+  };
+
+  return await saveAdvert(rejectedAd);
+};
+
+/**
+ * Safe campaign pause/resume toggle.
+ */
+export const toggleAdvertStatus = async (id: string): Promise<AdvertStory | null> => {
+  const all = await loadAllAdverts();
+  const target = all.find((item) => item.id === id);
+  if (!target) return null;
+
+  const nextStatus = target.status === 'active' ? 'paused' : 'active';
+  const updatedAd: AdvertStory = {
+    ...target,
+    status: nextStatus,
+  };
+
+  return await saveAdvert(updatedAd);
 };
 
 /**
