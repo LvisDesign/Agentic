@@ -1849,7 +1849,6 @@ export function App() {
           onOpenLogin={handleOpenLogin}
           isAuthenticated={isAuthenticated}
           onOpenAgentSignup={handleOpenAgentSignup}
-          onOpenAdsPortal={handleOpenAdsPortal}
         />
       )}
 
