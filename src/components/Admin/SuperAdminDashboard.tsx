@@ -2468,7 +2468,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                   { value: 'all', label: 'All Campaign Statuses' },
                   { value: 'active', label: 'Live Active Only', dotColor: '#10B981' },
                   { value: 'pending_review', label: 'Pending Review', dotColor: '#F59E0B' },
-                  { value: 'rejected', label: 'Declined Campaigns', dotColor: '#EF4444' },
+                  { value: 'rejected', label: 'Queried Campaigns', dotColor: '#F59E0B' },
                   { value: 'expired', label: 'Expired Campaigns', dotColor: '#9CA3AF' },
                 ]}
                 variant="filter"

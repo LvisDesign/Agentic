@@ -418,14 +418,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         return;
       }
 
-      // Demo fallback (Local development only)
-      const isSystemAdmin =
+      if (
         query.toLowerCase().includes('admin') ||
         query === 'admin@setlla.com' ||
-        query === 'admin@deltarent.ng';
+        query === 'admin@deltarent.ng'
+      ) {
+        setLoginError('Super Admin accounts must use the official OTP-verified Admin Portal. Customer accounts only.');
+        setIsLoggingIn(false);
+        return;
+      }
 
       const isAgentLogin =
-        isSystemAdmin ||
         loginRole === 'agent' ||
         query === '0803 555 1234' ||
         query.toLowerCase().includes('agent') ||
@@ -434,22 +437,22 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
       const updated: UserProfile = isAgentLogin
         ? {
-            id: isSystemAdmin ? 'DT-ADMIN-001' : 'DT-AGT-9012',
-            fullName: isSystemAdmin ? 'Platform Administrator' : 'Victor Ossai',
-            agencyName: isSystemAdmin ? 'Setlla Administration' : 'Apex Real Estate Ltd',
+            id: 'DT-AGT-9012',
+            fullName: 'Victor Ossai',
+            agencyName: 'Apex Real Estate Ltd',
             agentType: 'agency',
-            phone: query.includes('@') ? (isSystemAdmin ? '0800 000 0001' : '0803 555 1234') : query,
-            whatsapp: isSystemAdmin ? '0800 000 0001' : '0803 555 1234',
-            email: query.includes('@') ? query : (isSystemAdmin ? 'admin@setlla.com' : 'victor@apexrealty.ng'),
+            phone: query.includes('@') ? '0803 555 1234' : query,
+            whatsapp: '0803 555 1234',
+            email: query.includes('@') ? query : 'victor@apexrealty.ng',
             operatingState: 'Delta State',
             operatingCity: 'Asaba',
             state: 'Delta State',
             city: 'Asaba',
             cacNumber: 'RC-1849204',
             isVerifiedTenant: false,
-            isAgent: !isSystemAdmin,
-            isAdmin: isSystemAdmin,
-            isSuperAdmin: isSystemAdmin,
+            isAgent: true,
+            isAdmin: false,
+            isSuperAdmin: false,
             isDemoAdmin: false,
             savedListingIds: [],
           }
@@ -468,16 +471,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
       setSuccessMessage({
         title: `Welcome back, ${updated.fullName}!`,
-        subtitle: isSystemAdmin
-          ? 'Signed in as Super Admin. Opening master control console...'
-          : isAgentLogin
+        subtitle: isAgentLogin
           ? 'Signed in as Agent. Loading your listings and inspection requests...'
           : 'Signed in as Tenant. Your saved inspections and passes are ready!',
       });
       setIsSuccess(true);
 
       setTimeout(() => {
-        onUpdateUser(updated, isSystemAdmin ? 'admin' : isAgentLogin ? 'agent' : 'seeker');
+        onUpdateUser(updated, isAgentLogin ? 'agent' : 'seeker');
         setIsSuccess(false);
         setIsLoggingIn(false);
         onClose();

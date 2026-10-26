@@ -80,7 +80,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   const [currentAdvertiser, setCurrentAdvertiser] = useState<AdvertiserUser>(() => getActiveAdvertiser() || advertiser);
   const [activeTab, setActiveTab] = useState<'campaigns' | 'new-campaign' | 'wallet' | 'api-keys' | 'guide'>('campaigns');
   const [adverts, setAdverts] = useState<AdvertStory[]>([]);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'declined' | 'expired'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'queried' | 'declined' | 'expired'>('all');
   const [copiedKey, setCopiedKey] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -424,14 +424,15 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   // Metrics calculation
   const activeCount = adverts.filter((a) => a.status === 'active').length;
   const pendingCount = adverts.filter((a) => a.status === 'pending_review').length;
-  const declinedCount = adverts.filter((a) => a.status === 'rejected').length;
+  const queriedCount = adverts.filter((a) => a.status === 'rejected' || (a as any).status === 'queried').length;
+  const declinedCount = queriedCount;
   const totalImpressions = adverts.reduce((acc, a) => acc + (a.impressionsCount || 0), 0);
   const totalClicks = adverts.reduce((acc, a) => acc + (a.clicksCount || 0), 0);
 
   const filteredAdverts = adverts.filter((a) => {
     if (statusFilter === 'active') return a.status === 'active';
     if (statusFilter === 'pending') return a.status === 'pending_review';
-    if (statusFilter === 'declined') return a.status === 'rejected';
+    if (statusFilter === 'queried' || statusFilter === 'declined') return a.status === 'rejected' || (a as any).status === 'queried';
     if (statusFilter === 'expired') return a.status === 'expired';
     return true;
   });
@@ -504,7 +505,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 }`}
               >
                 <Plus className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>+ Create Campaign</span>
+                <span>Create Campaign</span>
               </button>
 
               <button
@@ -600,17 +601,17 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Pending</span>
               <span className="text-lg font-bold text-amber-700">{pendingCount}</span>
             </div>
-            {declinedCount > 0 && (
+            {queriedCount > 0 && (
               <div 
-                onClick={() => setStatusFilter('declined')}
-                className="bg-rose-50/90 p-3 rounded-2xl border border-rose-200 min-w-[75px] cursor-pointer hover:border-rose-300 transition-all text-left"
-                title="View declined campaigns with review feedback"
+                onClick={() => setStatusFilter('queried')}
+                className="bg-amber-50/90 p-3 rounded-2xl border border-amber-200 min-w-[75px] cursor-pointer hover:border-amber-300 transition-all text-left"
+                title="View queried campaigns with review feedback"
               >
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[10px] uppercase font-bold text-rose-900 block">Declined</span>
-                  <AlertCircle className="w-3 h-3 text-rose-600" />
+                  <span className="text-[10px] uppercase font-bold text-amber-900 block">Queried</span>
+                  <AlertCircle className="w-3 h-3 text-amber-600" />
                 </div>
-                <span className="text-lg font-bold text-rose-700">{declinedCount}</span>
+                <span className="text-lg font-bold text-amber-700">{queriedCount}</span>
               </div>
             )}
             <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[75px]">
@@ -641,23 +642,23 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-[#E5E7EB]">
-                {(['all', 'active', 'pending', 'declined', 'expired'] as const).map((filter) => (
+                {(['all', 'active', 'pending', 'queried', 'expired'] as const).map((filter) => (
                   <button
                     key={filter}
                     onClick={() => setStatusFilter(filter)}
                     className={`py-1 px-3 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer flex items-center gap-1.5 ${
                       statusFilter === filter
-                        ? filter === 'declined'
-                          ? 'bg-rose-600 text-white shadow-xs'
+                        ? filter === 'queried'
+                          ? 'bg-amber-700 text-white shadow-xs'
                           : 'bg-[#342A21] text-white shadow-xs'
-                        : filter === 'declined' && declinedCount > 0
-                        ? 'text-rose-700 hover:text-rose-900 hover:bg-rose-50'
+                        : filter === 'queried' && queriedCount > 0
+                        ? 'text-amber-800 hover:text-amber-950 hover:bg-amber-50 font-bold'
                         : 'text-[#70798C] hover:text-[#342A21]'
                     }`}
                   >
                     <span>{filter}</span>
-                    {filter === 'declined' && declinedCount > 0 && (
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusFilter === 'declined' ? 'bg-white' : 'bg-rose-500'}`} />
+                    {filter === 'queried' && queriedCount > 0 && (
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusFilter === 'queried' ? 'bg-white' : 'bg-amber-500'}`} />
                     )}
                   </button>
                 ))}
@@ -749,41 +750,41 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                         </div>
                       )}
 
-                      {/* Declined Feedback Callout Banner */}
+                      {/* Queried Feedback Callout Banner */}
                       {isAdDeclined && (
-                        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 text-xs flex flex-col gap-2 shadow-2xs animate-fade-in">
+                        <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-950 text-xs flex flex-col gap-2 shadow-2xs animate-fade-in">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-bold text-xs flex items-center gap-1.5 text-rose-800">
-                              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                              <span>Campaign Declined by Platform Review</span>
+                            <span className="font-bold text-xs flex items-center gap-1.5 text-amber-900">
+                              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                              <span>Campaign Queried by Platform Review</span>
                             </span>
                             {ad.rejectedAt && (
-                              <span className="text-[10px] text-rose-600 font-medium">
+                              <span className="text-[10px] text-amber-700 font-medium">
                                 {new Date(ad.rejectedAt).toLocaleDateString()}
                               </span>
                             )}
                           </div>
-                          <div className="bg-white/90 p-2.5 rounded-xl border border-rose-200 text-rose-900">
-                            <span className="text-[10px] uppercase font-bold text-rose-700 block mb-0.5 tracking-wider">
-                              Review Feedback from Admin:
+                          <div className="bg-white/90 p-2.5 rounded-xl border border-amber-200 text-amber-950">
+                            <span className="text-[10px] uppercase font-bold text-amber-800 block mb-0.5 tracking-wider">
+                              Admin Query Reason:
                             </span>
                             <p className="text-xs font-semibold leading-relaxed">
-                              {ad.rejectionReason || 'This campaign does not meet Setlla advertising and brand safety guidelines.'}
+                              {ad.rejectionReason || 'This campaign does not meet Setlla advertising and verification guidelines.'}
                             </p>
                           </div>
-                          <p className="text-[11px] text-rose-800 leading-tight">
-                            Click <strong>"Edit & Resubmit"</strong> below to correct the feedback and submit your ad for immediate re-approval.
+                          <p className="text-[11px] text-amber-800 leading-tight">
+                            Click <strong>"Edit & Resubmit"</strong> below to answer the query, update your ad, and submit for re-approval.
                           </p>
                         </div>
                       )}
 
                       {isCreativeRejected && (
-                        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs flex flex-col gap-1">
-                          <span className="font-bold text-[11px] flex items-center gap-1.5 text-rose-800">
-                            <AlertCircle className="w-3.5 h-3.5 text-rose-700 shrink-0" />
-                            <span>Proposed Creative Update Declined</span>
+                        <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-amber-950 text-xs flex flex-col gap-1">
+                          <span className="font-bold text-[11px] flex items-center gap-1.5 text-amber-900">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <span>Proposed Creative Update Queried</span>
                           </span>
-                          <p className="text-[11px] text-rose-800">
+                          <p className="text-[11px] text-amber-800">
                             {ad.changesRejectionReason || 'The proposed creative did not pass platform review. Your original live ad remains running.'}
                           </p>
                         </div>
@@ -812,9 +813,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                                 <span>In Review</span>
                               </span>
                             ) : isAdDeclined ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 text-rose-800 text-[10px] font-bold border border-rose-200">
-                                <AlertCircle className="w-3 h-3 text-rose-600 shrink-0" />
-                                <span>Declined</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 text-[10px] font-bold border border-amber-200">
+                                <AlertCircle className="w-3 h-3 text-amber-600 shrink-0" />
+                                <span>Queried</span>
                               </span>
                             ) : ad.status === 'expired' ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 text-[10px] font-semibold border border-stone-200">

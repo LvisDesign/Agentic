@@ -32,6 +32,7 @@ import { getNotificationPermission, requestNotificationPermission, setAppBadge, 
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { CustomDropdown } from '../UI/CustomDropdown';
 import { isLocalUrl } from '../../utils/environment';
+import { isSuperAdminAuthenticated } from '../../services/adminAuthService';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -1004,8 +1005,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
           ) : null}
 
-          {/* Super Admin Console Access */}
-          {(currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.email === 'admin@setlla.com') ? (
+          {/* Super Admin Console Access (Strictly visible ONLY to actively authenticated Super Admins) */}
+          {isSuperAdminAuthenticated() && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.email === 'admin@setlla.com') ? (
             <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
@@ -1028,26 +1029,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 Admin Console
               </button>
             </div>
-          ) : (
-            <div className="p-3 rounded-2xl bg-slate-50 border border-[#E5E7EB] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-[#70798C]" />
-                <span className="text-[11px] text-[#70798C]">Platform Administration</span>
-              </div>
-              <button
-                onClick={() => {
-                  if (onUpdateProfile) {
-                    onUpdateProfile({ ...currentUser, isAdmin: true, isSuperAdmin: true });
-                  }
-                  onChangeRole('admin');
-                  onClose();
-                }}
-                className="text-[11px] font-bold text-amber-700 hover:text-amber-800 hover:underline cursor-pointer"
-              >
-                Access Admin Mode
-              </button>
-            </div>
-          )}
+          ) : null}
 
           {/* Collapsible Architecture Guide */}
           <div className="border border-[#E5E7EB] rounded-2xl overflow-hidden">

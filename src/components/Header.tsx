@@ -221,8 +221,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* TAB 4.5: Super Admin Console (Rendered ONLY when authenticated as Admin) */}
-          {(isAdminAuthenticated || currentRole === 'admin') && (
+          {/* TAB 4.5: Super Admin Console (Rendered ONLY when actively authenticated as Admin) */}
+          {isAdminAuthenticated && (
             <button
               onClick={() => onChangeRole('admin')}
               className={`relative w-9 h-9 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[14px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
@@ -244,7 +244,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           {/* TAB 5: Admin Sign Out (when admin) OR User Profile (when authenticated user) OR Sign In + Signup (when unauthenticated guest) */}
-          {isAdminAuthenticated || currentRole === 'admin' ? (
+          {isAdminAuthenticated ? (
             <button
               type="button"
               onClick={() => {

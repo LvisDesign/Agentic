@@ -47,7 +47,8 @@ import {
   isSuperAdminAuthenticated, 
   getActiveAdminUser, 
   logoutAdminSession, 
-  DEFAULT_SUPER_ADMIN_USER 
+  DEFAULT_SUPER_ADMIN_USER,
+  OFFICIAL_ADMIN_EMAIL
 } from './services/adminAuthService';
 import { getPlatformSettings } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
@@ -184,7 +185,10 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
   if (hash.includes('admin')) {
-    return { role: 'admin', view: 'feed', openPasses: false };
+    if (isSuperAdminAuthenticated()) {
+      return { role: 'admin', view: 'feed', openPasses: false };
+    }
+    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
   }
   if (hash.includes('agent')) {
     if (isUserAgent) {
@@ -206,7 +210,10 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
 
   // 2. LocalStorage Persistence (Preserves active page across normal F5 / page reloads)
   if (savedRole === 'admin') {
-    return { role: 'admin', view: 'feed', openPasses: false };
+    if (isSuperAdminAuthenticated()) {
+      return { role: 'admin', view: 'feed', openPasses: false };
+    }
+    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
   }
   if (savedRole === 'agent' && isUserAgent) {
     return { role: 'agent', view: 'feed', openPasses: false };
@@ -219,7 +226,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   }
 
   // 3. Fallback defaults:
-  if (isUserAdmin) {
+  if (isUserAdmin && isSuperAdminAuthenticated()) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
   if (isUserAgent) {
@@ -353,7 +360,7 @@ export function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
     const isLocal = isLocalUrl();
     const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
-    if (hash.includes('admin')) {
+    if (hash.includes('admin') && isSuperAdminAuthenticated()) {
       return getActiveAdminUser() || ADMIN_USER;
     }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
@@ -469,8 +476,14 @@ export function App() {
       if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser')) {
         setUserView('partner');
       } else if (hash.includes('admin')) {
-        setCurrentRole('admin');
-        setUserView('feed');
+        if (isSuperAdminAuthenticated()) {
+          setCurrentRole('admin');
+          setUserView('feed');
+        } else {
+          setCurrentRole(currentUser.isAgent ? 'agent' : 'tenant');
+          setUserView('feed');
+          window.location.hash = '#/explore';
+        }
       } else if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
         setCurrentRole('agent');
       } else if (hash.includes('dashboard')) {
@@ -1624,7 +1637,7 @@ export function App() {
 
     const authorizeSuperAdminFromEmail = (email?: string | null) => {
       const target = (email || '').toLowerCase().trim();
-      if (target === 'admin@setlla.com' || target.includes('admin')) {
+      if (target === OFFICIAL_ADMIN_EMAIL) {
         const adminProfile: UserProfile = {
           id: 'DT-ADMIN-001',
           fullName: 'Platform Administrator',
@@ -1762,7 +1775,7 @@ export function App() {
       setSavedPropertyIds(updatedUser.savedListingIds);
     }
 
-    if (role === 'admin' || updatedUser.isAdmin || updatedUser.isSuperAdmin) {
+    if ((role === 'admin' || updatedUser.isAdmin || updatedUser.isSuperAdmin) && isSuperAdminAuthenticated()) {
       setCurrentRole('admin');
       setPendingBookingListing(null);
     } else if (role === 'agent' || updatedUser.isAgent) {
@@ -1843,6 +1856,7 @@ export function App() {
         <main className="flex-1 w-full min-h-screen">
           <PartnerPortalPage
             onBackToExplore={() => {
+              setCurrentRole(currentUser.isAgent ? 'agent' : 'tenant');
               setUserView('feed');
               window.location.hash = '#/explore';
             }}

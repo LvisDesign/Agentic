@@ -46,6 +46,7 @@ import { AdvertStory } from '../../data/mockAdverts';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { AdvertiserUser, getActiveAdvertiser, logoutAdvertiser } from '../../services/advertiserAuthService';
+import { isSuperAdminAuthenticated } from '../../services/adminAuthService';
 import { AdvertiserAuthModal } from '../Advertiser/AdvertiserAuthModal';
 import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
@@ -443,9 +444,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   };
 
   const handleReturn = () => {
-    if (onBackToAdmin) {
-      onBackToAdmin();
-    } else if (onBackToExplore) {
+    if (onBackToExplore) {
       onBackToExplore();
     } else {
       window.location.hash = '#/explore';
@@ -464,7 +463,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             setViewMode('landing');
             window.location.hash = '#/partner';
           }}
-          onBackToExplore={handleReturn}
+          onBackToExplore={onBackToExplore || (() => { window.location.hash = '#/explore'; })}
           onCampaignCreated={(newAd) => {
             if (onAdSubmitted) onAdSubmitted(newAd);
           }}
@@ -491,6 +490,23 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
 
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] font-body selection:bg-[#342A21]/10 selection:text-[#342A21]">
+      {/* Super Admin Return Banner - Only visible to an actively authenticated Super Admin previewing the portal */}
+      {onBackToAdmin && isSuperAdminAuthenticated() && (
+        <div className="bg-[#000004] text-amber-300 px-3.5 sm:px-6 py-2 text-xs font-semibold flex items-center justify-between border-b border-amber-400/20">
+          <div className="flex items-center gap-2">
+            <Lock className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Super Admin Preview Mode</span>
+            <span className="sm:hidden">Admin Preview</span>
+          </div>
+          <button
+            onClick={onBackToAdmin}
+            className="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-[#000004] rounded-lg font-bold text-xs transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+          >
+            <span>← Return to Admin Console</span>
+          </button>
+        </div>
+      )}
+
       {/* 1. Brand Top Navigation Bar (Partner & Customer Focused) */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#342A21]/10">
         <div className="max-w-6xl mx-auto px-3.5 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
