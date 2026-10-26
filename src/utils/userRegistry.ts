@@ -142,8 +142,71 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     preferredPropertyType: 'Single Room',
     isVerifiedTenant: false,
     isAgent: false,
+    persona: 'tenant',
     savedListingIds: [],
     createdAt: '2026-10-15T09:00:00.000Z',
+  },
+  {
+    id: 'DT-JOB-4011',
+    fullName: 'Kelechi Nwosu',
+    email: 'kelechi.nwosu@gmail.com',
+    phone: '0813 492 8841',
+    state: 'Delta State',
+    city: 'Asaba',
+    persona: 'job_seeker',
+    targetRole: 'Full-Stack Software Engineer',
+    cvFileName: 'Kelechi_Nwosu_Fullstack_Engineer_CV.pdf',
+    cvUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    isVerifiedTenant: false,
+    isAgent: false,
+    savedListingIds: [],
+    createdAt: '2026-10-20T11:30:00.000Z',
+  },
+  {
+    id: 'DT-JOB-5290',
+    fullName: 'Joy Oghenevwede',
+    email: 'joy.vwede@yahoo.com',
+    phone: '0806 772 3190',
+    state: 'Delta State',
+    city: 'Warri',
+    persona: 'job_seeker',
+    targetRole: 'Senior Financial Accountant',
+    cvFileName: 'Joy_Oghenevwede_Financial_Accountant_CV.pdf',
+    cvUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    isVerifiedTenant: false,
+    isAgent: false,
+    savedListingIds: [],
+    createdAt: '2026-10-22T14:15:00.000Z',
+  },
+  {
+    id: 'DT-EMP-6012',
+    fullName: 'Michael Adebayo',
+    agencyName: 'Delta Cold-Chain Logistics Hub',
+    companyName: 'Delta Cold-Chain Logistics Hub',
+    email: 'careers@deltacoldchain.ng',
+    phone: '0802 881 9204',
+    state: 'Delta State',
+    city: 'Asaba',
+    persona: 'employer',
+    isVerifiedTenant: false,
+    isAgent: false,
+    savedListingIds: [],
+    createdAt: '2026-10-19T09:00:00.000Z',
+  },
+  {
+    id: 'DT-ADV-7109',
+    fullName: 'Chief Babatunde Balogun',
+    agencyName: 'Apex Grand Hospitality Ltd',
+    companyName: 'Apex Grand Hospitality Ltd',
+    email: 'marketing@apexgrandresorts.ng',
+    phone: '0803 720 9182',
+    state: 'Delta State',
+    city: 'Asaba',
+    persona: 'partner',
+    isVerifiedTenant: false,
+    isAgent: false,
+    savedListingIds: [],
+    createdAt: '2026-10-16T16:00:00.000Z',
   },
 ];
 
@@ -305,6 +368,8 @@ export function mapDbToUserProfile(row: any): UserProfile {
     persona: row.persona || row.role || (row.is_agent ? 'lister' : 'tenant'),
     cvUrl: row.cv_url || undefined,
     cvFileName: row.cv_file_name || undefined,
+    targetRole: row.target_role || row.preferred_property_type || undefined,
+    companyName: row.company_name || row.agency_name || undefined,
   };
 }
 
@@ -326,7 +391,7 @@ export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
     is_verified_tenant: Boolean(user.isVerifiedTenant),
     avatar_url: user.avatarUrl || null,
     is_agent: Boolean(user.isAgent),
-    agency_name: user.agencyName || null,
+    agency_name: user.agencyName || user.companyName || null,
     cac_number: user.cacNumber || null,
     whatsapp: user.whatsapp || null,
     operating_state: user.operatingState || user.state || 'Delta State',
@@ -345,8 +410,29 @@ export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
     role: resolvedRole,
     cv_url: user.cvUrl || null,
     cv_file_name: user.cvFileName || null,
+    target_role: user.targetRole || null,
+    company_name: user.companyName || user.agencyName || null,
     updated_at: new Date().toISOString(),
   };
+}
+
+export type PlatformUserPersona = 'agent' | 'tenant' | 'job_seeker' | 'employer' | 'advertiser' | 'admin';
+
+/**
+ * Resolves a UserProfile to its unambiguous platform persona for filtering and administration.
+ */
+export function resolveUserPersona(
+  user: UserProfile,
+  hasActiveListings?: boolean,
+  hasPostedJobs?: boolean,
+  hasActiveAdverts?: boolean
+): PlatformUserPersona {
+  if (user.isAdmin || user.isSuperAdmin) return 'admin';
+  if (user.persona === 'job_seeker' || Boolean(user.cvUrl) || Boolean(user.cvFileName)) return 'job_seeker';
+  if (user.persona === 'employer' || hasPostedJobs) return 'employer';
+  if (user.persona === 'partner' || user.persona === 'advertiser' || hasActiveAdverts) return 'advertiser';
+  if (user.isAgent || user.persona === 'lister' || Boolean(user.cacNumber) || hasActiveListings) return 'agent';
+  return 'tenant';
 }
 
 /**

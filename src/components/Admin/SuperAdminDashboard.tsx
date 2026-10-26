@@ -61,6 +61,7 @@ import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdminJobsTab } from './AdminJobsTab';
+import { AdminUsersTab } from './AdminUsersTab';
 import { JobListing, JobApplication } from '../../types/jobs';
 import { getAllJobs, getSavedApplications } from '../../services/jobService';
 import { 
@@ -121,6 +122,7 @@ interface SuperAdminDashboardProps {
 
 type AdminTab = 
   | 'overview' 
+  | 'users'
   | 'agents' 
   | 'tenants' 
   | 'listings' 
@@ -152,6 +154,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 }) => {
   // Navigation State
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [initialPersonaFilter, setInitialPersonaFilter] = useState<'all' | 'agent' | 'tenant' | 'job_seeker' | 'employer' | 'advertiser' | 'admin'>('all');
   const [globalSearch, setGlobalSearch] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -1009,36 +1012,21 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveTab('agents')}
+            onClick={() => { setActiveTab('users'); setInitialPersonaFilter('all'); }}
             className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer relative shrink-0 ${
-              activeTab === 'agents'
-                ? 'bg-[#000004] text-white shadow-xs'
-                : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>Agents Control</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-slate-200 text-[#000004] text-[10px] font-semibold">
-              {agentsList.length}
-            </span>
-            {pendingKycAgents > 0 && (
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('tenants')}
-            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
-              activeTab === 'tenants'
+              activeTab === 'users' || activeTab === 'agents' || activeTab === 'tenants'
                 ? 'bg-[#000004] text-white shadow-xs'
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
             <Users className="w-3.5 h-3.5 shrink-0" />
-            <span>Tenants Control</span>
+            <span>Users Directory</span>
             <span className="px-1.5 py-0.5 rounded-full bg-slate-200 text-[#000004] text-[10px] font-semibold">
-              {tenantsList.length}
+              {registeredUsers.length}
             </span>
+            {pendingKycAgents > 0 && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" title={`${pendingKycAgents} pending agent KYC review`} />
+            )}
           </button>
 
           <button
@@ -1166,10 +1154,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
 
             {/* Card 2: Verified Agents Pool */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] shadow-xs relative overflow-hidden">
+            <div 
+              onClick={() => { setActiveTab('users'); setInitialPersonaFilter('agent'); }}
+              className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] hover:border-[#000004]/30 shadow-xs relative overflow-hidden cursor-pointer transition-all hover:shadow-sm"
+            >
               <div className="flex items-center justify-between text-[#70798C] text-xs mb-2">
                 <span className="font-semibold uppercase tracking-wider text-[11px]">Active Agents Pool</span>
-                <UserCheck className="w-4 h-4 text-[#70798C]" />
+                <UserCheck className="w-4 h-4 text-emerald-600" />
               </div>
               <div className="text-xl sm:text-2xl font-display font-black text-[#000004]">
                 {agentsList.length} Agents
@@ -1181,7 +1172,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
 
             {/* Card 3: Registered Tenants */}
-            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] shadow-xs relative overflow-hidden">
+            <div 
+              onClick={() => { setActiveTab('users'); setInitialPersonaFilter('tenant'); }}
+              className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] hover:border-[#000004]/30 shadow-xs relative overflow-hidden cursor-pointer transition-all hover:shadow-sm"
+            >
               <div className="flex items-center justify-between text-[#70798C] text-xs mb-2">
                 <span className="font-semibold uppercase tracking-wider text-[11px]">Registered Tenants</span>
                 <Users className="w-4 h-4 text-blue-600" />
@@ -1240,8 +1234,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 {pendingKycAgents > 0 && (
                   <button
                     onClick={() => {
-                      setActiveTab('agents');
-                      setAgentFilter('pending');
+                      setActiveTab('users');
+                      setInitialPersonaFilter('agent');
                     }}
                     className="p-3 bg-white rounded-xl border border-amber-200 flex items-center justify-between hover:bg-amber-100/50 transition-colors cursor-pointer text-left"
                   >
@@ -1272,8 +1266,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 {suspendedUsersCount > 0 && (
                   <button
                     onClick={() => {
-                      setActiveTab('agents');
-                      setAgentFilter('suspended');
+                      setActiveTab('users');
+                      setInitialPersonaFilter('all');
                     }}
                     className="p-3 bg-white rounded-xl border border-amber-200 flex items-center justify-between hover:bg-amber-100/50 transition-colors cursor-pointer text-left"
                   >
@@ -1369,428 +1363,39 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* TAB B: AGENTS SUPER CONTROL                                               */}
+      {/* UNIFIED USERS & ROLES DIRECTORY (AGENTS, TENANTS, JOB SEEKERS, EMPLOYERS, ADVERTISERS, ADMINS) */}
       {/* ========================================================================= */}
-      {activeTab === 'agents' && (
-        <div className="space-y-5 animate-fade-in">
-          {/* Subfilter pills */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              {[
-                { id: 'all', label: `All Agents (${agentsList.length})` },
-                { id: 'verified', label: `Verified (${totalVerifiedAgents})` },
-                { id: 'pending', label: `Pending Review (${pendingKycAgents})` },
-                { id: 'suspended', label: `Suspended (${agentsList.filter((a) => a.isSuspended).length})` },
-              ].map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setAgentFilter(f.id as any)}
-                  className={`py-1.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    agentFilter === f.id
-                      ? 'bg-[#000004] text-white shadow-xs'
-                      : 'bg-white border border-[#E5E7EB] text-[#70798C] hover:text-[#000004]'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="text-xs text-[#70798C]">
-              Showing <strong className="text-[#000004]">{filteredAgents.length}</strong> agent accounts
-            </div>
-          </div>
-
-          {/* Agents Table / Cards */}
-          <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-[#000004]">
-                <thead className="bg-[#FCF9F5] border-b border-[#E5E7EB] text-[11px] font-bold uppercase tracking-wider text-[#70798C]">
-                  <tr>
-                    <th className="py-3.5 px-4">Agent & Agency</th>
-                    <th className="py-3.5 px-3">Location & CAC</th>
-                    <th className="py-3.5 px-3">Contact</th>
-                    <th className="py-3.5 px-3">Inventory</th>
-                    <th className="py-3.5 px-3">KYC Status</th>
-                    <th className="py-3.5 px-4 text-right">Super Controls</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E5E7EB]">
-                  {filteredAgents.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-10 text-center text-[#70798C]">
-                        No agent accounts match the selected criteria.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredAgents.map((agent) => {
-                      const agentListingsCount = listings.filter((l) => l.agent.id === agent.id || l.agent.phone === agent.phone).length;
-                      const isVerified = agent.kycStatus === 'verified' || agent.isVerifiedTenant;
-                      const isPending = agent.kycStatus === 'pending';
-                      const isSuspended = agent.isSuspended;
-
-                      return (
-                        <tr key={agent.id} className={`hover:bg-slate-50/70 transition-colors ${isSuspended ? 'bg-red-50/30' : ''}`}>
-                          {/* Agent Name */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#000004] to-[#1f2937] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
-                                {agent.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-sm text-[#000004]">{agent.fullName}</span>
-                                  {isVerified && (
-                                    <span title="Verified Agent Partner">
-                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                    </span>
-                                  )}
-                                  {isSuspended && (
-                                    <span className="px-1.5 py-0.2 rounded bg-red-100 text-red-800 text-[10px] font-black uppercase">
-                                      Frozen
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-[11px] text-[#70798C]">{agent.agencyName || 'Independent Real Estate Partner'}</p>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Location & CAC */}
-                          <td className="py-3.5 px-3">
-                            <span className="font-semibold text-xs text-[#000004]">{agent.operatingCity || agent.city || 'Asaba'}</span>
-                            <p className="text-[11px] text-[#70798C] font-mono">{agent.cacNumber || 'CAC Pending'}</p>
-                          </td>
-
-                          {/* Contact */}
-                          <td className="py-3.5 px-3">
-                            <span className="font-mono text-xs">{formatNigerianPhone(agent.phone)}</span>
-                            {agent.email && (
-                              <p className="text-[11px] text-[#70798C] truncate max-w-[140px]">{agent.email}</p>
-                            )}
-                          </td>
-
-                          {/* Inventory */}
-                          <td className="py-3.5 px-3">
-                            <span className="font-bold text-xs">{agentListingsCount} listings</span>
-                            <p className="text-[10px] text-[#70798C]">Active in feed</p>
-                          </td>
-
-                          {/* KYC Status Badge */}
-                          <td className="py-3.5 px-3">
-                            {isSuspended ? (
-                              <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 text-[10px] font-bold border border-red-200">
-                                Suspended
-                              </span>
-                            ) : isVerified ? (
-                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200 flex items-center gap-1 w-max">
-                                <Check className="w-3 h-3 text-emerald-600" />
-                                Active Partner
-                              </span>
-                            ) : isPending ? (
-                              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-200 flex items-center gap-1 w-max animate-pulse">
-                                <Clock className="w-3 h-3 text-amber-600" />
-                                Awaiting KYC
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[#70798C] text-[10px] font-medium border border-slate-200">
-                                Not Submitted
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Controls */}
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {/* KYC Document Viewer */}
-                              <button
-                                onClick={() => setInspectingKycUser(agent)}
-                                className="p-1.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer"
-                                title="View KYC Identity Documents"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                              </button>
-
-                              {/* Verify / Revoke Toggle */}
-                              <button
-                                onClick={() => handleToggleAgentVerification(agent)}
-                                className={`py-1 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                                  isVerified
-                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
-                                    : 'bg-[#000004] text-white hover:bg-[#1f2937]'
-                                }`}
-                                title={isVerified ? 'Revoke Verification' : 'Verify Agent'}
-                              >
-                                {isVerified ? (
-                                  <>
-                                    <Check className="w-3 h-3 text-emerald-600" />
-                                    <span>Verified</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Check className="w-3 h-3 text-slate-400" />
-                                    <span>Verify</span>
-                                  </>
-                                )}
-                              </button>
-
-                              {/* Edit Modal */}
-                              <button
-                                onClick={() => setEditingUser(agent)}
-                                className="p-1.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer"
-                                title="Edit Agent Details"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-
-                              {/* Suspend / Freeze Toggle */}
-                              <button
-                                onClick={() => {
-                                  if (isSuspended) {
-                                    const updated = toggleUserSuspension(agent, 'Reinstated', currentUser.fullName);
-                                    refreshAdminData();
-                                    showToast(`${updated.fullName} has been reactivated.`);
-                                  } else {
-                                    setSuspendingUser(agent);
-                                  }
-                                }}
-                                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                                  isSuspended
-                                    ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
-                                    : 'border-[#E5E7EB] bg-white text-[#70798C] hover:text-red-600 hover:bg-red-50'
-                                }`}
-                                title={isSuspended ? 'Reactivate Account' : 'Freeze / Suspend Account'}
-                              >
-                                {isSuspended ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                              </button>
-
-                              {/* Delete Account */}
-                              <button
-                                onClick={() => handleDeleteUser(agent)}
-                                className="p-1.5 rounded-lg border border-[#E5E7EB] bg-white text-[#70798C] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                                title="Delete Agent Account"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+      {(activeTab === 'users' || activeTab === 'agents' || activeTab === 'tenants') && (
+        <AdminUsersTab
+          currentUser={currentUser}
+          registeredUsers={registeredUsers}
+          setRegisteredUsers={setRegisteredUsers}
+          listings={listings}
+          bookings={bookings}
+          jobsList={jobsList}
+          jobApplications={jobApplications}
+          adverts={localAdverts}
+          defaultPersonaFilter={activeTab === 'agents' ? 'agent' : activeTab === 'tenants' ? 'tenant' : initialPersonaFilter}
+          openConfirmDialog={openConfirmDialog}
+          showToast={showToast}
+          onRecordAuditLog={(action, targetType, targetName, details) => {
+            recordAuditLog(action, (targetType as any) || 'system', currentUser.id, targetName, currentUser.fullName, details);
+          }}
+          onNavigateTab={(tab) => {
+            if (tab === 'agents') {
+              setActiveTab('users');
+              setInitialPersonaFilter('agent');
+            } else if (tab === 'tenants') {
+              setActiveTab('users');
+              setInitialPersonaFilter('tenant');
+            } else {
+              setActiveTab(tab as any);
+            }
+          }}
+        />
       )}
 
-      {/* ========================================================================= */}
-      {/* TAB C: TENANTS (SEEKERS) SUPER CONTROL                                    */}
-      {/* ========================================================================= */}
-      {activeTab === 'tenants' && (
-        <div className="space-y-5 animate-fade-in">
-          {/* Subfilter pills */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              {[
-                { id: 'all', label: `All Tenants (${tenantsList.length})` },
-                { id: 'verified', label: `Verified (${tenantsList.filter((t) => t.isVerifiedTenant).length})` },
-                { id: 'suspended', label: `Suspended (${tenantsList.filter((t) => t.isSuspended).length})` },
-              ].map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => setTenantFilter(f.id as any)}
-                  className={`py-1.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    tenantFilter === f.id
-                      ? 'bg-[#000004] text-white shadow-xs'
-                      : 'bg-white border border-[#E5E7EB] text-[#70798C] hover:text-[#000004]'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
 
-            <div className="text-xs text-[#70798C]">
-              Showing <strong className="text-[#000004]">{filteredTenants.length}</strong> tenant accounts
-            </div>
-          </div>
-
-          {/* Tenants Table */}
-          <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-[#000004]">
-                <thead className="bg-[#FCF9F5] border-b border-[#E5E7EB] text-[11px] font-bold uppercase tracking-wider text-[#70798C]">
-                  <tr>
-                    <th className="py-3.5 px-4">Tenant Name</th>
-                    <th className="py-3.5 px-3">City & Preference</th>
-                    <th className="py-3.5 px-3">Contact Coordinates</th>
-                    <th className="py-3.5 px-3">Account Status</th>
-                    <th className="py-3.5 px-3">Passes & Bookings</th>
-                    <th className="py-3.5 px-4 text-right">Super Controls</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#E5E7EB]">
-                  {filteredTenants.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-10 text-center text-[#70798C]">
-                        No tenant accounts match the filter criteria.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredTenants.map((tenant) => {
-                      const userBookings = bookings.filter((b) => b.applicantPhone === tenant.phone || (tenant.email && b.applicantEmail === tenant.email));
-                      const unlockedCount = userBookings.filter((b) => b.status === 'CONFIRMED_UNLOCKED').length;
-                      const isVerified = tenant.isVerifiedTenant;
-                      const isSuspended = tenant.isSuspended;
-
-                      return (
-                        <tr key={tenant.id} className={`hover:bg-slate-50/70 transition-colors ${isSuspended ? 'bg-red-50/30' : ''}`}>
-                          {/* Name */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-full bg-slate-100 text-[#000004] flex items-center justify-center font-bold text-xs shrink-0 border border-[#E5E7EB]">
-                                {tenant.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2)}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-sm text-[#000004]">{tenant.fullName}</span>
-                                  {isVerified && (
-                                    <span title="Verified Tenant">
-                                      <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                                    </span>
-                                  )}
-                                  {isSuspended && (
-                                    <span className="px-1.5 py-0.2 rounded bg-red-100 text-red-800 text-[10px] font-black uppercase">
-                                      Frozen
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="font-mono text-[10px] text-[#70798C]">{tenant.id}</span>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* City & Preference */}
-                          <td className="py-3.5 px-3">
-                            <span className="font-semibold text-xs">{tenant.city || 'Asaba'}</span>
-                            <p className="text-[11px] text-[#70798C]">
-                              {tenant.preferredPropertyType || 'Any Property'}
-                              {tenant.budget ? ` • ₦${(tenant.budget / 1000000).toFixed(1)}M budget` : ''}
-                            </p>
-                          </td>
-
-                          {/* Contact */}
-                          <td className="py-3.5 px-3">
-                            <span className="font-mono text-xs">{formatNigerianPhone(tenant.phone)}</span>
-                            {tenant.email && (
-                              <p className="text-[11px] text-[#70798C] truncate max-w-[140px]">{tenant.email}</p>
-                            )}
-                          </td>
-
-                          {/* Account Verification Status */}
-                          <td className="py-3.5 px-3">
-                            {isVerified ? (
-                              <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[10px] font-bold border border-blue-200 flex items-center gap-1 w-max">
-                                <Check className="w-3 h-3 text-blue-600" />
-                                Verified Account
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-[#70798C] text-[10px] font-medium border border-slate-200">
-                                Unverified
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Passes & Bookings */}
-                          <td className="py-3.5 px-3">
-                            <button
-                              onClick={() => setViewingTenantBookings(tenant)}
-                              className="text-xs font-bold text-[#000004] hover:underline flex items-center gap-1"
-                            >
-                              <span>{userBookings.length} booking(s)</span>
-                              <ExternalLink className="w-3 h-3 text-[#70798C]" />
-                            </button>
-                            <p className="text-[10px] text-emerald-700 font-semibold">{unlockedCount} unlocked passes</p>
-                          </td>
-
-                          {/* Super Controls */}
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {/* Direct Pass Grant */}
-                              <button
-                                onClick={() => setDirectPassModalTenant(tenant)}
-                                className="py-1 px-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
-                                title="Issue Direct Inspection Pass"
-                              >
-                                <CalendarCheck className="w-3 h-3" />
-                                <span>Issue Pass</span>
-                              </button>
-
-                              {/* Toggle Verification */}
-                              <button
-                                onClick={() => handleToggleTenantVerification(tenant)}
-                                className={`py-1 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                  isVerified
-                                    ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                                    : 'bg-white border border-[#E5E7EB] text-[#70798C] hover:text-[#000004]'
-                                }`}
-                                title={isVerified ? 'Revoke Verification' : 'Verify Tenant'}
-                              >
-                                {isVerified ? 'Verified' : 'Verify'}
-                              </button>
-
-                              {/* Edit Modal */}
-                              <button
-                                onClick={() => setEditingUser(tenant)}
-                                className="p-1.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer"
-                                title="Edit Tenant Profile"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-
-                              {/* Suspend Toggle */}
-                              <button
-                                onClick={() => {
-                                  if (isSuspended) {
-                                    const updated = toggleUserSuspension(tenant, 'Reinstated', currentUser.fullName);
-                                    refreshAdminData();
-                                    showToast(`${updated.fullName} has been reactivated.`);
-                                  } else {
-                                    setSuspendingUser(tenant);
-                                  }
-                                }}
-                                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                                  isSuspended
-                                    ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
-                                    : 'border-[#E5E7EB] bg-white text-[#70798C] hover:text-red-600 hover:bg-red-50'
-                                }`}
-                                title={isSuspended ? 'Reactivate Tenant' : 'Suspend Tenant'}
-                              >
-                                {isSuspended ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-                              </button>
-
-                              {/* Delete Tenant */}
-                              <button
-                                onClick={() => handleDeleteUser(tenant)}
-                                className="p-1.5 rounded-lg border border-[#E5E7EB] bg-white text-[#70798C] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                                title="Delete Tenant Account"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========================================================================= */}
       {/* TAB D: LISTINGS & PROPERTY MODERATION                                     */}

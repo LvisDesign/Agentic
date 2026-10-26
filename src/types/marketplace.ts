@@ -223,7 +223,9 @@ export interface UserProfile {
   };
   createdAt?: string;
   lastProfileEditAt?: string;
-  persona?: 'job_seeker' | 'employer' | 'tenant' | 'lister';
+  persona?: 'job_seeker' | 'employer' | 'tenant' | 'lister' | 'partner' | 'advertiser' | 'admin' | (string & {});
+  targetRole?: string;
+  companyName?: string;
   cvUrl?: string;
   cvFileName?: string;
 }
