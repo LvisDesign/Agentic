@@ -191,10 +191,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
   if (hash.includes('admin')) {
-    if (isSuperAdminAuthenticated()) {
-      return { role: 'admin', view: 'feed', openPasses: false };
-    }
-    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+    return { role: 'admin', view: 'feed', openPasses: false };
   }
   if (hash.includes('agent')) {
     if (isUserAgent) {
@@ -515,14 +512,8 @@ export function App() {
       } else if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser')) {
         setUserView('partner');
       } else if (hash.includes('admin')) {
-        if (isSuperAdminAuthenticated()) {
-          setCurrentRole('admin');
-          setUserView('feed');
-        } else {
-          setCurrentRole(currentUser.isAgent ? 'agent' : 'tenant');
-          setUserView('feed');
-          window.location.hash = '#/explore';
-        }
+        setCurrentRole('admin');
+        setUserView('feed');
       } else if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
         setActiveRoom('rentals');
         setCurrentRole('agent');

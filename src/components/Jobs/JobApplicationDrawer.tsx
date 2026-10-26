@@ -86,26 +86,36 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    validateAndSetFile(file);
+    if (file) {
+      validateAndSetFile(file);
+    }
+    // Always reset input value so re-selecting same file works
+    e.target.value = '';
   };
 
   const validateAndSetFile = (file?: File) => {
     setErrorMessage(null);
     if (!file) return;
 
-    // Validate extension (.pdf, .doc, .docx)
-    const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    const isAllowedExt = ext === 'pdf' || ext === 'doc' || ext === 'docx';
+    // Validate extension (.pdf, .doc, .docx, .png, .jpg, .jpeg, .webp)
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    const allowedExts = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp'];
+    const isAllowedExt = allowedExts.includes(ext);
 
-    if (!isAllowedExt && !allowed.includes(file.type)) {
-      setErrorMessage('Please upload a valid CV file in .pdf, .doc, or .docx format.');
+    const isAllowedMime = 
+      file.type.startsWith('image/') ||
+      file.type === 'application/pdf' ||
+      file.type === 'application/msword' ||
+      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    if (!isAllowedExt && !isAllowedMime) {
+      setErrorMessage('Please upload a valid CV file in PDF, Word (.doc, .docx), or image format.');
       return;
     }
 
-    // Validate size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('File size exceeds the 5MB maximum limit. Please upload a smaller file.');
+    // Validate size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMessage('File size exceeds the 10MB limit. Please upload a smaller file.');
       return;
     }
 
@@ -305,16 +315,17 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
               <h4 className="text-xs font-bold text-[#000004] uppercase tracking-wider">
                 2. Curriculum Vitae (CV) *
               </h4>
-              <span className="text-[10px] text-[#70798C]">.pdf, .doc, .docx (Max 5MB)</span>
+              <span className="text-[10px] text-[#70798C]">.pdf, .doc, .docx, images (Max 10MB)</span>
             </div>
 
-            {/* Hidden file input */}
+            {/* Persistent file input (sr-only instead of hidden so all browsers allow clicking/triggering) */}
             <input
+              id="cv-file-upload"
               type="file"
               ref={fileInputRef}
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*"
               onChange={handleFileChange}
-              className="hidden"
+              className="sr-only"
             />
 
             {/* If user has saved CV and is choosing to use it */}
@@ -385,46 +396,54 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
                 </div>
               </div>
             ) : (
-              /* Drag-and-drop / Tap-to-upload box */
-              <div
-                onClick={() => fileInputRef.current?.click()}
+              /* Drag-and-drop / Tap-to-upload accessible label */
+              <label
+                htmlFor="cv-file-upload"
                 onDragOver={(e) => {
                   e.preventDefault();
                   setIsDragOver(true);
                 }}
                 onDragLeave={() => setIsDragOver(false)}
                 onDrop={handleDrop}
-                className={`p-6 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center flex flex-col items-center justify-center gap-2 ${
+                className={`relative block p-6 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center ${
                   isDragOver
                     ? 'border-[#000004] bg-[#F4F5F7]'
-                    : 'border-[#E5E7EB] hover:border-[#000004]/60 bg-[#FCF9F5]/70 hover:bg-white'
+                    : 'border-[#E5E7EB] hover:border-[#000004] bg-[#FCF9F5]/70 hover:bg-white'
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-[#F4F5F7] text-[#000004] flex items-center justify-center border border-[#E5E7EB]">
-                  <Upload className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-[#000004]">
-                    Tap to upload or drag & drop your CV
-                  </p>
-                  <p className="text-[11px] text-[#70798C] mt-0.5">
-                    Accepted formats: PDF or DOCX (Max 5MB)
-                  </p>
+                <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
+                  <div className="w-10 h-10 rounded-full bg-white text-[#000004] flex items-center justify-center border border-[#E5E7EB] shadow-2xs">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-[#000004]">
+                      Tap to upload or drag & drop your CV
+                    </p>
+                    <p className="text-[11px] text-[#70798C] mt-0.5">
+                      Accepted formats: PDF, Word, or image (Max 10MB)
+                    </p>
+                  </div>
+
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#000004] text-white text-xs font-bold shadow-2xs mt-1">
+                    <Upload className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Choose File from Device</span>
+                  </span>
                 </div>
 
                 {savedCV && (
                   <button
                     type="button"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       setIsUsingSavedCV(true);
                     }}
-                    className="mt-1 text-[11px] text-[#000004] font-bold hover:underline cursor-pointer"
+                    className="relative z-20 mt-3 text-[11px] text-[#000004] font-bold hover:underline cursor-pointer block mx-auto"
                   >
                     Use saved CV ({savedCV.fileName})
                   </button>
                 )}
-              </div>
+              </label>
             )}
           </div>
 
