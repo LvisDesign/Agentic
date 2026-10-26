@@ -27,7 +27,8 @@ import {
   Mail,
   UserCheck,
   LayoutGrid,
-  List
+  List,
+  Info
 } from 'lucide-react';
 import { JobListing, JobApplication, JobRoleType, JobWorkplaceType } from '../../types/jobs';
 import { UserProfile } from '../../types/marketplace';
@@ -633,19 +634,25 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
       {/* 4. VACANCIES DATA & CONTROLS */}
       <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-xs overflow-hidden">
         {/* Table & Grid Header Bar */}
-        <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2.5">
-            <h4 className="font-display font-bold text-base text-[#000004]">
-              Delta State Vacancies Ledger
-            </h4>
-            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-[#70798C] text-xs font-bold">
-              {filteredJobs.length} of {jobsList.length} showing
-            </span>
+        <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between flex-wrap gap-4">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2.5">
+              <h4 className="font-display font-bold text-base text-[#000004]">
+                Delta State Vacancies Ledger
+              </h4>
+              <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-[#70798C] text-xs font-bold">
+                {filteredJobs.length} of {jobsList.length} showing
+              </span>
+            </div>
+            <p className="text-xs text-[#70798C]">
+              Manage live job postings, candidate submissions, remuneration, and spotlight visibility.
+            </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs text-[#70798C] hidden md:inline">
-              Click <strong className="text-[#342A21]">Applicants</strong> to view candidate CVs
+            <span className="hidden lg:inline-flex items-center gap-1.5 text-xs text-[#70798C] bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
+              <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>Click <strong className="text-[#342A21]">Applicants</strong> to view candidate CVs</span>
             </span>
 
             {/* View Mode Toggle: Table / Cards */}
@@ -727,7 +734,7 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                           </div>
                           <div>
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-sm text-[#000004] line-clamp-1">{job.title}</span>
+                              <span className="font-bold text-sm text-[#000004] line-clamp-2">{job.title}</span>
                               {job.isFeatured && (
                                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-bold">
                                   <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
@@ -846,13 +853,13 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
           /* TABLE VIEW (Clean, Spacious, Un-Cramped 5 Columns)                        */
           /* ========================================================================= */
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[960px] table-auto">
+            <table className="w-full text-left text-xs min-w-[980px] table-auto">
               <thead className="bg-[#FCF9F5] border-b border-[#E5E7EB] text-[11px] font-bold uppercase tracking-wider text-[#70798C]">
                 <tr>
-                  <th className="py-4 px-5 w-[35%]">Role & Organization</th>
+                  <th className="py-4 px-5 w-[38%]">Role & Organization</th>
                   <th className="py-4 px-4 w-[20%]">Location</th>
-                  <th className="py-4 px-4 w-[18%]">Salary & Fee</th>
-                  <th className="py-4 px-4 w-[13%]">Applicants</th>
+                  <th className="py-4 px-4 w-[16%]">Salary & Fee</th>
+                  <th className="py-4 px-4 w-[12%]">Applicants</th>
                   <th className="py-4 px-5 w-[14%] text-right">Status & Actions</th>
                 </tr>
               </thead>
@@ -864,31 +871,32 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                   return (
                     <tr key={job.id} className="hover:bg-slate-50/80 transition-colors group">
                       {/* 1. Role & Organization */}
-                      <td className="py-4 px-5">
-                        <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-xl bg-[#342A21] text-amber-300 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+                      <td className="py-4 px-5 align-middle">
+                        <div className="flex items-start gap-3.5">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#342A21] to-[#1C1612] text-amber-300 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs border border-amber-500/20 mt-0.5">
                             {job.companyInitial || job.companyName.slice(0, 2).toUpperCase()}
                           </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-bold text-xs sm:text-sm text-[#000004] line-clamp-1">{job.title}</span>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-xs sm:text-sm text-[#000004] leading-snug group-hover:text-[#342A21] transition-colors">
+                                {job.title}
+                              </span>
                               {job.isFeatured && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-900 text-[10px] font-bold shrink-0">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold shrink-0">
                                   <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
                                   Spotlight
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-1.5 text-[11px] text-[#70798C] mt-0.5">
+                            <div className="flex items-center gap-2 text-[11px] text-[#70798C] flex-wrap">
                               <span className="font-semibold text-[#342A21]">{job.companyName}</span>
-                              <span>•</span>
+                              <span className="text-slate-300">•</span>
                               <span className="text-slate-500">{job.category}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold">
+                              <span className="text-slate-300">•</span>
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold">
                                 {job.workplaceType}
                               </span>
-                              <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-semibold">
                                 {job.roleType}
                               </span>
                             </div>
@@ -896,22 +904,22 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                         </div>
                       </td>
 
-                      {/* 2. Location (Generous single line, NO vertical squeezing!) */}
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 font-semibold text-xs text-[#000004]">
+                      {/* 2. Location */}
+                      <td className="py-4 px-4 align-middle">
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-[#000004]">
                           <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <span>{job.city}, Delta</span>
                         </div>
                         {job.address && (
-                          <p className="text-[11px] text-[#70798C] truncate max-w-[200px] pl-5 mt-0.5" title={job.address}>
+                          <p className="text-[11px] text-[#70798C] mt-0.5 leading-snug line-clamp-2" title={job.address}>
                             {job.address}
                           </p>
                         )}
                       </td>
 
-                      {/* 3. Salary & Fee Clearance (Combined, clean, no clutter) */}
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        <span className="font-bold text-xs text-[#000004] block">
+                      {/* 3. Salary & Fee Clearance */}
+                      <td className="py-4 px-4 align-middle whitespace-nowrap">
+                        <span className="font-bold text-xs sm:text-sm text-[#000004] block">
                           {job.salaryRange || 'Negotiable'}
                         </span>
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 mt-1">
@@ -921,68 +929,71 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                       </td>
 
                       {/* 4. Applicants (CVs) */}
-                      <td className="py-4 px-4 whitespace-nowrap">
+                      <td className="py-4 px-4 align-middle whitespace-nowrap">
                         <button
                           onClick={() => setSelectedJobForApplicants(job)}
                           className={`px-3 py-1.5 rounded-xl border text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
                             apps.length > 0
                               ? 'bg-blue-50 border-blue-200 text-blue-800 hover:bg-blue-100 shadow-2xs'
-                              : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'
+                              : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-[#000004]'
                           }`}
                           title="Inspect submitted CVs and candidate details"
                         >
-                          <Users className="w-3.5 h-3.5" />
+                          <Users className={`w-3.5 h-3.5 ${apps.length > 0 ? 'text-blue-600' : 'text-slate-400'}`} />
                           <span>{apps.length} {apps.length === 1 ? 'Applicant' : 'Applicants'}</span>
                         </button>
                       </td>
 
                       {/* 5. Status & Actions */}
-                      <td className="py-4 px-5 text-right whitespace-nowrap">
+                      <td className="py-4 px-5 align-middle text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
                           {/* Status Toggle */}
                           <button
                             onClick={() => handleToggleJobStatus(job)}
-                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1 transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
                               !isClosed
-                                ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                                : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                                ? 'bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                                : 'bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200'
                             }`}
-                            title={`Click to ${!isClosed ? 'Close vacancy' : 'Reactivate vacancy'}`}
+                            title={`Status: ${!isClosed ? 'Active (Live)' : 'Closed'}. Click to toggle.`}
                           >
-                            <span className={`w-2 h-2 rounded-full ${!isClosed ? 'bg-emerald-600' : 'bg-slate-500'}`} />
+                            <span className={`w-1.5 h-1.5 rounded-full ${!isClosed ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
                             <span>{!isClosed ? 'Live' : 'Closed'}</span>
                           </button>
 
-                          {/* Spotlight Star */}
-                          <button
-                            onClick={() => handleToggleJobFeatured(job)}
-                            className={`p-1.5 rounded-xl border transition-colors cursor-pointer ${
-                              job.isFeatured
-                                ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
-                                : 'bg-white border-[#E5E7EB] text-slate-400 hover:text-amber-500 hover:bg-slate-50'
-                            }`}
-                            title={job.isFeatured ? 'Remove from Featured Spotlight' : 'Promote to Featured Spotlight'}
-                          >
-                            <Star className={`w-3.5 h-3.5 ${job.isFeatured ? 'fill-amber-500' : ''}`} />
-                          </button>
+                          {/* Action Buttons with visual separator */}
+                          <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+                            {/* Spotlight Star */}
+                            <button
+                              onClick={() => handleToggleJobFeatured(job)}
+                              className={`p-1.5 rounded-xl border transition-colors cursor-pointer ${
+                                job.isFeatured
+                                  ? 'bg-amber-50 border-amber-300 text-amber-600 hover:bg-amber-100'
+                                  : 'bg-white border-[#E5E7EB] text-slate-400 hover:text-amber-500 hover:bg-slate-50'
+                              }`}
+                              title={job.isFeatured ? 'Remove from Featured Spotlight' : 'Promote to Featured Spotlight'}
+                            >
+                              <Star className={`w-3.5 h-3.5 ${job.isFeatured ? 'fill-amber-500 text-amber-500' : ''}`} />
+                            </button>
 
-                          {/* View Details */}
-                          <button
-                            onClick={() => setSelectedJobForDetails(job)}
-                            className="p-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
-                            title="View full job specifications"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
+                            {/* View Details */}
+                            <button
+                              onClick={() => setSelectedJobForDetails(job)}
+                              className="p-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+                              title="View full job specifications"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
 
-                          {/* Delete Job */}
-                          <button
-                            onClick={() => handleDeleteJob(job)}
-                            className="p-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                            title="Permanently remove vacancy"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            {/* Delete Job */}
+                            <button
+                              onClick={() => handleDeleteJob(job)}
+                              className="p-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                              title="Permanently remove vacancy"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
