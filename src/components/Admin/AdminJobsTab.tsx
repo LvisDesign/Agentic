@@ -858,14 +858,14 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
           /* TABLE VIEW (Clean, Spacious, Un-Cramped 5 Columns)                        */
           /* ========================================================================= */
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-[980px] table-auto">
+            <table className="w-full text-left text-xs min-w-0 table-auto">
               <thead className="bg-[#FCF9F5] border-b border-[#E5E7EB] text-[11px] font-bold uppercase tracking-wider text-[#70798C]">
                 <tr>
-                  <th className="py-4 px-5 w-[36%]">Role & Organization</th>
-                  <th className="py-4 px-4 w-[21%]">Location</th>
-                  <th className="py-4 px-4 w-[17%]">Salary & Fee</th>
-                  <th className="py-4 px-4 w-[12%]">Applicants</th>
-                  <th className="py-4 px-5 w-[14%] text-right">Status & Actions</th>
+                  <th className="py-3.5 px-4 w-[32%]">Role & Organization</th>
+                  <th className="py-3.5 px-3 w-[18%]">Location</th>
+                  <th className="py-3.5 px-3 w-[16%]">Salary & Fee</th>
+                  <th className="py-3.5 px-3 w-[15%]">Applicants</th>
+                  <th className="py-3.5 px-4 w-[19%] text-right">Status & Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E5E7EB]">
@@ -876,24 +876,24 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                   return (
                     <tr key={job.id} className="hover:bg-slate-50/80 transition-colors group">
                       {/* 1. Role & Organization */}
-                      <td className="py-4 px-5 align-middle">
-                        <div className="flex items-center gap-3.5">
-                          <div className="w-10 h-10 rounded-xl bg-[#342A21] text-[#E5B869] font-bold text-xs flex items-center justify-center shrink-0 border border-amber-400/20 shadow-xs font-mono">
+                      <td className="py-3.5 px-4 align-middle">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-[#342A21] text-[#E5B869] font-bold text-xs flex items-center justify-center shrink-0 border border-amber-400/20 shadow-xs font-mono">
                             {job.companyInitial || job.companyName.slice(0, 2).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-bold text-sm text-[#000004] hover:text-[#342A21] transition-colors truncate">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-xs sm:text-sm text-[#000004] hover:text-[#342A21] transition-colors truncate">
                                 {job.title}
                               </span>
                               {job.isFeatured && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold shrink-0">
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold shrink-0">
                                   <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
                                   Spotlight
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-[#70798C] mt-1 flex-wrap">
+                            <div className="flex items-center gap-1.5 text-[11px] text-[#70798C] mt-0.5 flex-wrap">
                               <span className="font-semibold text-[#342A21]">{job.companyName}</span>
                               <span className="text-slate-300">•</span>
                               <span className="text-slate-500">{job.category}</span>
@@ -907,7 +907,7 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                       </td>
 
                       {/* 2. Location */}
-                      <td className="py-4 px-4 align-middle">
+                      <td className="py-3.5 px-3 align-middle">
                         <div className="flex items-center gap-1.5 font-bold text-xs text-[#000004]">
                           <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <span>{job.city}, Delta</span>
@@ -920,11 +920,11 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                       </td>
 
                       {/* 3. Salary & Fee Clearance */}
-                      <td className="py-4 px-4 align-middle whitespace-nowrap">
-                        <span className="font-bold text-xs sm:text-sm text-[#000004] block font-mono">
+                      <td className="py-3.5 px-3 align-middle whitespace-nowrap">
+                        <span className="font-bold text-xs text-[#000004] block font-mono">
                           {job.salaryRange || 'Negotiable'}
                         </span>
-                        <div className="flex items-center gap-1.5 text-[11px] text-[#70798C] mt-1">
+                        <div className="flex items-center gap-1.5 text-[11px] text-[#70798C] mt-0.5">
                           <Receipt className="w-3 h-3 text-slate-400 shrink-0" />
                           <span className="font-mono text-[#000004] font-semibold">₦2,000</span>
                           <span className="text-slate-500">cleared</span>
@@ -932,28 +932,28 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                       </td>
 
                       {/* 4. Applicants (CVs) */}
-                      <td className="py-4 px-4 align-middle whitespace-nowrap">
+                      <td className="py-3.5 px-3 align-middle whitespace-nowrap">
                         <button
                           onClick={() => setSelectedJobForApplicants(job)}
-                          className={`px-3 py-1.5 rounded-lg border text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                          className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
                             apps.length > 0
                               ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 shadow-2xs'
-                              : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-[#000004]'
+                              : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-[#000004]'
                           }`}
                           title="Inspect submitted CVs and candidate details"
                         >
-                          <Users className={`w-3.5 h-3.5 ${apps.length > 0 ? 'text-blue-600' : 'text-slate-400'}`} />
+                          <Users className={`w-3.5 h-3.5 ${apps.length > 0 ? 'text-blue-600' : 'text-slate-400'} shrink-0`} />
                           <span>{apps.length} {apps.length === 1 ? 'Applicant' : 'Applicants'}</span>
                         </button>
                       </td>
 
                       {/* 5. Status & Actions */}
-                      <td className="py-4 px-5 align-middle text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2.5">
-                          {/* Status: Published vs Closed (Clean, no AI pulse dots!) */}
+                      <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          {/* Status: Published vs Closed */}
                           <button
                             onClick={() => handleToggleJobStatus(job)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
                               !isClosed
                                 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100'
                                 : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
@@ -969,7 +969,7 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                           </button>
 
                           {/* Action Toolbar Cluster */}
-                          <div className="inline-flex items-center rounded-lg border border-[#E5E7EB] bg-white p-0.5 shadow-2xs">
+                          <div className="inline-flex items-center rounded-lg border border-[#E5E7EB] bg-white p-0.5 shadow-2xs shrink-0">
                             {/* Spotlight Star */}
                             <button
                               onClick={() => handleToggleJobFeatured(job)}
