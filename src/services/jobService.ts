@@ -287,6 +287,165 @@ export async function submitJobApplication(params: ApplicationSubmissionParams):
   return application;
 }
 
+export interface CreateJobListingParams {
+  title: string;
+  companyName: string;
+  companyLogo?: string;
+  city: string;
+  address: string;
+  workplaceType: JobListing['workplaceType'];
+  roleType: JobListing['roleType'];
+  salaryRange: string;
+  summary: string;
+  description: string;
+  responsibilities: string[];
+  requirements: string[];
+  benefits?: string[];
+  category: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  posterId?: string;
+  posterEmail?: string;
+  posterName?: string;
+  paymentReference: string;
+  listingFeePaid?: number;
+}
+
+/**
+ * Creates a new paid job listing (₦2,000 publishing fee) and puts it live in the feed.
+ */
+export async function createJobListing(params: CreateJobListingParams): Promise<JobListing> {
+  const newJob: JobListing = {
+    id: `job-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    title: params.title.trim(),
+    companyName: params.companyName.trim(),
+    companyLogo: params.companyLogo,
+    companyInitial: params.companyName.trim().slice(0, 2).toUpperCase() || 'SJ',
+    state: 'Delta State',
+    city: params.city,
+    address: params.address.trim(),
+    workplaceType: params.workplaceType,
+    roleType: params.roleType,
+    salaryRange: params.salaryRange.trim() || 'Negotiable',
+    postedDate: 'Just now',
+    createdAt: new Date().toISOString(),
+    summary: params.summary.trim(),
+    description: params.description.trim(),
+    responsibilities: params.responsibilities.filter(Boolean),
+    requirements: params.requirements.filter(Boolean),
+    benefits: params.benefits?.filter(Boolean) || [],
+    category: params.category,
+    contactEmail: params.contactEmail?.trim(),
+    contactPhone: params.contactPhone?.trim(),
+    isFeatured: true,
+    posterId: params.posterId,
+    posterEmail: params.posterEmail,
+    posterName: params.posterName,
+    status: 'active',
+    paymentReference: params.paymentReference,
+    listingFeePaid: params.listingFeePaid || 2000,
+    viewsCount: 1,
+    applicantsCount: 0,
+  };
+
+  // 1. Prepend to local storage
+  const all = await getAllJobs();
+  const updated = [newJob, ...all];
+  try {
+    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (_) {}
+
+  // 2. Sync to Supabase if configured
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        await client.from('job_listings').insert([{
+          id: newJob.id,
+          title: newJob.title,
+          company_name: newJob.companyName,
+          company_logo: newJob.companyLogo || null,
+          company_initial: newJob.companyInitial,
+          state: newJob.state,
+          city: newJob.city,
+          address: newJob.address,
+          workplace_type: newJob.workplaceType,
+          role_type: newJob.roleType,
+          salary_range: newJob.salaryRange,
+          summary: newJob.summary,
+          description: newJob.description,
+          responsibilities: newJob.responsibilities,
+          requirements: newJob.requirements,
+          benefits: newJob.benefits,
+          category: newJob.category,
+          contact_email: newJob.contactEmail || null,
+          is_featured: newJob.isFeatured,
+          created_at: newJob.createdAt,
+        }]);
+      }
+    } catch (e) {
+      console.warn('[JobService] Cloud job insert notice:', e);
+    }
+  }
+
+  return newJob;
+}
+
+/**
+ * Retrieves jobs posted by an employer/job agent.
+ */
+export async function getEmployerJobs(user?: UserProfile | null): Promise<JobListing[]> {
+  const all = await getAllJobs();
+  if (!user) return all.slice(0, 3);
+
+  // Return jobs posted by this user
+  const userJobs = all.filter((j) => {
+    if (j.posterId && user.id && j.posterId === user.id) return true;
+    if (j.posterEmail && user.email && j.posterEmail.toLowerCase() === user.email.toLowerCase()) return true;
+    return false;
+  });
+
+  // If this employer hasn't posted a custom job yet, populate with 2 initial active mock jobs for their agency/company
+  if (userJobs.length === 0) {
+    return all.slice(0, 2).map((j, idx) => ({
+      ...j,
+      status: 'active' as const,
+      listingFeePaid: 2000,
+      paymentReference: `SET-JOB-INIT-${1000 + idx}`,
+      posterId: user.id,
+      posterEmail: user.email,
+    }));
+  }
+
+  return userJobs;
+}
+
+/**
+ * Toggles a job vacancy between active and closed.
+ */
+export async function toggleJobStatus(jobId: string, newStatus: 'active' | 'closed'): Promise<void> {
+  const all = await getAllJobs();
+  const updated = all.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j));
+  try {
+    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (_) {}
+}
+
+/**
+ * Updates review status of a candidate application.
+ */
+export function updateApplicationReviewStatus(
+  appId: string, 
+  status: 'submitted' | 'reviewed' | 'shortlisted' | 'rejected'
+): void {
+  const existing = getSavedApplications();
+  const updated = existing.map((a) => (a.id === appId ? { ...a, status } : a));
+  try {
+    localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (_) {}
+}
+
+
 export type JobsFeedItem = 
   | { type: 'job'; job: JobListing; key: string }
   | { type: 'advert'; advert: AdvertStory; key: string }

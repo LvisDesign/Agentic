@@ -43,6 +43,7 @@ import { getActiveAdvertiser } from './services/advertiserAuthService';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
 import { JobsFeed } from './components/Jobs/JobsFeed';
 import { JobsDashboard } from './components/Jobs/JobsDashboard';
+import { JobAgentDashboard } from './components/Jobs/JobAgentDashboard';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
 import { SuperAdminDashboard } from './components/Admin/SuperAdminDashboard';
@@ -1979,16 +1980,31 @@ export function App() {
         )
       ) : userView === 'dashboard' && isAuthenticated ? (
         activeRoom === 'jobs' ? (
-          /* Setlla Jobs Dashboard: Room-based dashboard */
-          <main className="flex-1 w-full pt-16">
-            <JobsDashboard
-              currentUser={currentUser}
-              onSwitchToFeed={() => setUserView('feed')}
-              onOpenSignup={handleOpenSignup}
-              onOpenPostAd={() => setIsPostAdOpen(true)}
-              isAuthenticated={isAuthenticated}
-            />
-          </main>
+          (currentRole === 'agent' || currentUser.isAgent || currentUser.persona === 'employer') ? (
+            /* Setlla Job Agent & Employer Dashboard */
+            <main className="flex-1 w-full pt-16">
+              <JobAgentDashboard
+                currentUser={currentUser}
+                onSwitchToFeed={() => {
+                  setCurrentRole('tenant');
+                  setUserView('feed');
+                }}
+                onSwitchToRentals={() => handleRoomChange('rentals')}
+                isAuthenticated={isAuthenticated}
+              />
+            </main>
+          ) : (
+            /* Setlla Jobs Candidate Dashboard */
+            <main className="flex-1 w-full pt-16">
+              <JobsDashboard
+                currentUser={currentUser}
+                onSwitchToFeed={() => setUserView('feed')}
+                onOpenSignup={handleOpenSignup}
+                onOpenPostAd={() => setIsPostAdOpen(true)}
+                isAuthenticated={isAuthenticated}
+              />
+            </main>
+          )
         ) : currentUser.isAgent ? (
           /* If the user is an agent, their dashboard is the Agent Dashboard */
           <main className="flex-1 w-full">
@@ -2036,17 +2052,36 @@ export function App() {
           </main>
         )
       ) : activeRoom === 'jobs' ? (
-        /* Setlla Jobs Continuous Feed */
-        <main className="flex-1 w-full h-[calc(100dvh-4rem)] mt-16 flex flex-col overflow-hidden bg-[#FCF9F5]">
-          <JobsFeed
-            currentUser={currentUser}
-            adverts={activePublicAdverts}
-            onSelectAdvert={handleSelectAdvert}
-            onTriggerSignup={handleOpenSignup}
-            isAuthenticated={isAuthenticated}
-            onOpenPostAd={() => setIsPostAdOpen(true)}
-          />
-        </main>
+        (currentRole === 'agent' || (currentUser.isAgent && userView !== 'feed')) ? (
+          /* Setlla Job Agent & Employer Portal */
+          <main className="flex-1 w-full pt-16">
+            <JobAgentDashboard
+              currentUser={currentUser}
+              onSwitchToFeed={() => {
+                setCurrentRole('tenant');
+                setUserView('feed');
+              }}
+              onSwitchToRentals={() => handleRoomChange('rentals')}
+              isAuthenticated={isAuthenticated}
+            />
+          </main>
+        ) : (
+          /* Setlla Jobs Continuous Feed */
+          <main className="flex-1 w-full h-[calc(100dvh-4rem)] mt-16 flex flex-col overflow-hidden bg-[#FCF9F5]">
+            <JobsFeed
+              currentUser={currentUser}
+              adverts={activePublicAdverts}
+              onSelectAdvert={handleSelectAdvert}
+              onTriggerSignup={handleOpenSignup}
+              isAuthenticated={isAuthenticated}
+              onOpenPostAd={() => setIsPostAdOpen(true)}
+              onOpenEmployerPortal={() => {
+                setCurrentRole('agent');
+                setUserView('dashboard');
+              }}
+            />
+          </main>
+        )
       ) : (currentRole === 'tenant' || currentRole === 'seeker') ? (
           /* Tenant Snap Feed View */
           <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">

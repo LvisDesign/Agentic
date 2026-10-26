@@ -132,7 +132,9 @@ export const AdminCustomSelect: React.FC<AdminCustomSelectProps> = ({
         aria-expanded={isOpen}
       >
         <div className="flex items-center gap-2 truncate">
-          {icon && <span className="shrink-0 text-[#70798C]">{icon}</span>}
+          {(icon || selectedOption?.icon) && (
+            <span className="shrink-0">{icon || selectedOption?.icon}</span>
+          )}
           
           {selectedOption?.dotColor && (
             <span
@@ -165,7 +167,9 @@ export const AdminCustomSelect: React.FC<AdminCustomSelectProps> = ({
       {isOpen && (
         <div
           role="listbox"
-          className={`absolute left-0 top-[calc(100%+6px)] z-[999] min-w-full w-max max-w-[340px] bg-white rounded-2xl shadow-elevated border border-[#342A21]/15 p-1.5 animate-dropdown overflow-hidden ${menuClassName}`}
+          className={`absolute left-0 top-[calc(100%+6px)] z-[999] min-w-full ${
+            variant === 'form' ? 'w-full' : 'w-max max-w-[340px]'
+          } bg-white rounded-2xl shadow-elevated border border-[#342A21]/15 p-1.5 animate-dropdown overflow-hidden ${menuClassName}`}
           style={{ minWidth: variant === 'form' ? '100%' : '180px' }}
         >
           {/* Optional Quick Search Header */}
@@ -210,7 +214,7 @@ export const AdminCustomSelect: React.FC<AdminCustomSelectProps> = ({
                   >
                     <div className="flex items-center gap-2 truncate">
                       {opt.icon && (
-                        <span className={`shrink-0 ${isSelected ? 'text-amber-300' : 'text-[#70798C]'}`}>
+                        <span className={`shrink-0 ${isSelected ? 'text-amber-300' : ''}`}>
                           {opt.icon}
                         </span>
                       )}

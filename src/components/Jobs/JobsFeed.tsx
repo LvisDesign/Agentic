@@ -39,6 +39,7 @@ interface JobsFeedProps {
   onSelectAdvert?: (ad: AdvertStory) => void;
   onOpenPostAd?: () => void;
   onTriggerSignup?: () => void;
+  onOpenEmployerPortal?: () => void;
   isAuthenticated: boolean;
 }
 
@@ -51,6 +52,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
   onSelectAdvert = () => {},
   onOpenPostAd = () => {},
   onTriggerSignup,
+  onOpenEmployerPortal,
   isAuthenticated,
 }) => {
   const [jobs, setJobs] = useState<JobListing[]>([]);
@@ -307,17 +309,9 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
             </div>
           )}
 
-          {/* Results Counter / Active Filter Bar Summary */}
-          <div className="flex items-center justify-between px-1 text-xs text-[#70798C]">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-bold text-[#000004]">
-                {filteredJobs.length} {filteredJobs.length === 1 ? 'Career Opportunity' : 'Career Opportunities'}
-              </span>
-              <span>in Delta State</span>
-            </div>
-
-            {(searchQuery || selectedCity !== 'All Delta Cities' || selectedRoleType !== 'All Types') && (
+          {/* Active Filter Reset */}
+          {(searchQuery || selectedCity !== 'All Delta Cities' || selectedRoleType !== 'All Types') && (
+            <div className="flex items-center justify-end px-1 text-xs text-[#70798C]">
               <button
                 type="button"
                 onClick={() => {
@@ -329,8 +323,8 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
               >
                 Reset Filters
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Loading State */}
           {isLoading ? (
@@ -535,6 +529,8 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
               onClick={() => {
                 if (!isAuthenticated && onTriggerSignup) {
                   onTriggerSignup();
+                } else if (onOpenEmployerPortal) {
+                  onOpenEmployerPortal();
                 } else {
                   setToastMessage('Employer vacancy portal is active. Contact support or post an ad.');
                   setTimeout(() => setToastMessage(null), 3500);
@@ -542,7 +538,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
               }}
               className="w-full py-2 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
             >
-              <Building2 className="w-3.5 h-3.5" />
+              <Building2 className="w-3.5 h-3.5 text-amber-400" />
               <span>Post a Vacancy</span>
             </button>
           </div>

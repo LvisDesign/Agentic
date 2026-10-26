@@ -26,7 +26,16 @@ export interface JobListing {
   department?: string;
   slotsAvailable?: number;
   contactEmail?: string;
+  contactPhone?: string;
   isFeatured?: boolean;
+  posterId?: string;
+  posterEmail?: string;
+  posterName?: string;
+  status?: 'active' | 'closed' | 'paused';
+  paymentReference?: string;
+  listingFeePaid?: number;
+  viewsCount?: number;
+  applicantsCount?: number;
 }
 
 export interface JobApplication {

@@ -219,7 +219,31 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </button>
 
-          {/* TAB 3: General Notifications (Bell with Unread Badge) - Captures Inspections, Jobs & System Updates */}
+          {/* TAB 3: Agent / Employer Management Portal */}
+          {isAuthenticated && (currentRole === 'agent' || currentUser.isAgent || currentUser.persona === 'employer') && (
+            <button
+              onClick={() => {
+                onChangeRole('agent');
+              }}
+              className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
+                currentRole === 'agent'
+                  ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
+                  : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
+              }`}
+              aria-label={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
+              title={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
+            >
+              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-amber-300' : 'text-[#70798C]'}`} />
+              <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
+                {activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
+              </span>
+              {currentRole === 'agent' && (
+                <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+              )}
+            </button>
+          )}
+
+          {/* TAB 4: General Notifications (Bell with Unread Badge) - Captures Inspections, Jobs & System Updates */}
           {isAuthenticated && (
             <button
               onClick={onOpenNotifications || onOpenMyPasses}
@@ -254,28 +278,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
                 {totalNotificationsCount > 0 ? `${totalNotificationsCount} Notifications` : 'Notifications'}
               </span>
-            </button>
-          )}
-
-          {/* TAB 4: Agent Management Portal (Only visible when logged in as an Agent) */}
-          {isAuthenticated && (currentRole === 'agent' || currentUser.isAgent) && (
-            <button
-              onClick={() => onChangeRole('agent')}
-              className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-                currentRole === 'agent'
-                  ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
-                  : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
-              }`}
-              aria-label="Agent Portal"
-              title="Agent Portal"
-            >
-              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-amber-300' : 'text-[#70798C]'}`} />
-              <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-                Agent Portal
-              </span>
-              {currentRole === 'agent' && (
-                <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
-              )}
             </button>
           )}
 
