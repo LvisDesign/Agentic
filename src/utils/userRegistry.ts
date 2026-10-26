@@ -302,6 +302,9 @@ export function mapDbToUserProfile(row: any): UserProfile {
     kycDocuments: row.kyc_documents && typeof row.kyc_documents === 'object' ? row.kyc_documents : undefined,
     createdAt: row.created_at || new Date().toISOString(),
     lastProfileEditAt: row.last_profile_edit_at || undefined,
+    persona: row.persona || row.role || (row.is_agent ? 'lister' : 'tenant'),
+    cvUrl: row.cv_url || undefined,
+    cvFileName: row.cv_file_name || undefined,
   };
 }
 
@@ -309,6 +312,7 @@ export function mapDbToUserProfile(row: any): UserProfile {
  * Maps a UserProfile object into a Supabase platform_users database record format.
  */
 export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
+  const resolvedRole = user.persona || (user.isAgent ? 'lister' : 'tenant');
   return {
     id: user.id,
     full_name: user.fullName,
@@ -337,6 +341,10 @@ export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
     kyc_documents: user.kycDocuments || {},
     created_at: user.createdAt || new Date().toISOString(),
     last_profile_edit_at: user.lastProfileEditAt || null,
+    persona: resolvedRole,
+    role: resolvedRole,
+    cv_url: user.cvUrl || null,
+    cv_file_name: user.cvFileName || null,
     updated_at: new Date().toISOString(),
   };
 }
@@ -575,6 +583,17 @@ export function saveRegisteredUser(user: UserProfile): void {
         .catch((err: any) => {
           console.warn('[UserRegistry] Network error syncing user to DB:', err);
         });
+
+      // Synchronize to Supabase `profiles` table (profiles.role)
+      const resolvedRole = user.persona || (user.isAgent ? 'lister' : 'tenant');
+      Promise.resolve(client.from('profiles').upsert({
+        id: user.id,
+        role: resolvedRole,
+        full_name: user.fullName,
+        phone: user.phone,
+        email: user.email || null,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' })).catch(() => {});
     }
   }
 }

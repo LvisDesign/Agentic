@@ -156,9 +156,9 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
         <div className="p-5 overflow-y-auto space-y-5">
           {/* Mobile Alerts Banner for Active Bookings */}
           {activeBooking && notificationPermission !== 'granted' && (
-            <div className="p-3 rounded-2xl bg-blue-50/80 border border-blue-200/80 flex items-center justify-between gap-3 text-xs text-blue-950">
+            <div className="p-3 rounded-2xl bg-[#F4F5F7] border border-[#E5E7EB] flex items-center justify-between gap-3 text-xs text-[#000004]">
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-xl bg-[#275DAD] text-white flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-xl bg-[#000004] text-white flex items-center justify-center shrink-0">
                   <BellRing className="w-3.5 h-3.5" />
                 </div>
                 <span className="text-[11px] font-medium leading-tight">Get instant phone alerts when the agent responds or your slot upgrades.</span>
@@ -166,7 +166,7 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
               <button
                 type="button"
                 onClick={handleRequestAlerts}
-                className="shrink-0 px-3 py-1.5 rounded-xl bg-[#275DAD] hover:bg-[#1f4b8c] text-white font-bold text-[11px] transition-colors cursor-pointer shadow-xs"
+                className="shrink-0 px-3 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-[11px] transition-colors cursor-pointer shadow-xs"
               >
                 Enable Alerts
               </button>

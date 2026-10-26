@@ -28,6 +28,8 @@ interface HeaderProps {
   onOpenLogin?: () => void;
   isAuthenticated: boolean;
   onOpenAgentSignup?: () => void;
+  activeRoom?: 'rentals' | 'jobs';
+  onChangeRoom?: (room: 'rentals' | 'jobs') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -44,6 +46,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLogin,
   isAuthenticated,
   onOpenAgentSignup,
+  activeRoom = 'rentals',
+  onChangeRoom = () => {},
 }) => {
   const confirmedPassesCount = activeBookings.filter(
     (b) => b.status === 'CONFIRMED_UNLOCKED'
@@ -73,8 +77,8 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
-        {/* Left: Brand Identity & Active User Role indicator */}
-        <div className="flex items-center gap-2 shrink-0">
+        {/* Left: Brand Identity & Global Room Switcher */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -82,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
               onChangeUserView('feed');
             }}
             className="flex items-center gap-2 focus:outline-none group cursor-pointer text-left"
-            title="Setlla - Direct Rentals & Inspections"
+            title="Setlla - Direct Rentals & Jobs"
             aria-label="Setlla Home"
           >
             <img 
@@ -91,6 +95,37 @@ export const Header: React.FC<HeaderProps> = ({
               className="h-[18px] sm:h-[20px] w-auto object-contain transition-transform group-hover:scale-[1.02]" 
             />
           </button>
+
+          {/* Segmented Pill-Style Global Room Switcher */}
+          <div className="flex items-center p-0.5 sm:p-1 bg-[#F4F5F7] rounded-full border border-[#E5E7EB] shadow-2xs">
+            <button
+              type="button"
+              onClick={() => onChangeRoom('rentals')}
+              className={`px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all cursor-pointer select-none ${
+                activeRoom === 'rentals'
+                  ? 'bg-[#000004] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#000004]'
+              }`}
+              title="Accommodations & Rental Inspections"
+              aria-label="Rentals Room"
+            >
+              Rentals
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onChangeRoom('jobs')}
+              className={`px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-bold transition-all cursor-pointer select-none ${
+                activeRoom === 'jobs'
+                  ? 'bg-[#000004] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#000004]'
+              }`}
+              title="Setlla Jobs - Careers & Vacancies"
+              aria-label="Setlla Jobs Room"
+            >
+              Setlla Jobs
+            </button>
+          </div>
         </div>
 
         {/* Center / Right: Squircle Navigation Island */}

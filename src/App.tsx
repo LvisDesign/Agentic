@@ -40,6 +40,7 @@ import { PartnerPortalPage } from './components/Partner/PartnerPortalPage';
 import { AdvertiserAuthModal } from './components/Advertiser/AdvertiserAuthModal';
 import { getActiveAdvertiser } from './services/advertiserAuthService';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
+import { JobsFeed } from './components/Jobs/JobsFeed';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
 import { SuperAdminDashboard } from './components/Admin/SuperAdminDashboard';
@@ -414,6 +415,34 @@ export function App() {
   const [isMyPassesOpen, setIsMyPassesOpen] = useState(initialNav.openPasses);
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(() => getPlatformSettings());
 
+  // Active Room state: 'rentals' (Accommodations) or 'jobs' (Setlla Jobs)
+  const [activeRoom, setActiveRoom] = useState<'rentals' | 'jobs'>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.toLowerCase();
+      const search = window.location.search.toLowerCase();
+      if (hash.includes('jobs') || search.includes('jobs')) return 'jobs';
+      const saved = localStorage.getItem('setlla_active_room');
+      if (saved === 'jobs' || saved === 'rentals') return saved;
+    }
+    return 'rentals';
+  });
+
+  const handleRoomChange = useCallback((room: 'rentals' | 'jobs') => {
+    setActiveRoom(room);
+    try {
+      localStorage.setItem('setlla_active_room', room);
+    } catch (_) {}
+    if (typeof window !== 'undefined') {
+      if (room === 'jobs') {
+        window.location.hash = '#/jobs';
+      } else {
+        if (window.location.hash.includes('jobs')) {
+          window.location.hash = '#/explore';
+        }
+      }
+    }
+  }, []);
+
   // Auto-heal agent status if current user has published listings on this device or in cloud
   useEffect(() => {
     if (!currentUser || currentUser.id === 'GUEST_USER' || currentUser.isAgent) return;
@@ -449,17 +478,20 @@ export function App() {
     }
   }, [listings, currentUser]);
 
-  // 1. Keep active view & role in sync with localStorage and URL Hash on every navigation
+  // 1. Keep active view, role & room in sync with localStorage and URL Hash on every navigation
   useEffect(() => {
     try {
       localStorage.setItem('setlla_active_role', currentRole);
       localStorage.setItem('setlla_active_view', userView);
+      localStorage.setItem('setlla_active_room', activeRoom);
     } catch (_) {}
 
     const targetHash = userView === 'partner'
       ? '#/partner'
       : currentRole === 'admin'
       ? '#/admin'
+      : activeRoom === 'jobs'
+      ? '#/jobs'
       : currentRole === 'agent'
       ? '#/agent'
       : userView === 'dashboard'
@@ -469,13 +501,15 @@ export function App() {
     if (window.location.hash !== targetHash) {
       history.replaceState(null, '', targetHash);
     }
-  }, [currentRole, userView]);
+  }, [currentRole, userView, activeRoom]);
 
   // 2. Support browser Back/Forward navigation seamlessly via hashchange
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.toLowerCase();
-      if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser')) {
+      if (hash.includes('jobs')) {
+        setActiveRoom('jobs');
+      } else if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser')) {
         setUserView('partner');
       } else if (hash.includes('admin')) {
         if (isSuperAdminAuthenticated()) {
@@ -487,8 +521,10 @@ export function App() {
           window.location.hash = '#/explore';
         }
       } else if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
+        setActiveRoom('rentals');
         setCurrentRole('agent');
       } else if (hash.includes('dashboard')) {
+        setActiveRoom('rentals');
         if (currentUser.isAgent) {
           setCurrentRole('agent');
           setUserView('feed');
@@ -498,7 +534,8 @@ export function App() {
         }
       } else if (hash.includes('inspections') || hash.includes('passes')) {
         setIsMyPassesOpen(true);
-      } else if (hash.includes('explore') || hash.includes('feed')) {
+      } else if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals')) {
+        setActiveRoom('rentals');
         setCurrentRole(currentUser.isAgent ? 'agent' : 'tenant');
         setUserView('feed');
       }
@@ -1775,7 +1812,7 @@ export function App() {
   };
 
   // Handler: Update current user from signup/login modal
-  const handleUpdateUser = (updatedUser: UserProfile, role?: UserRole) => {
+  const handleUpdateUser = (updatedUser: UserProfile, role?: UserRole, targetRoom?: 'rentals' | 'jobs') => {
     saveRegisteredUser(updatedUser);
     setCurrentUser(updatedUser);
     setIsAuthenticated(true);
@@ -1786,6 +1823,11 @@ export function App() {
     if (updatedUser.savedListingIds) {
       setSavedPropertyIds(updatedUser.savedListingIds);
     }
+
+    const resolvedRoom = targetRoom || (
+      (updatedUser.persona === 'job_seeker' || updatedUser.persona === 'employer') ? 'jobs' : 'rentals'
+    );
+    handleRoomChange(resolvedRoom);
 
     if ((role === 'admin' || updatedUser.isAdmin || updatedUser.isSuperAdmin) && isSuperAdminAuthenticated()) {
       setCurrentRole('admin');
@@ -1814,8 +1856,8 @@ export function App() {
   };
 
   // Determine root container layout:
-  // Tenant Feed is viewport locked for snap reels; Tenant Dashboard, Agent Dashboard, and Partner Portal are naturally scrolling pages.
-  const isFeedView = (currentRole === 'tenant' || currentRole === 'seeker') && userView === 'feed';
+  // Tenant Feed is viewport locked for snap reels; Setlla Jobs, Tenant Dashboard, Agent Dashboard, and Partner Portal are naturally scrolling pages.
+  const isFeedView = activeRoom === 'rentals' && (currentRole === 'tenant' || currentRole === 'seeker') && userView === 'feed';
 
   return (
     <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#342A21]/15 selection:text-[#342A21] ${
@@ -1829,6 +1871,8 @@ export function App() {
           userView={userView}
           onChangeUserView={setUserView}
           activeBookings={userBookings}
+          activeRoom={activeRoom}
+          onChangeRoom={handleRoomChange}
           onOpenMyPasses={() => {
             if (!isAuthenticated) {
               handleOpenSignup();
@@ -1924,6 +1968,17 @@ export function App() {
             />
           </main>
         )
+      ) : activeRoom === 'jobs' ? (
+        /* Setlla Jobs Continuous Feed */
+        <main className="flex-1 w-full pt-16">
+          <JobsFeed
+            currentUser={currentUser}
+            adverts={activePublicAdverts}
+            onSelectAdvert={handleSelectAdvert}
+            onTriggerSignup={handleOpenSignup}
+            isAuthenticated={isAuthenticated}
+          />
+        </main>
       ) : (currentRole === 'tenant' || currentRole === 'seeker') ? (
         userView === 'dashboard' && isAuthenticated ? (
           currentUser.isAgent ? (

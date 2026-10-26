@@ -22,9 +22,15 @@ import {
   Globe,
   Loader2,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Briefcase,
+  Home,
+  Key,
+  ArrowLeft,
+  Sparkles
 } from 'lucide-react';
 import { DeltaCity, UserProfile, UserRole } from '../../types/marketplace';
+import { UserPersona } from '../../types/jobs';
 import { StateDropdown } from '../UI/StateDropdown';
 import { CustomDropdown } from '../UI/CustomDropdown';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
@@ -80,16 +86,15 @@ export const NIGERIAN_STATES = [
   'Ebonyi State'
 ];
 
-
-
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserProfile;
-  onUpdateUser: (updatedUser: UserProfile, role?: UserRole) => void;
+  onUpdateUser: (updatedUser: UserProfile, role?: UserRole, targetRoom?: 'rentals' | 'jobs') => void;
   onSkip?: () => void;
   initialRole?: 'seeker' | 'agent';
   initialMode?: 'signup' | 'login';
+  initialPersona?: UserPersona;
   notice?: { title: string; message: string } | null;
   isAuthenticated?: boolean;
 }
@@ -104,16 +109,27 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   initialMode = 'signup',
   notice = null,
   isAuthenticated = false,
+  initialPersona,
 }) => {
   // Navigation & mode state
   const [activeRoleTab, setActiveRoleTab] = useState<'seeker' | 'agent'>(initialRole);
   const [authMode, setAuthMode] = useState<'signup' | 'login'>(initialMode);
+  const [signupStep, setSignupStep] = useState<'persona' | 'form'>(initialMode === 'login' ? 'form' : 'persona');
+  const [selectedPersona, setSelectedPersona] = useState<UserPersona>(initialPersona || (initialRole === 'agent' ? 'lister' : 'job_seeker'));
 
   // Sync initial props when opened
   useEffect(() => {
     if (isOpen) {
       if (initialRole) setActiveRoleTab(initialRole);
-      if (initialMode) setAuthMode(initialMode);
+      if (initialMode) {
+        setAuthMode(initialMode);
+        setSignupStep(initialMode === 'login' ? 'form' : 'persona');
+      }
+      if (initialPersona) {
+        setSelectedPersona(initialPersona);
+      } else if (initialRole === 'agent') {
+        setSelectedPersona('lister');
+      }
       setDuplicateError(null);
 
       // Ensure all registration fields start blank for new signups
@@ -189,7 +205,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const handleFinishSignup = () => {
     if (pendingRegistration) {
       saveRegisteredUser(pendingRegistration.user);
-      onUpdateUser(pendingRegistration.user, pendingRegistration.role);
+      const targetRoom: 'rentals' | 'jobs' = 
+        (pendingRegistration.user.persona === 'job_seeker' || pendingRegistration.user.persona === 'employer')
+          ? 'jobs'
+          : 'rentals';
+      onUpdateUser(pendingRegistration.user, pendingRegistration.role, targetRoom);
     }
     setPendingRegistration(null);
     setShowPostSignupPrompt(false);
@@ -250,10 +270,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
-  // Submission for Tenant Signup
+  // Submission for Tenant / Job Seeker Signup
   const handleSeekerSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!seekerFullName.trim() || !seekerPhone.trim()) return;
+    if (selectedPersona === 'job_seeker' && !seekerEmail.trim()) {
+      return;
+    }
 
     // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
     const localDupCheck = checkUserExists(seekerPhone, seekerEmail);
@@ -272,6 +295,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       ? (seekerCity.trim() || 'Asaba')
       : (seekerCity.trim() || 'Capital City');
 
+    const resolvedPersona: UserPersona = selectedPersona === 'lister' ? 'tenant' : (selectedPersona || 'job_seeker');
     const updated: UserProfile = {
       id: `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
       fullName: seekerFullName.trim(),
@@ -282,6 +306,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       preferredPropertyType: 'Bedseater',
       isVerifiedTenant: true,
       isAgent: false,
+      persona: resolvedPersona,
       savedListingIds: [],
       createdAt: new Date().toISOString(),
     };
@@ -289,15 +314,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     // Save immediately to local storage AND Supabase platform_users database
     saveRegisteredUser(updated);
 
+    const targetRoom: 'rentals' | 'jobs' = 
+      (resolvedPersona === 'job_seeker' || resolvedPersona === 'employer') ? 'jobs' : 'rentals';
+
     if (isStandalone) {
       setSuccessMessage({
         title: `Welcome, ${seekerFullName.trim()}!`,
-        subtitle: `Your tenant profile is active for ${seekerState}. Inspection bookings are now unlocked!`,
+        subtitle: targetRoom === 'jobs'
+          ? `Your career profile is active. Redirecting to Setlla Jobs...`
+          : `Your tenant profile is active for ${seekerState}. Inspection bookings are now unlocked!`,
       });
       setIsSuccess(true);
 
       setTimeout(() => {
-        onUpdateUser(updated, 'seeker');
+        onUpdateUser(updated, 'seeker', targetRoom);
         setIsSuccess(false);
         onClose();
       }, 1000);
@@ -308,10 +338,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
-  // Submission for Agent Signup
+  // Submission for Agent / Employer Signup
   const handleAgentSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agentFullName.trim() || !agencyName.trim() || !agentPhone.trim()) return;
+    if (selectedPersona === 'employer' && !agentEmail.trim()) {
+      return;
+    }
 
     // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
     const localDupCheck = checkUserExists(agentPhone, agentEmail);
@@ -332,6 +365,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     const finalWhatsapp = sameAsPhone ? agentPhone.trim() : (agentWhatsapp.trim() || agentPhone.trim());
 
+    const resolvedPersona: UserPersona = selectedPersona === 'employer' ? 'employer' : 'lister';
     const updated: UserProfile = {
       id: `DT-AGT-${Math.floor(1000 + Math.random() * 9000)}`,
       fullName: agentFullName.trim(),
@@ -347,6 +381,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       cacNumber: agentCac.trim() || 'VERIFIED-REG',
       isVerifiedTenant: false,
       isAgent: true,
+      persona: resolvedPersona,
       savedListingIds: [],
       createdAt: new Date().toISOString(),
     };
@@ -354,15 +389,19 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     // Save immediately to local storage AND Supabase platform_users database
     saveRegisteredUser(updated);
 
+    const targetRoom: 'rentals' | 'jobs' = resolvedPersona === 'employer' ? 'jobs' : 'rentals';
+
     if (isStandalone) {
       setSuccessMessage({
         title: `Welcome, ${agentFullName.trim()}!`,
-        subtitle: `${agencyName.trim()} is now registered. Redirecting to your Agent Listing Portal...`,
+        subtitle: targetRoom === 'jobs'
+          ? `${agencyName.trim()} is now registered. Redirecting to Setlla Jobs...`
+          : `${agencyName.trim()} is now registered. Redirecting to your Agent Listing Portal...`,
       });
       setIsSuccess(true);
 
       setTimeout(() => {
-        onUpdateUser(updated, 'agent');
+        onUpdateUser(updated, 'agent', targetRoom);
         setIsSuccess(false);
         onClose();
       }, 1000);
@@ -402,8 +441,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         });
         setIsSuccess(true);
 
+        const targetRoom: 'rentals' | 'jobs' =
+          (registeredMatch.persona === 'job_seeker' || registeredMatch.persona === 'employer') ? 'jobs' : 'rentals';
         setTimeout(() => {
-          onUpdateUser(registeredMatch!, isAgent ? 'agent' : 'seeker');
+          onUpdateUser(registeredMatch!, isAgent ? 'agent' : 'seeker', targetRoom);
           setIsSuccess(false);
           setIsLoggingIn(false);
           onClose();
@@ -477,8 +518,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       });
       setIsSuccess(true);
 
+      const targetRoom: 'rentals' | 'jobs' = 
+        (updated.persona === 'job_seeker' || updated.persona === 'employer')
+          ? 'jobs'
+          : 'rentals';
+
       setTimeout(() => {
-        onUpdateUser(updated, isAgentLogin ? 'agent' : 'seeker');
+        onUpdateUser(updated, isAgentLogin ? 'agent' : 'seeker', targetRoom);
         setIsSuccess(false);
         setIsLoggingIn(false);
         onClose();
@@ -702,76 +748,195 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 </button>
               </div>
 
-              {/* Unified 3-Way Segmented Switcher (Consolidated 1-Row Navigation) */}
-              <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-3 gap-1 mb-2.5 sm:mb-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('signup');
-                    setActiveRoleTab('seeker');
-                    setDuplicateError(null);
-                  }}
-                  className={`py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
-                    authMode === 'signup' && activeRoleTab === 'seeker'
-                      ? 'bg-white text-[#000004] shadow-xs'
-                      : 'text-[#70798C] hover:text-[#000004]'
-                  }`}
-                >
-                  <User className={`w-3.5 h-3.5 ${authMode === 'signup' && activeRoleTab === 'seeker' ? 'text-[#F95700]' : ''}`} />
-                  <span>Tenant</span>
-                </button>
+              {/* Persona Selection (Step 1) vs Form View (Step 2) vs Login View */}
+              {authMode === 'login' ? (
+                <>
+                  <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-2 gap-1 mb-2.5 sm:mb-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('signup');
+                        setSignupStep('persona');
+                        setDuplicateError(null);
+                      }}
+                      className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer text-[#70798C] hover:text-[#000004]"
+                    >
+                      <User className="w-3.5 h-3.5" />
+                      <span>Create Account</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 bg-white text-[#000004] shadow-xs cursor-pointer"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-[#000004]" />
+                      <span>Sign In</span>
+                    </button>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('signup');
-                    setActiveRoleTab('agent');
-                    setDuplicateError(null);
-                  }}
-                  className={`py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
-                    authMode === 'signup' && activeRoleTab === 'agent'
-                      ? 'bg-white text-[#000004] shadow-xs'
-                      : 'text-[#70798C] hover:text-[#000004]'
-                  }`}
-                >
-                  <Building2 className={`w-3.5 h-3.5 ${authMode === 'signup' && activeRoleTab === 'agent' ? 'text-[#F95700]' : ''}`} />
-                  <span>Agent</span>
-                </button>
+                  <div className="mb-2.5 sm:mb-3">
+                    <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
+                      Welcome back
+                    </h2>
+                    <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
+                      Sign in to access your jobs, applications, bookings, and passes.
+                    </p>
+                  </div>
+                </>
+              ) : signupStep === 'persona' ? (
+                /* STEP 1: Persona Selector */
+                <div className="mb-2.5 sm:mb-3">
+                  <div className="mb-3.5 sm:mb-4">
+                    <h2 className="font-display text-xl sm:text-2xl font-black text-[#000004] tracking-tight leading-snug">
+                      Welcome to Setlla. What brings you here today?
+                    </h2>
+                    <p className="text-xs sm:text-sm text-[#70798C] mt-1">
+                      Select your primary focus (you can switch anytime).
+                    </p>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('login');
-                    setDuplicateError(null);
-                  }}
-                  className={`py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-1.5 cursor-pointer ${
-                    authMode === 'login'
-                      ? 'bg-white text-[#000004] shadow-xs'
-                      : 'text-[#70798C] hover:text-[#000004]'
-                  }`}
-                >
-                  <LogIn className={`w-3.5 h-3.5 ${authMode === 'login' ? 'text-[#F95700]' : ''}`} />
-                  <span>Sign In</span>
-                </button>
-              </div>
+                  {/* 4 Beautiful Selectable Persona Cards */}
+                  <div className="space-y-2.5 mb-4 sm:mb-5">
+                    {[
+                      {
+                        id: 'job_seeker' as UserPersona,
+                        title: 'Job Seeker',
+                        tagline: 'Find career opportunities & apply with your CV',
+                        room: 'Setlla Jobs',
+                        activeRole: 'seeker' as const,
+                      },
+                      {
+                        id: 'employer' as UserPersona,
+                        title: 'Employer / Hiring Partner',
+                        tagline: 'Post open vacancies & discover local talent',
+                        room: 'Setlla Jobs',
+                        activeRole: 'agent' as const,
+                      },
+                      {
+                        id: 'tenant' as UserPersona,
+                        title: 'Tenant / House Hunter',
+                        tagline: 'Find verified apartments & schedule viewings',
+                        room: 'Rentals',
+                        activeRole: 'seeker' as const,
+                      },
+                      {
+                        id: 'lister' as UserPersona,
+                        title: 'Property Lister / Real Estate Agent',
+                        tagline: 'List properties & manage inspection bookings',
+                        room: 'Rentals',
+                        activeRole: 'agent' as const,
+                      },
+                    ].map((persona) => {
+                      const isSelected = selectedPersona === persona.id;
+                      return (
+                        <div
+                          key={persona.id}
+                          onClick={() => {
+                            setSelectedPersona(persona.id);
+                            setActiveRoleTab(persona.activeRole);
+                          }}
+                          className={`group relative p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3.5 select-none ${
+                            isSelected
+                              ? 'border-2 border-[#000004] bg-[#FCF9F5] ring-2 ring-[#000004]/5 shadow-xs'
+                              : 'border-[#E5E7EB] bg-white hover:border-[#CBD5E1] hover:bg-[#FAF9F6]/80'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0 pr-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h4 className="font-bold text-xs sm:text-sm text-[#000004] tracking-tight">
+                                {persona.title}
+                              </h4>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider transition-colors ${
+                                  isSelected
+                                    ? 'bg-[#000004] text-white'
+                                    : 'bg-[#F4F5F7] text-[#70798C] border border-[#E5E7EB]'
+                                }`}
+                              >
+                                {persona.room}
+                              </span>
+                            </div>
+                            <p className="text-[11px] sm:text-xs text-[#70798C] leading-snug">
+                              {persona.tagline}
+                            </p>
+                          </div>
 
-              {/* Single Clear Headline & Subtitle */}
-              <div className="mb-2.5 sm:mb-3">
-                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
-                  {authMode === 'login'
-                    ? 'Welcome back'
-                    : activeRoleTab === 'seeker'
-                      ? 'Create Tenant Account'
-                      : 'Agent Partner Registration'}
-                </h2>
-                <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
-                  {authMode === 'login'
-                    ? 'Sign in to access your bookings, passes, and account.'
-                    : activeRoleTab === 'seeker'
-                      ? 'Direct access to verified homes & scam-free inspections.'
-                      : 'List verified rentals and connect directly with tenants.'}
-                </p>
-              </div>
+                          <div className="shrink-0 flex items-center justify-center">
+                            <div
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                isSelected
+                                  ? 'border-[#000004] bg-white'
+                                  : 'border-[#CBD5E1] group-hover:border-[#94A3B8]'
+                              }`}
+                            >
+                              {isSelected && (
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#000004] animate-scale-in" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Primary CTA to continue to Form */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedPersona === 'job_seeker' || selectedPersona === 'tenant') {
+                        setActiveRoleTab('seeker');
+                      } else {
+                        setActiveRoleTab('agent');
+                      }
+                      setSignupStep('form');
+                    }}
+                    className="w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#000004] hover:bg-[#18181B] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                  >
+                    <span>Continue to Account Setup</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                /* STEP 2: Profile Form Header */
+                <>
+                  <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#E5E7EB]">
+                    <button
+                      type="button"
+                      onClick={() => setSignupStep('persona')}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#000004] hover:underline cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back to focus selection</span>
+                    </button>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F4F5F7] text-[#000004] border border-[#E5E7EB]">
+                      {selectedPersona === 'job_seeker' && 'Job Seeker'}
+                      {selectedPersona === 'employer' && 'Employer'}
+                      {selectedPersona === 'tenant' && 'Tenant'}
+                      {selectedPersona === 'lister' && 'Property Lister'}
+                    </span>
+                  </div>
+
+                  <div className="mb-2.5 sm:mb-3">
+                    <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
+                      {selectedPersona === 'job_seeker'
+                        ? 'Create Job Seeker Account'
+                        : selectedPersona === 'employer'
+                          ? 'Employer Partner Registration'
+                          : selectedPersona === 'lister'
+                            ? 'Agent Partner Registration'
+                            : 'Create Tenant Account'}
+                    </h2>
+                    <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
+                      {selectedPersona === 'job_seeker'
+                        ? 'Find career opportunities & apply with your CV in 1 tap.'
+                        : selectedPersona === 'employer'
+                          ? 'Post open vacancies & discover local talent in Delta State.'
+                          : selectedPersona === 'lister'
+                            ? 'List verified rentals and connect directly with tenants.'
+                            : 'Direct access to verified homes & scam-free inspections.'}
+                    </p>
+                  </div>
+                </>
+              )}
 
               {/* Content Area */}
               <div>
@@ -814,15 +979,18 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Phone number or email <span className="text-[#F0544F]">*</span>
+                        Email address or Phone number <span className="text-[#F0544F]">*</span>
                       </label>
                       <div className="relative">
-                        <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
                           type="text"
                           required
                           autoFocus
-                          placeholder="0803 000 0000 or email@domain.com"
+                          autoComplete="username"
+                          name="username"
+                          spellCheck={false}
+                          placeholder="e.g. name@domain.com or 0803 000 0000"
                           value={loginPhoneOrEmail}
                           onChange={(e) => {
                             setLoginPhoneOrEmail(e.target.value);
@@ -853,8 +1021,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </button>
                     </div>
                   </form>
-                ) : activeRoleTab === 'seeker' ? (
-                  /* --- 2. TENANT SIGNUP FORM --- */
+                ) : signupStep === 'persona' ? null : activeRoleTab === 'seeker' ? (
+                  /* --- 2. TENANT / JOB SEEKER SIGNUP FORM --- */
                   <form onSubmit={handleSeekerSignup} className="space-y-2.5 sm:space-y-3 text-xs">
                     {/* Duplicate Account Alert Banner */}
                     {duplicateError && (
@@ -894,6 +1062,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <input
                             type="text"
                             required
+                            autoComplete="name"
                             placeholder="e.g. Chinedu Okafor"
                             value={seekerFullName}
                             onChange={(e) => setSeekerFullName(e.target.value)}
@@ -915,6 +1084,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <input
                             type="tel"
                             required
+                            inputMode="tel"
+                            autoComplete="tel"
                             placeholder="0803 000 0000"
                             value={seekerPhone}
                             onChange={(e) => {
@@ -937,6 +1108,51 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     </div>
 
+                    {/* Email Address - COMPULSORY for Job Seekers */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-[#70798C]">
+                          Email Address {selectedPersona === 'job_seeker' ? <span className="text-[#F0544F]">*</span> : null}
+                        </label>
+                        {selectedPersona === 'job_seeker' ? (
+                          <span className="text-[10px] text-[#F95700] font-semibold">Compulsory for job alerts</span>
+                        ) : (
+                          <span className="text-[10px] text-[#70798C] font-normal">(Optional)</span>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                          duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                            ? 'text-[#F0544F]'
+                            : 'text-[#70798C]'
+                        }`} />
+                        <input
+                          type="email"
+                          required={selectedPersona === 'job_seeker'}
+                          autoComplete="email"
+                          inputMode="email"
+                          spellCheck={false}
+                          placeholder={selectedPersona === 'job_seeker' ? 'e.g. name@domain.com (for job & interview alerts)' : 'name@email.com'}
+                          value={seekerEmail}
+                          onChange={(e) => {
+                            setSeekerEmail(e.target.value);
+                            if (duplicateError) setDuplicateError(null);
+                          }}
+                          className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                              ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                              : 'border-[#E5E7EB]'
+                          }`}
+                        />
+                      </div>
+                      {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                        <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Email already registered.</span>
+                        </p>
+                      )}
+                    </div>
+
                     {/* State & Preferred City (Both Compulsory - NEVER Hidden) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                       <div>
@@ -948,7 +1164,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               setSeekerCity('');
                             }
                           }}
-                          label="Choose State"
+                          label={selectedPersona === 'job_seeker' ? 'Target State' : 'Choose State'}
                           required
                         />
                       </div>
@@ -956,7 +1172,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <label className="text-xs font-semibold text-[#70798C]">
-                            {seekerState === 'Delta State' ? 'Preferred City' : 'Preferred City / Town'} <span className="text-[#F0544F]">*</span>
+                            {selectedPersona === 'job_seeker' ? 'Preferred Job Location' : (seekerState === 'Delta State' ? 'Preferred City' : 'Preferred City / Town')} <span className="text-[#F0544F]">*</span>
                           </label>
                           {seekerCity && (
                             <span className="text-[10px] text-[#342A21] font-semibold bg-[#342A21]/5 px-1.5 py-0.5 rounded">
@@ -970,7 +1186,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             value={seekerCity}
                             onChange={(c) => setSeekerCity(c)}
                             headerTitle="Cities & Towns"
-                            placeholder="Select City (e.g. Asaba, Warri, Ughelli)"
+                            placeholder={selectedPersona === 'job_seeker' ? 'Select Preferred City (e.g. Asaba, Warri)' : 'Select City (e.g. Asaba, Warri, Ughelli)'}
                             icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
                             variant="form"
                             allowCustomInput={true}
@@ -988,47 +1204,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Email Address (Optional) */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-[#70798C]">
-                          Email Address
-                        </label>
-                        <span className="text-[10px] text-[#70798C] font-normal">(Optional)</span>
-                      </div>
-                      <div className="relative">
-                        <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                          duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                            ? 'text-[#F0544F]'
-                            : 'text-[#70798C]'
-                        }`} />
-                        <input
-                          type="email"
-                          placeholder="name@email.com"
-                          value={seekerEmail}
-                          onChange={(e) => {
-                            setSeekerEmail(e.target.value);
-                            if (duplicateError) setDuplicateError(null);
-                          }}
-                          className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                              ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
-                              : 'border-[#E5E7EB]'
-                          }`}
-                        />
-                      </div>
-                      {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                        <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>Email already registered.</span>
-                        </p>
-                      )}
-                    </div>
-
                     {/* Quick 1-line Info Notice */}
                     <div className="px-2.5 py-1.5 rounded-lg bg-[#F4F5F7] border border-[#E5E7EB] flex items-center gap-2 text-[11px] text-[#70798C]">
                       <Info className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
-                      <span>Zero inspection fees are charged until booking acceptance.</span>
+                      <span>
+                        {selectedPersona === 'job_seeker'
+                          ? 'Fast 1-tap CV applications & direct email notifications from employers.'
+                          : 'Zero inspection fees are charged until booking acceptance.'}
+                      </span>
                     </div>
 
                     {/* Action Buttons */}
@@ -1037,7 +1220,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         type="submit"
                         className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                       >
-                        <span>Create Tenant Account</span>
+                        {selectedPersona === 'job_seeker' ? (
+                          <>
+                            <Briefcase className="w-4 h-4 text-white" />
+                            <span>Create Job Seeker Account</span>
+                          </>
+                        ) : (
+                          <>
+                            <User className="w-4 h-4 text-[#F95700]" />
+                            <span>Create Tenant Account</span>
+                          </>
+                        )}
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -1075,7 +1268,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     {/* Account Type Selector */}
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Listing Category <span className="text-[#F0544F]">*</span>
+                        {selectedPersona === 'employer' ? 'Organization Category' : 'Listing Category'} <span className="text-[#F0544F]">*</span>
                       </label>
                       <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
                         <button
@@ -1087,7 +1280,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
                           }`}
                         >
-                          Agency / Firm
+                          {selectedPersona === 'employer' ? 'Corporate / Firm' : 'Agency / Firm'}
                         </button>
                         <button
                           type="button"
@@ -1098,7 +1291,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
                           }`}
                         >
-                          Realtor / Agent
+                          {selectedPersona === 'employer' ? 'Recruiter / HR' : 'Realtor / Agent'}
                         </button>
                         <button
                           type="button"
@@ -1109,22 +1302,23 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
                           }`}
                         >
-                          Direct Landlord
+                          {selectedPersona === 'employer' ? 'Business Owner' : 'Direct Landlord'}
                         </button>
                       </div>
                     </div>
 
-                    {/* Full Name & Agency Name */}
+                    {/* Full Name & Agency / Company Name */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          Agent Full Name <span className="text-[#F0544F]">*</span>
+                          {selectedPersona === 'employer' ? 'Contact Person Name' : 'Agent Full Name'} <span className="text-[#F0544F]">*</span>
                         </label>
                         <div className="relative">
                           <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="text"
                             required
+                            autoComplete="name"
                             placeholder="e.g. Victor Ossai"
                             value={agentFullName}
                             onChange={(e) => setAgentFullName(e.target.value)}
@@ -1135,14 +1329,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                       <div>
                         <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          Agency / Business Name <span className="text-[#F0544F]">*</span>
+                          {selectedPersona === 'employer' ? 'Company / Business Name' : 'Agency / Business Name'} <span className="text-[#F0544F]">*</span>
                         </label>
                         <div className="relative">
                           <Building2 className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                           <input
                             type="text"
                             required
-                            placeholder="e.g. Apex Real Estate Ltd"
+                            autoComplete="organization"
+                            placeholder={selectedPersona === 'employer' ? 'e.g. Apex Tech Solutions Ltd' : 'e.g. Apex Real Estate Ltd'}
                             value={agencyName}
                             onChange={(e) => setAgencyName(e.target.value)}
                             className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
@@ -1151,11 +1346,56 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     </div>
 
+                    {/* Official Work Email - COMPULSORY for Employer, prominent and visible! */}
+                    {selectedPersona === 'employer' && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-[#70798C]">
+                            Official Work Email <span className="text-[#F0544F]">*</span>
+                          </label>
+                          <span className="text-[10px] text-[#F95700] font-semibold">
+                            Compulsory for candidate alerts
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                              ? 'text-[#F0544F]'
+                              : 'text-[#70798C]'
+                          }`} />
+                          <input
+                            type="email"
+                            required
+                            autoComplete="email"
+                            inputMode="email"
+                            spellCheck={false}
+                            placeholder="e.g. hr@company.com or recruiting@domain.com"
+                            value={agentEmail}
+                            onChange={(e) => {
+                              setAgentEmail(e.target.value);
+                              if (duplicateError) setDuplicateError(null);
+                            }}
+                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                              duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                                : 'border-[#E5E7EB]'
+                            }`}
+                          />
+                        </div>
+                        {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>Email already registered.</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* Direct Phone & WhatsApp Toggle */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs font-semibold text-[#70798C]">
-                          Direct Phone Number <span className="text-[#F0544F]">*</span>
+                          {selectedPersona === 'employer' ? 'Contact Phone Number' : 'Direct Phone Number'} <span className="text-[#F0544F]">*</span>
                         </label>
                         <label className="flex items-center gap-1.5 cursor-pointer select-none text-[10px] text-[#70798C] hover:text-[#000004]">
                           <input
@@ -1176,6 +1416,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <input
                           type="tel"
                           required
+                          inputMode="tel"
+                          autoComplete="tel"
                           placeholder="0803 123 4567"
                           value={agentPhone}
                           onChange={(e) => handleAgentPhoneChange(e.target.value)}
@@ -1204,6 +1446,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <input
                               type="tel"
                               required={!sameAsPhone}
+                              inputMode="tel"
+                              autoComplete="tel"
                               placeholder="0803 000 0000"
                               value={agentWhatsapp}
                               onChange={(e) => setAgentWhatsapp(e.target.value)}
@@ -1226,7 +1470,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               setAgentCity('');
                             }
                           }}
-                          label="Operating State"
+                          label={selectedPersona === 'employer' ? 'Office State' : 'Operating State'}
                           required
                         />
                       </div>
@@ -1234,7 +1478,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <div>
                         <div className="flex items-center justify-between mb-1">
                           <label className="text-xs font-semibold text-[#70798C]">
-                            {agentState === 'Delta State' ? 'Operating City' : 'Operating City / Town'} <span className="text-[#F0544F]">*</span>
+                            {selectedPersona === 'employer'
+                              ? 'Office / Branch City'
+                              : (agentState === 'Delta State' ? 'Operating City' : 'Operating City / Town')} <span className="text-[#F0544F]">*</span>
                           </label>
                           {agentCitySelection && agentCitySelection !== 'Others' && (
                             <span className="text-[10px] text-[#70798C] font-semibold">
@@ -1264,7 +1510,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 }
                               }}
                               headerTitle="Cities & Towns"
-                              placeholder="Select Operating City (e.g. Asaba, Warri)"
+                              placeholder={selectedPersona === 'employer' ? "Select Company City (e.g. Asaba, Warri)" : "Select Operating City (e.g. Asaba, Warri)"}
                               icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
                               variant="form"
                               allowCustomInput={true}
@@ -1298,16 +1544,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Optional CAC & Email Section (Only Truly Optional Details) */}
+                    {/* Optional CAC / Business Verification Section */}
                     <div className="pt-0.5">
-                      {!isAgentOptionalOpen ? (
+                      {!showOptionalAgentFields ? (
                         <button
                           type="button"
                           onClick={() => setShowOptionalAgentFields(true)}
                           className="text-xs font-semibold text-[#F95700] hover:text-[#E65100] inline-flex items-center gap-1 cursor-pointer py-1"
                         >
                           <ChevronDown className="w-3.5 h-3.5" />
-                          <span>Add CAC / Reg No. & Email (Optional)</span>
+                          <span>
+                            {selectedPersona === 'employer'
+                              ? 'Add Business Registration / CAC Number (Optional)'
+                              : 'Add CAC / Reg No. & Email (Optional)'}
+                          </span>
                         </button>
                       ) : (
                         <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] animate-fade-in">
@@ -1322,21 +1572,21 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               <span>Hide</span>
                             </button>
                           </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                          <div className={`grid grid-cols-1 ${selectedPersona === 'employer' ? '' : 'sm:grid-cols-2'} gap-2 sm:gap-2.5`}>
                             <div>
                               <div className="flex items-center justify-between mb-1">
                                 <label className="text-xs font-semibold text-[#70798C]">
-                                  CAC / License No.
+                                  {selectedPersona === 'employer' ? 'CAC / RC Number (Optional)' : 'CAC / License No.'}
                                 </label>
                                 <span className="text-[10px] text-[#342A21] bg-[#342A21]/5 px-1 py-0.5 rounded font-semibold">
-                                  Badge
+                                  {selectedPersona === 'employer' ? 'Verified Employer' : 'Badge'}
                                 </span>
                               </div>
                               <div className="relative">
                                 <FileText className="w-4 h-4 text-[#F95700] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 <input
                                   type="text"
-                                  placeholder="e.g. RC-182903"
+                                  placeholder="e.g. RC-182903 or BN-293810"
                                   value={agentCac}
                                   onChange={(e) => setAgentCac(e.target.value)}
                                   className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]"
@@ -1344,38 +1594,40 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               </div>
                             </div>
 
-                            <div>
-                              <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                                Email Address
-                              </label>
-                              <div className="relative">
-                                <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                                  duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                    ? 'text-[#F0544F]'
-                                    : 'text-[#70798C]'
-                                }`} />
-                                <input
-                                  type="email"
-                                  placeholder="agency@domain.com"
-                                  value={agentEmail}
-                                  onChange={(e) => {
-                                    setAgentEmail(e.target.value);
-                                    if (duplicateError) setDuplicateError(null);
-                                  }}
-                                  className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                            {selectedPersona !== 'employer' && (
+                              <div>
+                                <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                                  Email Address
+                                </label>
+                                <div className="relative">
+                                  <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
                                     duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                      ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20'
-                                      : 'border-[#E5E7EB]'
-                                  }`}
-                                />
+                                      ? 'text-[#F0544F]'
+                                      : 'text-[#70798C]'
+                                  }`} />
+                                  <input
+                                    type="email"
+                                    placeholder="agency@domain.com"
+                                    value={agentEmail}
+                                    onChange={(e) => {
+                                      setAgentEmail(e.target.value);
+                                      if (duplicateError) setDuplicateError(null);
+                                    }}
+                                    className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
+                                      duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                        ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20'
+                                        : 'border-[#E5E7EB]'
+                                    }`}
+                                  />
+                                </div>
+                                {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                                  <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Email already registered.</span>
+                                  </p>
+                                )}
                               </div>
-                              {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                                <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                  <span>Email already registered.</span>
-                                </p>
-                              )}
-                            </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -1387,8 +1639,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         type="submit"
                         className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                       >
-                        <Building2 className="w-4 h-4" />
-                        <span>Register as Agent</span>
+                        <Building2 className="w-4 h-4 text-white" />
+                        <span>{selectedPersona === 'employer' ? 'Register as Employer & Post Jobs' : 'Register as Agent'}</span>
                         <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -1406,10 +1658,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     type="button"
                     onClick={() => {
                       setAuthMode('signup');
-                      setActiveRoleTab('seeker');
-                      setLoginError(null);
+                      setSignupStep('persona');
+                      setDuplicateError(null);
                     }}
-                    className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
+                    className="font-bold text-[#000004] hover:underline cursor-pointer ml-1"
                   >
                     Create Account
                   </button>
@@ -1423,7 +1675,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       setAuthMode('login');
                       setDuplicateError(null);
                     }}
-                    className="font-bold text-[#F95700] hover:underline cursor-pointer ml-1"
+                    className="font-bold text-[#000004] hover:underline cursor-pointer ml-1"
                   >
                     Sign In
                   </button>

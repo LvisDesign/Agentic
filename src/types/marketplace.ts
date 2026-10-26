@@ -223,6 +223,9 @@ export interface UserProfile {
   };
   createdAt?: string;
   lastProfileEditAt?: string;
+  persona?: 'job_seeker' | 'employer' | 'tenant' | 'lister';
+  cvUrl?: string;
+  cvFileName?: string;
 }
 
 export interface AdminAuditLog {
