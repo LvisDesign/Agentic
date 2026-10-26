@@ -51,7 +51,8 @@ import {
   Terminal,
   Zap,
   Code2,
-  BookOpen
+  BookOpen,
+  Briefcase
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 import { ApiWebhookModal } from './ApiWebhookModal';
@@ -59,6 +60,9 @@ import { PartnerAdSubmissionModal } from '../Adverts/PartnerAdSubmissionModal';
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
+import { AdminJobsTab } from './AdminJobsTab';
+import { JobListing, JobApplication } from '../../types/jobs';
+import { getAllJobs, getSavedApplications } from '../../services/jobService';
 import { 
   approvePartnerAdvert, 
   rejectPartnerAdvert, 
@@ -121,6 +125,7 @@ type AdminTab =
   | 'tenants' 
   | 'listings' 
   | 'inspections' 
+  | 'jobs'
   | 'ads'
   | 'financials' 
   | 'settings' 
@@ -204,6 +209,26 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>(() => getRegisteredUsers());
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(getPlatformSettings());
   const [auditLogs, setAuditLogs] = useState<AdminAuditLog[]>([]);
+
+  // Setlla Jobs Registry State
+  const [jobsList, setJobsList] = useState<JobListing[]>([]);
+  const [jobApplications, setJobApplications] = useState<JobApplication[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadJobsData = async () => {
+      try {
+        const loadedJobs = await getAllJobs();
+        if (isMounted) setJobsList(loadedJobs);
+        const loadedApps = getSavedApplications();
+        if (isMounted) setJobApplications(loadedApps);
+      } catch (_) {}
+    };
+    loadJobsData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Filtering states
   const [agentFilter, setAgentFilter] = useState<'all' | 'verified' | 'pending' | 'suspended'>('all');
@@ -593,6 +618,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const confirmedPassesCount = bookings.filter((b) => b.status === 'CONFIRMED_UNLOCKED').length;
   const pendingRequestsCount = bookings.filter((b) => b.status === 'REQUEST_SUBMITTED').length;
   const queuedCount = bookings.filter((b) => b.status === 'QUEUED').length;
+
+  const totalJobListingFees = useMemo(() => {
+    return jobsList.reduce((sum, j) => sum + (j.listingFeePaid || 2000), 0);
+  }, [jobsList]);
 
   // Filtered Agents
   const filteredAgents = useMemo(() => {
@@ -1042,6 +1071,24 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           </button>
 
           <button
+            onClick={() => setActiveTab('jobs')}
+            className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer relative shrink-0 ${
+              activeTab === 'jobs'
+                ? 'bg-[#000004] text-white shadow-xs'
+                : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
+            }`}
+          >
+            <Briefcase className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>Setlla Jobs</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-slate-200 text-[#000004] text-[10px] font-semibold">
+              {jobsList.length}
+            </span>
+            {jobApplications.length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            )}
+          </button>
+
+          <button
             onClick={() => setActiveTab('ads')}
             className={`py-2 px-3 sm:px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer shrink-0 ${
               activeTab === 'ads'
@@ -1102,7 +1149,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       {activeTab === 'overview' && (
         <div className="space-y-6 animate-fade-in">
           {/* Executive Stat Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
             {/* Card 1: Active Listings Value */}
             <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] shadow-xs relative overflow-hidden">
               <div className="flex items-center justify-between text-[#70798C] text-xs mb-2">
@@ -1160,6 +1207,24 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               </div>
               <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#70798C]">
                 <span className="font-bold text-emerald-600">{confirmedPassesCount} Unlocked Passes</span>
+              </div>
+            </div>
+
+            {/* Card 5: Setlla Jobs Vacancies Hub */}
+            <div 
+              onClick={() => setActiveTab('jobs')}
+              className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] hover:border-[#000004]/30 shadow-xs relative overflow-hidden cursor-pointer transition-all hover:shadow-sm group col-span-2 lg:col-span-1"
+            >
+              <div className="flex items-center justify-between text-[#70798C] text-xs mb-2">
+                <span className="font-semibold uppercase tracking-wider text-[11px] group-hover:text-[#000004] transition-colors">Jobs & Careers</span>
+                <Briefcase className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="text-xl sm:text-2xl font-display font-black text-[#000004]">
+                {jobsList.length} Roles
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#70798C]">
+                <span className="font-bold text-amber-700">{jobApplications.length} Applicants</span>
+                <span>• {formatNaira(totalJobListingFees)}</span>
               </div>
             </div>
           </div>
@@ -2106,6 +2171,24 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       )}
 
       {/* ========================================================================= */}
+      {/* TAB E.1: SETLLA JOBS & EMPLOYER VACANCIES                                */}
+      {/* ========================================================================= */}
+      {activeTab === 'jobs' && (
+        <AdminJobsTab
+          currentUser={currentUser}
+          jobsList={jobsList}
+          jobApplications={jobApplications}
+          setJobsList={setJobsList}
+          setJobApplications={setJobApplications}
+          openConfirmDialog={openConfirmDialog}
+          showToast={showToast}
+          onRecordAuditLog={(action, targetType, targetName, details) => {
+            recordAuditLog(action, (targetType as any) || 'system', currentUser.id, currentUser.fullName, targetName, details);
+          }}
+        />
+      )}
+
+      {/* ========================================================================= */}
       {/* TAB E.2: ADS MANAGEMENT & SPONSORED CAMPAIGNS                              */}
       {/* ========================================================================= */}
       {activeTab === 'ads' && (
@@ -2748,9 +2831,9 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       {activeTab === 'financials' && (
         <div className="space-y-6 animate-fade-in">
           {/* Financial Breakdown Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white rounded-2xl p-5 border border-[#E5E7EB] shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#70798C]">Total Clearance Fees</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#70798C]">Inspection Clearance Escrow</span>
               <div className="text-2xl font-display font-black text-[#000004] mt-1">
                 {formatNaira(totalInspectionFeesCollected)}
               </div>
@@ -2758,7 +2841,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
 
             <div className="bg-white rounded-2xl p-5 border border-[#E5E7EB] shadow-xs">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#70798C]">Platform Revenue Cut (20%)</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#70798C]">Job Posting Fees (₦2k/post)</span>
+              <div className="text-2xl font-display font-black text-emerald-600 mt-1">
+                {formatNaira(totalJobListingFees)}
+              </div>
+              <p className="text-[11px] text-[#70798C] mt-1">From {jobsList.length} verified vacancy posts (100% Retained)</p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 border border-[#E5E7EB] shadow-xs">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#70798C]">Platform Rental Cut (20%)</span>
               <div className="text-2xl font-display font-black text-amber-600 mt-1">
                 {formatNaira(Math.round(totalInspectionFeesCollected * 0.2))}
               </div>

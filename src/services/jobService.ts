@@ -445,6 +445,51 @@ export function updateApplicationReviewStatus(
   } catch (_) {}
 }
 
+/**
+ * Permanently removes a job vacancy from storage and synced tables.
+ */
+export async function deleteJobListing(jobId: string): Promise<void> {
+  const all = await getAllJobs();
+  const updated = all.filter((j) => j.id !== jobId);
+  try {
+    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (_) {}
+
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        await client.from('job_listings').delete().eq('id', jobId);
+      }
+    } catch (e) {
+      console.warn('[JobService] Cloud job delete notice:', e);
+    }
+  }
+}
+
+/**
+ * Toggles a job vacancy's featured spotlight status.
+ */
+export async function toggleJobFeatured(jobId: string, isFeatured: boolean): Promise<void> {
+  const all = await getAllJobs();
+  const updated = all.map((j) => (j.id === jobId ? { ...j, isFeatured } : j));
+  try {
+    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (_) {}
+
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        await client.from('job_listings').update({ is_featured: isFeatured }).eq('id', jobId);
+      }
+    } catch (e) {
+      console.warn('[JobService] Cloud job update notice:', e);
+    }
+  }
+}
+
+
 
 export type JobsFeedItem = 
   | { type: 'job'; job: JobListing; key: string }
