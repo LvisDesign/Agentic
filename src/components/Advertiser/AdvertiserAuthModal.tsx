@@ -214,19 +214,6 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
     }
   };
 
-  const handleQuickSeedLogin = async () => {
-    setErrorMsg(null);
-    setIsLoading(true);
-    try {
-      const user = await loginAdvertiser('partners@asabasolar.ng', 'solar123');
-      onAuthSuccess(user);
-      onClose();
-    } catch (err: any) {
-      setErrorMsg(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <ModalPortal>
@@ -292,22 +279,6 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
           )}
         </div>
 
-        {/* Demo OTP Broadcast Banner */}
-        {dispatchedOtp && (
-          <div className="bg-amber-500/10 border-b border-amber-500/20 px-5 py-2.5 flex items-center justify-between text-xs text-amber-950 font-medium">
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-amber-700 shrink-0" />
-              <span>Simulated Email OTP: <strong className="font-mono text-sm tracking-wider text-[#342A21] bg-amber-200/70 px-2 py-0.5 rounded">{dispatchedOtp}</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setOtpCode(dispatchedOtp)}
-              className="text-[11px] font-bold text-amber-900 underline hover:text-amber-950 cursor-pointer"
-            >
-              Auto-fill
-            </button>
-          </div>
-        )}
 
         {/* STEP 1 FORM: Email + Password & Signup Details */}
         {step === 'credentials' ? (
@@ -468,17 +439,6 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
               </button>
             </div>
 
-            {/* Quick Demo Credentials */}
-            <div className="pt-3 border-t border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs text-[#70798C]">
-              <span>Testing with pre-configured partner?</span>
-              <button
-                type="button"
-                onClick={handleQuickSeedLogin}
-                className="text-[#342A21] font-semibold hover:underline cursor-pointer text-left sm:text-right"
-              >
-                Demo: Asaba Solar Ltd
-              </button>
-            </div>
           </form>
         ) : (
           /* STEP 2 FORM: 6-Digit Email OTP Verification */

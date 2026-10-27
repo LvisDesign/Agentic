@@ -87,11 +87,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   }, [isOpen]);
 
   // Profile Edit States
-  const [editMode, setEditMode] = useState<'view' | 'verify' | 'editing'>('view');
-  const [verificationCodeInput, setVerificationCodeInput] = useState('');
-  const [verificationError, setVerificationError] = useState<string | null>(null);
-  const [demoCode, setDemoCode] = useState('849201');
-  const [demoBypassTime, setDemoBypassTime] = useState(false);
+  const [editMode, setEditMode] = useState<'view' | 'editing'>('view');
   const [showLockNotice, setShowLockNotice] = useState(false);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
@@ -111,7 +107,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     ? new Date(currentUser.createdAt).getTime() 
     : now - 10 * 24 * 60 * 60 * 1000;
   const daysSinceSignup = Math.floor((now - signupTime) / (1000 * 60 * 60 * 24));
-  const isSignupEligible = demoBypassTime || daysSinceSignup >= 7;
+  const isSignupEligible = daysSinceSignup >= 7;
   const daysUntilSignupEligible = Math.max(1, 7 - daysSinceSignup);
 
   const lastEditTime = currentUser.lastProfileEditAt 
@@ -120,7 +116,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const daysSinceLastEdit = lastEditTime 
     ? Math.floor((now - lastEditTime) / (1000 * 60 * 60 * 24)) 
     : 999;
-  const isEditCooldownEligible = demoBypassTime || !lastEditTime || daysSinceLastEdit >= 14;
+  const isEditCooldownEligible = !lastEditTime || daysSinceLastEdit >= 14;
   const daysUntilEditEligible = Math.max(1, 14 - daysSinceLastEdit);
 
   const isEligibleToEdit = isSignupEligible && isEditCooldownEligible;
@@ -131,27 +127,13 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       return;
     }
     setShowLockNotice(false);
-    setVerificationCodeInput('');
-    setVerificationError(null);
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setDemoCode(code);
     setEditFullName(currentUser.fullName || '');
     setEditAgencyName(currentUser.agencyName || '');
     setEditCacNumber(currentUser.cacNumber || '');
     setEditPhone(currentUser.phone || '');
     setEditWhatsapp(currentUser.whatsapp || currentUser.phone || '');
-    setEditEmail(currentUser.email || (isAgent ? 'victor@apexrealty.ng' : 'chinedu.okafor@gmail.com'));
+    setEditEmail(currentUser.email || '');
     setEditCity(currentUser.city || currentUser.operatingCity || 'Asaba');
-    setEditMode('verify');
-  };
-
-  const handleVerifyCode = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (verificationCodeInput.trim() !== demoCode) {
-      setVerificationError('Invalid 6-digit code. Please enter the verification code sent to your email.');
-      return;
-    }
-    setVerificationError(null);
     setEditMode('editing');
   };
 
@@ -458,94 +440,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
           )}
 
-          {/* Mode 1: Email Verification Step */}
-          {editMode === 'verify' && (
-            <div className="p-4 rounded-2xl bg-white border border-[#E5E7EB] space-y-3.5 shadow-xs animate-fade-in">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-[#000004] text-white flex items-center justify-center">
-                    <Key className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-xs text-[#000004]">Email Verification Required</h4>
-                    <p className="text-[10px] text-[#70798C]">Security check before editing profile</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditMode('view')}
-                  className="w-6 h-6 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] flex items-center justify-center cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
 
-              <p className="text-[11px] text-[#70798C] leading-relaxed">
-                To protect your verified account, we sent a 6-digit confirmation code to:
-              </p>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs font-bold text-[#000004] flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-[#342A21]" />
-                <span className="truncate">{currentUser.email || currentUser.phone || 'Account Verified'}</span>
-              </div>
-
-              {/* Security authorization code */}
-              <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-[11px]">
-                <div>
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-amber-800 block">Authorization Passcode</span>
-                  <span className="font-mono font-bold text-amber-950 text-sm tracking-wider">{demoCode}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setVerificationCodeInput(demoCode)}
-                  className="px-2.5 py-1 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold text-[10px] transition-colors cursor-pointer"
-                >
-                  Auto-Fill Code
-                </button>
-              </div>
-
-              <form onSubmit={handleVerifyCode} className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                    Enter 6-Digit Code
-                  </label>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={verificationCodeInput}
-                    onChange={(e) => {
-                      setVerificationCodeInput(e.target.value.replace(/\D/g, ''));
-                      setVerificationError(null);
-                    }}
-                    placeholder="e.g. 849201"
-                    className="w-full text-center tracking-widest font-mono text-lg font-bold py-2 rounded-xl border border-[#E5E7EB] bg-slate-50 focus:bg-white focus:border-[#000004] outline-none"
-                    autoFocus
-                  />
-                  {verificationError && (
-                    <p className="text-[10px] text-rose-600 font-semibold mt-1 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3 shrink-0" /> {verificationError}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditMode('view')}
-                    className="flex-1 py-2 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-xs font-bold text-[#70798C] transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-2 rounded-xl bg-[#000004] hover:bg-[#1a2332] text-xs font-bold text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
-                  >
-                    <span>Verify & Unlock</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
 
           {/* Mode 2: Edit Profile Form */}
           {editMode === 'editing' && (
@@ -734,22 +629,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       </p>
                     </div>
                   </div>
-                  {isLocalUrl() && (
-                    <div className="flex items-center justify-between pt-1 border-t border-amber-200/60 text-[10px]">
-                      <span className="text-amber-700 font-semibold">Testing Rule?</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDemoBypassTime(true);
-                          setShowLockNotice(false);
-                          handleStartEdit();
-                        }}
-                        className="px-2 py-0.5 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold transition-colors cursor-pointer"
-                      >
-                        Fast-Forward Cooldown (Testing)
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -768,7 +647,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" /> CAC / Registration
                     </span>
                     <span className="font-semibold text-[#000004]">
-                      {currentUser.cacNumber || 'RC-1849204'}
+                      {currentUser.cacNumber || 'Not provided'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
@@ -784,7 +663,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       <Mail className="w-3.5 h-3.5 text-[#342A21]" /> Email
                     </span>
                     <span className="font-semibold text-[#000004]">
-                      {currentUser.email || 'victor@apexrealty.ng'}
+                      {currentUser.email || 'Not provided'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs py-1">

@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { INITIAL_LISTINGS } from './data/mockListings';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability, PlatformSettings } from './types/marketplace';
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge, autoEnableNotifications } from './utils/pwa';
@@ -64,22 +63,6 @@ import { supabase, isSupabaseConfigured, getSupabaseClient } from './utils/supab
 import { broadcastRealtimeEvent, subscribeToRealtimeEvents } from './services/realtimeSync';
 import { playNotificationSound, showDeviceNotification, requestDeviceNotificationPermission } from './utils/realtimeNotifications';
 
-// Initial User Profile (Tenant Demo User)
-const INITIAL_USER: UserProfile = {
-  id: 'DT-USR-8492',
-  fullName: 'Chinedu Okafor',
-  email: 'chinedu.okafor@gmail.com',
-  phone: '0803 891 0293',
-  state: 'Delta State',
-  city: 'Asaba',
-  preferredPropertyType: 'Bedseater',
-  budget: 2000000,
-  isVerifiedTenant: true,
-  isAgent: false,
-  savedListingIds: ['prop-asaba-01'],
-  createdAt: '2026-10-01T10:00:00.000Z',
-};
-
 // Guest Profile for new, unauthenticated visitors
 const GUEST_USER: UserProfile = {
   id: '',
@@ -110,51 +93,6 @@ const ADMIN_USER: UserProfile = {
   savedListingIds: [],
   createdAt: '2026-09-01T08:00:00.000Z',
 };
-
-// Seed initial bookings for immediate testability
-const INITIAL_BOOKINGS: BookingRecord[] = [
-  {
-    id: 'DT-ABK-5120',
-    propertyId: 'prop-abraka-03',
-    slotId: 'slot-abk-1',
-    slotTimeWindow: '2:00 PM – 3:00 PM',
-    slotDate: 'Today',
-    applicantName: 'Chinedu Okafor',
-    applicantPhone: '0803 891 0293',
-    applicantEmail: 'chinedu.okafor@gmail.com',
-    status: 'CONFIRMED_UNLOCKED',
-    inspectionFeeAmount: 0,
-    confirmedAt: new Date().toISOString(),
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'DT-ASB-8492',
-    propertyId: 'prop-asaba-01',
-    slotId: 'slot-asb-1',
-    slotTimeWindow: '10:00 AM – 11:00 AM',
-    slotDate: 'Today',
-    applicantName: 'Chinedu Okafor',
-    applicantPhone: '0803 891 0293',
-    applicantEmail: 'chinedu.okafor@gmail.com',
-    status: 'REQUEST_SUBMITTED',
-    inspectionFeeAmount: 0,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'DT-WRI-3918',
-    propertyId: 'prop-warri-02',
-    slotId: 'slot-wri-1',
-    slotTimeWindow: '11:00 AM – 12:00 PM',
-    slotDate: 'Today',
-    applicantName: 'Tariere Ebi',
-    applicantPhone: '0814 391 8291',
-    applicantEmail: 'tariere.ebi@outlook.com',
-    status: 'QUEUED',
-    queuePosition: 1, // Standby queue position #1
-    inspectionFeeAmount: 0,
-    createdAt: new Date().toISOString(),
-  }
-];
 
 interface InitialNavState {
   role: UserRole;
@@ -287,24 +225,20 @@ export function App() {
   });
 
   const [bookings, setBookings] = useState<BookingRecord[]>(() => {
-    const isLocal = isLocalUrl();
     const saved = localStorage.getItem('setlla_bookings') || localStorage.getItem('deltarent_bookings');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          if (!isLocal) {
-            return parsed.filter((b: BookingRecord) =>
-              !INITIAL_BOOKINGS.some((m) => m.id === b.id)
-            );
-          }
-          return parsed;
+          return parsed.filter((b: BookingRecord) =>
+            b && b.id && !b.id.startsWith('DT-ABK-5120') && !b.id.startsWith('DT-ASB-8492') && b.applicantName !== 'Chinedu Okafor'
+          );
         }
       } catch (e) {
         // fallback
       }
     }
-    return isLocal ? INITIAL_BOOKINGS : [];
+    return [];
   });
 
   useEffect(() => {
@@ -348,18 +282,17 @@ export function App() {
 
   // User Authentication State (Persisted in localStorage)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    const isLocal = isLocalUrl();
     const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
     if (hash.includes('admin')) {
       return isSuperAdminAuthenticated();
     }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
-    if (!isLocal && isAuth) {
+    if (isAuth) {
       const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012') {
+          if (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012' || parsed.email === 'chinedu.okafor@gmail.com') {
             localStorage.removeItem('setlla_auth');
             localStorage.removeItem('deltarent_auth');
             localStorage.removeItem('setlla_user');
@@ -373,7 +306,6 @@ export function App() {
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    const isLocal = isLocalUrl();
     const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
     if (hash.includes('admin') && isSuperAdminAuthenticated()) {
       return getActiveAdminUser() || ADMIN_USER;
@@ -383,7 +315,7 @@ export function App() {
     if (isAuth && saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (!isLocal && (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012')) {
+        if (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012' || parsed.email === 'chinedu.okafor@gmail.com') {
           return GUEST_USER;
         }
         return parsed;
@@ -391,7 +323,7 @@ export function App() {
         // fallback
       }
     }
-    return (isAuth && isLocal) ? INITIAL_USER : GUEST_USER;
+    return GUEST_USER;
   });
 
   // Track booking IDs created on this specific device/session

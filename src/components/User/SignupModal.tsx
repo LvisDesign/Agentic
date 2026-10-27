@@ -511,106 +511,16 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         return;
       }
 
-      // On deployed environments, reject unknown credentials so fake accounts are not generated
-      if (!isLocalUrl()) {
-        setLoginError('No registered account was found with this phone number or email. Please check your credentials or create an account.');
-        setIsLoggingIn(false);
-        return;
-      }
-
-      if (
-        query.toLowerCase().includes('admin') ||
-        query === 'admin@setlla.com' ||
-        query === 'admin@deltarent.ng'
-      ) {
-        setLoginError('Super Admin accounts must use the official OTP-verified Admin Portal. Customer accounts only.');
-        setIsLoggingIn(false);
-        return;
-      }
-
-      const isAgentLogin =
-        loginRole === 'agent' ||
-        query === '0803 555 1234' ||
-        query.toLowerCase().includes('agent') ||
-        query.toLowerCase().includes('apex') ||
-        (currentUser.isAgent && (query === currentUser.phone || query === currentUser.email));
-
-      const updated: UserProfile = isAgentLogin
-        ? {
-            id: 'DT-AGT-9012',
-            fullName: 'Victor Ossai',
-            agencyName: 'Apex Real Estate Ltd',
-            agentType: 'agency',
-            phone: query.includes('@') ? '0803 555 1234' : query,
-            whatsapp: '0803 555 1234',
-            email: query.includes('@') ? query : 'victor@apexrealty.ng',
-            operatingState: 'Delta State',
-            operatingCity: 'Asaba',
-            state: 'Delta State',
-            city: 'Asaba',
-            cacNumber: 'RC-1849204',
-            isVerifiedTenant: false,
-            isAgent: true,
-            isAdmin: false,
-            isSuperAdmin: false,
-            isDemoAdmin: false,
-            savedListingIds: [],
-          }
-        : {
-            id: 'DT-USR-8492',
-            fullName: 'Chinedu Okafor',
-            phone: query.includes('@') ? '0803 891 0293' : query,
-            email: query.includes('@') ? query : 'chinedu.okafor@gmail.com',
-            state: 'Delta State',
-            city: 'Asaba',
-            preferredPropertyType: 'Bedseater',
-            isVerifiedTenant: true,
-            isAgent: false,
-            savedListingIds: ['prop-asaba-01'],
-          };
-
-      setSuccessMessage({
-        title: `Welcome back, ${updated.fullName}!`,
-        subtitle: isAgentLogin
-          ? 'Signed in as Agent. Loading your listings and inspection requests...'
-          : 'Signed in as Tenant. Your saved inspections and passes are ready!',
-      });
-      setIsSuccess(true);
-
-      const targetRoom: 'rentals' | 'jobs' = 
-        (updated.persona === 'job_seeker' || updated.persona === 'employer')
-          ? 'jobs'
-          : 'rentals';
-
-      setTimeout(() => {
-        onUpdateUser(updated, isAgentLogin ? 'agent' : 'seeker', targetRoom);
-        setIsSuccess(false);
-        setIsLoggingIn(false);
-        onClose();
-      }, 1000);
+      // If credentials do not match any registered account in Supabase or local registry, reject
+      setLoginError('No registered account was found with this phone number or email. Please check your credentials or create an account.');
+      setIsLoggingIn(false);
+      return;
     } catch (err) {
       console.warn('[SignupModal] Login error:', err);
       setLoginError('An unexpected error occurred while verifying your account. Please try again.');
     } finally {
       setIsLoggingIn(false);
     }
-  };
-
-
-  // Demo Quick-fill helpers for easy testing
-  const handleFillDemoTenant = () => {
-    setLoginPhoneOrEmail('0803 891 0293');
-    setLoginRole('seeker');
-  };
-
-  const handleFillDemoAgent = () => {
-    setLoginPhoneOrEmail('0803 555 1234');
-    setLoginRole('agent');
-  };
-
-  const handleFillDemoAdmin = () => {
-    setLoginPhoneOrEmail('admin@setlla.com');
-    setLoginRole('agent');
   };
 
   const handleSkipClick = () => {
