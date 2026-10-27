@@ -512,7 +512,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="admin@setlla.com"
+                          placeholder="Enter administrator email"
                           required
                           className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
                         />
@@ -601,7 +601,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="admin@setlla.com"
+                          placeholder="Enter administrator email"
                           required
                           className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
                         />
