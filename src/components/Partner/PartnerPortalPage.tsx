@@ -1900,7 +1900,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                             A
                           </div>
                           <div>
-                            <span className="font-semibold text-xs text-[#342A21] block">Asaba Solar Solutions</span>
+                            <span className="font-semibold text-xs text-[#342A21] block">Verified Partner Brand</span>
                             <span className="text-[10px] text-[#70798C]">Sponsored Partner</span>
                           </div>
                         </div>

@@ -182,33 +182,8 @@ export async function purgeSystemDemoAdverts(): Promise<void> {
   }
 }
 
-// Seed Partner API Keys for corporate testing
-const DEFAULT_PARTNER_KEYS: PartnerApiKey[] = [
-  {
-    id: 'key-delta-solar-01',
-    companyName: 'Asaba Solar & Power Solutions Ltd',
-    apiKey: 'stla_live_8f39a01b92c44de88a912bf7',
-    contactEmail: 'partners@asabasolar.ng',
-    contactPhone: '08031122334',
-    isActive: true,
-    rateLimitPerDay: 500,
-    requestsToday: 14,
-    createdAt: new Date(Date.now() - 86400000 * 12).toISOString(),
-    lastUsedAt: new Date(Date.now() - 3600000 * 3).toISOString(),
-  },
-  {
-    id: 'key-abraka-properties-02',
-    companyName: 'Delta Mega Real Estate Consortium',
-    apiKey: 'stla_live_920da83c61ef42a0b12c478e',
-    contactEmail: 'marketing@deltamegarealty.com',
-    contactPhone: '08129988776',
-    isActive: true,
-    rateLimitPerDay: 200,
-    requestsToday: 4,
-    createdAt: new Date(Date.now() - 86400000 * 25).toISOString(),
-    lastUsedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
-  },
-];
+// Clean production partner API keys
+const DEFAULT_PARTNER_KEYS: PartnerApiKey[] = [];
 
 /**
  * Normalizes an advert database row to the frontend AdvertStory model
@@ -867,17 +842,24 @@ export const pushProgrammaticAdvert = async (
  * PARTNER API KEYS MANAGEMENT
  */
 export const getPartnerApiKeys = (): PartnerApiKey[] => {
-  if (typeof window === 'undefined') return DEFAULT_PARTNER_KEYS;
+  if (typeof window === 'undefined') return [];
   const raw = localStorage.getItem(API_KEYS_STORAGE_KEY);
-  if (!raw) {
-    localStorage.setItem(API_KEYS_STORAGE_KEY, JSON.stringify(DEFAULT_PARTNER_KEYS));
-    return DEFAULT_PARTNER_KEYS;
-  }
+  if (!raw) return [];
   try {
-    return JSON.parse(raw);
+    const parsed: PartnerApiKey[] = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(
+        (k) =>
+          k &&
+          k.id !== 'key-delta-solar-01' &&
+          k.contactEmail !== 'partners@asabasolar.ng' &&
+          !k.companyName?.includes('Asaba Solar')
+      );
+    }
   } catch {
-    return DEFAULT_PARTNER_KEYS;
+    return [];
   }
+  return [];
 };
 
 export const createPartnerApiKey = (

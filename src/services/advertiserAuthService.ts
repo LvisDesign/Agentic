@@ -48,56 +48,61 @@ const ADVERTISER_USER_KEY = 'setlla_advertiser_user';
 const ADVERTISERS_REGISTRY_KEY = 'setlla_registered_advertisers';
 const ADVERTISER_PENDING_OTP_KEY = 'setlla_advertiser_pending_otp';
 
-// Seed Corporate Advertiser for initial testing
-const SEED_ADVERTISER: AdvertiserUser = {
-  id: 'adv-asaba-solar-01',
-  companyName: 'Asaba Solar & Power Solutions Ltd',
-  contactName: 'Engr. Emeka Nwosu',
-  email: 'partners@asabasolar.ng',
-  phone: '0803 112 2334',
-  whatsapp: '08031122334',
-  websiteUrl: 'https://asabasolar.ng',
-  industry: 'Clean Energy & Solar Power',
-  operatingCity: 'Asaba',
-  apiKey: 'stla_live_8f39a01b92c44de88a912bf7',
-  accountStatus: 'active',
-  totalSpent: 45000,
-  walletBalance: 45000,
-  transactions: [
-    {
-      id: 'tx-seed-01',
-      type: 'credit_purchase',
-      amount: 45000,
-      description: 'Paystack Ad Credits Initial Allocation',
-      reference: 'PSK_INIT_9812401',
-      paymentMethod: 'Bank Transfer',
-      createdAt: '2026-10-15T10:05:00.000Z',
-    },
-  ],
-  createdAt: '2026-10-15T10:00:00.000Z',
-  lastLoginAt: new Date().toISOString(),
-};
+// Auto-purge any stale mock/demo advertiser sessions on client bootstrap
+if (typeof window !== 'undefined') {
+  try {
+    const rawUser = localStorage.getItem(ADVERTISER_USER_KEY);
+    if (rawUser) {
+      const parsed = JSON.parse(rawUser);
+      if (
+        parsed.id === 'adv-asaba-solar-01' ||
+        parsed.email === 'partners@asabasolar.ng' ||
+        parsed.companyName?.includes('Asaba Solar')
+      ) {
+        localStorage.removeItem(ADVERTISER_AUTH_KEY);
+        localStorage.removeItem(ADVERTISER_USER_KEY);
+      }
+    }
+    const rawRegistry = localStorage.getItem(ADVERTISERS_REGISTRY_KEY);
+    if (rawRegistry) {
+      const parsedList = JSON.parse(rawRegistry);
+      if (Array.isArray(parsedList)) {
+        const cleaned = parsedList.filter(
+          (a: any) =>
+            a &&
+            a.id !== 'adv-asaba-solar-01' &&
+            a.email !== 'partners@asabasolar.ng' &&
+            !a.companyName?.includes('Asaba Solar')
+        );
+        localStorage.setItem(ADVERTISERS_REGISTRY_KEY, JSON.stringify(cleaned));
+      }
+    }
+  } catch (_) {}
+}
 
 /**
  * Retrieves all registered advertisers from local storage.
  */
 export function getRegisteredAdvertisers(): AdvertiserUser[] {
-  if (typeof window === 'undefined') return [SEED_ADVERTISER];
+  if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(ADVERTISERS_REGISTRY_KEY);
     if (raw) {
       const parsed: AdvertiserUser[] = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        if (!parsed.some((a) => a.email.toLowerCase() === SEED_ADVERTISER.email.toLowerCase())) {
-          return [SEED_ADVERTISER, ...parsed];
-        }
-        return parsed;
+        return parsed.filter(
+          (a) =>
+            a &&
+            a.id !== 'adv-asaba-solar-01' &&
+            a.email !== 'partners@asabasolar.ng' &&
+            !a.companyName?.includes('Asaba Solar')
+        );
       }
     }
   } catch (e) {
     console.warn('[AdvertiserAuth] Failed to parse advertisers:', e);
   }
-  return [SEED_ADVERTISER];
+  return [];
 }
 
 /**
@@ -158,7 +163,18 @@ export function getActiveAdvertiser(): AdvertiserUser | null {
   const raw = localStorage.getItem(ADVERTISER_USER_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw);
+    const parsed: AdvertiserUser = JSON.parse(raw);
+    if (
+      !parsed ||
+      parsed.id === 'adv-asaba-solar-01' ||
+      parsed.email === 'partners@asabasolar.ng' ||
+      parsed.companyName?.includes('Asaba Solar')
+    ) {
+      localStorage.removeItem(ADVERTISER_AUTH_KEY);
+      localStorage.removeItem(ADVERTISER_USER_KEY);
+      return null;
+    }
+    return parsed;
   } catch {
     return null;
   }

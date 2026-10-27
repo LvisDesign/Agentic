@@ -271,6 +271,24 @@ export function App() {
     };
   }, []);
 
+  // Auto-purge any stale mock demo sessions (e.g. Asaba Solar) on client bootstrap
+  useEffect(() => {
+    try {
+      const advUser = localStorage.getItem('setlla_advertiser_user');
+      if (advUser) {
+        const parsed = JSON.parse(advUser);
+        if (
+          parsed.id === 'adv-asaba-solar-01' ||
+          parsed.email === 'partners@asabasolar.ng' ||
+          parsed.companyName?.includes('Asaba Solar')
+        ) {
+          localStorage.removeItem('setlla_advertiser_auth');
+          localStorage.removeItem('setlla_advertiser_user');
+        }
+      }
+    } catch (_) {}
+  }, []);
+
   // Super Admin Authentication State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
     return isSuperAdminAuthenticated();
