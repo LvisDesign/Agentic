@@ -103,31 +103,23 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       {/* Centered Property Card with Natural Proportions & Outside Descriptions */}
       <div className="w-full max-w-xl sm:max-w-2xl bg-white rounded-2xl sm:rounded-3xl border border-[#E5E7EB] shadow-card flex flex-col overflow-hidden relative">
         
-        {/* CARD TOP HEADER: Agent Identity & Profile, Location, Live Capacity, Report Flag & Share */}
+        {/* CARD TOP HEADER: Agent Identity & Profile, Live Capacity, Report Flag & Share */}
         <div className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white border-b border-[#E5E7EB] flex items-center justify-between gap-2 shrink-0">
-          {/* User/Agent Profile & Name + Location */}
-          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          {/* User/Agent Profile & Name */}
+          <div className="flex items-center gap-2 min-w-0">
             <img
               src={listing.agent.avatarUrl}
               alt={listing.agent.fullName}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-[#E5E7EB] shrink-0 shadow-2xs"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-[#E5E7EB] shrink-0 shadow-2xs"
             />
-            <div className="flex flex-col min-w-0 leading-tight">
-              <div className="flex items-center gap-1.5 truncate">
-                <span className="font-bold text-xs sm:text-sm text-[#000004] truncate">
-                  {listing.agent.fullName}
-                </span>
-                {listing.agent.cacNumber && (
-                  <span className="text-[#70798C] text-[10px] hidden sm:inline font-medium">
-                    • {listing.agent.cacNumber}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1 text-[11px] text-[#70798C] truncate font-medium mt-0.5">
-                <MapPin className="w-3 h-3 text-[#342A21] shrink-0" />
-                <span className="truncate">{listing.neighborhood}, {listing.city}</span>
-              </div>
-            </div>
+            <span className="font-bold text-xs sm:text-sm text-[#000004] truncate">
+              {listing.agent.fullName}
+            </span>
+            {listing.agent.cacNumber && (
+              <span className="text-[#70798C] text-[10px] hidden sm:inline font-medium shrink-0">
+                • {listing.agent.cacNumber}
+              </span>
+            )}
           </div>
 
           {/* Capacity Badge, Report Flag & Share */}
@@ -334,6 +326,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               <h2 className="font-display text-sm sm:text-base font-bold text-[#000004] mt-0.5 line-clamp-2 break-words leading-snug">
                 {listing.title}
               </h2>
+              <div className="flex items-center gap-1 text-[11px] sm:text-xs text-[#70798C] font-medium mt-1">
+                <MapPin className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
+                <span>{listing.neighborhood}, {listing.city}</span>
+              </div>
             </div>
 
             {/* 3. Essential Quick Summary Pills (Bedrooms & Bathrooms) */}
