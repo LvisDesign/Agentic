@@ -3,7 +3,8 @@ import {
   Users, 
   Building, 
   CalendarCheck, 
-  DollarSign, 
+  Wallet,
+  ReceiptText, 
   Settings, 
   Search, 
   Filter, 
@@ -47,7 +48,6 @@ import {
   LogOut,
   Megaphone,
   Tag,
-  Sparkles,
   Terminal,
   Zap,
   Code2,
@@ -59,6 +59,7 @@ import { ApiWebhookModal } from './ApiWebhookModal';
 import { PartnerAdSubmissionModal } from '../Adverts/PartnerAdSubmissionModal';
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
+import { ModalPortal } from '../UI/ModalPortal';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdminJobsTab } from './AdminJobsTab';
 import { AdminUsersTab } from './AdminUsersTab';
@@ -118,6 +119,7 @@ interface SuperAdminDashboardProps {
   onSwitchToTenant?: () => void;
   onSwitchToPartner?: () => void;
   onSignOut?: () => void;
+  onRefreshData?: () => Promise<void> | void;
 }
 
 type AdminTab = 
@@ -151,12 +153,14 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   onSwitchToTenant,
   onSwitchToPartner,
   onSignOut,
+  onRefreshData,
 }) => {
   // Navigation State
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [initialPersonaFilter, setInitialPersonaFilter] = useState<'all' | 'agent' | 'tenant' | 'job_seeker' | 'employer' | 'advertiser' | 'admin'>('all');
   const [globalSearch, setGlobalSearch] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Sponsored Adverts State
   const [localAdverts, setLocalAdverts] = useState<AdvertStory[]>(() => {
@@ -541,16 +545,71 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     });
   }, [localAdverts, globalSearch, advertsCategoryFilter, advertsVerifiedFilter, advertsStatusFilter]);
 
-  // Load and refresh user list and logs
-  const refreshAdminData = () => {
+  // Load and refresh platform records (users, settings, audit logs, adverts, jobs, listings/bookings)
+  const refreshAdminData = useCallback(async () => {
+    // 1. Immediately reload local state sources
     setRegisteredUsers(getRegisteredUsers());
     setPlatformSettings(getPlatformSettings());
     setAuditLogs(getAuditLogs());
-    fetchRegisteredUsersFromDb().then((users) => {
+
+    // 2. Reload adverts locally
+    try {
+      const freshAdverts = loadAllAdverts();
+      const deletedIds = getDeletedAdvertIds();
+      if (freshAdverts && Array.isArray(freshAdverts)) {
+        setLocalAdverts(
+          freshAdverts.filter(
+            (a) => a && a.id && !deletedIds.has(a.id) && !SYSTEM_DEMO_ADVERT_IDS.has(a.id) && a.status !== 'deleted'
+          )
+        );
+      }
+    } catch (_) {}
+
+    // 3. Reload jobs & applications
+    try {
+      const [loadedJobs, loadedApps] = await Promise.all([
+        getAllJobs(),
+        Promise.resolve(getSavedApplications()),
+      ]);
+      if (loadedJobs) setJobsList(loadedJobs);
+      if (loadedApps) setJobApplications(loadedApps);
+    } catch (_) {}
+
+    // 4. Fetch Supabase registered users
+    try {
+      const users = await fetchRegisteredUsersFromDb();
       if (users && users.length > 0) {
         setRegisteredUsers(users);
       }
-    });
+    } catch (_) {}
+
+    // 5. Trigger parent synchronizer (syncs cloud listings, bookings, adverts, user profiles)
+    if (onRefreshData) {
+      try {
+        await onRefreshData();
+      } catch (err) {
+        console.warn('[Admin] Parent sync warning:', err);
+      }
+    }
+  }, [onRefreshData]);
+
+  // Action: Manual Platform Data Refresh with visual feedback
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      const minSpinPromise = new Promise((resolve) => setTimeout(resolve, 650));
+      await Promise.all([
+        refreshAdminData(),
+        minSpinPromise,
+      ]);
+      showToast('All console records & live data refreshed.');
+    } catch (err) {
+      console.error('[Admin] Manual refresh error:', err);
+      showToast('Refreshed local records. Live sync complete.');
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -581,7 +640,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
     };
-  }, []);
+  }, [refreshAdminData]);
 
   // Split users into agents and tenants: Any user marked isAgent or who has active published listings is categorized as an Agent
   const isAgentUser = useCallback((u: UserProfile) => {
@@ -918,22 +977,22 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-20 pb-24 px-3 sm:px-6 max-w-7xl mx-auto">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-4 sm:right-6 z-50 animate-slide-down bg-[#000004] text-white px-4 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-3 text-xs sm:text-sm font-semibold">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="fixed top-20 right-4 sm:right-6 z-50 animate-slide-down bg-[#FCF9F5] text-[#342A21] px-4 py-3 rounded-2xl shadow-xl border border-[#E5E7EB] flex items-center gap-3 text-xs sm:text-sm font-semibold">
+          <CheckCircle2 className="w-4 h-4 text-[#342A21] shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* 1. Super Admin Command Header */}
       <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#E5E7EB] shadow-xs mb-6 relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
-          <div className="flex items-start sm:items-center gap-3.5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative">
+          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#000004] flex items-center justify-center shrink-0 shadow-md border border-slate-800 p-2.5">
               <img src="/images/setlla-logo-white.png" alt="Setlla" className="w-full h-auto object-contain" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#000004] tracking-tight">
+                <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#000004] tracking-tight break-words">
                   Super Admin Console
                 </h1>
               </div>
@@ -954,11 +1013,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               <span>Export Backup</span>
             </button>
             <button
-              onClick={refreshAdminData}
-              className="p-2.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-xs font-bold text-[#000004] flex items-center justify-center shadow-xs transition-colors cursor-pointer"
-              title="Refresh Data"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className={`p-2.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-xs font-bold text-[#000004] flex items-center justify-center shadow-xs transition-all cursor-pointer ${
+                isRefreshing ? 'opacity-70 cursor-not-allowed' : 'active:scale-95'
+              }`}
+              title={isRefreshing ? 'Refreshing platform data...' : 'Refresh Data'}
+              aria-label="Refresh Data"
             >
-              <RefreshCw className="w-4 h-4 text-[#70798C]" />
+              <RefreshCw className={`w-4 h-4 text-[#70798C] ${isRefreshing ? 'animate-spin text-[#000004]' : ''}`} />
             </button>
             {onSignOut && (
               <button
@@ -1099,7 +1162,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
             }`}
           >
-            <DollarSign className="w-3.5 h-3.5 shrink-0" />
+            <Wallet className="w-3.5 h-3.5 shrink-0" />
             <span>Escrow & Fees</span>
           </button>
 
@@ -1194,7 +1257,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] shadow-xs relative overflow-hidden">
               <div className="flex items-center justify-between text-[#70798C] text-xs mb-2">
                 <span className="font-semibold uppercase tracking-wider text-[11px]">Clearance Fees Escrow</span>
-                <DollarSign className="w-4 h-4 text-amber-600" />
+                <Wallet className="w-4 h-4 text-amber-600" />
               </div>
               <div className="text-xl sm:text-2xl font-display font-black text-[#000004]">
                 {formatNaira(totalInspectionFeesCollected)}
@@ -2474,7 +2537,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-xs overflow-hidden p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display font-bold text-base text-[#000004] flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-emerald-600" />
+                <ReceiptText className="w-4 h-4 text-emerald-600" />
                 <span>Inspection Clearance Fee Ledger</span>
               </h3>
               <span className="text-xs text-[#70798C] font-semibold">{bookings.length} entries tracked</span>
@@ -2691,7 +2754,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       {/* MODAL 1: KYC DOCUMENT INSPECTOR                                           */}
       {/* ========================================================================= */}
       {inspectingKycUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4">
             <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
               <div className="flex items-center gap-2.5">
@@ -2758,13 +2822,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* ========================================================================= */}
       {/* MODAL 2: EDIT USER DETAILS                                                */}
       {/* ========================================================================= */}
       {editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <form
             onSubmit={handleSaveEditedUser}
             className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4"
@@ -2870,13 +2936,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
           </form>
         </div>
+      </ModalPortal>
       )}
 
       {/* ========================================================================= */}
       {/* MODAL 3: ACCOUNT SUSPENSION CONFIRMATION                                  */}
       {/* ========================================================================= */}
       {suspendingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-red-200 animate-scale-up space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
@@ -2920,13 +2988,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* ========================================================================= */}
       {/* MODAL 4: ISSUE DIRECT VIP INSPECTION PASS                                 */}
       {/* ========================================================================= */}
       {directPassModalTenant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <form
             onSubmit={handleIssueDirectPass}
             className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4"
@@ -3002,13 +3072,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
           </form>
         </div>
+      </ModalPortal>
       )}
 
       {/* ========================================================================= */}
       {/* MODAL 5: TENANT BOOKING HISTORY MODAL                                     */}
       {/* ========================================================================= */}
       {viewingTenantBookings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4">
             <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
               <div className="flex items-center gap-2.5">
@@ -3062,12 +3134,14 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
       {/* ========================================================================= */}
-      {/* MODAL 5: CREATE / EDIT ADVERT MODAL                                        */}
+      {/* MODAL 6: CREATE / EDIT ADVERT MODAL                                        */}
       {/* ========================================================================= */}
       {isCreateAdvertOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
           <form
             onSubmit={handleSaveAdvert}
             className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4 my-8"
@@ -3282,6 +3356,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
           </form>
         </div>
+      </ModalPortal>
       )}
 
       {/* Method 3: Programmatic Push API & Webhook Modal */}
@@ -3333,7 +3408,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
       {/* Decline Advert Modal with Reason & Feedback Input */}
       {decliningAd && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -3430,6 +3506,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* Custom Global Confirmation & Prompt Modal */}

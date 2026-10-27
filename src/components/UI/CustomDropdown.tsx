@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search, X } from 'lucide-react';
 
 export interface DropdownOption {
@@ -24,6 +25,7 @@ export interface CustomDropdownProps {
   menuClassName?: string;
   disabled?: boolean;
   allowCustomInput?: boolean;
+  searchable?: boolean;
   customSearchSubtitle?: string;
 }
 
@@ -45,7 +47,22 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    openUpwards: boolean;
+    maxHeight: number;
+  }>({
+    top: 0,
+    left: 0,
+    width: 0,
+    openUpwards: false,
+    maxHeight: 260,
+  });
+
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Normalize options to DropdownOption objects
@@ -66,10 +83,63 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   );
   const displayLabel = selectedOption ? selectedOption.label : (value || placeholder);
 
-  // Handle click outside to close
+  // Calculate dynamic viewport coordinates for Portal rendering
+  const updatePosition = useCallback(() => {
+    if (!dropdownRef.current) return;
+    const rect = dropdownRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    const estimatedMenuHeight = 280;
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    const openUpwards = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
+
+    let menuWidth = variant === 'form' ? rect.width : Math.max(rect.width, 240);
+
+    let left = rect.left;
+    if (align === 'right') {
+      left = rect.right - menuWidth;
+    } else if (align === 'center') {
+      left = rect.left + rect.width / 2 - menuWidth / 2;
+    }
+
+    // Keep menu strictly within horizontal viewport
+    if (left + menuWidth > viewportWidth - 12) {
+      left = Math.max(12, viewportWidth - menuWidth - 12);
+    }
+    if (left < 12) {
+      left = 12;
+    }
+
+    const availableSpace = openUpwards ? spaceAbove - 16 : spaceBelow - 16;
+    const maxHeight = Math.min(280, Math.max(120, availableSpace));
+
+    setCoords({
+      top: openUpwards ? rect.top - 6 : rect.bottom + 6,
+      left,
+      width: menuWidth,
+      openUpwards,
+      maxHeight,
+    });
+  }, [variant, align]);
+
+  // Handle open/close, click outside, resize, scroll
   useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery('');
+      return;
+    }
+
+    updatePosition();
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(target) &&
+        menuRef.current && !menuRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -80,23 +150,38 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
-      if (isSearchable) {
-        setTimeout(() => {
-          searchInputRef.current?.focus();
-        }, 50);
+    const handleScroll = (e: Event) => {
+      // If the scroll happened inside the dropdown menu itself, ignore
+      if (menuRef.current && menuRef.current.contains(e.target as Node)) {
+        return;
       }
-    } else {
-      setSearchQuery('');
+      if (!dropdownRef.current) return;
+      const rect = dropdownRef.current.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        setIsOpen(false);
+      } else {
+        updatePosition();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', handleScroll, true);
+
+    if (isSearchable) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', handleScroll, true);
     };
-  }, [isOpen, isSearchable]);
+  }, [isOpen, isSearchable, updatePosition]);
 
   const handleSelect = (val: string) => {
     onChange(val);
@@ -131,14 +216,6 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         (opt.subtitle && opt.subtitle.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : normalizedOptions;
-
-  // Alignment classes for dropdown panel
-  const alignmentClass =
-    align === 'right'
-      ? 'right-0'
-      : align === 'center'
-      ? 'left-1/2 -translate-x-1/2'
-      : 'left-0';
 
   return (
     <div ref={dropdownRef} className={`relative inline-block ${variant === 'form' ? 'w-full' : ''}`}>
@@ -231,156 +308,160 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
         </button>
       )}
 
-      {/* Dropdown Floating Menu */}
-      {isOpen && (
-        <div
-          role="listbox"
-          className={`absolute top-[calc(100%+6px)] z-50 bg-white/98 backdrop-blur-md rounded-2xl shadow-elevated border border-[#E5E7EB] p-1.5 overflow-hidden animate-dropdown ${
-            variant === 'form' ? 'w-full' : 'min-w-[240px] w-max max-w-[320px]'
-          } ${alignmentClass} ${menuClassName}`}
-        >
-          {headerTitle && (
-            <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#70798C] border-b border-slate-100 mb-1 flex items-center justify-between">
-              <span>{headerTitle}</span>
-              {value && value !== 'All Delta Cities' && (
-                <button
-                  type="button"
-                  onClick={() => handleSelect('All Delta Cities')}
-                  className="text-[10px] font-semibold text-[#342A21] hover:underline cursor-pointer"
-                >
-                  Show All
-                </button>
-              )}
-            </div>
-          )}
+      {/* Dropdown Floating Menu (Portal rendered to document.body) */}
+      {isOpen &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="listbox"
+            style={{
+              position: 'fixed',
+              top: coords.top,
+              left: coords.left,
+              minWidth: coords.width,
+              transform: coords.openUpwards ? 'translateY(-100%)' : 'none',
+              zIndex: 99999,
+            }}
+            className={`bg-white/98 backdrop-blur-md rounded-2xl shadow-elevated border border-[#E5E7EB] p-1.5 overflow-hidden animate-dropdown ${
+              variant === 'form' ? 'w-full max-w-sm' : 'min-w-[240px] w-max max-w-[320px]'
+            } ${menuClassName}`}
+          >
+            {headerTitle && (
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#70798C] border-b border-slate-100 mb-1">
+                <span>{headerTitle}</span>
+              </div>
+            )}
 
-          {/* Search Box */}
-          {isSearchable && (
-            <div className="relative px-1 pt-1 pb-1.5 shrink-0">
-              <Search className="w-3.5 h-3.5 text-[#70798C] absolute left-3.5 top-3" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search city, area, or posted location..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearchInputKeyDown}
-                className="w-full pl-8 pr-7 py-1.5 rounded-xl border border-[#E5E7EB] bg-slate-50 text-xs text-[#000004] placeholder:text-[#70798C] outline-none focus:border-[#000004] focus:bg-white transition-all"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="w-4 h-4 rounded-full bg-slate-200 text-[#70798C] flex items-center justify-center absolute right-3 top-3 hover:bg-slate-300 cursor-pointer"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Custom Search Option (if user typed a query and allowCustomInput is enabled) */}
-          {allowCustomInput && searchQuery.trim() && (
-            <div className="px-1 mb-1">
-              <button
-                type="button"
-                onClick={() => handleSelect(searchQuery.trim())}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-300/80 hover:border-amber-400 text-left transition-all cursor-pointer group shadow-2xs"
-              >
-                <div className="flex items-center gap-2 truncate mr-2">
-                  <div className="w-6 h-6 rounded-lg bg-[#342A21] text-white flex items-center justify-center shrink-0">
-                    <Search className="w-3.5 h-3.5" />
-                  </div>
-                  <div className="truncate">
-                    <div className="text-xs font-bold text-[#000004] truncate flex items-center gap-1.5">
-                      <span className="truncate">Search "{searchQuery.trim()}"</span>
-                      <span className="text-[9px] font-bold text-amber-800 bg-amber-100/90 px-1.5 py-0.2 rounded shrink-0">
-                        Custom Area
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-[#70798C] truncate">
-                      {customSearchSubtitle || 'Search all listings matching this location or words'}
-                    </div>
-                  </div>
-                </div>
-                <span className="text-[10px] font-semibold text-[#70798C] bg-white/80 border border-slate-200 px-1.5 py-0.5 rounded shrink-0">
-                  ↵ Enter
-                </span>
-              </button>
-            </div>
-          )}
-
-          <div className="max-h-64 overflow-y-auto space-y-0.5 overscroll-contain">
-            {displayedOptions.map((option) => {
-              const isSelected = option.value === value;
-              const isDisabled = option.disabled;
-
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="option"
-                  aria-selected={isSelected}
-                  aria-disabled={isDisabled}
-                  disabled={isDisabled}
-                  onClick={() => {
-                    if (!isDisabled) {
-                      handleSelect(option.value);
-                    }
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all text-left select-none ${
-                    isDisabled
-                      ? 'opacity-40 text-slate-400 bg-slate-50/50 cursor-not-allowed hover:bg-slate-50/50'
-                      : isSelected
-                      ? 'bg-[#342A21]/10 text-[#342A21] font-bold shadow-xs cursor-pointer'
-                      : 'text-[#000004] hover:bg-slate-100 hover:text-[#342A21] font-medium cursor-pointer'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 truncate mr-2">
-                    {option.icon && <span className="shrink-0">{option.icon}</span>}
-                    <div className="truncate">
-                      <div className="truncate">{option.label}</div>
-                      {option.subtitle && (
-                        <div className="text-[10px] text-[#70798C] font-normal truncate">
-                          {option.subtitle}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {isDisabled ? (
-                    <span className="text-[9px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 shrink-0">
-                      {option.badge || 'Coming Soon'}
-                    </span>
-                  ) : option.badge ? (
-                    <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                      option.badge.toLowerCase().includes('active') || option.badge.toLowerCase().includes('launch')
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                        : 'bg-amber-100 text-amber-800 border border-amber-200'
-                    }`}>
-                      {option.badge}
-                    </span>
-                  ) : isSelected ? (
-                    <Check className="w-3.5 h-3.5 text-[#342A21] shrink-0 stroke-[2.5]" />
-                  ) : null}
-                </button>
-              );
-            })}
-
-            {displayedOptions.length === 0 && (
-              <div className="py-3 px-2 text-center text-xs text-[#70798C]">
-                {searchQuery.trim() && allowCustomInput ? (
-                  <span>
-                    No predefined city named "{searchQuery.trim()}". Click above or press Enter to search this area across agent-posted properties!
-                  </span>
-                ) : (
-                  <span>No matching option</span>
+            {/* Search Box */}
+            {isSearchable && (
+              <div className="relative px-1 pt-1 pb-1.5 shrink-0">
+                <Search className="w-3.5 h-3.5 text-[#70798C] absolute left-3.5 top-3" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search city, area, or posted location..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleSearchInputKeyDown}
+                  className="w-full pl-8 pr-7 py-1.5 rounded-xl border border-[#E5E7EB] bg-slate-50 text-xs text-[#000004] placeholder:text-[#70798C] outline-none focus:border-[#000004] focus:bg-white transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="w-4 h-4 rounded-full bg-slate-200 text-[#70798C] flex items-center justify-center absolute right-3 top-3 hover:bg-slate-300 cursor-pointer"
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
                 )}
               </div>
             )}
-          </div>
-        </div>
-      )}
+
+            {/* Custom Search Option (if user typed a query and allowCustomInput is enabled) */}
+            {allowCustomInput && searchQuery.trim() && (
+              <div className="px-1 mb-1">
+                <button
+                  type="button"
+                  onClick={() => handleSelect(searchQuery.trim())}
+                  className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-300/80 hover:border-amber-400 text-left transition-all cursor-pointer group shadow-2xs"
+                >
+                  <div className="flex items-center gap-2 truncate mr-2">
+                    <div className="w-6 h-6 rounded-lg bg-[#342A21] text-white flex items-center justify-center shrink-0">
+                      <Search className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="truncate">
+                      <div className="text-xs font-bold text-[#000004] truncate flex items-center gap-1.5">
+                        <span className="truncate">Search "{searchQuery.trim()}"</span>
+                        <span className="text-[9px] font-bold text-amber-800 bg-amber-100/90 px-1.5 py-0.2 rounded shrink-0">
+                          Custom Area
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-[#70798C] truncate">
+                        {customSearchSubtitle || 'Search all listings matching this location or words'}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-semibold text-[#70798C] bg-white/80 border border-slate-200 px-1.5 py-0.5 rounded shrink-0">
+                    ↵ Enter
+                  </span>
+                </button>
+              </div>
+            )}
+
+            <div 
+              style={{ maxHeight: `${coords.maxHeight}px` }}
+              className="overflow-y-auto space-y-0.5 overscroll-contain"
+            >
+              {displayedOptions.map((option) => {
+                const isSelected = option.value === value;
+                const isDisabled = option.disabled;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    aria-disabled={isDisabled}
+                    disabled={isDisabled}
+                    onClick={() => {
+                      if (!isDisabled) {
+                        handleSelect(option.value);
+                      }
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-xs rounded-xl transition-all text-left select-none ${
+                      isDisabled
+                        ? 'opacity-40 text-slate-400 bg-slate-50/50 cursor-not-allowed hover:bg-slate-50/50'
+                        : isSelected
+                        ? 'bg-[#342A21]/10 text-[#342A21] font-bold shadow-xs cursor-pointer'
+                        : 'text-[#000004] hover:bg-slate-100 hover:text-[#342A21] font-medium cursor-pointer'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate mr-2">
+                      {option.icon && <span className="shrink-0">{option.icon}</span>}
+                      <div className="truncate">
+                        <div className="truncate">{option.label}</div>
+                        {option.subtitle && (
+                          <div className="text-[10px] text-[#70798C] font-normal truncate">
+                            {option.subtitle}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    {isDisabled ? (
+                      <span className="text-[9px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 shrink-0">
+                        {option.badge || 'Coming Soon'}
+                      </span>
+                    ) : option.badge ? (
+                      <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                        option.badge.toLowerCase().includes('active') || option.badge.toLowerCase().includes('launch')
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                      }`}>
+                        {option.badge}
+                      </span>
+                    ) : isSelected ? (
+                      <Check className="w-3.5 h-3.5 text-[#342A21] shrink-0 stroke-[2.5]" />
+                    ) : null}
+                  </button>
+                );
+              })}
+
+              {displayedOptions.length === 0 && (
+                <div className="py-3 px-2 text-center text-xs text-[#70798C]">
+                  {searchQuery.trim() && allowCustomInput ? (
+                    <span>
+                      No predefined city named "{searchQuery.trim()}". Click above or press Enter to search this area across agent-posted properties!
+                    </span>
+                  ) : (
+                    <span>No matching option</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
-

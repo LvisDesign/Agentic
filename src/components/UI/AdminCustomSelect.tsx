@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Search } from 'lucide-react';
 
 export interface AdminSelectOption {
@@ -39,7 +40,22 @@ export const AdminCustomSelect: React.FC<AdminCustomSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    openUpwards: boolean;
+    maxHeight: number;
+  }>({
+    top: 0,
+    left: 0,
+    width: 0,
+    openUpwards: false,
+    maxHeight: 260,
+  });
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Normalize all options to AdminSelectOption structure
@@ -63,10 +79,61 @@ export const AdminCustomSelect: React.FC<AdminCustomSelectProps> = ({
       )
     : normalizedOptions;
 
-  // Handle click outside to close
+  // Calculate dynamic viewport coordinates for Portal rendering
+  const updatePosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    const estimatedMenuHeight = 220;
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // Flip upwards if below space is cramped and above has more room
+    const openUpwards = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
+
+    let menuWidth = variant === 'form' ? rect.width : Math.max(rect.width, 180);
+    if (variant === 'table') {
+      menuWidth = Math.max(rect.width, 160);
+    }
+
+    // Keep menu within viewport horizontally
+    let left = rect.left;
+    if (left + menuWidth > viewportWidth - 12) {
+      left = Math.max(12, rect.right - menuWidth);
+    }
+    if (left < 12) {
+      left = 12;
+    }
+
+    const availableSpace = openUpwards ? spaceAbove - 16 : spaceBelow - 16;
+    const maxHeight = Math.min(260, Math.max(120, availableSpace));
+
+    setCoords({
+      top: openUpwards ? rect.top - 6 : rect.bottom + 6,
+      left,
+      width: menuWidth,
+      openUpwards,
+      maxHeight,
+    });
+  }, [variant]);
+
+  // Handle open/close and dynamic portal positioning
   useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery('');
+      return;
+    }
+
+    updatePosition();
+
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        menuRef.current && !menuRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -77,21 +144,36 @@ export const AdminCustomSelect: React.FC<AdminCustomSelectProps> = ({
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
-      if (shouldSearch) {
-        setTimeout(() => searchInputRef.current?.focus(), 50);
+    const handleScroll = (e: Event) => {
+      // If the scroll happened inside the dropdown menu itself, ignore
+      if (menuRef.current && menuRef.current.contains(e.target as Node)) {
+        return;
       }
-    } else {
-      setSearchQuery('');
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      if (rect.bottom < 0 || rect.top > window.innerHeight) {
+        setIsOpen(false);
+      } else {
+        updatePosition();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', handleScroll, true);
+
+    if (shouldSearch) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', handleScroll, true);
     };
-  }, [isOpen, shouldSearch]);
+  }, [isOpen, shouldSearch, updatePosition]);
 
   const handleSelect = (optionValue: string) => {
     onChange(optionValue);
@@ -163,94 +245,108 @@ export const AdminCustomSelect: React.FC<AdminCustomSelectProps> = ({
         />
       </button>
 
-      {/* Floating Options Panel */}
-      {isOpen && (
-        <div
-          role="listbox"
-          className={`absolute left-0 top-[calc(100%+6px)] z-[999] min-w-full ${
-            variant === 'form' ? 'w-full' : 'w-max max-w-[340px]'
-          } bg-white rounded-2xl shadow-elevated border border-[#342A21]/15 p-1.5 animate-dropdown overflow-hidden ${menuClassName}`}
-          style={{ minWidth: variant === 'form' ? '100%' : '180px' }}
-        >
-          {/* Optional Quick Search Header */}
-          {shouldSearch && (
-            <div className="p-1 mb-1 border-b border-[#E5E7EB]">
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#FCF9F5] rounded-xl border border-[#E5E7EB]">
-                <Search className="w-3.5 h-3.5 text-[#70798C] shrink-0" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Filter options..."
-                  className="w-full bg-transparent text-xs text-[#000004] placeholder-[#70798C] focus:outline-none"
-                  onClick={(e) => e.stopPropagation()}
-                />
+      {/* Floating Options Panel (Rendered via React Portal to bypass table overflow clipping) */}
+      {isOpen &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="listbox"
+            style={{
+              position: 'fixed',
+              top: coords.top,
+              left: coords.left,
+              minWidth: coords.width,
+              transform: coords.openUpwards ? 'translateY(-100%)' : 'none',
+              zIndex: 99999,
+            }}
+            className={`bg-white rounded-2xl shadow-elevated border border-[#342A21]/15 p-1.5 animate-dropdown overflow-hidden ${
+              variant === 'form' ? 'w-full max-w-sm' : 'w-max max-w-[340px]'
+            } ${menuClassName}`}
+          >
+            {/* Optional Quick Search Header */}
+            {shouldSearch && (
+              <div className="p-1 mb-1 border-b border-[#E5E7EB]">
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#FCF9F5] rounded-xl border border-[#E5E7EB]">
+                  <Search className="w-3.5 h-3.5 text-[#70798C] shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Filter options..."
+                    className="w-full bg-transparent text-xs text-[#000004] placeholder-[#70798C] focus:outline-none"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Options List */}
-          <div className="max-h-60 overflow-y-auto space-y-0.5 no-scrollbar py-0.5">
-            {filteredOptions.length === 0 ? (
-              <div className="py-3 px-3 text-center text-xs text-[#70798C]">
-                No matching options
-              </div>
-            ) : (
-              filteredOptions.map((opt) => {
-                const isSelected = opt.value === value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => handleSelect(opt.value)}
-                    className={`w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between gap-2.5 transition-colors cursor-pointer text-left ${
-                      isSelected
-                        ? 'bg-[#342A21] text-white shadow-2xs'
-                        : 'text-[#342A21] hover:bg-[#FCF9F5] hover:text-[#000004]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 truncate">
-                      {opt.icon && (
-                        <span className={`shrink-0 ${isSelected ? 'text-amber-300' : ''}`}>
-                          {opt.icon}
-                        </span>
-                      )}
-
-                      {opt.dotColor && (
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: opt.dotColor }}
-                        />
-                      )}
-
-                      <span className="truncate">{opt.label}</span>
-
-                      {opt.badge && (
-                        <span
-                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 uppercase tracking-wider ${
-                            isSelected
-                              ? 'bg-white/20 text-white'
-                              : opt.badgeColor || 'bg-slate-100 text-slate-700'
-                          }`}
-                        >
-                          {opt.badge}
-                        </span>
-                      )}
-                    </div>
-
-                    {isSelected && (
-                      <Check className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                    )}
-                  </button>
-                );
-              })
             )}
-          </div>
-        </div>
-      )}
+
+            {/* Options List */}
+            <div 
+              style={{ maxHeight: `${coords.maxHeight}px` }}
+              className="overflow-y-auto space-y-0.5 no-scrollbar py-0.5"
+            >
+              {filteredOptions.length === 0 ? (
+                <div className="py-3 px-3 text-center text-xs text-[#70798C]">
+                  No matching options
+                </div>
+              ) : (
+                filteredOptions.map((opt) => {
+                  const isSelected = opt.value === value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => handleSelect(opt.value)}
+                      className={`w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between gap-2.5 transition-colors cursor-pointer text-left ${
+                        isSelected
+                          ? 'bg-[#342A21] text-white shadow-2xs'
+                          : 'text-[#342A21] hover:bg-[#FCF9F5] hover:text-[#000004]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        {opt.icon && (
+                          <span className={`shrink-0 ${isSelected ? 'text-amber-300' : ''}`}>
+                            {opt.icon}
+                          </span>
+                        )}
+
+                        {opt.dotColor && (
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: opt.dotColor }}
+                          />
+                        )}
+
+                        <span className="truncate">{opt.label}</span>
+
+                        {opt.badge && (
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 uppercase tracking-wider ${
+                              isSelected
+                                ? 'bg-white/20 text-white'
+                                : opt.badgeColor || 'bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            {opt.badge}
+                          </span>
+                        )}
+                      </div>
+
+                      {isSelected && (
+                        <Check className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
+

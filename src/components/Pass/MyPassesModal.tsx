@@ -3,6 +3,7 @@ import { X, Calendar, Clock, CheckCircle2, AlertCircle, Phone, Copy, Check } fro
 import { BookingRecord, PropertyListing } from '../../types/marketplace';
 import { InspectionPassCard } from './InspectionPassCard';
 import { formatNigerianPhone } from '../../utils/formatters';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface MyPassesModalProps {
   isOpen: boolean;
@@ -31,7 +32,8 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div 
         className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[90vh] animate-slide-up"
         onClick={(e) => e.stopPropagation()}
@@ -216,5 +218,6 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 };

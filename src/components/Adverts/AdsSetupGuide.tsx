@@ -17,10 +17,10 @@ import {
   Terminal,
   Send,
   Zap,
-  Globe,
-  Sparkles
+  Globe
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface AdsSetupGuideProps {
   mode?: 'customer' | 'admin' | 'all';
@@ -832,12 +832,13 @@ print("Campaign Data:", response.json())`;
   // If rendered as a Modal dialog
   if (isModal) {
     return (
-      <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-hidden"
-        onClick={(e) => {
-          if (e.target === e.currentTarget && onClose) onClose();
-        }}
-      >
+      <ModalPortal>
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-hidden"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && onClose) onClose();
+          }}
+        >
         <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-3xl shadow-2xl border border-[#342A21]/15 overflow-hidden animate-scale-up">
           {/* 1. Fixed Header (Always visible) */}
           <div className="p-4 sm:p-6 border-b border-[#342A21]/10 bg-[#FCF9F5] flex items-center justify-between gap-4 shrink-0">
@@ -926,7 +927,8 @@ print("Campaign Data:", response.json())`;
           </div>
         </div>
       </div>
-    );
+    </ModalPortal>
+  );
   }
 
   // Default Inline View (for PartnerPortalPage and AdvertiserDashboard)

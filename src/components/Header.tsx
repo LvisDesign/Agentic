@@ -7,7 +7,8 @@ import {
   Bell, 
   UserPlus, 
   Download,
-  Briefcase
+  Briefcase,
+  RotateCw
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../types/marketplace';
 import { usePWA } from '../utils/pwa';
@@ -86,8 +87,8 @@ export const Header: React.FC<HeaderProps> = ({
   // Retrieve active logged in advertiser (Customer Ads Account)
   const activeAdvertiser = getActiveAdvertiser();
 
-  // Unobtrusive Header PWA Install hook
-  const { isStandalone, isIOS, installApp } = usePWA();
+  // Unobtrusive Header PWA Install & Update hook
+  const { isStandalone, isInstalled, updateAvailable, isIOS, installApp, applyUpdate } = usePWA();
   const [showIosPrompt, setShowIosPrompt] = useState(false);
 
   const handleHeaderInstall = async () => {
@@ -249,13 +250,13 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onOpenNotifications || onOpenMyPasses}
               className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3.5 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
                 totalNotificationsCount > 0
-                  ? 'bg-white hover:bg-emerald-50/50 text-[#000004] border border-emerald-200 shadow-xs'
-                  : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80'
+                  ? 'bg-white hover:bg-[#F6F3EF] text-[#342A21] border border-[#E5E7EB] shadow-xs'
+                  : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#342A21] border border-[#E5E7EB]/80'
               }`}
               aria-label="Notifications"
               title="Notifications"
             >
-              <Bell className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${totalNotificationsCount > 0 ? 'text-emerald-700' : ''}`} />
+              <Bell className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${totalNotificationsCount > 0 ? 'text-[#342A21]' : ''}`} />
 
               {/* Desktop Label */}
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
@@ -265,10 +266,10 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Notification Badge */}
               {totalNotificationsCount > 0 && (
                 <>
-                  <span className="md:hidden absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-emerald-600 text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center ring-1.5 sm:ring-2 ring-white shadow-xs animate-pulse-subtle">
+                  <span className="md:hidden absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-[#342A21] text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center ring-1.5 sm:ring-2 ring-white shadow-xs animate-pulse-subtle">
                     {totalNotificationsCount}
                   </span>
-                  <span className="hidden md:inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-bold shadow-xs animate-pulse-subtle ml-0.5">
+                  <span className="hidden md:inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-[#342A21] text-white text-[10px] font-bold shadow-xs animate-pulse-subtle ml-0.5">
                     {totalNotificationsCount}
                   </span>
                 </>
@@ -363,8 +364,20 @@ export const Header: React.FC<HeaderProps> = ({
             </>
           )}
 
-          {/* TAB 6: Quiet Unobtrusive Install App (Only shown on large desktop screens when not installed) */}
-          {!isStandalone && (
+          {/* TAB 6: PWA Header Action: If update is ready, prompt user to update; if already installed on device, do not show Install App; otherwise show Install App */}
+          {updateAvailable ? (
+            <button
+              onClick={applyUpdate}
+              className="relative h-8 sm:h-10 md:h-11 px-2 sm:px-3 md:px-3.5 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs shadow-md transition-all duration-200 active:scale-95 group cursor-pointer shrink-0 animate-pulse"
+              aria-label="Update Setlla App"
+              title="A new version of Setlla is ready. Click to update now."
+            >
+              <RotateCw className="w-3.5 h-3.5 text-emerald-200 animate-spin-slow shrink-0" />
+              <span className="font-bold text-[11px] sm:text-xs whitespace-nowrap">
+                Update App
+              </span>
+            </button>
+          ) : (!isInstalled && !isStandalone) ? (
             <button
               onClick={handleHeaderInstall}
               className="hidden lg:flex relative md:px-3 md:h-11 rounded-[18px] items-center justify-center gap-1.5 bg-[#342A21]/5 hover:bg-[#342A21]/10 text-[#342A21] border border-[#342A21]/20 transition-all duration-200 active:scale-95 group cursor-pointer shadow-2xs shrink-0"
@@ -376,7 +389,7 @@ export const Header: React.FC<HeaderProps> = ({
                 Install App
               </span>
             </button>
-          )}
+          ) : null}
         </div>
       </div>
 

@@ -23,6 +23,7 @@ import {
 } from '../../services/adService';
 import { AdvertStory } from '../../data/mockAdverts';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
+import { ModalPortal } from '../UI/ModalPortal';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 
 interface ApiWebhookModalProps {
@@ -219,7 +220,8 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto font-body">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto font-body">
       <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-card border border-[#342A21]/15 overflow-hidden my-auto animate-scale-up">
         {/* Modal Top Header: Warm Ivory & Serif */}
         <div className="bg-[#FCF9F5] p-6 sm:p-7 border-b border-[#342A21]/10 relative">
@@ -694,5 +696,6 @@ export const ApiWebhookModal: React.FC<ApiWebhookModalProps> = ({
         />
       )}
     </div>
+  </ModalPortal>
   );
 };

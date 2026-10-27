@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   X, 
   User, 
@@ -25,13 +25,15 @@ import {
   Clock,
   Check,
   ArrowRight,
-  Megaphone
+  Megaphone,
+  RotateCw
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNigerianPhone } from '../../utils/formatters';
-import { getNotificationPermission, requestNotificationPermission, setAppBadge, usePWA } from '../../utils/pwa';
+import { getNotificationPermission, requestNotificationPermission, autoEnableNotifications, setAppBadge, usePWA } from '../../utils/pwa';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { CustomDropdown } from '../UI/CustomDropdown';
+import { ModalPortal } from '../UI/ModalPortal';
 import { isLocalUrl } from '../../utils/environment';
 import { isSuperAdminAuthenticated } from '../../services/adminAuthService';
 
@@ -70,6 +72,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [showArchitectureGuide, setShowArchitectureGuide] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() => getNotificationPermission());
   const [testAlertSent, setTestAlertSent] = useState(false);
+
+  // Automatically activate mobile alerts whenever profile is opened
+  useEffect(() => {
+    if (isOpen) {
+      const current = getNotificationPermission();
+      setNotificationPermission(current);
+      if (current === 'default') {
+        autoEnableNotifications().then((perm) => {
+          setNotificationPermission(perm);
+        }).catch(() => {});
+      }
+    }
+  }, [isOpen]);
 
   // Profile Edit States
   const [editMode, setEditMode] = useState<'view' | 'verify' | 'editing'>('view');
@@ -195,10 +210,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     onUpdateAvatar?.('');
   };
 
-  // Persistent Unobtrusive PWA Install State
-  const { isStandalone, isIOS, installApp } = usePWA();
+  // Persistent PWA Install & Update State
+  const { isStandalone, isInstalled, updateAvailable, isIOS, installApp, applyUpdate, checkForUpdates } = usePWA();
   const [showIOSInstallGuide, setShowIOSInstallGuide] = useState(false);
   const [installSuccessNotice, setInstallSuccessNotice] = useState(false);
+  const [checkingForUpdates, setCheckingForUpdates] = useState(false);
+  const [updateStatusNotice, setUpdateStatusNotice] = useState<string | null>(null);
 
   const handleInstallApp = async () => {
     if (isIOS) {
@@ -209,6 +226,20 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     if (outcome === 'accepted') {
       setInstallSuccessNotice(true);
       setTimeout(() => setInstallSuccessNotice(false), 3500);
+    }
+  };
+
+  const handleCheckForUpdates = async () => {
+    setCheckingForUpdates(true);
+    setUpdateStatusNotice(null);
+    try {
+      const hasUpdate = await checkForUpdates();
+      if (!hasUpdate) {
+        setUpdateStatusNotice('Setlla is already up to date!');
+        setTimeout(() => setUpdateStatusNotice(null), 3000);
+      }
+    } finally {
+      setCheckingForUpdates(false);
     }
   };
 
@@ -243,7 +274,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div 
         className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[90vh] animate-slide-up"
         onClick={(e) => e.stopPropagation()}
@@ -850,38 +882,29 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           {/* Mobile Alerts & Push Notifications Setting */}
           <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-[#342A21]/10 text-[#342A21] flex items-center justify-center">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-xl bg-[#342A21]/10 text-[#342A21] flex items-center justify-center shrink-0">
                   <BellRing className="w-4 h-4" />
                 </div>
-                <div>
-                  <h5 className="font-bold text-xs text-[#000004]">Mobile Alerts & Notifications</h5>
-                  <p className="text-[11px] text-[#70798C]">Push updates for inspection slots & agent updates</p>
+                <div className="min-w-0 flex-1">
+                  <h5 className="font-bold text-xs text-[#000004] truncate">Mobile Alerts & Notifications</h5>
+                  <p className="text-[11px] text-[#70798C] truncate">Push updates for inspection slots & agent updates</p>
                 </div>
               </div>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+              <span className={`shrink-0 whitespace-nowrap text-[10px] font-bold px-2.5 py-1 rounded-full border ${
                 notificationPermission === 'granted'
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : notificationPermission === 'denied'
                   ? 'bg-rose-50 text-rose-700 border-rose-200'
-                  : 'bg-amber-50 text-amber-800 border-amber-200'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-200 animate-pulse'
               }`}>
-                {notificationPermission === 'granted' ? 'Enabled' : notificationPermission === 'denied' ? 'Blocked' : 'Not Enabled'}
+                {notificationPermission === 'granted' ? '● Auto-Activated' : notificationPermission === 'denied' ? 'Blocked in Browser' : '● Auto-Activating...'}
               </span>
             </div>
 
             <div className="flex items-center gap-2 pt-0.5">
-              {notificationPermission !== 'granted' ? (
-                <button
-                  type="button"
-                  onClick={handleToggleAlerts}
-                  className="flex-1 py-2 px-3 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                >
-                  <BellRing className="w-3.5 h-3.5" />
-                  <span>Enable Mobile Alerts</span>
-                </button>
-              ) : (
+              {notificationPermission === 'granted' ? (
                 <button
                   type="button"
                   onClick={handleSendTestNotification}
@@ -890,26 +913,88 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>{testAlertSent ? 'Test Alert Sent (Badge Set)!' : 'Send Test Push Alert'}</span>
                 </button>
+              ) : notificationPermission === 'denied' ? (
+                <div className="flex-1 py-2 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] text-center">
+                  Alerts are blocked in your browser settings. Enable them in site settings to receive live inspection updates.
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleToggleAlerts}
+                  className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <BellRing className="w-3.5 h-3.5" />
+                  <span>Auto-Activate Mobile Alerts</span>
+                </button>
               )}
             </div>
           </div>
 
-          {/* Persistent Unobtrusive Install Option (Hidden when running in standalone mode / installed) */}
-          {!isStandalone && (
+          {/* PWA State: If already installed on device, do NOT show install option; show installed status & update options */}
+          {isInstalled || isStandalone ? (
+            <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-emerald-200 transition-all space-y-2.5 shadow-xs">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-xs text-[#000004] flex items-center gap-1.5 flex-wrap">
+                      <span className="truncate">Setlla App Installed</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 shrink-0 whitespace-nowrap">
+                        PWA Active
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#70798C] mt-0.5 truncate">
+                      {updateAvailable ? 'A new update is ready to install' : 'Running latest version on this device'}
+                    </p>
+                  </div>
+                </div>
+
+                {updateAvailable ? (
+                  <button
+                    type="button"
+                    onClick={applyUpdate}
+                    className="shrink-0 whitespace-nowrap py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 animate-pulse"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                    <span>Update App</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleCheckForUpdates}
+                    disabled={checkingForUpdates}
+                    className="shrink-0 whitespace-nowrap py-1.5 px-3 rounded-xl border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#70798C] hover:text-[#000004] text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 disabled:opacity-60"
+                  >
+                    <RotateCw className={`w-3 h-3 ${checkingForUpdates ? 'animate-spin' : ''}`} />
+                    <span>{checkingForUpdates ? 'Checking...' : 'Check Updates'}</span>
+                  </button>
+                )}
+              </div>
+
+              {updateStatusNotice && (
+                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center gap-1.5 animate-fade-in">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{updateStatusNotice}</span>
+                </div>
+              )}
+            </div>
+          ) : (
             <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#342A21]/30 transition-all space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div className="w-8 h-8 rounded-xl bg-[#342A21]/10 text-[#342A21] flex items-center justify-center shrink-0">
                     <Download className="w-4 h-4" />
                   </div>
-                  <div>
-                    <div className="font-bold text-xs text-[#000004] flex items-center gap-1.5">
-                      <span>Install Setlla App</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#342A21]/10 text-[#342A21]">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-xs text-[#000004] flex items-center gap-1.5 flex-wrap">
+                      <span className="truncate">Install Setlla App</span>
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-[#342A21]/10 text-[#342A21] shrink-0 whitespace-nowrap">
                         PWA
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#70798C] mt-0.5">
+                    <p className="text-[11px] text-[#70798C] mt-0.5 truncate">
                       Fast mobile access, instant Agent alerts & inspection updates
                     </p>
                   </div>
@@ -918,7 +1003,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <button
                   type="button"
                   onClick={handleInstallApp}
-                  className="py-1.5 px-3 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs shrink-0 flex items-center gap-1.5"
+                  className="shrink-0 whitespace-nowrap py-1.5 px-3 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Install</span>
@@ -1010,14 +1095,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           {/* Super Admin Console Access (Strictly visible ONLY to actively authenticated Super Admins) */}
           {isSuperAdminAuthenticated() && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.email === 'admin@setlla.com') ? (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
                   <Lock className="w-4 h-4" />
                 </div>
-                <div>
-                  <div className="font-bold text-xs text-[#000004]">Super Admin Authority</div>
-                  <div className="text-[11px] text-amber-900">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-xs text-[#000004] truncate">Super Admin Authority</div>
+                  <div className="text-[11px] text-amber-900 truncate">
                     Master control over agents, tenants, listings & escrow
                   </div>
                 </div>
@@ -1027,7 +1112,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   onChangeRole('admin');
                   onClose();
                 }}
-                className="px-3.5 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                className="shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
               >
                 Admin Console
               </button>
@@ -1036,14 +1121,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           {/* Customer Ads Portal (Available to every registered user: tenant or agent) */}
           {onOpenAdsPortal && (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50/70 to-orange-50/70 border border-amber-200/80 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50/70 to-orange-50/70 border border-amber-200/80 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
                   <Megaphone className="w-4 h-4" />
                 </div>
-                <div>
-                  <div className="font-bold text-xs text-[#000004]">Customer Ads Dashboard</div>
-                  <div className="text-[11px] text-[#70798C]">
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-xs text-[#000004] truncate">Customer Ads Dashboard</div>
+                  <div className="text-[11px] text-[#70798C] truncate">
                     Create sponsor ads, boost listings & promote your brand
                   </div>
                 </div>
@@ -1053,10 +1138,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   onClose();
                   onOpenAdsPortal();
                 }}
-                className="px-3 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs flex items-center gap-1"
+                className="shrink-0 whitespace-nowrap px-3.5 py-2 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs flex items-center gap-1.5"
               >
                 <span>Open Ads</span>
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
@@ -1124,5 +1209,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 };

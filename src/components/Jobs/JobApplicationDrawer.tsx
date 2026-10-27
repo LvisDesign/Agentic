@@ -22,6 +22,7 @@ import {
   submitJobApplication,
   SavedCandidateCV
 } from '../../services/jobService';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface JobApplicationDrawerProps {
   isOpen: boolean;
@@ -197,7 +198,8 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
         className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#E5E7EB] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
@@ -489,5 +491,6 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
         </form>
       </div>
     </div>
+  </ModalPortal>
   );
 };

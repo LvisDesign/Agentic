@@ -17,6 +17,7 @@ import { AdvertStory } from '../../data/mockAdverts';
 import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
 import { PropertyListing } from '../../types/marketplace';
 import { extractPostedLocations } from '../../utils/locationMatcher';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface FilterBarProps {
   selectedCity: string;
@@ -182,7 +183,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       {/* Expanded Filter Modal */}
       {isOpenModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-[#E5E7EB] overflow-hidden animate-slide-up flex flex-col max-h-[90vh]">
             <div className="p-4 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
               <div>
@@ -396,7 +398,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </div>
           </div>
         </div>
-      )}
+      </ModalPortal>
+    )}
     </>
   );
 };

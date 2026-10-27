@@ -42,6 +42,7 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [
     phone: '0803 555 1234',
     whatsapp: '0803 555 1234',
     email: 'victor@apexrealty.ng',
+    password: 'password123',
     operatingState: 'Delta State',
     operatingCity: 'Asaba',
     state: 'Delta State',
@@ -340,6 +341,7 @@ export function mapDbToUserProfile(row: any): UserProfile {
     id: row.id,
     fullName: row.full_name || '',
     email: row.email || undefined,
+    password: row.password || undefined,
     phone: row.phone || '',
     state: row.state || 'Delta State',
     city: row.city || 'Asaba',
@@ -383,6 +385,7 @@ export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
     full_name: user.fullName,
     phone: user.phone,
     email: user.email || null,
+    password: user.password || null,
     state: user.state || 'Delta State',
     city: user.city || 'Asaba',
     preferred_property_type: user.preferredPropertyType || null,
@@ -655,7 +658,7 @@ export function saveRegisteredUser(user: UserProfile): void {
         .then(async (res: any) => {
           if (res?.error) {
             // Fallback retry with core columns if extra columns caused the failure
-            const { avatar_url, saved_listing_ids, last_profile_edit_at, ...coreDbRow } = dbRow;
+            const { avatar_url, saved_listing_ids, last_profile_edit_at, password, ...coreDbRow } = dbRow;
             const retryRes = await client.from('platform_users').upsert(coreDbRow, { onConflict: 'id' });
             if (!retryRes?.error) {
               broadcastRealtimeEvent('USER_REGISTERED', { user });
@@ -701,7 +704,7 @@ export async function saveRegisteredUserAsync(user: UserProfile): Promise<boolea
       return true;
     } else {
       // Retry with core columns if extra columns don't exist in Supabase
-      const { avatar_url, saved_listing_ids, last_profile_edit_at, ...coreDbRow } = dbRow;
+      const { avatar_url, saved_listing_ids, last_profile_edit_at, password, ...coreDbRow } = dbRow;
       const retryRes = await client.from('platform_users').upsert(coreDbRow, { onConflict: 'id' });
       if (!retryRes.error) {
         broadcastRealtimeEvent('USER_REGISTERED', { user });

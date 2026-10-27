@@ -21,6 +21,7 @@ import { formatNaira } from '../../utils/formatters';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { CustomDropdown } from '../UI/CustomDropdown';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface PostAdModalProps {
   isOpen: boolean;
@@ -105,10 +106,11 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fade-in"
-      onClick={onClose}
-    >
+    <ModalPortal>
+      <div 
+        className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fade-in"
+        onClick={onClose}
+      >
       <div 
         className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[92vh] animate-slide-up"
         onClick={(e) => e.stopPropagation()}
@@ -483,5 +485,6 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
         onSuccess={handlePaymentSuccess}
       />
     </div>
+  </ModalPortal>
   );
 };

@@ -8,12 +8,13 @@ import {
   Clock, 
   CheckCircle2, 
   Check, 
-  ArrowRight,
-  ShieldCheck,
-  Share2,
+  ArrowRight, 
+  ShieldCheck, 
+  Share2, 
   AlertCircle
 } from 'lucide-react';
 import { JobListing } from '../../types/jobs';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface JobDetailsSheetProps {
   isOpen: boolean;
@@ -33,7 +34,8 @@ export const JobDetailsSheet: React.FC<JobDetailsSheetProps> = ({
   if (!isOpen || !job) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
         className="w-full sm:max-w-2xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-[#E5E7EB] flex flex-col max-h-[92dvh] sm:max-h-[85vh] overflow-hidden animate-in slide-in-from-bottom duration-300"
         onClick={(e) => e.stopPropagation()}
@@ -76,6 +78,14 @@ export const JobDetailsSheet: React.FC<JobDetailsSheetProps> = ({
         <div className="p-5 sm:p-6 overflow-y-auto space-y-6 text-[#000004]">
           {/* Main Title & Key Meta Cards */}
           <div>
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              {job.isFeatured && (
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-extrabold uppercase tracking-wide flex items-center gap-1 shadow-2xs">
+                  <span>Sponsored Spotlight</span>
+                </span>
+              )}
+            </div>
+
             <h1 className="font-display text-xl sm:text-2xl font-bold text-[#000004] tracking-tight leading-snug">
               {job.title}
             </h1>
@@ -222,5 +232,6 @@ export const JobDetailsSheet: React.FC<JobDetailsSheetProps> = ({
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 };

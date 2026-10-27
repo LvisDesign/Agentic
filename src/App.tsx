@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { INITIAL_LISTINGS } from './data/mockListings';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability, PlatformSettings } from './types/marketplace';
 import { Header } from './components/Header';
-import { setAppBadge, clearAppBadge } from './utils/pwa';
+import { setAppBadge, clearAppBadge, autoEnableNotifications } from './utils/pwa';
 import { 
   saveRegisteredUser, 
   saveRegisteredUserAsync, 
@@ -193,19 +193,19 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   if (hash.includes('admin')) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
-  if (hash.includes('agent')) {
+  if (hash.includes('agent') || hash.includes('employer')) {
     if (isUserAgent) {
       return { role: 'agent', view: 'feed', openPasses: false };
     }
   }
   if (hash.includes('dashboard')) {
-    if (isUserAgent) {
+    if (isUserAgent && !hash.includes('jobs')) {
       return { role: 'agent', view: 'feed', openPasses: false };
     }
     return { role: 'tenant', view: 'dashboard', openPasses: false };
   }
-  if (hash.includes('explore') || hash.includes('feed')) {
-    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+  if (hash.includes('explore') || hash.includes('feed') || hash === '#/jobs' || hash === '#jobs') {
+    return { role: 'tenant', view: 'feed', openPasses: false };
   }
   if (hash.includes('inspections') || hash.includes('passes')) {
     return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
@@ -216,15 +216,12 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     if (isSuperAdminAuthenticated()) {
       return { role: 'admin', view: 'feed', openPasses: false };
     }
-    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+    return { role: 'tenant', view: 'feed', openPasses: false };
   }
   if (savedRole === 'agent' && isUserAgent) {
     return { role: 'agent', view: 'feed', openPasses: false };
   }
   if (savedRole === 'seeker' || savedRole === 'tenant') {
-    if (isUserAgent) {
-      return { role: 'agent', view: 'feed', openPasses: false };
-    }
     return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
   }
 
@@ -324,6 +321,20 @@ export function App() {
       // ignore
     }
   }, [bookings]);
+
+  // Seamless auto-activation of mobile alerts on user interaction
+  useEffect(() => {
+    const handleGesture = () => {
+      autoEnableNotifications().catch(() => {});
+    };
+
+    window.addEventListener('click', handleGesture, { once: true });
+    window.addEventListener('touchstart', handleGesture, { once: true });
+    return () => {
+      window.removeEventListener('click', handleGesture);
+      window.removeEventListener('touchstart', handleGesture);
+    };
+  }, []);
 
   // Super Admin Authentication State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
@@ -432,16 +443,26 @@ export function App() {
     try {
       localStorage.setItem('setlla_active_room', room);
     } catch (_) {}
+
+    // Determine target hash for the new room, preserving the user's active sub-view and role
     if (typeof window !== 'undefined') {
-      if (room === 'jobs') {
-        window.location.hash = '#/jobs';
-      } else {
-        if (window.location.hash.includes('jobs')) {
-          window.location.hash = '#/explore';
-        }
+      const targetHash = userView === 'partner'
+        ? '#/partner'
+        : currentRole === 'admin'
+        ? '#/admin'
+        : room === 'jobs'
+        ? (currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
+        : currentRole === 'agent'
+        ? '#/agent'
+        : userView === 'dashboard'
+        ? '#/dashboard'
+        : '#/explore';
+
+      if (window.location.hash !== targetHash) {
+        history.replaceState(null, '', targetHash);
       }
     }
-  }, []);
+  }, [userView, currentRole]);
 
   // Auto-heal agent status if current user has published listings on this device or in cloud
   useEffect(() => {
@@ -491,7 +512,7 @@ export function App() {
       : currentRole === 'admin'
       ? '#/admin'
       : activeRoom === 'jobs'
-      ? '#/jobs'
+      ? (currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
       : currentRole === 'agent'
       ? '#/agent'
       : userView === 'dashboard'
@@ -509,19 +530,28 @@ export function App() {
       const hash = window.location.hash.toLowerCase();
       if (hash.includes('jobs')) {
         setActiveRoom('jobs');
+        if (hash.includes('agent') || hash.includes('employer')) {
+          setCurrentRole('agent');
+        } else if (hash.includes('dashboard')) {
+          setCurrentRole('tenant');
+          setUserView('dashboard');
+        } else {
+          // #/jobs or #/jobs/explore
+          setCurrentRole('tenant');
+          setUserView('feed');
+        }
       } else if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser')) {
         setUserView('partner');
       } else if (hash.includes('admin')) {
         setCurrentRole('admin');
         setUserView('feed');
-      } else if (hash.includes('agent') && (currentUser.isAgent || currentRole === 'agent')) {
+      } else if (hash.includes('agent')) {
         setActiveRoom('rentals');
         setCurrentRole('agent');
       } else if (hash.includes('dashboard')) {
         setActiveRoom('rentals');
         if (currentUser.isAgent) {
           setCurrentRole('agent');
-          setUserView('feed');
         } else {
           setCurrentRole('tenant');
           setUserView('dashboard');
@@ -530,14 +560,14 @@ export function App() {
         setIsMyPassesOpen(true);
       } else if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals')) {
         setActiveRoom('rentals');
-        setCurrentRole(currentUser.isAgent ? 'agent' : 'tenant');
+        setCurrentRole('tenant');
         setUserView('feed');
       }
     };
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [currentUser.isAgent, currentRole]);
+  }, [currentUser.isAgent]);
 
   // Background Data Synchronizer without requiring manual page reloads
   const syncLatestData = useCallback(async () => {
@@ -1918,9 +1948,9 @@ export function App() {
                 localStorage.removeItem('setlla_admin_auth');
                 localStorage.removeItem('setlla_admin_user');
               } catch (_) {}
-              setCurrentRole(currentUser.isAgent ? 'agent' : 'tenant');
+              setCurrentRole('tenant');
               setUserView('feed');
-              window.location.hash = '#/explore';
+              window.location.hash = activeRoom === 'jobs' ? '#/jobs' : '#/explore';
             }}
             onAdSubmitted={handleAddAdvert}
           />
@@ -1942,6 +1972,7 @@ export function App() {
               onAcceptBooking={handleAcceptBooking}
               onRejectBooking={handleRejectBooking}
               onUpdateListing={handleListingUpdated}
+              onRefreshData={syncLatestData}
               onSwitchToExplore={() => {
                 setCurrentRole('tenant');
                 setUserView('feed');
@@ -2073,7 +2104,7 @@ export function App() {
             />
           </main>
         )
-      ) : (currentRole === 'tenant' || currentRole === 'seeker') ? (
+      ) : (currentRole === 'tenant' || currentRole === 'seeker' || userView === 'feed') && currentRole !== 'agent' ? (
           /* Tenant Snap Feed View */
           <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">
             {/* Snap-Feed Filter Bar with Squared Rounded-Edges Adverts Tray */}

@@ -9,6 +9,7 @@ import {
   CheckCircle2, 
   ArrowRight
 } from 'lucide-react';
+import { ModalPortal } from './ModalPortal';
 
 interface SystemGuideModalProps {
   isOpen: boolean;
@@ -22,7 +23,8 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div 
         className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[90vh] animate-slide-up"
         onClick={(e) => e.stopPropagation()}
@@ -140,5 +142,6 @@ export const SystemGuideModal: React.FC<SystemGuideModalProps> = ({
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 };

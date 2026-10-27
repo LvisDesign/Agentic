@@ -4,18 +4,13 @@ import {
   Phone, 
   MapPin, 
   Calendar, 
-  Clock, 
   Copy, 
-  Check, 
-  Navigation,
-  FileCheck,
-  CheckCircle2,
-  ExternalLink,
-  QrCode
+  Check 
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { PropertyListing, BookingRecord } from '../../types/marketplace';
 import { formatNigerianPhone } from '../../utils/formatters';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface UnlockedContactSheetProps {
   isOpen: boolean;
@@ -32,7 +27,6 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
 }) => {
   const [copiedPhone, setCopiedPhone] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
-  const [copiedPass, setCopiedPass] = useState(false);
 
   if (!isOpen) return null;
 
@@ -64,7 +58,6 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
   );
 
   const whatsappUrl = `https://wa.me/${intlNumber}?text=${whatsappMessage}`;
-  const passCode = `PASS #${booking.id.replace('DT-', '')}`;
 
   const handleCopyPhone = () => {
     navigator.clipboard.writeText(rawPhone);
@@ -78,17 +71,12 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
     setTimeout(() => setCopiedAddress(false), 2000);
   };
 
-  const handleCopyPass = () => {
-    navigator.clipboard.writeText(passCode);
-    setCopiedPass(true);
-    setTimeout(() => setCopiedPass(false), 2000);
-  };
-
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in select-none"
-      onClick={onClose}
-    >
+    <ModalPortal>
+      <div 
+        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in select-none"
+        onClick={onClose}
+      >
       {/* Container: 16px top corners on mobile, 12px modal on desktop */}
       <div 
         className="w-full max-w-lg bg-[#FFFFFF] rounded-t-[16px] sm:rounded-[12px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-slide-up border border-[rgba(112,121,140,0.22)]"
@@ -102,15 +90,6 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
         {/* Top Header */}
         <div className="px-5 pt-3 sm:pt-4 pb-3 border-b border-[rgba(112,121,140,0.15)] flex items-start justify-between gap-3 bg-[#FCF9F5]">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                Inspection Confirmed
-              </span>
-              <span className="text-[10px] font-bold text-[#342A21] bg-[#342A21]/10 px-2 py-0.5 rounded-full">
-                100% Free Access
-              </span>
-            </div>
             <h3 className="font-display font-serif text-lg sm:text-xl font-bold text-[#000004] leading-tight">
               Agent Contact Unlocked
             </h3>
@@ -250,39 +229,10 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
               Landmark instructions: Inform the estate security at the barrier gate that you are scheduled for inspection with {listing.agent.fullName}.
             </p>
           </div>
-
-          {/* Digital Inspection Pass Code */}
-          <div className="p-3.5 rounded-[12px] bg-slate-900 text-white flex items-center justify-between gap-3 shadow-md">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-[8px] bg-white/10 flex items-center justify-center shrink-0">
-                <QrCode className="w-4 h-4 text-emerald-400" />
-              </div>
-              <div>
-                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                  Digital Pass Reference Code
-                </div>
-                <div className="font-mono text-xs sm:text-sm font-bold text-white tracking-wider">
-                  {passCode}
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleCopyPass}
-              className="px-3 py-1.5 rounded-[8px] bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
-            >
-              {copiedPass ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedPass ? 'Copied' : 'Copy Pass'}</span>
-            </button>
-          </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-[rgba(112,121,140,0.15)] bg-[#FCF9F5] flex items-center justify-between gap-2 shrink-0">
-          <span className="text-[11px] text-[#70798C]">
-            Zero inspection charges guaranteed.
-          </span>
+        <div className="p-4 border-t border-[rgba(112,121,140,0.15)] bg-[#FCF9F5] flex items-center justify-end gap-2 shrink-0">
           <button
             type="button"
             onClick={onClose}
@@ -293,5 +243,6 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 };

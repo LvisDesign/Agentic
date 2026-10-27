@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Download, X, Share2, PlusSquare, Smartphone, BellRing, Check } from 'lucide-react';
-import { isStandalone, isIOS } from '../../utils/pwa';
+import { Download, X, Share2, PlusSquare, Smartphone, BellRing, Check, RotateCw } from 'lucide-react';
+import { isIOS, usePWA } from '../../utils/pwa';
+import { ModalPortal } from './ModalPortal';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -25,6 +26,7 @@ const isSnoozed = (): boolean => {
 };
 
 export const PWAInstallBanner: React.FC = () => {
+  const { isStandalone, isInstalled, updateAvailable, applyUpdate } = usePWA();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
@@ -47,6 +49,7 @@ export const PWAInstallBanner: React.FC = () => {
     try {
       const expiryTime = new Date().getTime() + 365 * 24 * 60 * 60 * 1000;
       localStorage.setItem(STORAGE_KEY, expiryTime.toString());
+      localStorage.setItem('setlla_pwa_installed', 'true');
     } catch (e) {
       console.warn('[PWA] Storage access warning:', e);
     }
@@ -55,8 +58,9 @@ export const PWAInstallBanner: React.FC = () => {
   };
 
   useEffect(() => {
-    // 1. If already installed / running standalone, do not render
-    if (isStandalone()) {
+    // 1. If already installed on device or running standalone, do not show install prompt
+    if (isInstalled || isStandalone) {
+      setIsVisible(false);
       return;
     }
 
@@ -125,18 +129,51 @@ export const PWAInstallBanner: React.FC = () => {
     }
   };
 
-  if (!isVisible) {
+  if (!isVisible && !updateAvailable) {
     return null;
   }
 
   return (
     <>
-      {/* Floating Bottom Card Banner - Completely optional and non-intrusive */}
-      <aside
-        aria-label="PWA Installation Prompt"
-        className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-50 animate-slide-up"
-      >
-        <div className="bg-white rounded-2xl p-4 shadow-xl border border-[#E5E7EB] flex items-start gap-3.5 relative ring-1 ring-black/5">
+      {/* Floating App Update Prompt when a new version is ready */}
+      {updateAvailable && (
+        <aside
+          aria-label="Setlla Update Available"
+          className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-50 animate-slide-up"
+        >
+          <div className="bg-[#000004] text-white rounded-2xl p-4 shadow-2xl border border-emerald-500/40 flex items-center justify-between gap-3.5">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                <RotateCw className="w-4 h-4 animate-spin-slow" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-sm text-white">Update Available</span>
+                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-emerald-500 text-black uppercase">New</span>
+                </div>
+                <p className="text-xs text-slate-300 mt-0.5 truncate">
+                  A fresh version of Setlla is ready.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={applyUpdate}
+              className="py-2 px-4 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-black text-xs font-bold transition-all shrink-0 cursor-pointer shadow-sm active:scale-95 whitespace-nowrap"
+            >
+              Update Now
+            </button>
+          </div>
+        </aside>
+      )}
+
+      {/* Floating Bottom Card Banner - Completely optional and non-intrusive (hidden if already installed) */}
+      {isVisible && !isInstalled && !isStandalone && (
+        <aside
+          aria-label="PWA Installation Prompt"
+          className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-50 animate-slide-up"
+        >
+          <div className="bg-white rounded-2xl p-4 shadow-xl border border-[#E5E7EB] flex items-start gap-3.5 relative ring-1 ring-black/5">
           {/* App Icon */}
           <div className="w-11 h-11 rounded-xl bg-black overflow-hidden flex items-center justify-center shrink-0 shadow-sm mt-0.5 p-1 border border-black/10">
             <img src="/icons/icon-192x192.png" alt="Setlla App Icon" className="w-full h-full object-contain rounded-lg" />
@@ -188,13 +225,15 @@ export const PWAInstallBanner: React.FC = () => {
           </button>
         </div>
       </aside>
+      )}
 
       {/* iOS Safari Installation Guide Modal Popover */}
       {showIOSModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
-          onClick={() => setShowIOSModal(false)}
-        >
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+            onClick={() => setShowIOSModal(false)}
+          >
           <div 
             className="w-full max-w-sm bg-white rounded-3xl p-5 shadow-2xl border border-[#E5E7EB] text-[#000004] space-y-4 animate-slide-up"
             onClick={(e) => e.stopPropagation()}
@@ -258,7 +297,8 @@ export const PWAInstallBanner: React.FC = () => {
             </button>
           </div>
         </div>
-      )}
+      </ModalPortal>
+    )}
     </>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Building2, 
   Plus, 
@@ -18,7 +18,6 @@ import {
   Calendar,
   Layers,
   ArrowLeft,
-  Sparkles,
   MapPin,
   Play,
   Pause,
@@ -30,6 +29,7 @@ import {
   ImageIcon,
   Film,
   AlertCircle,
+  AlertTriangle,
   Upload,
   X,
   FileText,
@@ -43,6 +43,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
+import { ModalPortal } from '../UI/ModalPortal';
 import { 
   AdvertiserUser, 
   logoutAdvertiser, 
@@ -63,6 +64,69 @@ import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { processUploadedFile } from '../../utils/mediaStorage';
 import { PaystackModal } from '../Booking/PaystackModal';
+
+export function calculateCampaignCost(days: number): {
+  totalCost: number;
+  dailyRate: number;
+  packageTier: 'starter' | 'growth' | 'corporate';
+  tierName: string;
+} {
+  const safeDays = Math.max(1, Math.min(365, Math.round(days || 1)));
+  let totalCost: number;
+  let packageTier: 'starter' | 'growth' | 'corporate';
+  let tierName: string;
+
+  if (safeDays === 1) {
+    totalCost = 2500;
+    packageTier = 'starter';
+    tierName = '1-Day Flash Spotlight';
+  } else if (safeDays < 7) {
+    totalCost = safeDays * 2200;
+    packageTier = 'starter';
+    tierName = 'Starter Spotlight';
+  } else if (safeDays === 7) {
+    totalCost = 15000;
+    packageTier = 'starter';
+    tierName = 'Starter Spotlight';
+  } else if (safeDays < 30) {
+    const extraDays = safeDays - 7;
+    const ratePerExtraDay = (45000 - 15000) / (30 - 7);
+    totalCost = Math.round(15000 + extraDays * ratePerExtraDay);
+    packageTier = safeDays < 14 ? 'starter' : 'growth';
+    tierName = safeDays < 14 ? 'Growth Spotlight' : 'Growth Partner';
+  } else if (safeDays === 30) {
+    totalCost = 45000;
+    packageTier = 'growth';
+    tierName = 'Growth Partner';
+  } else if (safeDays < 90) {
+    const extraDays = safeDays - 30;
+    const ratePerExtraDay = (120000 - 45000) / (90 - 30);
+    totalCost = Math.round(45000 + extraDays * ratePerExtraDay);
+    packageTier = safeDays < 60 ? 'growth' : 'corporate';
+    tierName = safeDays < 60 ? 'Growth Partner Extended' : 'Corporate Leader';
+  } else if (safeDays === 90) {
+    totalCost = 120000;
+    packageTier = 'corporate';
+    tierName = 'Corporate Leader';
+  } else {
+    totalCost = Math.round(120000 + (safeDays - 90) * 1200);
+    packageTier = 'corporate';
+    tierName = 'Enterprise Network Leader';
+  }
+
+  const dailyRate = Math.round(totalCost / safeDays);
+  return { totalCost, dailyRate, packageTier, tierName };
+}
+
+export const DURATION_PRESETS = [
+  { days: 1, label: '1 Day', sub: 'Flash Promo', badge: 'Min 1d', popular: false },
+  { days: 3, label: '3 Days', sub: 'Weekend Surge', badge: null, popular: false },
+  { days: 7, label: '7 Days', sub: 'Starter Spotlight', badge: null, popular: false },
+  { days: 14, label: '14 Days', sub: 'Bi-Weekly Run', badge: null, popular: false },
+  { days: 30, label: '30 Days', sub: 'Growth Partner', badge: 'Popular', popular: true },
+  { days: 60, label: '60 Days', sub: 'Extended Reach', badge: null, popular: false },
+  { days: 90, label: '90 Days', sub: 'Corporate Leader', badge: 'Best Value', popular: false },
+];
 
 interface AdvertiserDashboardProps {
   advertiser: AdvertiserUser;
@@ -115,7 +179,10 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   const [previewDraftAdId, setPreviewDraftAdId] = useState<string | null>(null);
 
   // New Campaign Form State (Prefilled from Advertiser profile)
+  const [adDurationDays, setAdDurationDays] = useState<number>(30);
+  const [manualDaysInput, setManualDaysInput] = useState<string>('30');
   const [packageTier, setPackageTier] = useState<'starter' | 'growth' | 'corporate'>('growth');
+  const [submittedCampaignDetails, setSubmittedCampaignDetails] = useState<{ cost: number; days: number; ref: string } | null>(null);
   const [headline, setHeadline] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<'Property' | 'Estate' | 'Promo' | 'Service'>('Promo');
@@ -197,31 +264,46 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
     setTimeout(() => setCopiedKey(false), 2000);
   };
 
-  const TIERS = [
-    {
-      id: 'starter' as const,
-      name: 'Starter Spotlight',
-      durationDays: 7,
-      price: '₦15,000',
-      budgetAmount: 15000,
-    },
-    {
-      id: 'growth' as const,
-      name: 'Growth Partner',
-      durationDays: 30,
-      price: '₦45,000',
-      budgetAmount: 45000,
-    },
-    {
-      id: 'corporate' as const,
-      name: 'Corporate Leader',
-      durationDays: 90,
-      price: '₦120,000',
-      budgetAmount: 120000,
-    },
-  ];
+  const campaignPricing = useMemo(() => {
+    return calculateCampaignCost(adDurationDays);
+  }, [adDurationDays]);
 
-  const currentTier = TIERS.find((t) => t.id === packageTier) || TIERS[1];
+  const campaignCost = campaignPricing.totalCost;
+  const walletBalance = currentAdvertiser.walletBalance || 0;
+  const isBalanceInsufficient = walletBalance < campaignCost;
+  const balanceShortfall = Math.max(0, campaignCost - walletBalance);
+
+  const currentTier = {
+    id: campaignPricing.packageTier,
+    name: campaignPricing.tierName,
+    durationDays: adDurationDays,
+    price: `₦${campaignCost.toLocaleString()}`,
+    budgetAmount: campaignCost,
+  };
+
+  const handleManualDaysChange = (raw: string) => {
+    setManualDaysInput(raw);
+    const parsed = parseInt(raw, 10);
+    if (!isNaN(parsed) && parsed >= 1) {
+      const clamped = Math.min(365, parsed);
+      setAdDurationDays(clamped);
+      setPackageTier(calculateCampaignCost(clamped).packageTier);
+    }
+  };
+
+  const handleManualDaysBlur = () => {
+    const parsed = parseInt(manualDaysInput, 10);
+    if (isNaN(parsed) || parsed < 1) {
+      setAdDurationDays(1);
+      setManualDaysInput('1');
+      setPackageTier('starter');
+    } else {
+      const clamped = Math.min(365, Math.max(1, parsed));
+      setAdDurationDays(clamped);
+      setManualDaysInput(clamped.toString());
+      setPackageTier(calculateCampaignCost(clamped).packageTier);
+    }
+  };
 
   const handleFundCampaignFromWallet = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -244,7 +326,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       return;
     }
 
-    const cost = currentTier.budgetAmount;
+    const cost = campaignCost;
     const currentBalance = currentAdvertiser.walletBalance || 0;
 
     if (currentBalance < cost) {
@@ -253,6 +335,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       setTopUpPack('custom');
       setPendingPostTopUp(true);
       setShowTopUpModal(true);
+      setToastMessage(`Your wallet balance is low by ₦${shortfall.toLocaleString()}. Please top up your wallet to publish this ${adDurationDays}-day ad.`);
       return;
     }
 
@@ -283,18 +366,23 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
         location: location.trim() || currentAdvertiser.operatingCity || 'Nationwide',
         price: price.trim() || undefined,
         partnerEmail: currentAdvertiser.email,
-        packageTier,
-        durationDays: currentTier.durationDays,
+        packageTier: campaignPricing.packageTier,
+        durationDays: adDurationDays,
         budgetAmount: cost,
         paymentReference: `WALLET_TX_${Date.now()}`,
         paymentMethod: 'Ad Wallet Credits',
       };
 
       const result = await submitPartnerAdvert(payload);
+      setSubmittedCampaignDetails({
+        cost,
+        days: adDurationDays,
+        ref: result.trackingRef,
+      });
       setSubmissionSuccess(result.trackingRef);
       setLatestPaymentRef(`WALLET_TX_${Date.now().toString().slice(-6)}`);
       setLatestPaymentMethod('Ad Credits Wallet');
-      setToastMessage(`Campaign funded! ₦${cost.toLocaleString()} deducted from wallet.`);
+      setToastMessage(`Campaign funded! ₦${cost.toLocaleString()} deducted for ${adDurationDays} days.`);
       await loadCampaigns();
       if (onCampaignCreated) {
         onCampaignCreated(result.advert);
@@ -578,35 +666,35 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 text-center shrink-0">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap lg:flex-nowrap items-stretch gap-2 sm:gap-2.5 text-center shrink-0">
             <div 
               onClick={() => setActiveTab('wallet')}
-              className="bg-gradient-to-br from-amber-50/90 to-orange-50/70 p-3 rounded-2xl border border-amber-200/90 min-w-[105px] cursor-pointer hover:border-amber-400 transition-all text-left"
+              className="col-span-2 sm:col-span-1 bg-gradient-to-br from-amber-50/95 via-amber-50/80 to-orange-50/70 p-3 sm:py-3.5 sm:px-4 rounded-2xl border border-amber-200/90 min-w-[145px] sm:min-w-[170px] lg:min-w-[190px] cursor-pointer hover:border-amber-400 hover:shadow-xs transition-all text-left group active:scale-[0.99]"
               title="Click to view Ad Credits & Wallet ledger"
             >
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="text-[10px] uppercase font-bold text-amber-900">Credits</span>
-                <Wallet className="w-3 h-3 text-amber-600" />
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] sm:text-[11px] uppercase font-bold text-amber-900 tracking-wider">Credits</span>
+                <Wallet className="w-3.5 h-3.5 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
               </div>
-              <span className="text-sm sm:text-base font-black text-[#342A21] font-mono block">
+              <span className="text-base sm:text-lg font-black text-[#342A21] font-mono block whitespace-nowrap tracking-tight">
                 ₦{(currentAdvertiser.walletBalance || 0).toLocaleString()}
               </span>
-              <span className="text-[9px] font-semibold text-amber-700 block mt-0.5">
+              <span className="text-[10px] sm:text-[11px] font-semibold text-amber-700 block mt-1 group-hover:text-amber-900 transition-colors">
                 + Top Up →
               </span>
             </div>
-            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[75px]">
+            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1">
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Active</span>
               <span className="text-lg font-bold text-[#342A21]">{activeCount}</span>
             </div>
-            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[75px]">
+            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1">
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Pending</span>
               <span className="text-lg font-bold text-amber-700">{pendingCount}</span>
             </div>
             {queriedCount > 0 && (
               <div 
                 onClick={() => setStatusFilter('queried')}
-                className="bg-amber-50/90 p-3 rounded-2xl border border-amber-200 min-w-[75px] cursor-pointer hover:border-amber-300 transition-all text-left"
+                className="bg-amber-50/90 p-3 rounded-2xl border border-amber-200 min-w-[70px] sm:min-w-[80px] flex-1 cursor-pointer hover:border-amber-300 transition-all text-left"
                 title="View queried campaigns with review feedback"
               >
                 <div className="flex items-center justify-between mb-0.5">
@@ -616,11 +704,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 <span className="text-lg font-bold text-amber-700">{queriedCount}</span>
               </div>
             )}
-            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[75px]">
+            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1">
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Views</span>
               <span className="text-lg font-bold text-[#342A21]">{totalImpressions.toLocaleString()}</span>
             </div>
-            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[75px]">
+            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1">
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Leads</span>
               <span className="text-lg font-bold text-emerald-700">{totalClicks.toLocaleString()}</span>
             </div>
@@ -966,7 +1054,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   </div>
                   <div className="flex justify-between items-center pb-2 border-b border-[#E5E7EB]">
                     <span className="text-[#70798C]">Amount Debited:</span>
-                    <span className="font-bold text-[#342A21] font-mono">{currentTier.price}</span>
+                    <span className="font-bold text-[#342A21] font-mono">
+                      ₦{(submittedCampaignDetails?.cost || campaignCost).toLocaleString()} ({submittedCampaignDetails?.days || adDurationDays} Days)
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[#70798C]">Remaining Wallet Balance:</span>
@@ -989,32 +1079,237 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
             ) : (
               <form onSubmit={handleFundCampaignFromWallet} className="space-y-6">
                 {/* 1. Duration & Package Selection */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C]">
-                      1. Select Campaign Duration & Package
-                    </label>
-                    <span className="text-[11px] text-[#70798C]">Setlla Placement</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {TIERS.map((tier) => (
-                      <div
-                        key={tier.id}
-                        onClick={() => setPackageTier(tier.id)}
-                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                          packageTier === tier.id
-                            ? 'border-[#342A21] bg-[#FCF9F5] ring-2 ring-[#342A21]/15 shadow-subtle'
-                            : 'border-[#E5E7EB] hover:border-[#342A21]/30 bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-semibold text-[#342A21] block">{tier.name}</span>
-                          {packageTier === tier.id && <Check className="w-4 h-4 text-emerald-700" />}
-                        </div>
-                        <span className="text-lg font-bold text-[#342A21] mt-0.5 block">{tier.price}</span>
-                        <span className="text-[11px] text-[#70798C]">{tier.durationDays} Days Duration</span>
+                <div className="space-y-3.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C] block">
+                          1. Select Campaign Duration & Package
+                        </label>
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                          1-Day Minimum
+                        </span>
                       </div>
-                    ))}
+                      <span className="text-[11px] text-[#70798C]">
+                        Scroll or drag to adjust duration (from 1 day upwards) or type manually.
+                      </span>
+                    </div>
+
+                    {/* Live Wallet Balance Indicator */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isBalanceInsufficient ? (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold shadow-2xs">
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>Wallet: <strong className="text-rose-700 font-mono">₦{walletBalance.toLocaleString()}</strong></span>
+                          <span className="text-[10px] text-white bg-rose-600 px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider">
+                            Low by ₦{balanceShortfall.toLocaleString()}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium shadow-2xs">
+                          <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Wallet: <strong className="text-emerald-950 font-mono">₦{walletBalance.toLocaleString()}</strong></span>
+                          <span className="text-[10px] text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded-full font-bold">
+                            ✓ Sufficient
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Main Horizontal Duration Controller Box */}
+                  <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                    isBalanceInsufficient 
+                      ? 'bg-rose-50/40 border-rose-300 ring-2 ring-rose-200/50' 
+                      : 'bg-[#FCF9F5] border-[#E5E7EB] shadow-xs'
+                  }`}>
+                    {/* Top Row: Selected Duration + Total Price Display + Manual Input */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E5E7EB]">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#342A21] text-[#FCF9F5]">
+                            {campaignPricing.tierName}
+                          </span>
+                          {adDurationDays === 1 ? (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                              Minimum 1-Day Flash Runtime
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium text-[#70798C]">
+                              Setlla Feed Placement
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-baseline gap-2 mt-1.5">
+                          <span className="text-3xl sm:text-4xl font-black text-[#342A21] font-mono tracking-tight">
+                            {adDurationDays}
+                          </span>
+                          <span className="text-sm sm:text-base font-bold text-[#70798C]">
+                            {adDurationDays === 1 ? 'Day Ad Duration' : 'Days Ad Duration'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xl sm:text-2xl font-black text-[#000004] font-mono">
+                            ₦{campaignCost.toLocaleString()}
+                          </span>
+                          <span className="text-xs text-[#70798C] bg-white border border-[#E5E7EB] px-2 py-0.5 rounded-md font-mono">
+                            ~₦{campaignPricing.dailyRate.toLocaleString()}/day
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Manual Entry Input */}
+                      <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-[#E5E7EB] shadow-2xs flex flex-col items-start sm:items-end gap-1.5 shrink-0">
+                        <label htmlFor="manual-duration-input" className="text-[10px] uppercase font-bold text-[#70798C] tracking-wider">
+                          Manually Enter Duration (Days)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="manual-duration-input"
+                            type="number"
+                            min="1"
+                            max="365"
+                            value={manualDaysInput}
+                            onChange={(e) => handleManualDaysChange(e.target.value)}
+                            onBlur={handleManualDaysBlur}
+                            className="w-24 px-3 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-center font-black text-base text-[#000004] font-mono focus:outline-none focus:border-[#342A21] focus:ring-2 focus:ring-[#342A21]/15"
+                            placeholder="Days"
+                          />
+                          <span className="text-xs font-bold text-[#342A21]">Days</span>
+                        </div>
+                        <span className="text-[10px] text-[#70798C]">Type 1 to 365 days</span>
+                      </div>
+                    </div>
+
+                    {/* Horizontal Scrubber / Range Slider */}
+                    <div className="pt-4 space-y-2">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-[#70798C]">
+                        <span>Slide or Scroll Duration Track:</span>
+                        <span className="font-mono text-[#342A21] font-bold">
+                          {adDurationDays} {adDurationDays === 1 ? 'Day' : 'Days'} Selected
+                        </span>
+                      </div>
+
+                      <div className="relative flex items-center">
+                        <input
+                          type="range"
+                          min="1"
+                          max="90"
+                          step="1"
+                          value={Math.min(90, adDurationDays)}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setAdDurationDays(val);
+                            setManualDaysInput(val.toString());
+                            setPackageTier(calculateCampaignCost(val).packageTier);
+                          }}
+                          className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#342A21] focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between text-[10px] text-[#70798C] font-mono pt-1">
+                        <span className="font-bold text-[#342A21]">1 Day (Min)</span>
+                        <span>7d</span>
+                        <span>14d</span>
+                        <span>30d</span>
+                        <span>60d</span>
+                        <span className="font-bold text-[#342A21]">90 Days</span>
+                      </div>
+                    </div>
+
+                    {/* Horizontal Scrollable Preset Cards */}
+                    <div className="pt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-[#70798C] uppercase tracking-wider">
+                          Quick Presets (Scroll Horizontally):
+                        </span>
+                        <span className="text-[10px] text-[#70798C] sm:hidden">← Swipe horizontally →</span>
+                      </div>
+
+                      <div className="flex items-stretch gap-2.5 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+                        {DURATION_PRESETS.map((preset) => {
+                          const isSelected = adDurationDays === preset.days;
+                          const presetPricing = calculateCampaignCost(preset.days);
+                          return (
+                            <div
+                              key={preset.days}
+                              onClick={() => {
+                                setAdDurationDays(preset.days);
+                                setManualDaysInput(preset.days.toString());
+                                setPackageTier(calculateCampaignCost(preset.days).packageTier);
+                              }}
+                              className={`p-3 rounded-xl border min-w-[130px] sm:min-w-[145px] shrink-0 transition-all cursor-pointer relative flex flex-col justify-between ${
+                                isSelected
+                                  ? 'border-[#342A21] bg-white ring-2 ring-[#342A21]/20 shadow-xs'
+                                  : 'border-[#E5E7EB] hover:border-[#342A21]/40 bg-white'
+                              }`}
+                            >
+                              {preset.badge && (
+                                <span className={`absolute -top-2 right-2 text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full shadow-2xs ${
+                                  preset.popular 
+                                    ? 'bg-[#342A21] text-[#FCF9F5]' 
+                                    : 'bg-amber-100 text-amber-900 border border-amber-300'
+                                }`}>
+                                  {preset.badge}
+                                </span>
+                              )}
+                              <div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-[#342A21]">{preset.label}</span>
+                                  {isSelected && <Check className="w-3.5 h-3.5 text-emerald-700 shrink-0" />}
+                                </div>
+                                <span className="text-[10px] text-[#70798C] block">{preset.sub}</span>
+                              </div>
+                              <div className="mt-2 pt-2 border-t border-[#E5E7EB]">
+                                <span className="text-sm font-black text-[#342A21] font-mono block">
+                                  ₦{presetPricing.totalCost.toLocaleString()}
+                                </span>
+                                <span className="text-[9px] text-[#70798C] font-mono block">
+                                  ~₦{presetPricing.dailyRate.toLocaleString()}/day
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Insufficient Credit Balance Warning in Red */}
+                    {isBalanceInsufficient && (
+                      <div className="mt-4 p-4 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-shake">
+                        <div className="flex items-start sm:items-center gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center shrink-0 border border-rose-200">
+                            <AlertTriangle className="w-5 h-5 text-rose-600" />
+                          </div>
+                          <div>
+                            <div className="font-extrabold text-xs sm:text-sm text-rose-950 flex items-center gap-2">
+                              <span>Wallet Balance Insufficient</span>
+                              <span className="text-[10px] font-mono font-bold bg-rose-200 text-rose-900 px-2 py-0.5 rounded">
+                                Shortfall: ₦{balanceShortfall.toLocaleString()}
+                              </span>
+                            </div>
+                            <p className="text-xs text-rose-700 mt-0.5">
+                              Your current wallet balance is <strong className="font-mono text-rose-950">₦{walletBalance.toLocaleString()}</strong>. Running for {adDurationDays} {adDurationDays === 1 ? 'day' : 'days'} costs <strong className="font-mono text-rose-950">₦{campaignCost.toLocaleString()}</strong>.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTopUpAmount(balanceShortfall > 5000 ? balanceShortfall : 5000);
+                            setTopUpPack('custom');
+                            setPendingPostTopUp(true);
+                            setShowTopUpModal(true);
+                          }}
+                          className="py-2 px-3.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shrink-0 transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-white" />
+                          <span>Top Up ₦{balanceShortfall.toLocaleString()} Now →</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1477,49 +1772,51 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   <div>
                     <span className="text-[11px] text-[#70798C] uppercase tracking-wider block">Total Campaign Fee</span>
                     <div className="flex items-baseline gap-2 mt-0.5">
-                      <span className="text-xl font-bold text-[#342A21]">{currentTier.price}</span>
-                      <span className="text-xs text-[#70798C]">({currentTier.durationDays} Days Duration)</span>
+                      <span className="text-xl font-bold text-[#342A21] font-mono">₦{campaignCost.toLocaleString()}</span>
+                      <span className="text-xs text-[#70798C]">({adDurationDays} {adDurationDays === 1 ? 'Day' : 'Days'} Duration)</span>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1 text-xs">
                       <span className="text-[#70798C]">Your Wallet:</span>
-                      <strong className="font-mono text-[#342A21]">₦{(currentAdvertiser.walletBalance || 0).toLocaleString()}</strong>
-                      {(currentAdvertiser.walletBalance || 0) >= currentTier.budgetAmount ? (
+                      <strong className={`font-mono font-bold ${isBalanceInsufficient ? 'text-rose-600' : 'text-[#342A21]'}`}>
+                        ₦{walletBalance.toLocaleString()}
+                      </strong>
+                      {!isBalanceInsufficient ? (
                         <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded font-bold">
                           ✓ Sufficient Credits
                         </span>
                       ) : (
-                        <span className="text-[10px] text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded font-bold">
-                          Shortfall: ₦{(currentTier.budgetAmount - (currentAdvertiser.walletBalance || 0)).toLocaleString()}
+                        <span className="text-[10px] text-rose-800 bg-rose-100 border border-rose-200 px-1.5 py-0.2 rounded font-bold">
+                          ⚠ Shortfall: ₦{balanceShortfall.toLocaleString()}
                         </span>
                       )}
                     </div>
                   </div>
 
                   <div className="flex flex-col items-stretch sm:items-end gap-1.5 w-full sm:w-auto">
-                    {(currentAdvertiser.walletBalance || 0) >= currentTier.budgetAmount ? (
+                    {!isBalanceInsufficient ? (
                       <button
                         type="submit"
                         disabled={isSubmitting}
                         className="py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-card cursor-pointer disabled:opacity-50 transition-all active:scale-[0.99] whitespace-nowrap"
                       >
                         <Wallet className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                        <span>Launch Campaign (Deduct {currentTier.price} Credits)</span>
+                        <span>Launch Campaign (Deduct ₦{campaignCost.toLocaleString()} Credits)</span>
                         <ChevronRight className="w-4 h-4 text-amber-300 shrink-0" />
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={() => {
-                          const shortfall = currentTier.budgetAmount - (currentAdvertiser.walletBalance || 0);
-                          setTopUpAmount(shortfall > 5000 ? shortfall : 5000);
+                          setTopUpAmount(balanceShortfall > 5000 ? balanceShortfall : 5000);
                           setTopUpPack('custom');
                           setPendingPostTopUp(true);
                           setShowTopUpModal(true);
+                          setToastMessage(`Please top up ₦${balanceShortfall.toLocaleString()} to publish this ${adDurationDays}-day ad.`);
                         }}
-                        className="py-3 px-6 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99] whitespace-nowrap"
+                        className="py-3 px-6 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99] whitespace-nowrap"
                       >
                         <Plus className="w-3.5 h-3.5 text-white shrink-0" />
-                        <span>Top Up Wallet & Launch Campaign</span>
+                        <span>Top Up Wallet (₦{balanceShortfall.toLocaleString()}) & Publish Ad</span>
                         <ChevronRight className="w-4 h-4 text-white shrink-0" />
                       </button>
                     )}
@@ -1778,7 +2075,8 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
       {/* Top Up Wallet Modal */}
       {showTopUpModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 border border-[#342A21]/20 shadow-2xl space-y-5 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
               <div className="flex items-center gap-2">
@@ -1879,11 +2177,13 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* Edit Ad Modal */}
       {editingAdvert && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto animate-fade-in">
           <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-8 border border-[#342A21]/20 shadow-2xl space-y-5 animate-scale-in max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-start justify-between pb-4 border-b border-[#E5E7EB]">
@@ -2173,6 +2473,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
             </form>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* Paystack Top Up Checkout Gateway Modal */}
@@ -2195,7 +2496,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       {/* Floating Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#342A21] text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-semibold animate-slide-up border border-[#342A21]/20">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <CheckCircle2 className="w-4 h-4 text-amber-300 shrink-0" />
           <span>{toastMessage}</span>
           <button onClick={() => setToastMessage(null)} className="ml-2 text-white/70 hover:text-white cursor-pointer">
             <X className="w-3.5 h-3.5" />

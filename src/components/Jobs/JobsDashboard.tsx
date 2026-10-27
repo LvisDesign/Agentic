@@ -11,7 +11,6 @@ import {
   Search, 
   ArrowUpRight, 
   Plus, 
-  Sparkles, 
   Mail, 
   Phone, 
   User, 
@@ -117,8 +116,8 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
     <div className="w-full min-h-screen bg-[#FCF9F5] pb-24">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#000004] text-white px-4 py-2.5 rounded-2xl shadow-xl border border-white/10 flex items-center gap-2 text-xs font-bold animate-in slide-in-from-bottom duration-200">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="fixed bottom-6 right-6 z-50 bg-[#FCF9F5] text-[#342A21] px-4 py-2.5 rounded-2xl shadow-xl border border-[#E5E7EB] flex items-center gap-2 text-xs font-bold animate-in slide-in-from-bottom duration-200">
+          <CheckCircle2 className="w-4 h-4 text-[#342A21] shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

@@ -5,7 +5,6 @@ import {
   Briefcase, 
   Filter, 
   SlidersHorizontal, 
-  Sparkles, 
   RefreshCw,
   X,
   Building2,
@@ -156,10 +155,26 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
     });
   }, [jobs, searchQuery, selectedCity, selectedRoleType]);
 
-  // Inject Native Billboard Ads every 6th card
+  // Indeed-style ranking: Sponsored Spotlight listings pinned to top, followed by recent organic listings
+  const sortedAndRankedJobs = useMemo(() => {
+    return [...filteredJobs].sort((a, b) => {
+      // 1. Sponsored spotlight listings pinned to top
+      const aFeatured = Boolean(a.isFeatured);
+      const bFeatured = Boolean(b.isFeatured);
+      if (aFeatured && !bFeatured) return -1;
+      if (!aFeatured && bFeatured) return 1;
+
+      // 2. Newer listings first
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+  }, [filteredJobs]);
+
+  // Inject Native Billboard Ads among ranked job offers
   const feedItems = useMemo(() => {
-    return injectNativeBillboardAds(filteredJobs, adverts);
-  }, [filteredJobs, adverts]);
+    return injectNativeBillboardAds(sortedAndRankedJobs, adverts);
+  }, [sortedAndRankedJobs, adverts]);
 
   return (
     <div className="w-full h-full flex flex-col items-center bg-[#FCF9F5] overflow-hidden">
@@ -267,8 +282,8 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
 
       {/* Floating Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#000004] text-white px-4 py-2.5 rounded-2xl shadow-xl border border-white/10 flex items-center gap-2 text-xs font-bold animate-in slide-in-from-bottom duration-200">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="fixed bottom-6 right-6 z-50 bg-[#FCF9F5] text-[#342A21] px-4 py-2.5 rounded-2xl shadow-xl border border-[#E5E7EB] flex items-center gap-2 text-xs font-bold animate-in slide-in-from-bottom duration-200">
+          <CheckCircle2 className="w-4 h-4 text-[#342A21] shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}

@@ -23,6 +23,7 @@ import {
   verifyAdvertiserEmailOTP
 } from '../../services/advertiserAuthService';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface AdvertiserAuthModalProps {
   isOpen: boolean;
@@ -228,7 +229,8 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto font-body">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm overflow-y-auto font-body">
       <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-card border border-[#342A21]/15 overflow-hidden my-auto animate-scale-up">
         
         {/* Header Bar */}
@@ -561,5 +563,6 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
 
       </div>
     </div>
+  </ModalPortal>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Flag, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface ReportListingModalProps {
   isOpen: boolean;
@@ -42,10 +43,11 @@ export const ReportListingModal: React.FC<ReportListingModalProps> = ({
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in select-none"
-      onClick={onClose}
-    >
+    <ModalPortal>
+      <div 
+        className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-sm animate-fade-in select-none"
+        onClick={onClose}
+      >
       <div 
         className="w-full max-w-md bg-[#FFFFFF] rounded-[12px] shadow-2xl border border-[rgba(112,121,140,0.2)] overflow-hidden flex flex-col animate-scale-up"
         onClick={(e) => e.stopPropagation()}
@@ -148,5 +150,6 @@ export const ReportListingModal: React.FC<ReportListingModalProps> = ({
         </form>
       </div>
     </div>
+  </ModalPortal>
   );
 };

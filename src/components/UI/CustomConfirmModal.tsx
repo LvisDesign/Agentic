@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { AlertTriangle, Trash2, Info, CheckCircle2, X } from 'lucide-react';
+import { ModalPortal } from './ModalPortal';
 
 export type ConfirmVariant = 'danger' | 'warning' | 'info' | 'success';
 
@@ -94,11 +95,12 @@ export const CustomConfirmModal: React.FC<CustomConfirmProps> = ({
   const currentStyles = getVariantStyles();
 
   return (
-    <div 
-      className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
-      role="dialog"
-      aria-modal="true"
-    >
+    <ModalPortal>
+      <div 
+        className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+        role="dialog"
+        aria-modal="true"
+      >
       <div 
         className="relative bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-[#342A21]/15 animate-scale-up space-y-5 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -185,5 +187,6 @@ export const CustomConfirmModal: React.FC<CustomConfirmProps> = ({
         </div>
       </div>
     </div>
-  );
+  </ModalPortal>
+);
 };

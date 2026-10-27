@@ -24,6 +24,7 @@ import {
 import { PropertyListing, BookingRecord, AgentProfile, UserProfile, ListingAvailability } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { CreateListingModal } from './CreateListingModal';
+import { ModalPortal } from '../UI/ModalPortal';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 import { syncLocalListingsToCloud } from '../../services/listingService';
 import { isSupabaseConfigured } from '../../utils/supabaseClient';
@@ -774,10 +775,11 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
 
       {/* Delete Confirmation Modal */}
       {listingToDelete && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
-          onClick={() => setListingToDelete(null)}
-        >
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+            onClick={() => setListingToDelete(null)}
+          >
           <div 
             className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-slide-up"
             onClick={(e) => e.stopPropagation()}
@@ -834,6 +836,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* Floating Status Toast */}

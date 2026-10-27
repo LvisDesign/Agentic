@@ -17,6 +17,7 @@ import { formatNaira, formatCurrencyInput, parseCurrencyInput } from '../../util
 import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { processUploadedFile, DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
+import { ModalPortal } from '../UI/ModalPortal';
 
 const NIGERIAN_STATE_OPTIONS: DropdownOption[] = [
   {
@@ -121,7 +122,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   // Cost inputs formatted as currency strings (starts empty for agent to enter manually)
   const [baseRentInput, setBaseRentInput] = useState('');
   const [cautionFeeInput, setCautionFeeInput] = useState('');
-  const [legalAgencyFeeInput, setLegalAgencyFeeInput] = useState('');
+  const [legalFeeInput, setLegalFeeInput] = useState('');
+  const [agencyFeeInput, setAgencyFeeInput] = useState('');
   const [serviceChargeInput, setServiceChargeInput] = useState('');
   const [inspectionFeeInput, setInspectionFeeInput] = useState('');
 
@@ -175,7 +177,20 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       setRentPeriod(initialListing.fees?.rentPeriod || 'per annum');
       setBaseRentInput(formatCurrencyInput(String(initialListing.fees?.baseRent || '')));
       setCautionFeeInput(formatCurrencyInput(String(initialListing.fees?.cautionFee || '')));
-      setLegalAgencyFeeInput(formatCurrencyInput(String(initialListing.fees?.legalAndAgencyFee || '')));
+      setLegalFeeInput(
+        initialListing.fees?.legalFee !== undefined
+          ? formatCurrencyInput(String(initialListing.fees.legalFee || ''))
+          : initialListing.fees?.legalAndAgencyFee
+            ? formatCurrencyInput(String(Math.round(initialListing.fees.legalAndAgencyFee / 2)))
+            : ''
+      );
+      setAgencyFeeInput(
+        initialListing.fees?.agencyFee !== undefined
+          ? formatCurrencyInput(String(initialListing.fees.agencyFee || ''))
+          : initialListing.fees?.legalAndAgencyFee
+            ? formatCurrencyInput(String(initialListing.fees.legalAndAgencyFee - Math.round(initialListing.fees.legalAndAgencyFee / 2)))
+            : ''
+      );
       setServiceChargeInput(formatCurrencyInput(String(initialListing.fees?.serviceCharge || '')));
       setInspectionFeeInput(formatCurrencyInput(String(initialListing.inspectionFee || '')));
       setAddons(initialListing.addons || []);
@@ -205,7 +220,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       setRentPeriod('per annum');
       setBaseRentInput('');
       setCautionFeeInput('');
-      setLegalAgencyFeeInput('');
+      setLegalFeeInput('');
+      setAgencyFeeInput('');
       setServiceChargeInput('');
       setInspectionFeeInput('');
       setAddons([]);
@@ -222,13 +238,14 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Numeric fees calculation
+  // Numeric fees calculation strictly based on what agent enters
   const baseRentNum = parseCurrencyInput(baseRentInput);
   const cautionNum = parseCurrencyInput(cautionFeeInput);
-  const legalAgencyNum = parseCurrencyInput(legalAgencyFeeInput);
+  const legalFeeNum = parseCurrencyInput(legalFeeInput);
+  const agencyFeeNum = parseCurrencyInput(agencyFeeInput);
   const serviceChargeNum = parseCurrencyInput(serviceChargeInput);
   const inspectionFeeNum = parseCurrencyInput(inspectionFeeInput) || 2500;
-  const totalMoveIn = baseRentNum + cautionNum + legalAgencyNum + serviceChargeNum;
+  const totalMoveIn = baseRentNum + cautionNum + legalFeeNum + agencyFeeNum + serviceChargeNum;
 
   const toggleDay = (day: string) => {
     setSelectedDays((prev) => 
@@ -302,7 +319,9 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
           baseRent: baseRentNum,
           rentPeriod,
           cautionFee: cautionNum,
-          legalAndAgencyFee: legalAgencyNum,
+          legalFee: legalFeeNum,
+          agencyFee: agencyFeeNum,
+          legalAndAgencyFee: legalFeeNum + agencyFeeNum,
           serviceCharge: serviceChargeNum,
           totalMoveInPackage: totalMoveIn,
         },
@@ -357,7 +376,9 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         baseRent: baseRentNum,
         rentPeriod,
         cautionFee: cautionNum,
-        legalAndAgencyFee: legalAgencyNum,
+        legalFee: legalFeeNum,
+        agencyFee: agencyFeeNum,
+        legalAndAgencyFee: legalFeeNum + agencyFeeNum,
         serviceCharge: serviceChargeNum,
         totalMoveInPackage: totalMoveIn,
       },
@@ -395,7 +416,8 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div 
         className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[92vh] animate-slide-up"
         onClick={(e) => e.stopPropagation()}
@@ -680,7 +702,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">
-                  Caution Deposit (₦)
+                  Caution Deposit (₦) <span className="text-[11px] text-[#70798C] font-normal">(Optional)</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-[#70798C] font-semibold">₦</span>
@@ -698,15 +720,15 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">
-                  Agreement & Agency Fee (₦)
+                  Legal & Agreement Fee (₦) <span className="text-[11px] text-[#70798C] font-normal">(Optional)</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-[#70798C] font-semibold">₦</span>
                   <input
                     type="text"
-                    value={formatCurrencyInput(legalAgencyFeeInput)}
-                    onChange={(e) => setLegalAgencyFeeInput(e.target.value)}
-                    placeholder="300,000"
+                    value={formatCurrencyInput(legalFeeInput)}
+                    onChange={(e) => setLegalFeeInput(e.target.value)}
+                    placeholder="0"
                     className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
@@ -714,19 +736,38 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
               <div>
                 <label className="text-xs text-[#70798C] block mb-1">
-                  Service Charge / Estate Dues (₦)
+                  Agency Commission (₦) <span className="text-[11px] text-[#70798C] font-normal">(Optional)</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-2 text-[#70798C] font-semibold">₦</span>
                   <input
                     type="text"
-                    value={formatCurrencyInput(serviceChargeInput)}
-                    onChange={(e) => setServiceChargeInput(e.target.value)}
-                    placeholder="120,000"
+                    value={formatCurrencyInput(agencyFeeInput)}
+                    onChange={(e) => setAgencyFeeInput(e.target.value)}
+                    placeholder="0"
                     className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-[#70798C] block mb-1">
+                Service Charge / Estate Dues (₦) <span className="text-[11px] text-[#70798C] font-normal">(Optional)</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2 text-[#70798C] font-semibold">₦</span>
+                <input
+                  type="text"
+                  value={formatCurrencyInput(serviceChargeInput)}
+                  onChange={(e) => setServiceChargeInput(e.target.value)}
+                  placeholder="0"
+                  className="w-full pl-7 pr-3 py-2 rounded-lg border border-[#E5E7EB] text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
+                />
+              </div>
+              <p className="text-[11px] text-[#70798C] mt-1">
+                Leave optional fields blank or ₦0 if not charged. The system will never spread or invent fees.
+              </p>
             </div>
 
             {/* Computed Move-in Total Live Preview */}
@@ -934,5 +975,6 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         </form>
       </div>
     </div>
+  </ModalPortal>
   );
 };

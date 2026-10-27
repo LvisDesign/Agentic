@@ -2,6 +2,7 @@ import React from 'react';
 import { X, ShieldCheck, Info } from 'lucide-react';
 import { FeeBreakdown } from '../../types/marketplace';
 import { formatNaira } from '../../utils/formatters';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface FeeBreakdownSheetProps {
   isOpen: boolean;
@@ -20,9 +21,25 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  // Resolve legal and agency split
-  const legalFee = fees.legalFee ?? (fees.legalAndAgencyFee ? Math.round(fees.legalAndAgencyFee / 2) : Math.round(fees.baseRent * 0.1));
-  const agencyCommission = fees.agencyFee ?? (fees.legalAndAgencyFee ? (fees.legalAndAgencyFee - legalFee) : Math.round(fees.baseRent * 0.1));
+  // Resolve legal and agency split strictly based on user entry
+  // The system must NEVER spread or fabricate costs (such as 10% defaults) where the user did not enter
+  const legalFee = fees.legalFee !== undefined
+    ? fees.legalFee
+    : (fees.legalAndAgencyFee !== undefined && fees.legalAndAgencyFee > 0
+        ? Math.round(fees.legalAndAgencyFee / 2)
+        : 0);
+
+  const agencyCommission = fees.agencyFee !== undefined
+    ? fees.agencyFee
+    : (fees.legalAndAgencyFee !== undefined && fees.legalAndAgencyFee > 0
+        ? (fees.legalAndAgencyFee - legalFee)
+        : 0);
+
+  const cautionFee = fees.cautionFee || 0;
+  const serviceCharge = fees.serviceCharge || 0;
+  const totalMoveIn = fees.totalMoveInPackage !== undefined
+    ? fees.totalMoveInPackage
+    : (fees.baseRent + cautionFee + legalFee + agencyCommission + serviceCharge);
 
   const handleProceed = () => {
     onClose();
@@ -32,10 +49,11 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-0 sm:p-4 select-none"
-      onClick={onClose}
-    >
+    <ModalPortal>
+      <div 
+        className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in p-0 sm:p-4 select-none"
+        onClick={onClose}
+      >
       {/* Sheet Container: Mobile bottom sheet (rounded-t-[16px]) / Desktop centered modal (sm:rounded-[12px]) */}
       <div 
         className="w-full max-w-lg bg-[#FFFFFF] rounded-t-[16px] sm:rounded-[12px] shadow-2xl overflow-hidden max-h-[85vh] flex flex-col animate-slide-up border border-[rgba(112,121,140,0.2)]"
@@ -96,27 +114,38 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
               <div>
                 <div className="text-xs sm:text-sm font-semibold text-[#000004] flex items-center gap-1.5">
                   <span>Caution Fee (Refundable Deposit)</span>
-                  <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded font-bold">
-                    Refundable
-                  </span>
+                  {cautionFee > 0 ? (
+                    <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.2 rounded font-bold">
+                      Refundable
+                    </span>
+                  ) : (
+                    <span className="text-[9px] bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.2 rounded font-bold">
+                      ₦0 (None)
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-[#70798C]">
-                  Returned in full at lease conclusion
+                  {cautionFee > 0 ? 'Returned in full at lease conclusion' : 'No security caution deposit required'}
                 </div>
               </div>
               <div className="font-display text-sm sm:text-base font-bold text-[#000004]">
-                {formatNaira(fees.cautionFee)}
+                {formatNaira(cautionFee)}
               </div>
             </div>
 
             {/* 3. Legal & Agreement Fee */}
             <div className="flex items-center justify-between p-3 rounded-[12px] bg-[#FCF9F5] border border-[rgba(112,121,140,0.12)]">
               <div>
-                <div className="text-xs sm:text-sm font-semibold text-[#000004]">
-                  Legal & Agreement Fee
+                <div className="text-xs sm:text-sm font-semibold text-[#000004] flex items-center gap-1.5">
+                  <span>Legal & Agreement Fee</span>
+                  {legalFee === 0 && (
+                    <span className="text-[9px] bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.2 rounded font-bold">
+                      ₦0 (None)
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-[#70798C]">
-                  Tenancy deed drafted by accredited legal practitioner
+                  {legalFee > 0 ? 'Tenancy deed drafted by accredited legal practitioner' : 'No legal drafting fee charged on this listing'}
                 </div>
               </div>
               <div className="font-display text-sm sm:text-base font-bold text-[#000004]">
@@ -127,11 +156,16 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
             {/* 4. Agency Commission */}
             <div className="flex items-center justify-between p-3 rounded-[12px] bg-[#FCF9F5] border border-[rgba(112,121,140,0.12)]">
               <div>
-                <div className="text-xs sm:text-sm font-semibold text-[#000004]">
-                  Agency Commission
+                <div className="text-xs sm:text-sm font-semibold text-[#000004] flex items-center gap-1.5">
+                  <span>Agency Commission</span>
+                  {agencyCommission === 0 && (
+                    <span className="text-[9px] bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.2 rounded font-bold">
+                      ₦0 (None)
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-[#70798C]">
-                  Registered agent handling inspection & key handoff
+                  {agencyCommission > 0 ? 'Registered agent handling inspection & key handoff' : 'No agency commission charged on this listing'}
                 </div>
               </div>
               <div className="font-display text-sm sm:text-base font-bold text-[#000004]">
@@ -142,15 +176,20 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
             {/* 5. Service Charge */}
             <div className="flex items-center justify-between p-3 rounded-[12px] bg-[#FCF9F5] border border-[rgba(112,121,140,0.12)]">
               <div>
-                <div className="text-xs sm:text-sm font-semibold text-[#000004]">
-                  Service Charge (Security, Water, Solar Backup)
+                <div className="text-xs sm:text-sm font-semibold text-[#000004] flex items-center gap-1.5">
+                  <span>Service Charge (Security, Water, Solar Backup)</span>
+                  {serviceCharge === 0 && (
+                    <span className="text-[9px] bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.2 rounded font-bold">
+                      ₦0 (None)
+                    </span>
+                  )}
                 </div>
                 <div className="text-[11px] text-[#70798C]">
-                  Estate gates, water filtration & common power
+                  {serviceCharge > 0 ? 'Estate gates, water filtration & common power' : 'No separate monthly or annual service charge'}
                 </div>
               </div>
               <div className="font-display text-sm sm:text-base font-bold text-[#000004]">
-                {formatNaira(fees.serviceCharge)}
+                {formatNaira(serviceCharge)}
               </div>
             </div>
           </div>
@@ -169,7 +208,7 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
               </span>
             </div>
             <div className="font-display text-2xl sm:text-3xl font-extrabold text-[#000004]">
-              {formatNaira(fees.totalMoveInPackage)}
+              {formatNaira(totalMoveIn)}
             </div>
           </div>
 
@@ -193,5 +232,6 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 };

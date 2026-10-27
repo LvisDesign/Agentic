@@ -1,6 +1,5 @@
 import React from 'react';
 import { 
-  Sparkles, 
   ExternalLink, 
   ArrowUpRight, 
   Building2, 
@@ -35,7 +34,6 @@ export const NativeBillboardAdCard: React.FC<NativeBillboardAdCardProps> = ({
     >
       {/* Subtle Promoted / Sponsored Banner Stripe */}
       <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-amber-600 text-white text-[10px] font-extrabold uppercase tracking-wider py-1 px-3 rounded-bl-xl flex items-center gap-1 shadow-2xs">
-        <Sparkles className="w-2.5 h-2.5" />
         <span>Sponsored</span>
       </div>
 

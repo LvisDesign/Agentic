@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { DeltaCity } from '../../types/marketplace';
 import { DELTA_CITIES } from '../../data/deltaCities';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface BecomeAgentModalProps {
   isOpen: boolean;
@@ -74,7 +75,8 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div 
         className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[92vh] animate-slide-up"
         onClick={(e) => e.stopPropagation()}
@@ -270,5 +272,6 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
         )}
       </div>
     </div>
+  </ModalPortal>
   );
 };

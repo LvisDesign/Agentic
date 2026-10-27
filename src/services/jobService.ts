@@ -50,6 +50,14 @@ export async function getAllJobs(): Promise<JobListing[]> {
     }
   }
 
+  // Normalize freemium fields (Free Organic ₦0 vs Sponsored Spotlight ₦2,000)
+  localJobs = localJobs.map((j) => ({
+    ...j,
+    isFeatured: Boolean(j.isFeatured),
+    listingFeePaid: j.listingFeePaid !== undefined ? j.listingFeePaid : (j.isFeatured ? 2000 : 0),
+    paymentReference: j.paymentReference || (j.isFeatured ? `SET-PAY-${j.id.slice(-6)}` : 'FREE_ORGANIC_POST'),
+  }));
+
   // If Supabase is configured, attempt background sync with `job_listings` table
   if (isSupabaseConfigured()) {
     try {
@@ -307,14 +315,21 @@ export interface CreateJobListingParams {
   posterId?: string;
   posterEmail?: string;
   posterName?: string;
-  paymentReference: string;
+  paymentReference?: string;
   listingFeePaid?: number;
+  isFeatured?: boolean;
 }
 
 /**
- * Creates a new paid job listing (₦2,000 publishing fee) and puts it live in the feed.
+ * Creates a new job listing under the Indeed freemium model:
+ * - Free Organic Listing (₦0)
+ * - Sponsored Spotlight Boost (₦2,000 flat boost)
  */
 export async function createJobListing(params: CreateJobListingParams): Promise<JobListing> {
+  const isFeatured = params.isFeatured ?? (params.listingFeePaid && params.listingFeePaid > 0 ? true : false);
+  const listingFeePaid = params.listingFeePaid !== undefined ? params.listingFeePaid : (isFeatured ? 2000 : 0);
+  const paymentReference = params.paymentReference || (isFeatured ? `SET-PAY-${Date.now().toString().slice(-6)}` : `SET-ORG-${Date.now().toString().slice(-6)}`);
+
   const newJob: JobListing = {
     id: `job-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     title: params.title.trim(),
@@ -337,13 +352,13 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
     category: params.category,
     contactEmail: params.contactEmail?.trim(),
     contactPhone: params.contactPhone?.trim(),
-    isFeatured: true,
+    isFeatured,
     posterId: params.posterId,
     posterEmail: params.posterEmail,
     posterName: params.posterName,
     status: 'active',
-    paymentReference: params.paymentReference,
-    listingFeePaid: params.listingFeePaid || 2000,
+    paymentReference,
+    listingFeePaid,
     viewsCount: 1,
     applicantsCount: 0,
   };
@@ -392,6 +407,44 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
 }
 
 /**
+ * Upgrades an existing free organic job listing to a Sponsored Spotlight listing (₦2,000 boost).
+ */
+export async function sponsorJobListing(jobId: string, paymentReference: string): Promise<JobListing | null> {
+  const all = await getAllJobs();
+  let updatedJob: JobListing | null = null;
+
+  const updated = all.map((j) => {
+    if (j.id === jobId) {
+      updatedJob = {
+        ...j,
+        isFeatured: true,
+        listingFeePaid: 2000,
+        paymentReference,
+      };
+      return updatedJob;
+    }
+    return j;
+  });
+
+  try {
+    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (_) {}
+
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        await client.from('job_listings').update({ is_featured: true }).eq('id', jobId);
+      }
+    } catch (e) {
+      console.warn('[JobService] Cloud sponsor update notice:', e);
+    }
+  }
+
+  return updatedJob;
+}
+
+/**
  * Retrieves jobs posted by an employer/job agent.
  */
 export async function getEmployerJobs(user?: UserProfile | null): Promise<JobListing[]> {
@@ -410,8 +463,9 @@ export async function getEmployerJobs(user?: UserProfile | null): Promise<JobLis
     return all.slice(0, 2).map((j, idx) => ({
       ...j,
       status: 'active' as const,
-      listingFeePaid: 2000,
-      paymentReference: `SET-JOB-INIT-${1000 + idx}`,
+      isFeatured: idx === 0,
+      listingFeePaid: idx === 0 ? 2000 : 0,
+      paymentReference: idx === 0 ? `SET-JOB-INIT-${1000 + idx}` : 'FREE_ORGANIC_POST',
       posterId: user.id,
       posterEmail: user.email,
     }));

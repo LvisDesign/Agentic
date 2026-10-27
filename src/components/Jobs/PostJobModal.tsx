@@ -4,10 +4,8 @@ import {
   Briefcase, 
   Building2, 
   MapPin, 
-  DollarSign, 
   FileText, 
   CheckCircle2, 
-  Sparkles, 
   ShieldCheck, 
   ArrowRight, 
   ArrowLeft,
@@ -23,6 +21,7 @@ import { createJobListing } from '../../services/jobService';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { formatNaira } from '../../utils/formatters';
 import { AdminCustomSelect, AdminSelectOption } from '../UI/AdminCustomSelect';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface PostJobModalProps {
   isOpen: boolean;
@@ -90,6 +89,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
   onJobCreated,
 }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  const [selectedPlan, setSelectedPlan] = useState<'free' | 'sponsored'>('free');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaystackModal, setShowPaystackModal] = useState(false);
 
@@ -147,18 +147,8 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
     }
   };
 
-  const handleInitiatePayment = () => {
-    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
-      setCurrentStep(1);
-      return;
-    }
-    setShowPaystackModal(true);
-  };
-
-  const handlePaymentSuccess = async (paymentReference: string) => {
-    setShowPaystackModal(false);
+  const submitJob = async (isFeatured: boolean, listingFeePaid: number, paymentReference?: string) => {
     setIsSubmitting(true);
-
     try {
       const responsibilities = responsibilitiesText
         .split('\n')
@@ -194,20 +184,46 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
         posterId: currentUser.id,
         posterEmail: currentUser.email,
         posterName: currentUser.fullName,
-        paymentReference,
-        listingFeePaid: JOB_LISTING_FEE,
+        paymentReference: paymentReference || (isFeatured ? `SET-PAY-${Date.now().toString().slice(-6)}` : 'FREE_ORGANIC_POST'),
+        listingFeePaid,
+        isFeatured,
       });
 
       onJobCreated(created);
       onClose();
     } catch (e) {
       console.error('Failed to publish job:', e);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handlePublishFree = () => {
+    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+      setCurrentStep(1);
+      return;
+    }
+    submitJob(false, 0, 'FREE_ORGANIC_POST');
+  };
+
+  const handleInitiatePayment = () => {
+    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+      setCurrentStep(1);
+      return;
+    }
+    setShowPaystackModal(true);
+  };
+
+  const handlePaymentSuccess = async (paymentReference: string) => {
+    setShowPaystackModal(false);
+    await submitJob(true, JOB_LISTING_FEE, paymentReference);
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
       <div 
         className="w-full max-w-2xl bg-white rounded-3xl border border-[#342A21]/15 shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
@@ -499,43 +515,131 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
             </div>
           )}
 
-          {/* STEP 4: FAIR PRICING & PAYMENT (₦2,000) */}
+          {/* STEP 4: REVIEW & CHOOSE PUBLISHING PLAN */}
           {currentStep === 4 && (
             <div className="space-y-4 animate-in fade-in duration-150">
-              {/* Fair Pricing Explainer Banner */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-[#FCF9F5] to-amber-50/70 border border-amber-300/80 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
-                    <span className="text-xs font-extrabold uppercase tracking-wide text-[#342A21]">
-                      Fair Listing Fee Notice
-                    </span>
+              {/* Plan Header Info */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#70798C]">
+                  Step 4 of 4 • Select Placement Plan
+                </span>
+                <h4 className="font-display font-bold text-base text-[#000004]">
+                  How would you like to publish this vacancy?
+                </h4>
+                <p className="text-xs text-[#70798C] leading-relaxed">
+                  Post for free to start collecting applications organically, or sponsor for top placement with 5x reach.
+                </p>
+              </div>
+
+              {/* 2-Tier Plan Comparison Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* TIER 1: FREE ORGANIC */}
+                <div
+                  onClick={() => setSelectedPlan('free')}
+                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between relative ${
+                    selectedPlan === 'free'
+                      ? 'border-[#000004] bg-[#FCF9F5] shadow-xs ring-1 ring-[#000004]'
+                      : 'border-[#E5E7EB] bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[#000004] text-[10px] font-bold uppercase tracking-wider">
+                        Standard
+                      </span>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        selectedPlan === 'free' ? 'border-[#000004] bg-[#000004]' : 'border-slate-300'
+                      }`}>
+                        {selectedPlan === 'free' && <Check className="w-2.5 h-2.5 text-white" />}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xl font-display font-black text-[#000004]">₦0</span>
+                        <span className="text-xs font-semibold text-emerald-700">Free Listing</span>
+                      </div>
+                      <h5 className="font-bold text-xs text-[#000004] mt-0.5">Organic Delta Reach</h5>
+                      <p className="text-[11px] text-[#70798C] leading-snug mt-1">
+                        Best for standard roles. Direct applications with zero upfront fees or credit card.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5 pt-2 border-t border-[#E5E7EB] text-[11px]">
+                      <div className="flex items-center gap-1.5 text-[#342A21]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>30 days active in search feed</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[#342A21]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Direct candidate CV & phone contact</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[#70798C]">
+                        <span className="w-3.5 text-center text-xs font-bold leading-none text-slate-400">•</span>
+                        <span>Standard search ranking</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-xs font-extrabold shadow-2xs">
-                    ₦2,000 Only
-                  </span>
+
+                  <div className="mt-3 pt-2 text-center text-[10px] font-semibold text-[#70798C] bg-white/70 py-1 rounded-lg border border-[#E5E7EB]">
+                    Can boost to Sponsored anytime later
+                  </div>
                 </div>
 
-                <p className="text-xs text-[#342A21] leading-relaxed">
-                  Unlike free property rentals, <strong>job postings are strictly verified and require a fair fee of ₦2,000 per vacancy</strong>. This ensures real, legitimate job offers, deters recruitment spam, and gives your listing prioritized reach across Delta State.
-                </p>
+                {/* TIER 2: SPONSORED SPOTLIGHT */}
+                <div
+                  onClick={() => setSelectedPlan('sponsored')}
+                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between relative ${
+                    selectedPlan === 'sponsored'
+                      ? 'border-amber-500 bg-amber-50/40 shadow-xs ring-1 ring-amber-500'
+                      : 'border-[#E5E7EB] bg-white hover:border-amber-300'
+                  }`}
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                        <span>Recommended Boost</span>
+                      </span>
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
+                        selectedPlan === 'sponsored' ? 'border-amber-600 bg-amber-600' : 'border-slate-300'
+                      }`}>
+                        {selectedPlan === 'sponsored' && <Check className="w-2.5 h-2.5 text-white" />}
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-amber-200/80">
-                  <div className="flex items-center gap-1.5 text-[11px] text-[#342A21] font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>30 days active placement in feed</span>
+                    <div>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-xl font-display font-black text-[#000004]">₦2,000</span>
+                        <span className="text-xs font-bold text-amber-800">Flat 30 Days</span>
+                      </div>
+                      <h5 className="font-bold text-xs text-[#000004] mt-0.5">Sponsored Spotlight</h5>
+                      <p className="text-[11px] text-[#70798C] leading-snug mt-1">
+                        5x candidate applications. Pinned to the top of Setlla Jobs with verified badge.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5 pt-2 border-t border-amber-200/80 text-[11px]">
+                      <div className="flex items-center gap-1.5 text-[#342A21] font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span className="font-bold text-[#000004]">Pinned to top of search & feed</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[#342A21]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>High-visibility "Sponsored" badge</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[#342A21]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Verified Employer Partner checkmark</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[#342A21]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Rotated across featured billboards</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-[#342A21] font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Direct candidate CV submissions</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-[#342A21] font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Instant WhatsApp & phone reach</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-[#342A21] font-medium">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Official Verified Partner badge</span>
+
+                  <div className="mt-3 pt-2 text-center text-[10px] font-bold text-amber-900 bg-amber-100/70 py-1 rounded-lg border border-amber-200">
+                    Highest application volume & fast hire
                   </div>
                 </div>
               </div>
@@ -559,16 +663,31 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                   <span className="font-bold text-[#000004]">{salaryRange}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#70798C]">Publishing & Placement Fee:</span>
-                  <span className="font-bold text-emerald-700 text-sm">{formatNaira(JOB_LISTING_FEE)}</span>
+                  <span className="text-[#70798C]">Selected Plan:</span>
+                  <span className={`font-bold ${selectedPlan === 'sponsored' ? 'text-amber-800' : 'text-emerald-700'}`}>
+                    {selectedPlan === 'sponsored' ? 'Sponsored Spotlight' : 'Standard Free Organic'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-[#E5E7EB]">
+                  <span className="font-bold text-[#000004]">Total Amount Due:</span>
+                  <span className={`font-display font-bold text-sm ${selectedPlan === 'sponsored' ? 'text-amber-800' : 'text-emerald-700'}`}>
+                    {selectedPlan === 'sponsored' ? formatNaira(JOB_LISTING_FEE) : '₦0 (Free)'}
+                  </span>
                 </div>
               </div>
 
               {/* Security Seal */}
-              <div className="flex items-center justify-center gap-2 text-[11px] text-[#70798C]">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Secured via Paystack Gateway • Cards, Bank Transfer, USSD</span>
-              </div>
+              {selectedPlan === 'sponsored' ? (
+                <div className="flex items-center justify-center gap-2 text-[11px] text-[#70798C]">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Secured via Paystack Gateway • Cards, Bank Transfer, USSD</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-[11px] text-[#70798C]">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>No payment required • Your listing will go live immediately</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -598,6 +717,16 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
               <span>Continue</span>
               <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
             </button>
+          ) : selectedPlan === 'free' ? (
+            <button
+              type="button"
+              onClick={handlePublishFree}
+              disabled={isSubmitting}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <span>{isSubmitting ? 'Publishing...' : 'Publish Free Vacancy (₦0)'}</span>
+            </button>
           ) : (
             <button
               type="button"
@@ -606,7 +735,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50"
             >
               <CreditCard className="w-4 h-4 text-amber-400" />
-              <span>Pay ₦2,000 & Publish Vacancy</span>
+              <span>Pay ₦2,000 & Sponsor Vacancy</span>
             </button>
           )}
         </div>
@@ -626,5 +755,6 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
         onSuccess={handlePaymentSuccess}
       />
     </div>
+  </ModalPortal>
   );
 };

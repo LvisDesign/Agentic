@@ -18,7 +18,6 @@ import {
   X, 
   Building, 
   Building2,
-  DollarSign, 
   Phone, 
   Mail,
   UserCheck,
@@ -38,7 +37,6 @@ import {
   ArrowUpRight,
   ChevronRight,
   Clock,
-  Sparkles,
   FileCheck,
   Award
 } from 'lucide-react';
@@ -46,6 +44,7 @@ import { UserProfile, PropertyListing, BookingRecord } from '../../types/marketp
 import { JobListing, JobApplication } from '../../types/jobs';
 import { AdvertStory } from '../../data/mockAdverts';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
+import { ModalPortal } from '../UI/ModalPortal';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { 
@@ -1384,8 +1383,15 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
 
       {/* DRAWER 1: JOB SEEKER CV INSPECTION & APPLICATION DRAWER */}
       {inspectingCvCandidate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-5">
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+            onClick={() => setInspectingCvCandidate(null)}
+          >
+          <div 
+            className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-5 my-auto max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center">
@@ -1492,12 +1498,20 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* DRAWER 2: EMPLOYER VACANCIES INSPECTION */}
       {inspectingEmployer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4">
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+            onClick={() => setInspectingEmployer(null)}
+          >
+          <div 
+            className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4 my-auto max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center">
@@ -1569,12 +1583,20 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* DRAWER 3: AGENT CAC & KYC INSPECTION MODAL */}
       {inspectingKycAgent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4">
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+            onClick={() => setInspectingKycAgent(null)}
+          >
+          <div 
+            className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4 my-auto max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center">
@@ -1647,12 +1669,20 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* DRAWER 4: TENANT INSPECTION PASSES MODAL */}
       {inspectingTenantBookings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4">
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+            onClick={() => setInspectingTenantBookings(null)}
+          >
+          <div 
+            className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4 my-auto max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-sky-500 text-white flex items-center justify-center">
@@ -1720,11 +1750,13 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* MODAL 5: EDIT USER & PERSONA MODAL */}
       {editingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
           <form
             onSubmit={handleSaveEditedUser}
             className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4 my-8"
@@ -1923,11 +1955,13 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             </div>
           </form>
         </div>
+      </ModalPortal>
       )}
 
       {/* MODAL 6: ADD NEW USER MODAL */}
       {isAddUserModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
           <form
             onSubmit={handleCreateNewUser}
             className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4 my-8"
@@ -2101,12 +2135,20 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             </div>
           </form>
         </div>
+      </ModalPortal>
       )}
 
       {/* MODAL 7: SUSPEND USER MODAL */}
       {suspendingUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-red-200 animate-scale-up space-y-4">
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+            onClick={() => setSuspendingUser(null)}
+          >
+          <div 
+            className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-red-200 animate-scale-up space-y-4 my-auto max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-5 h-5" />
@@ -2149,6 +2191,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
     </div>
   );

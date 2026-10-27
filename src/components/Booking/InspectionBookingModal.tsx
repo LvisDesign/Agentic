@@ -19,6 +19,7 @@ import { formatNaira, generateBookingRef } from '../../utils/formatters';
 import { getNotificationPermission, requestNotificationPermission } from '../../utils/pwa';
 import { QueueStatusBadge } from './QueueStatusBadge';
 import { InspectionPassCard } from '../Pass/InspectionPassCard';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface InspectionBookingModalProps {
   isOpen: boolean;
@@ -129,7 +130,8 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div 
         className="w-full max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-slide-up border border-[#E5E7EB]"
         onClick={(e) => e.stopPropagation()}
@@ -471,5 +473,6 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 };

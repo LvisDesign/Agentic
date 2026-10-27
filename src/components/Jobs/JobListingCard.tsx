@@ -6,9 +6,9 @@ import {
   Banknote, 
   Clock, 
   CheckCircle2, 
-  ArrowRight,
-  ExternalLink,
-  ChevronRight,
+  ArrowRight, 
+  ExternalLink, 
+  ChevronRight, 
   Share2
 } from 'lucide-react';
 import { JobListing } from '../../types/jobs';
@@ -29,7 +29,9 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
   onShareJob,
 }) => {
   return (
-    <article className="w-full bg-white rounded-2xl sm:rounded-3xl border border-[#E5E7EB] p-4 sm:p-5 shadow-xs hover:shadow-md hover:border-[#000004]/20 transition-all duration-200 flex flex-col justify-between group">
+    <article className={`w-full bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group ${
+      job.isFeatured ? 'border-amber-300/80 hover:border-amber-400 bg-gradient-to-b from-amber-50/20 to-white' : 'border-[#E5E7EB] hover:border-[#000004]/20'
+    }`}>
       {/* 1. Header: Company Logo / Avatar, Job Title, Company & Location */}
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
@@ -90,6 +92,13 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
 
         {/* 2. Quick Tags / Chips */}
         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1 text-[11px] sm:text-xs">
+          {/* Sponsored Spotlight Badge */}
+          {job.isFeatured && (
+            <span className="px-2.5 py-1 rounded-lg bg-amber-100/80 border border-amber-300 text-amber-900 font-extrabold flex items-center gap-1 shadow-2xs">
+              <span>Sponsored</span>
+            </span>
+          )}
+
           {/* Role Type */}
           <span className="px-2.5 py-1 rounded-lg bg-[#F4F5F7] border border-[#E5E7EB] text-[#000004] font-semibold flex items-center gap-1.5">
             <Briefcase className="w-3 h-3 text-[#70798C]" />

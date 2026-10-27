@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Briefcase, 
   Search, 
@@ -21,7 +21,7 @@ import {
   X, 
   Building, 
   Users, 
-  DollarSign, 
+  Wallet, 
   Globe, 
   Phone, 
   Mail,
@@ -29,11 +29,15 @@ import {
   LayoutGrid,
   List,
   Info,
-  Receipt
+  ReceiptText,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 import { JobListing, JobApplication, JobRoleType, JobWorkplaceType } from '../../types/jobs';
 import { UserProfile } from '../../types/marketplace';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
+import { ModalPortal } from '../UI/ModalPortal';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { 
@@ -204,13 +208,42 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
     setRoleTypeFilter('all');
   };
 
+  // Horizontal Table Scroll Detection & Controls
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkTableScroll = () => {
+    const el = tableContainerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 10);
+  };
+
+  useEffect(() => {
+    checkTableScroll();
+    const handleResize = () => checkTableScroll();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [filteredJobs, viewMode]);
+
+  const handleTableScroll = (direction: 'left' | 'right') => {
+    if (!tableContainerRef.current) return;
+    const offset = 340;
+    tableContainerRef.current.scrollBy({
+      left: direction === 'right' ? offset : -offset,
+      behavior: 'smooth',
+    });
+    setTimeout(checkTableScroll, 350);
+  };
+
   // Derived Metrics
   const activeJobsCount = useMemo(() => jobsList.filter((j) => (j.status || 'active') === 'active').length, [jobsList]);
   const closedJobsCount = useMemo(() => jobsList.filter((j) => j.status === 'closed').length, [jobsList]);
   const totalApplicantsCount = useMemo(() => jobApplications.length, [jobApplications]);
   const shortlistedCount = useMemo(() => jobApplications.filter((a) => a.status === 'shortlisted').length, [jobApplications]);
   const totalFeesCollected = useMemo(() => {
-    return jobsList.reduce((sum, j) => sum + (j.listingFeePaid || 2000), 0);
+    return jobsList.reduce((sum, j) => sum + (j.listingFeePaid !== undefined ? j.listingFeePaid : (j.isFeatured ? 2000 : 0)), 0);
   }, [jobsList]);
 
   // Get applications for a specific job
@@ -541,7 +574,7 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E7EB] shadow-xs relative overflow-hidden">
           <div className="flex items-center justify-between text-[#70798C] text-xs mb-2">
             <span className="font-semibold uppercase tracking-wider text-[11px]">Listing Clearance Fees</span>
-            <DollarSign className="w-4 h-4 text-emerald-600" />
+            <Wallet className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-xl sm:text-2xl font-display font-black text-[#000004]">
             {formatNaira(totalFeesCollected)}
@@ -670,6 +703,41 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
               <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span>Click <strong className="text-[#342A21]">Applicants</strong> to view candidate CVs</span>
             </span>
+
+            {/* Horizontal Table Scroll Controls (visible in table view) */}
+            {viewMode === 'table' && (
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handleTableScroll('left')}
+                  disabled={!canScrollLeft}
+                  className={`p-1 rounded-lg transition-all ${
+                    canScrollLeft
+                      ? 'text-[#000004] bg-white shadow-2xs hover:bg-slate-50 cursor-pointer'
+                      : 'text-slate-300 cursor-not-allowed'
+                  }`}
+                  title="Scroll table left"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[11px] font-semibold text-[#70798C] px-1 select-none whitespace-nowrap">
+                  Scroll Table
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleTableScroll('right')}
+                  disabled={!canScrollRight}
+                  className={`p-1 rounded-lg transition-all ${
+                    canScrollRight
+                      ? 'text-[#000004] bg-white shadow-2xs hover:bg-slate-50 cursor-pointer'
+                      : 'text-slate-300 cursor-not-allowed'
+                  }`}
+                  title="Scroll table right to view Applicants & Actions"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* View Mode Toggle: Cards / List */}
             <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
@@ -808,10 +876,16 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                           <span className="text-[10px] uppercase font-bold text-[#70798C] block">Salary Budget</span>
                           <span className="text-xs font-bold text-[#000004]">{job.salaryRange || 'Negotiable'}</span>
                         </div>
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                          <span>₦2,000 Paid</span>
-                        </span>
+                        {job.isFeatured || (job.listingFeePaid && job.listingFeePaid > 0) ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200 text-[11px] font-bold">
+                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                            <span>₦2,000 Sponsored</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold">
+                            <span>Free Organic (₦0)</span>
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -864,159 +938,204 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
           </div>
         ) : (
           /* ========================================================================= */
-          /* TABLE VIEW (Clean, Spacious, Un-Cramped 5 Columns)                        */
+          /* TABLE VIEW (Clean, Spacious, Un-Cramped 5 Columns with Scroll Controls)   */
           /* ========================================================================= */
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs min-w-0 table-auto">
-              <thead className="bg-[#FCF9F5] border-b border-[#E5E7EB] text-[11px] font-bold uppercase tracking-wider text-[#70798C]">
-                <tr>
-                  <th className="py-3.5 px-4 w-[32%]">Role & Organization</th>
-                  <th className="py-3.5 px-3 w-[18%]">Location</th>
-                  <th className="py-3.5 px-3 w-[16%]">Salary & Fee</th>
-                  <th className="py-3.5 px-3 w-[15%]">Applicants</th>
-                  <th className="py-3.5 px-4 w-[19%] text-right">Status & Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E5E7EB]">
-                {filteredJobs.map((job) => {
-                  const apps = getJobApplications(job.id);
-                  const isClosed = job.status === 'closed';
+          <div className="relative group">
+            {/* Scrollable Table Viewport */}
+            <div
+              ref={tableContainerRef}
+              onScroll={checkTableScroll}
+              className="overflow-x-auto scroll-smooth"
+            >
+              <table className="w-full text-left text-xs min-w-[960px] table-auto">
+                <thead className="bg-[#FCF9F5] border-b border-[#E5E7EB] text-[11px] font-bold uppercase tracking-wider text-[#70798C]">
+                  <tr>
+                    <th className="py-3.5 px-4 w-[32%]">Role & Organization</th>
+                    <th className="py-3.5 px-3 w-[18%]">Location</th>
+                    <th className="py-3.5 px-3 w-[16%]">Salary & Fee</th>
+                    <th className="py-3.5 px-3 w-[15%]">Applicants</th>
+                    <th className="py-3.5 px-4 w-[19%] text-right">Status & Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E5E7EB]">
+                  {filteredJobs.map((job) => {
+                    const apps = getJobApplications(job.id);
+                    const isClosed = job.status === 'closed';
 
-                  return (
-                    <tr key={job.id} className="hover:bg-slate-50/80 transition-colors group">
-                      {/* 1. Role & Organization */}
-                      <td className="py-3.5 px-4 align-middle">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-[#342A21] text-[#E5B869] font-bold text-xs flex items-center justify-center shrink-0 border border-amber-400/20 shadow-xs font-mono">
-                            {job.companyInitial || job.companyName.slice(0, 2).toUpperCase()}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-xs sm:text-sm text-[#000004] hover:text-[#342A21] transition-colors truncate">
-                                {job.title}
-                              </span>
-                              {job.isFeatured && (
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold shrink-0">
-                                  <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
-                                  Spotlight
+                    return (
+                      <tr key={job.id} className="hover:bg-slate-50/80 transition-colors group">
+                        {/* 1. Role & Organization */}
+                        <td className="py-3.5 px-4 align-middle">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-[#342A21] text-[#E5B869] font-bold text-xs flex items-center justify-center shrink-0 border border-amber-400/20 shadow-xs font-mono">
+                              {job.companyInitial || job.companyName.slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-xs sm:text-sm text-[#000004] hover:text-[#342A21] transition-colors truncate">
+                                  {job.title}
                                 </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1.5 text-[11px] text-[#70798C] mt-0.5 flex-wrap">
-                              <span className="font-semibold text-[#342A21]">{job.companyName}</span>
-                              <span className="text-slate-300">•</span>
-                              <span className="text-slate-500">{job.category}</span>
-                              <span className="text-slate-300">•</span>
-                              <span className="text-slate-600 font-medium">{job.workplaceType}</span>
-                              <span className="text-slate-300">•</span>
-                              <span className="text-indigo-600 font-medium">{job.roleType}</span>
+                                {job.isFeatured && (
+                                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold shrink-0">
+                                    <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                                    Spotlight
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 text-[11px] text-[#70798C] mt-0.5 flex-wrap">
+                                <span className="font-semibold text-[#342A21]">{job.companyName}</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-slate-500">{job.category}</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-slate-600 font-medium">{job.workplaceType}</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-indigo-600 font-medium">{job.roleType}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* 2. Location */}
-                      <td className="py-3.5 px-3 align-middle">
-                        <div className="flex items-center gap-1.5 font-bold text-xs text-[#000004]">
-                          <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>{job.city}, Delta</span>
-                        </div>
-                        {job.address && (
-                          <p className="text-[11px] text-[#70798C] mt-0.5 truncate" title={job.address}>
-                            {job.address}
-                          </p>
-                        )}
-                      </td>
+                        {/* 2. Location */}
+                        <td className="py-3.5 px-3 align-middle">
+                          <div className="flex items-center gap-1.5 font-bold text-xs text-[#000004]">
+                            <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{job.city}, Delta</span>
+                          </div>
+                          {job.address && (
+                            <p className="text-[11px] text-[#70798C] mt-0.5 truncate" title={job.address}>
+                              {job.address}
+                            </p>
+                          )}
+                        </td>
 
-                      {/* 3. Salary & Fee Clearance */}
-                      <td className="py-3.5 px-3 align-middle whitespace-nowrap">
-                        <span className="font-bold text-xs text-[#000004] block font-mono">
-                          {job.salaryRange || 'Negotiable'}
-                        </span>
-                        <div className="flex items-center gap-1.5 text-[11px] text-[#70798C] mt-0.5">
-                          <Receipt className="w-3 h-3 text-slate-400 shrink-0" />
-                          <span className="font-mono text-[#000004] font-semibold">₦2,000</span>
-                          <span className="text-slate-500">cleared</span>
-                        </div>
-                      </td>
+                        {/* 3. Salary & Fee Clearance */}
+                        <td className="py-3.5 px-3 align-middle whitespace-nowrap">
+                          <span className="font-bold text-xs text-[#000004] block font-mono">
+                            {job.salaryRange || 'Negotiable'}
+                          </span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-[#70798C] mt-0.5">
+                            <ReceiptText className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="font-mono text-[#000004] font-semibold">
+                              {job.isFeatured || (job.listingFeePaid && job.listingFeePaid > 0) ? '₦2,000' : '₦0'}
+                            </span>
+                            <span className="text-slate-500">
+                              {job.isFeatured || (job.listingFeePaid && job.listingFeePaid > 0) ? 'sponsored' : 'organic'}
+                            </span>
+                          </div>
+                        </td>
 
-                      {/* 4. Applicants (CVs) */}
-                      <td className="py-3.5 px-3 align-middle whitespace-nowrap">
-                        <button
-                          onClick={() => setSelectedJobForApplicants(job)}
-                          className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
-                            apps.length > 0
-                              ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 shadow-2xs'
-                              : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-[#000004]'
-                          }`}
-                          title="Inspect submitted CVs and candidate details"
-                        >
-                          <Users className={`w-3.5 h-3.5 ${apps.length > 0 ? 'text-blue-600' : 'text-slate-400'} shrink-0`} />
-                          <span>{apps.length} {apps.length === 1 ? 'Applicant' : 'Applicants'}</span>
-                        </button>
-                      </td>
-
-                      {/* 5. Status & Actions */}
-                      <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* Status: Published vs Closed */}
+                        {/* 4. Applicants (CVs) */}
+                        <td className="py-3.5 px-3 align-middle whitespace-nowrap">
                           <button
-                            onClick={() => handleToggleJobStatus(job)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
-                              !isClosed
-                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100'
-                                : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+                            onClick={() => setSelectedJobForApplicants(job)}
+                            className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                              apps.length > 0
+                                ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 shadow-2xs'
+                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-[#000004]'
                             }`}
-                            title={`Listing is ${!isClosed ? 'Published across Setlla Jobs Feed' : 'Closed'}. Click to toggle.`}
+                            title="Inspect submitted CVs and candidate details"
                           >
-                            {!isClosed ? (
-                              <Check className="w-3 h-3 text-emerald-600 shrink-0" />
-                            ) : (
-                              <Clock className="w-3 h-3 text-slate-500 shrink-0" />
-                            )}
-                            <span>{!isClosed ? 'Published' : 'Closed'}</span>
+                            <Users className={`w-3.5 h-3.5 ${apps.length > 0 ? 'text-blue-600' : 'text-slate-400'} shrink-0`} />
+                            <span>{apps.length} {apps.length === 1 ? 'Applicant' : 'Applicants'}</span>
                           </button>
+                        </td>
 
-                          {/* Action Toolbar Cluster */}
-                          <div className="inline-flex items-center rounded-lg border border-[#E5E7EB] bg-white p-0.5 shadow-2xs shrink-0">
-                            {/* Spotlight Star */}
+                        {/* 5. Status & Actions */}
+                        <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            {/* Status: Published vs Closed */}
                             <button
-                              onClick={() => handleToggleJobFeatured(job)}
-                              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                                job.isFeatured
-                                  ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
-                                  : 'text-slate-400 hover:text-amber-500 hover:bg-slate-50'
+                              onClick={() => handleToggleJobStatus(job)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                                !isClosed
+                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80 hover:bg-emerald-100'
+                                  : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
                               }`}
-                              title={job.isFeatured ? 'Featured in Spotlight (Click to remove)' : 'Promote to Spotlight'}
+                              title={`Listing is ${!isClosed ? 'Published across Setlla Jobs Feed' : 'Closed'}. Click to toggle.`}
                             >
-                              <Star className={`w-3.5 h-3.5 ${job.isFeatured ? 'fill-amber-500 text-amber-500' : ''}`} />
+                              {!isClosed ? (
+                                <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                              ) : (
+                                <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+                              )}
+                              <span>{!isClosed ? 'Published' : 'Closed'}</span>
                             </button>
 
-                            {/* View Details */}
-                            <button
-                              onClick={() => setSelectedJobForDetails(job)}
-                              className="p-1.5 rounded-md text-slate-500 hover:text-[#000004] hover:bg-slate-50 transition-colors cursor-pointer"
-                              title="View full job specifications"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
+                            {/* Action Toolbar Cluster */}
+                            <div className="inline-flex items-center rounded-lg border border-[#E5E7EB] bg-white p-0.5 shadow-2xs shrink-0">
+                              {/* Spotlight Star */}
+                              <button
+                                onClick={() => handleToggleJobFeatured(job)}
+                                className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                                  job.isFeatured
+                                    ? 'bg-amber-50 text-amber-600 hover:bg-amber-100'
+                                    : 'text-slate-400 hover:text-amber-500 hover:bg-slate-50'
+                                }`}
+                                title={job.isFeatured ? 'Featured in Spotlight (Click to remove)' : 'Promote to Spotlight'}
+                              >
+                                <Star className={`w-3.5 h-3.5 ${job.isFeatured ? 'fill-amber-500 text-amber-500' : ''}`} />
+                              </button>
 
-                            {/* Delete Job */}
-                            <button
-                              onClick={() => handleDeleteJob(job)}
-                              className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                              title="Permanently remove vacancy"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                              {/* View Details */}
+                              <button
+                                onClick={() => setSelectedJobForDetails(job)}
+                                className="p-1.5 rounded-md text-slate-500 hover:text-[#000004] hover:bg-slate-50 transition-colors cursor-pointer"
+                                title="View full job specifications"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+
+                              {/* Delete Job */}
+                              <button
+                                onClick={() => handleDeleteJob(job)}
+                                className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                                title="Permanently remove vacancy"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Floating Right Scroll Button (Prompt for off-screen details) */}
+            {canScrollRight && (
+              <button
+                type="button"
+                onClick={() => handleTableScroll('right')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 px-3.5 py-2 rounded-full bg-[#000004]/90 hover:bg-[#000004] text-white text-xs font-semibold shadow-xl border border-white/20 flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
+                title="Scroll horizontally to view Applicants, Status & Actions"
+              >
+                <span>More Details</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+
+            {/* Floating Left Scroll Button */}
+            {canScrollLeft && (
+              <button
+                type="button"
+                onClick={() => handleTableScroll('left')}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 px-3.5 py-2 rounded-full bg-[#000004]/90 hover:bg-[#000004] text-white text-xs font-semibold shadow-xl border border-white/20 flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-xs hover:scale-105"
+                title="Scroll back to role & organization"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Back</span>
+              </button>
+            )}
+
+            {/* Subtle Gradient Shadow Cues */}
+            {canScrollRight && (
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-black/5 to-transparent pointer-events-none" />
+            )}
+            {canScrollLeft && (
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-black/5 to-transparent pointer-events-none" />
+            )}
           </div>
         )}
       </div>
@@ -1025,10 +1144,17 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
       {/* 5. APPLICANTS INSPECTOR DRAWER / MODAL                                     */}
       {/* ========================================================================= */}
       {selectedJobForApplicants && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[100] animate-fade-in overflow-y-auto"
+            onClick={() => setSelectedJobForApplicants(null)}
+          >
+          <div 
+            className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Drawer Header */}
-            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-[#FCF9F5]">
+            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-[#FCF9F5] shrink-0">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-full bg-[#342A21] text-amber-300 text-[10px] font-bold uppercase">
@@ -1085,7 +1211,7 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
             </div>
 
             {/* Candidate List */}
-            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+            <div className="p-5 overflow-y-auto space-y-4 flex-1 min-h-0">
               {currentJobApplicants.length === 0 ? (
                 <div className="py-12 text-center space-y-2">
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
@@ -1188,7 +1314,7 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-100 bg-[#FCF9F5] flex items-center justify-between">
+            <div className="p-4 border-t border-slate-100 bg-[#FCF9F5] flex items-center justify-between shrink-0">
               <span className="text-xs text-[#70798C]">
                 Total: <strong className="text-[#000004]">{currentJobApplicants.length} candidates</strong>
               </span>
@@ -1201,16 +1327,24 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* ========================================================================= */}
       {/* 6. JOB DETAILS MODAL                                                      */}
       {/* ========================================================================= */}
       {selectedJobForDetails && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-[100] animate-fade-in overflow-y-auto"
+            onClick={() => setSelectedJobForDetails(null)}
+          >
+          <div 
+            className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
-            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-[#FCF9F5]">
+            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-[#FCF9F5] shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-[#342A21] text-amber-300 font-black text-sm flex items-center justify-center shadow-xs">
                   {selectedJobForDetails.companyInitial || selectedJobForDetails.companyName.slice(0, 2).toUpperCase()}
@@ -1238,7 +1372,7 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
             </div>
 
             {/* Body */}
-            <div className="p-6 overflow-y-auto space-y-5 text-xs text-[#000004]">
+            <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-5 text-xs text-[#000004]">
               {/* Quick Specs Pill Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
@@ -1322,7 +1456,7 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-100 bg-[#FCF9F5] flex items-center justify-between">
+            <div className="p-4 border-t border-slate-100 bg-[#FCF9F5] flex items-center justify-between shrink-0">
               <button
                 onClick={() => {
                   setSelectedJobForApplicants(selectedJobForDetails);
@@ -1343,16 +1477,24 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
             </div>
           </div>
         </div>
+      </ModalPortal>
       )}
 
       {/* ========================================================================= */}
       {/* 7. POST ENTERPRISE VACANCY MODAL (SUPER ADMIN)                           */}
       {/* ========================================================================= */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50 animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+        <ModalPortal>
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 z-[100] animate-fade-in overflow-y-auto"
+            onClick={() => setIsCreateModalOpen(false)}
+          >
+          <div 
+            className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
-            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-[#FCF9F5]">
+            <div className="p-5 border-b border-slate-100 flex items-start justify-between gap-4 bg-[#FCF9F5] shrink-0">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase">
@@ -1368,6 +1510,7 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
               </div>
 
               <button
+                type="button"
                 onClick={() => setIsCreateModalOpen(false)}
                 className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors cursor-pointer"
               >
@@ -1375,8 +1518,12 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleCreateJobSubmit} className="p-6 overflow-y-auto space-y-4 text-xs">
+            {/* Form Body (Scrollable) */}
+            <form 
+              id="superadmin-create-job-form"
+              onSubmit={handleCreateJobSubmit} 
+              className="p-5 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-4 text-xs"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="font-bold text-[#000004] block mb-1">
@@ -1410,45 +1557,54 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div>
                   <label className="font-bold text-[#000004] block mb-1">Delta State City</label>
-                  <select
-                    value={createJobForm.city}
-                    onChange={(e) => setCreateJobForm({ ...createJobForm, city: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-[#000004]"
-                  >
-                    {DELTA_CITIES.filter((c) => c !== 'All Cities').map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={createJobForm.city}
+                      onChange={(e) => setCreateJobForm({ ...createJobForm, city: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] cursor-pointer appearance-none pr-8"
+                    >
+                      {DELTA_CITIES.filter((c) => c !== 'All Cities').map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="font-bold text-[#000004] block mb-1">Workplace Arrangement</label>
-                  <select
-                    value={createJobForm.workplaceType}
-                    onChange={(e) => setCreateJobForm({ ...createJobForm, workplaceType: e.target.value as any })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-[#000004]"
-                  >
-                    <option value="On-Site">On-Site</option>
-                    <option value="Hybrid">Hybrid</option>
-                    <option value="Remote">Remote</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={createJobForm.workplaceType}
+                      onChange={(e) => setCreateJobForm({ ...createJobForm, workplaceType: e.target.value as any })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] cursor-pointer appearance-none pr-8"
+                    >
+                      <option value="On-Site">On-Site</option>
+                      <option value="Hybrid">Hybrid</option>
+                      <option value="Remote">Remote</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div>
                   <label className="font-bold text-[#000004] block mb-1">Role Type</label>
-                  <select
-                    value={createJobForm.roleType}
-                    onChange={(e) => setCreateJobForm({ ...createJobForm, roleType: e.target.value as any })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-[#000004]"
-                  >
-                    <option value="Full-Time">Full-Time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Internship">Internship</option>
-                    <option value="Part-Time">Part-Time</option>
-                    <option value="PPA (Corpers)">PPA (Corpers)</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={createJobForm.roleType}
+                      onChange={(e) => setCreateJobForm({ ...createJobForm, roleType: e.target.value as any })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] cursor-pointer appearance-none pr-8"
+                    >
+                      <option value="Full-Time">Full-Time</option>
+                      <option value="Contract">Contract</option>
+                      <option value="Internship">Internship</option>
+                      <option value="Part-Time">Part-Time</option>
+                      <option value="PPA (Corpers)">PPA (Corpers)</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
@@ -1482,17 +1638,20 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div>
                   <label className="font-bold text-[#000004] block mb-1">Industry Category</label>
-                  <select
-                    value={createJobForm.category}
-                    onChange={(e) => setCreateJobForm({ ...createJobForm, category: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-[#000004]"
-                  >
-                    {JOB_CATEGORIES.filter((c) => c !== 'All Categories').map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={createJobForm.category}
+                      onChange={(e) => setCreateJobForm({ ...createJobForm, category: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-xs text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] cursor-pointer appearance-none pr-8"
+                    >
+                      {JOB_CATEGORIES.filter((c) => c !== 'All Categories').map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div>
@@ -1562,36 +1721,39 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
                   Super Admin Privilege: Listing fee (₦2,000) is marked <strong>Verified & Paid</strong>. Vacancy goes live instantly across Setlla feed.
                 </span>
               </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#000004] text-xs font-semibold cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingJob}
-                  className="px-5 py-2 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5"
-                >
-                  {isSubmittingJob ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
-                      <span>Publishing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Publish Vacancy Live</span>
-                    </>
-                  )}
-                </button>
-              </div>
             </form>
+
+            {/* Pinned Action Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-100 bg-[#FCF9F5] flex items-center justify-end gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#000004] text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="superadmin-create-job-form"
+                disabled={isSubmittingJob}
+                className="px-5 py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-all active:scale-[0.99]"
+              >
+                {isSubmittingJob ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                    <span>Publishing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Publish Vacancy Live</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
+      </ModalPortal>
       )}
     </div>
   );

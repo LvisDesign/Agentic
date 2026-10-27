@@ -27,12 +27,14 @@ import {
   Home,
   Key,
   ArrowLeft,
-  Sparkles
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { DeltaCity, UserProfile, UserRole } from '../../types/marketplace';
 import { UserPersona } from '../../types/jobs';
 import { StateDropdown } from '../UI/StateDropdown';
 import { CustomDropdown } from '../UI/CustomDropdown';
+import { ModalPortal } from '../UI/ModalPortal';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { usePWA } from '../../utils/pwa';
@@ -131,12 +133,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         setSelectedPersona('lister');
       }
       setDuplicateError(null);
+      setSignupError(null);
 
       // Ensure all registration fields start blank for new signups
       if (initialMode === 'signup' || !isAuthenticated) {
         setSeekerFullName('');
         setSeekerPhone('');
         setSeekerEmail('');
+        setSeekerPassword('');
+        setShowSeekerPassword(false);
         setSeekerCity('');
         setSeekerState('Delta State');
 
@@ -145,12 +150,16 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         setAgentPhone('');
         setAgentWhatsapp('');
         setAgentEmail('');
+        setAgentPassword('');
+        setShowAgentPassword(false);
         setAgentCitySelection('');
         setAgentCity('');
         setCustomAgentCity('');
         setAgentCac('');
         setShowOptionalTenantFields(false);
         setShowOptionalAgentFields(false);
+        setLoginPassword('');
+        setShowLoginPassword(false);
       }
     }
   }, [isOpen, initialRole, initialMode, isAuthenticated]);
@@ -163,6 +172,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [seekerFullName, setSeekerFullName] = useState('');
   const [seekerPhone, setSeekerPhone] = useState('');
   const [seekerEmail, setSeekerEmail] = useState('');
+  const [seekerPassword, setSeekerPassword] = useState('');
+  const [showSeekerPassword, setShowSeekerPassword] = useState(false);
   const [seekerState, setSeekerState] = useState('Delta State');
   const [seekerCity, setSeekerCity] = useState<string>('');
 
@@ -174,6 +185,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [agentWhatsapp, setAgentWhatsapp] = useState('');
   const [sameAsPhone, setSameAsPhone] = useState(true);
   const [agentEmail, setAgentEmail] = useState('');
+  const [agentPassword, setAgentPassword] = useState('');
+  const [showAgentPassword, setShowAgentPassword] = useState(false);
   const [agentState, setAgentState] = useState('Delta State');
   const [agentCity, setAgentCity] = useState('');
   const [agentCitySelection, setAgentCitySelection] = useState('');
@@ -182,8 +195,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   // Login Form Fields
   const [loginPhoneOrEmail, setLoginPhoneOrEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [loginRole, setLoginRole] = useState<'seeker' | 'agent'>('seeker');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [signupError, setSignupError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Success state
@@ -191,7 +207,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [successMessage, setSuccessMessage] = useState({ title: '', subtitle: '' });
 
   // PWA & Post-Signup Onboarding State
-  const { isStandalone, isIOS, installApp } = usePWA();
+  const { isStandalone, isInstalled, isIOS, installApp } = usePWA();
   const [pendingRegistration, setPendingRegistration] = useState<{
     user: UserProfile;
     role: 'seeker' | 'agent';
@@ -220,6 +236,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   const handleSwitchToLoginWithDuplicate = (dup: DuplicateCheckResult) => {
     setAuthMode('login');
+    setSignupError(null);
+    setLoginError(null);
     const prefill = dup.field === 'email'
       ? (activeRoleTab === 'seeker' ? seekerEmail : agentEmail)
       : (activeRoleTab === 'seeker' ? seekerPhone : agentPhone);
@@ -258,6 +276,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const handleAgentPhoneChange = (val: string) => {
     setAgentPhone(val);
     if (duplicateError) setDuplicateError(null);
+    if (signupError) setSignupError(null);
     if (sameAsPhone) {
       setAgentWhatsapp(val);
     }
@@ -273,9 +292,22 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   // Submission for Tenant / Job Seeker Signup
   const handleSeekerSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!seekerFullName.trim() || !seekerPhone.trim()) return;
-    if (selectedPersona === 'job_seeker' && !seekerEmail.trim()) {
+    setSignupError(null);
+    if (!seekerFullName.trim() || !seekerPhone.trim()) {
+      setSignupError('Please enter your full name and phone number.');
       return;
+    }
+
+    // All users except tenants must provide compulsory email and password
+    if (selectedPersona !== 'tenant') {
+      if (!seekerEmail.trim()) {
+        setSignupError('Please enter your email address to continue.');
+        return;
+      }
+      if (!seekerPassword.trim() || seekerPassword.trim().length < 6) {
+        setSignupError('Please create a secure password (minimum 6 characters).');
+        return;
+      }
     }
 
     // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
@@ -301,6 +333,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       fullName: seekerFullName.trim(),
       phone: seekerPhone.trim(),
       email: seekerEmail.trim() || undefined,
+      password: selectedPersona !== 'tenant' ? seekerPassword.trim() : (seekerPassword.trim() || undefined),
       state: seekerState,
       city: resolvedCity,
       preferredPropertyType: 'Bedseater',
@@ -317,7 +350,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     const targetRoom: 'rentals' | 'jobs' = 
       (resolvedPersona === 'job_seeker' || resolvedPersona === 'employer') ? 'jobs' : 'rentals';
 
-    if (isStandalone) {
+    if (isStandalone || isInstalled) {
       setSuccessMessage({
         title: `Welcome, ${seekerFullName.trim()}!`,
         subtitle: targetRoom === 'jobs'
@@ -341,8 +374,19 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   // Submission for Agent / Employer Signup
   const handleAgentSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agentFullName.trim() || !agencyName.trim() || !agentPhone.trim()) return;
-    if (selectedPersona === 'employer' && !agentEmail.trim()) {
+    setSignupError(null);
+    if (!agentFullName.trim() || !agencyName.trim() || !agentPhone.trim()) {
+      setSignupError('Please enter your full name, organization name, and phone number.');
+      return;
+    }
+
+    // All users except tenants must provide compulsory email and password
+    if (!agentEmail.trim()) {
+      setSignupError('Please enter your official email address to continue.');
+      return;
+    }
+    if (!agentPassword.trim() || agentPassword.trim().length < 6) {
+      setSignupError('Please create a secure password (minimum 6 characters).');
       return;
     }
 
@@ -374,6 +418,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       phone: agentPhone.trim(),
       whatsapp: finalWhatsapp,
       email: agentEmail.trim() || undefined,
+      password: agentPassword.trim(),
       operatingState: agentState,
       operatingCity: resolvedCity,
       state: agentState,
@@ -391,7 +436,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     const targetRoom: 'rentals' | 'jobs' = resolvedPersona === 'employer' ? 'jobs' : 'rentals';
 
-    if (isStandalone) {
+    if (isStandalone || isInstalled) {
       setSuccessMessage({
         title: `Welcome, ${agentFullName.trim()}!`,
         subtitle: targetRoom === 'jobs'
@@ -431,6 +476,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       }
 
       if (registeredMatch) {
+        // If user created a password, verify it upon login
+        if (registeredMatch.password) {
+          if (!loginPassword.trim()) {
+            setLoginError('Please enter your account password to sign in.');
+            setIsLoggingIn(false);
+            return;
+          }
+          if (loginPassword.trim() !== registeredMatch.password) {
+            setLoginError('Incorrect password. Please verify your password and try again.');
+            setIsLoggingIn(false);
+            return;
+          }
+        }
+
         setLoginError(null);
         const isAgent = registeredMatch.isAgent;
         setSuccessMessage({
@@ -563,10 +622,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   };
 
   const isTenantOptionalOpen = showOptionalTenantFields || Boolean(seekerEmail);
-  const isAgentOptionalOpen = showOptionalAgentFields || Boolean(agentEmail) || Boolean(agentCac);
+  const isAgentOptionalOpen = showOptionalAgentFields || Boolean(agentCac);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/65 backdrop-blur-sm overflow-y-auto animate-fade-in">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2.5 sm:p-4 md:p-6 bg-black/65 backdrop-blur-sm overflow-y-auto animate-fade-in">
       {showPostSignupPrompt ? (
         /* --- POST-SIGNUP SCREEN CARD LAYOUT --- */
         <div 
@@ -1001,6 +1061,40 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     </div>
 
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-[#70798C]">
+                          Password
+                        </label>
+                        <span className="text-[10px] text-[#70798C] font-normal">
+                          Required for protected accounts
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type={showLoginPassword ? 'text' : 'password'}
+                          autoComplete="current-password"
+                          placeholder="Enter your password"
+                          value={loginPassword}
+                          onChange={(e) => {
+                            setLoginPassword(e.target.value);
+                            if (loginError) setLoginError(null);
+                          }}
+                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowLoginPassword(!showLoginPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                          tabIndex={-1}
+                          title={showLoginPassword ? "Hide password" : "Show password"}
+                        >
+                          {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="pt-1">
                       <button
                         type="submit"
@@ -1024,6 +1118,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 ) : signupStep === 'persona' ? null : activeRoleTab === 'seeker' ? (
                   /* --- 2. TENANT / JOB SEEKER SIGNUP FORM --- */
                   <form onSubmit={handleSeekerSignup} className="space-y-2.5 sm:space-y-3 text-xs">
+                    {/* Form Validation Alert Banner */}
+                    {signupError && (
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] flex items-center gap-2 animate-fade-in shadow-xs">
+                        <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0" />
+                        <span className="text-xs font-semibold text-[#F0544F]">{signupError}</span>
+                      </div>
+                    )}
+
                     {/* Duplicate Account Alert Banner */}
                     {duplicateError && (
                       <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
@@ -1153,6 +1255,45 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       )}
                     </div>
 
+                    {/* Password - COMPULSORY for all users except tenants */}
+                    {selectedPersona === 'job_seeker' && (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-[#70798C]">
+                            Create Password <span className="text-[#F0544F]">*</span>
+                          </label>
+                          <span className="text-[10px] text-[#F95700] font-semibold">
+                            Minimum 6 characters
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            type={showSeekerPassword ? 'text' : 'password'}
+                            required
+                            minLength={6}
+                            autoComplete="new-password"
+                            placeholder="Create a secure password (min 6 characters)"
+                            value={seekerPassword}
+                            onChange={(e) => {
+                              setSeekerPassword(e.target.value);
+                              if (signupError) setSignupError(null);
+                            }}
+                            className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowSeekerPassword(!showSeekerPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                            tabIndex={-1}
+                            title={showSeekerPassword ? "Hide password" : "Show password"}
+                          >
+                            {showSeekerPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     {/* State & Preferred City (Both Compulsory - NEVER Hidden) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                       <div>
@@ -1238,6 +1379,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 ) : (
                   /* --- 3. AGENT SIGNUP FORM --- */
                   <form onSubmit={handleAgentSignup} className="space-y-2.5 sm:space-y-3 text-xs">
+                    {/* Form Validation Alert Banner */}
+                    {signupError && (
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] flex items-center gap-2 animate-fade-in shadow-xs">
+                        <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0" />
+                        <span className="text-xs font-semibold text-[#F0544F]">{signupError}</span>
+                      </div>
+                    )}
+
                     {/* Duplicate Account Alert Banner */}
                     {duplicateError && (
                       <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
@@ -1346,50 +1495,86 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Official Work Email - COMPULSORY for Employer, prominent and visible! */}
-                    {selectedPersona === 'employer' && (
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#70798C]">
-                            Official Work Email <span className="text-[#F0544F]">*</span>
-                          </label>
-                          <span className="text-[10px] text-[#F95700] font-semibold">
-                            Compulsory for candidate alerts
-                          </span>
-                        </div>
-                        <div className="relative">
-                          <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                              ? 'text-[#F0544F]'
-                              : 'text-[#70798C]'
-                          }`} />
-                          <input
-                            type="email"
-                            required
-                            autoComplete="email"
-                            inputMode="email"
-                            spellCheck={false}
-                            placeholder="e.g. hr@company.com or recruiting@domain.com"
-                            value={agentEmail}
-                            onChange={(e) => {
-                              setAgentEmail(e.target.value);
-                              if (duplicateError) setDuplicateError(null);
-                            }}
-                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
-                              duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
-                                : 'border-[#E5E7EB]'
-                            }`}
-                          />
-                        </div>
-                        {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>Email already registered.</span>
-                          </p>
-                        )}
+                    {/* Official Email - COMPULSORY for both Lister & Employer */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-[#70798C]">
+                          {selectedPersona === 'employer' ? 'Official Work Email' : 'Official Agent Email'} <span className="text-[#F0544F]">*</span>
+                        </label>
+                        <span className="text-[10px] text-[#F95700] font-semibold">
+                          {selectedPersona === 'employer' ? 'Compulsory for candidate alerts' : 'Compulsory for notifications & sign-in'}
+                        </span>
                       </div>
-                    )}
+                      <div className="relative">
+                        <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                          duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                            ? 'text-[#F0544F]'
+                            : 'text-[#70798C]'
+                        }`} />
+                        <input
+                          type="email"
+                          required
+                          autoComplete="email"
+                          inputMode="email"
+                          spellCheck={false}
+                          placeholder={selectedPersona === 'employer' ? 'e.g. hr@company.com or recruiting@domain.com' : 'e.g. agent@agency.ng or name@domain.com'}
+                          value={agentEmail}
+                          onChange={(e) => {
+                            setAgentEmail(e.target.value);
+                            if (duplicateError) setDuplicateError(null);
+                            if (signupError) setSignupError(null);
+                          }}
+                          className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                              ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                              : 'border-[#E5E7EB]'
+                          }`}
+                        />
+                      </div>
+                      {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                        <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Email already registered.</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Create Password - COMPULSORY for both Lister & Employer */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-[#70798C]">
+                          Create Password <span className="text-[#F0544F]">*</span>
+                        </label>
+                        <span className="text-[10px] text-[#F95700] font-semibold">
+                          Minimum 6 characters
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type={showAgentPassword ? 'text' : 'password'}
+                          required
+                          minLength={6}
+                          autoComplete="new-password"
+                          placeholder="Create a secure password (min 6 characters)"
+                          value={agentPassword}
+                          onChange={(e) => {
+                            setAgentPassword(e.target.value);
+                            if (signupError) setSignupError(null);
+                          }}
+                          className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAgentPassword(!showAgentPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                          tabIndex={-1}
+                          title={showAgentPassword ? "Hide password" : "Show password"}
+                        >
+                          {showAgentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
 
                     {/* Direct Phone & WhatsApp Toggle */}
                     <div>
@@ -1556,7 +1741,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <span>
                             {selectedPersona === 'employer'
                               ? 'Add Business Registration / CAC Number (Optional)'
-                              : 'Add CAC / Reg No. & Email (Optional)'}
+                              : 'Add CAC / License / Reg Number (Optional)'}
                           </span>
                         </button>
                       ) : (
@@ -1572,11 +1757,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               <span>Hide</span>
                             </button>
                           </div>
-                          <div className={`grid grid-cols-1 ${selectedPersona === 'employer' ? '' : 'sm:grid-cols-2'} gap-2 sm:gap-2.5`}>
+                          <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
                             <div>
                               <div className="flex items-center justify-between mb-1">
                                 <label className="text-xs font-semibold text-[#70798C]">
-                                  {selectedPersona === 'employer' ? 'CAC / RC Number (Optional)' : 'CAC / License No.'}
+                                  {selectedPersona === 'employer' ? 'CAC / RC Number (Optional)' : 'CAC / License No. (Optional)'}
                                 </label>
                                 <span className="text-[10px] text-[#342A21] bg-[#342A21]/5 px-1 py-0.5 rounded font-semibold">
                                   {selectedPersona === 'employer' ? 'Verified Employer' : 'Badge'}
@@ -1593,41 +1778,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 />
                               </div>
                             </div>
-
-                            {selectedPersona !== 'employer' && (
-                              <div>
-                                <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                                  Email Address
-                                </label>
-                                <div className="relative">
-                                  <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                                    duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                      ? 'text-[#F0544F]'
-                                      : 'text-[#70798C]'
-                                  }`} />
-                                  <input
-                                    type="email"
-                                    placeholder="agency@domain.com"
-                                    value={agentEmail}
-                                    onChange={(e) => {
-                                      setAgentEmail(e.target.value);
-                                      if (duplicateError) setDuplicateError(null);
-                                    }}
-                                    className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                                      duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                                        ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20'
-                                        : 'border-[#E5E7EB]'
-                                    }`}
-                                  />
-                                </div>
-                                {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                                  <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                    <span>Email already registered.</span>
-                                  </p>
-                                )}
-                              </div>
-                            )}
                           </div>
                         </div>
                       )}
@@ -1696,6 +1846,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           </div>
         </div>
     )}
-    </div>
+      </div>
+    </ModalPortal>
   );
 };

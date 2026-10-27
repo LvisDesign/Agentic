@@ -1263,41 +1263,41 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     </p>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                    <button
-                      onClick={() => {
-                        if (activeAdvertiser) {
-                          setViewMode('advertiser-dashboard');
-                        } else {
-                          setAuthModalInitialMode('signup');
-                          setIsAuthModalOpen(true);
-                        }
-                      }}
-                      className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
-                    >
-                      <Building2 className="w-4 h-4 text-amber-300" />
-                      <span>{activeAdvertiser ? 'Manage on Advertiser Dashboard' : 'Open Ads Dashboard'}</span>
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                      <button
+                        onClick={() => {
+                          if (activeAdvertiser) {
+                            setViewMode('advertiser-dashboard');
+                          } else {
+                            setAuthModalInitialMode('signup');
+                            setIsAuthModalOpen(true);
+                          }
+                        }}
+                        className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        <Building2 className="w-4 h-4 text-amber-300" />
+                        <span>{activeAdvertiser ? 'Manage on Advertiser Dashboard' : 'Open Ads Dashboard'}</span>
+                      </button>
 
-                    <a
-                      href={`https://wa.me/2348000000000?text=${encodeURIComponent(
-                        `Hello Setlla Team, I submitted an ad campaign with Ref: ${submittedResult.trackingRef} for ${submittedResult.advert.advertiserName}. Please review and activate.`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
-                    >
-                      <WhatsAppIcon className="w-4 h-4" />
-                      <span>Fast-Track on WhatsApp</span>
-                    </a>
+                      <a
+                        href={`https://wa.me/2348000000000?text=${encodeURIComponent(
+                          `Hello Setlla Team, I submitted an ad campaign with Ref: ${submittedResult.trackingRef} for ${submittedResult.advert.advertiserName}. Please review and activate.`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        <WhatsAppIcon className="w-4 h-4" />
+                        <span>Fast-Track on WhatsApp</span>
+                      </a>
 
-                    <button
-                      onClick={() => setSubmittedResult(null)}
-                      className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] text-xs font-semibold border border-[#E5E7EB] transition-colors cursor-pointer"
-                    >
-                      Submit Another
-                    </button>
-                  </div>
+                      <button
+                        onClick={() => setSubmittedResult(null)}
+                        className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] text-xs font-semibold border border-[#E5E7EB] transition-colors cursor-pointer whitespace-nowrap"
+                      >
+                        Submit Another
+                      </button>
+                    </div>
                 </div>
               ) : (
                 /* Booking Form */

@@ -55,6 +55,7 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  overflow-wrap: break-word;
   scrollbar-width: none !important; /* Firefox */
   -ms-overflow-style: none !important; /* IE and Edge */
 }

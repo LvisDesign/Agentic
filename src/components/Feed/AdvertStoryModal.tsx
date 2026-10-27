@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertStory } from '../../data/mockAdverts';
+import { ModalPortal } from '../UI/ModalPortal';
 
 interface AdvertStoryModalProps {
   isOpen: boolean;
@@ -92,10 +93,11 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none animate-fade-in"
-      onClick={onClose}
-    >
+    <ModalPortal>
+      <div 
+        className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none animate-fade-in"
+        onClick={onClose}
+      >
       {/* Centered Phone-proportioned Story Canvas */}
       <div 
         className="relative w-full max-w-[420px] h-[92vh] max-h-[840px] bg-slate-950 rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-white/10"
@@ -254,5 +256,6 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 };

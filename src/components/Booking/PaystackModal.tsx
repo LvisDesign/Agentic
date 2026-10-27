@@ -15,6 +15,7 @@ import {
 import confetti from 'canvas-confetti';
 import { formatNaira } from '../../utils/formatters';
 import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
+import { ModalPortal } from '../UI/ModalPortal';
 
 const BANK_OPTIONS: DropdownOption[] = [
   { value: 'GTBank', label: 'Guaranty Trust Bank (*737*)', subtitle: 'GTCO Instant USSD' },
@@ -97,7 +98,8 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div 
         className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-[#E5E7EB] animate-slide-up"
         onClick={(e) => e.stopPropagation()}
@@ -337,5 +339,6 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 };
