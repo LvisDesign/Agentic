@@ -329,9 +329,6 @@ const CarouselVideoItem: React.FC<CarouselVideoItemProps> = ({
             <RotateCcw className="w-4 h-4 text-amber-300 group-hover/replay:-rotate-45 transition-transform duration-300" />
             <span>Replay Video</span>
           </button>
-          <span className="text-[11px] text-white/80 mt-1.5 font-medium tracking-tight">
-            Click to watch again
-          </span>
         </div>
       )}
 
