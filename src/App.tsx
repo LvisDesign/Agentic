@@ -214,7 +214,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
 
   // 2. LocalStorage Persistence (Preserves active page across normal F5 / page reloads)
   if (savedRole === 'admin') {
-    if (isSuperAdminAuthenticated()) {
+    if (isSuperAdminAuthenticated() && (hash.includes('admin') || pathname.includes('/admin'))) {
       return { role: 'admin', view: 'feed', openPasses: false };
     }
     return { role: 'tenant', view: 'feed', openPasses: false };
@@ -227,7 +227,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   }
 
   // 3. Fallback defaults:
-  if (isUserAdmin && isSuperAdminAuthenticated()) {
+  if (isUserAdmin && isSuperAdminAuthenticated() && (hash.includes('admin') || pathname.includes('/admin'))) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
   if (isUserAgent) {
@@ -1733,8 +1733,8 @@ export function App() {
           return;
         }
 
-        const isExplicitAdminTarget = currentHash.includes('admin') || currentHash.includes('access_token') || currentSearch.includes('admin');
-        if (isExplicitAdminTarget || (!currentHash.includes('explore') && !currentHash.includes('agent') && !currentHash.includes('dashboard'))) {
+        const isExplicitAdminTarget = currentHash.includes('admin') || currentHash.includes('access_token') || currentSearch.includes('admin') || currentPath.includes('/admin');
+        if (isExplicitAdminTarget) {
           setCurrentRole('admin');
           window.location.hash = '#/admin';
         }
