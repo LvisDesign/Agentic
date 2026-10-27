@@ -1,0 +1,5 @@
+# Supabase Project Configuration for Setlla
+project_id = "iadzihievmbhssqycpol"
+
+[functions.paystack-webhook]
+verify_jwt = false

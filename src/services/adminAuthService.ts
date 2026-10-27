@@ -448,22 +448,158 @@ export function completeAdminRegistration(
 }
 
 /**
- * Authenticates an admin using Email and Password.
- * STRICTLY DISABLED: Passwords are fully disabled for Super Admin security.
- * The ONLY permitted authentication method is real-time OTP dispatch to admin@setlla.com.
+ * Authenticates an admin using Email and Password via Supabase Auth + platform_users table.
+ * 1. Checks Supabase Auth credentials (bcrypt / argon2 hashed in auth.users).
+ * 2. Checks platform_users table for is_admin = true or is_super_admin = true.
+ * 3. Rejects if not elevated in platform_users, immediately signing them out.
  */
-export function loginAdminWithPassword(
-  _emailInput: string,
-  _passwordInput: string
-): { success: boolean; user?: UserProfile; error?: string } {
-  return {
-    success: false,
-    error: 'Password authentication has been disabled. Super Admin access requires the one-time passcode (OTP) dispatched to admin@setlla.com.',
-  };
+export async function loginAdminWithPassword(
+  emailInput: string,
+  passwordInput: string
+): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
+  if (!emailInput || !passwordInput) {
+    return { success: false, error: 'Please enter both your administrator email and password.' };
+  }
+
+  const cleanEmail = emailInput.trim().toLowerCase();
+
+  if (!isSupabaseConfigured()) {
+    return { success: false, error: 'Database service is not configured. Please check environment variables.' };
+  }
+
+  try {
+    // 1. Authenticate with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: cleanEmail,
+      password: passwordInput,
+    });
+
+    if (authError || !authData.user) {
+      return {
+        success: false,
+        error: authError?.message || 'Invalid administrator email or password.',
+      };
+    }
+
+    // 2. Query platform_users table to verify role
+    const { data: profile, error: profileError } = await supabase
+      .from('platform_users')
+      .select('*')
+      .eq('id', authData.user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('[AdminAuthService] Error querying platform_users:', profileError);
+    }
+
+    const isAuthorized = Boolean(profile?.is_admin || profile?.is_super_admin);
+
+    if (!isAuthorized) {
+      // Immediately terminate unprivileged session
+      await supabase.auth.signOut().catch(() => {});
+      return {
+        success: false,
+        error: 'Access denied: This account does not possess Super Admin platform privileges in platform_users.',
+      };
+    }
+
+    const adminProfile: UserProfile = {
+      id: profile.id,
+      fullName: profile.full_name || 'Platform Administrator',
+      email: profile.email || authData.user.email || cleanEmail,
+      phone: profile.phone || '0800 000 0001',
+      state: profile.state || 'Delta State',
+      city: profile.city || 'Asaba',
+      isVerifiedTenant: false,
+      isAgent: false,
+      isAdmin: true,
+      isSuperAdmin: Boolean(profile.is_super_admin),
+      isDemoAdmin: false,
+      savedListingIds: [],
+      createdAt: profile.created_at || new Date().toISOString(),
+    };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(ADMIN_AUTH_KEY, 'true');
+      localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(adminProfile));
+    }
+
+    recordAuditLog(
+      'ADMIN_LOGIN',
+      'system',
+      adminProfile.id,
+      adminProfile.fullName,
+      adminProfile.fullName,
+      `Super Admin logged in successfully with verified Supabase credentials.`
+    );
+
+    return { success: true, user: adminProfile };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || 'Authentication failed. Please verify your credentials and network connection.',
+    };
+  }
 }
 
 /**
- * Terminates the Super Admin session.
+ * Verifies that the current browser session has a real, active Supabase Auth session
+ * whose user is elevated in platform_users with is_admin or is_super_admin.
+ * If invalid, clears localStorage and returns null.
+ */
+export async function verifyAdminSessionWithSupabase(): Promise<UserProfile | null> {
+  if (typeof window === 'undefined') return null;
+
+  if (!isSupabaseConfigured()) {
+    return isSuperAdminAuthenticated() ? getActiveAdminUser() : null;
+  }
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      logoutAdminSession();
+      return null;
+    }
+
+    const { data: profile, error } = await supabase
+      .from('platform_users')
+      .select('*')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    if (error || !profile || (!profile.is_admin && !profile.is_super_admin)) {
+      logoutAdminSession();
+      await supabase.auth.signOut().catch(() => {});
+      return null;
+    }
+
+    const adminProfile: UserProfile = {
+      id: profile.id,
+      fullName: profile.full_name || 'Platform Administrator',
+      email: profile.email || session.user.email || OFFICIAL_ADMIN_EMAIL,
+      phone: profile.phone || '0800 000 0001',
+      state: profile.state || 'Delta State',
+      city: profile.city || 'Asaba',
+      isVerifiedTenant: false,
+      isAgent: false,
+      isAdmin: true,
+      isSuperAdmin: Boolean(profile.is_super_admin),
+      isDemoAdmin: false,
+      savedListingIds: [],
+      createdAt: profile.created_at || new Date().toISOString(),
+    };
+
+    localStorage.setItem(ADMIN_AUTH_KEY, 'true');
+    localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(adminProfile));
+    return adminProfile;
+  } catch (e) {
+    console.warn('[AdminAuthService] Session verification error:', e);
+    return null;
+  }
+}
+
+/**
+ * Terminates the Super Admin session across localStorage and Supabase Auth.
  */
 export function logoutAdminSession(): void {
   if (typeof window === 'undefined') return;
@@ -481,4 +617,10 @@ export function logoutAdminSession(): void {
   localStorage.removeItem(ADMIN_AUTH_KEY);
   localStorage.removeItem(ADMIN_USER_KEY);
   localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
+
+  if (isSupabaseConfigured()) {
+    try {
+      supabase.auth.signOut().catch(() => {});
+    } catch (_) {}
+  }
 }

@@ -54,7 +54,8 @@ import {
   getActiveAdminUser, 
   logoutAdminSession, 
   DEFAULT_SUPER_ADMIN_USER,
-  OFFICIAL_ADMIN_EMAIL
+  OFFICIAL_ADMIN_EMAIL,
+  verifyAdminSessionWithSupabase
 } from './services/adminAuthService';
 import { getPlatformSettings } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
@@ -1708,23 +1709,9 @@ export function App() {
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
-    const authorizeSuperAdminFromEmail = (email?: string | null) => {
-      const target = (email || '').toLowerCase().trim();
-      if (target === OFFICIAL_ADMIN_EMAIL) {
-        const adminProfile: UserProfile = {
-          id: 'DT-ADMIN-001',
-          fullName: 'Platform Administrator',
-          email: 'admin@setlla.com',
-          phone: '0800 000 0001',
-          state: 'Delta State',
-          city: 'Asaba',
-          isVerifiedTenant: false,
-          isAgent: false,
-          isAdmin: true,
-          isSuperAdmin: true,
-          savedListingIds: [],
-          createdAt: new Date().toISOString(),
-        };
+    const authorizeSuperAdminFromEmail = async (_email?: string | null) => {
+      const verified = await verifyAdminSessionWithSupabase();
+      if (verified) {
 
         const currentHash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
         const currentSearch = typeof window !== 'undefined' ? window.location.search.toLowerCase() : '';
@@ -1738,8 +1725,8 @@ export function App() {
           userView === 'partner';
 
         setIsAdminAuthenticated(true);
-        setActiveAdminUser(adminProfile);
-        setCurrentUser(adminProfile);
+        setActiveAdminUser(verified);
+        setCurrentUser(verified);
 
         if (isPartnerTarget) {
           setUserView('partner');

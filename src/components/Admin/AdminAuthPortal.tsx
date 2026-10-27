@@ -9,7 +9,10 @@ import {
   CheckCircle2, 
   AlertCircle, 
   RefreshCw, 
-  Globe
+  Globe,
+  Eye,
+  EyeOff,
+  Key
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { UserProfile } from '../../types/marketplace';
@@ -18,7 +21,8 @@ import {
   generateAndSendAdminOTP, 
   verifyAdminOTP,
   findAdminAccount,
-  completeAdminRegistration
+  completeAdminRegistration,
+  loginAdminWithPassword
 } from '../../services/adminAuthService';
 import { recordAuditLog } from '../../services/adminService';
 import { supabase, isSupabaseConfigured } from '../../utils/supabaseClient';
@@ -36,9 +40,12 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
 }) => {
   const [mode, setMode] = useState<'login' | 'create-account'>(initialMode);
   const [step, setStep] = useState<'form' | 'otp'>('form');
+  const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
 
-  // Administrator Profile Details (Passwordless - empty by default)
+  // Administrator Profile Details
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [sendLoading, setSendLoading] = useState(false);
@@ -115,6 +122,45 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
       subscription.unsubscribe();
     };
   }, [fullName, phone, email, mode, onSuccess]);
+
+  // Handle Direct Password Login via Supabase Auth & platform_users
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSendError(null);
+
+    const targetEmail = email.trim();
+    if (!targetEmail) {
+      setSendError('Please enter your administrator email.');
+      return;
+    }
+    if (!password) {
+      setSendError('Please enter your administrator password.');
+      return;
+    }
+
+    setSendLoading(true);
+
+    try {
+      const result = await loginAdminWithPassword(targetEmail, password);
+      setSendLoading(false);
+
+      if (!result.success || !result.user) {
+        setSendError(result.error || 'Authentication failed. Please check your credentials.');
+        return;
+      }
+
+      confetti({
+        particleCount: 80,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
+
+      onSuccess(result.user);
+    } catch (err: any) {
+      setSendLoading(false);
+      setSendError(err?.message || 'Login failed. Please try again.');
+    }
+  };
 
   // Handle Request OTP Submission (Passwordless)
   const handleRequestOTP = async (e?: React.FormEvent) => {
@@ -449,93 +495,203 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
               </div>
             )}
 
-            {/* 1. STEP 1: PASSWORDLESS OTP REQUEST FORM */}
+            {/* 1. STEP 1: AUTHENTICATION FORM */}
             {step === 'form' && (
-              <form onSubmit={handleRequestOTP} className="space-y-3.5">
-                {/* Administrator Email Input */}
-                <div>
-                  <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                    Administrator Email <span className="text-[#F0544F]">*</span>
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email address"
-                      required
-                      className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Additional Details needed during Create Account */}
-                {mode === 'create-account' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-3.5">
+                {mode === 'login' && loginMethod === 'password' ? (
+                  /* Password Login Form (Supabase Auth Direct Verification) */
+                  <form onSubmit={handlePasswordLogin} className="space-y-3.5">
+                    {/* Administrator Email Input */}
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Administrator Name <span className="text-[#F0544F]">*</span>
+                        Administrator Email <span className="text-[#F0544F]">*</span>
                       </label>
                       <div className="relative">
-                        <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
-                          type="text"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          placeholder="Enter your full name"
-                          required={mode === 'create-account'}
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="admin@setlla.com"
+                          required
                           className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
                         />
                       </div>
                     </div>
 
+                    {/* Administrator Password Input */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-[#70798C]">
+                          Password <span className="text-[#F0544F]">*</span>
+                        </label>
+                      </div>
+                      <div className="relative">
+                        <Key className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Enter your administrator password"
+                          required
+                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] cursor-pointer"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {sendError && (
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-xs text-[#F0544F] flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
+                        <span>{sendError}</span>
+                      </div>
+                    )}
+
+                    {/* Primary Password Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={sendLoading}
+                      className="w-full py-3.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50 mt-2"
+                    >
+                      {sendLoading ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>Verifying credentials...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>Sign In to Super Admin</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+
+                    {/* Alternate OTP Method Toggle */}
+                    <div className="text-center pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoginMethod('otp');
+                          setSendError(null);
+                        }}
+                        className="text-xs text-[#70798C] hover:text-[#000004] font-medium cursor-pointer transition-colors"
+                      >
+                        Prefer email code? <span className="text-[#F95700] font-semibold hover:underline">Sign in with One-Time Code</span>
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  /* OTP Request Form (Email Dispatch) or Create Account */
+                  <form onSubmit={handleRequestOTP} className="space-y-3.5">
+                    {/* Administrator Email Input */}
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Direct Phone Number <span className="text-[#F0544F]">*</span>
+                        Administrator Email <span className="text-[#F0544F]">*</span>
                       </label>
                       <div className="relative">
-                        <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                         <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="Enter your phone number"
-                          required={mode === 'create-account'}
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="admin@setlla.com"
+                          required
                           className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
                         />
                       </div>
                     </div>
-                  </div>
-                )}
 
-                {sendError && (
-                  <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-xs text-[#F0544F] flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
-                    <span>{sendError}</span>
-                  </div>
-                )}
+                    {/* Additional Details needed during Create Account */}
+                    {mode === 'create-account' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            Administrator Name <span className="text-[#F0544F]">*</span>
+                          </label>
+                          <div className="relative">
+                            <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
+                              placeholder="Enter your full name"
+                              required={mode === 'create-account'}
+                              className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
+                            />
+                          </div>
+                        </div>
 
-                {/* Primary CTA Button */}
-                <button
-                  type="submit"
-                  disabled={sendLoading}
-                  className="w-full py-3.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50 mt-2"
-                >
-                  {sendLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>{mode === 'login' ? 'Validating & sending code...' : 'Dispatching verification code...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4 text-amber-400" />
-                      <span>{mode === 'login' ? 'Send Authorization Code' : 'Create Account & Send Code'}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            Direct Phone Number <span className="text-[#F0544F]">*</span>
+                          </label>
+                          <div className="relative">
+                            <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type="tel"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              placeholder="0800 000 0000"
+                              required={mode === 'create-account'}
+                              className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {sendError && (
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-xs text-[#F0544F] flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
+                        <span>{sendError}</span>
+                      </div>
+                    )}
+
+                    {/* Primary CTA Button */}
+                    <button
+                      type="submit"
+                      disabled={sendLoading}
+                      className="w-full py-3.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50 mt-2"
+                    >
+                      {sendLoading ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" />
+                          <span>{mode === 'login' ? 'Validating & sending code...' : 'Dispatching verification code...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>{mode === 'login' ? 'Send Authorization Code' : 'Create Account & Send Code'}</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+
+                    {/* Return to Password Login if in Login Mode */}
+                    {mode === 'login' && (
+                      <div className="text-center pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setLoginMethod('password');
+                            setSendError(null);
+                          }}
+                          className="text-xs text-[#70798C] hover:text-[#000004] font-medium cursor-pointer transition-colors"
+                        >
+                          Have your password? <span className="text-[#F95700] font-semibold hover:underline">Sign in with password</span>
+                        </button>
+                      </div>
+                    )}
+                  </form>
+                )}
+              </div>
             )}
 
             {/* 2. STEP 2: OTP VERIFICATION VIEW */}
@@ -708,7 +864,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
           <div className="pt-3 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3">
             <span className="inline-flex items-center gap-1.5 text-[11px] text-[#70798C]">
               <Lock className="w-3 h-3 text-amber-500" />
-              <span>Passwordless Security Standard • Authorized Platform Operators Only</span>
+              <span>Zero-Trust RBAC Security Standard • Authorized Platform Operators Only</span>
             </span>
           </div>
         </div>
