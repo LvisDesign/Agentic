@@ -6,6 +6,7 @@ import { UserProfile } from '../types/marketplace';
 import { saveRegisteredUser } from '../utils/userRegistry';
 
 const JOBS_STORAGE_KEY = 'setlla_job_listings';
+const DELETED_JOBS_STORAGE_KEY = 'setlla_deleted_job_ids';
 const APPLICATIONS_STORAGE_KEY = 'setlla_job_applications';
 const USER_SAVED_CV_KEY = 'setlla_saved_candidate_cv';
 
@@ -17,9 +18,40 @@ export interface SavedCandidateCV {
 }
 
 /**
+ * Returns set of permanently deleted job listing IDs to prevent resurrection.
+ */
+export function getDeletedJobIds(): Set<string> {
+  const set = new Set<string>();
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(DELETED_JOBS_STORAGE_KEY) : null;
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        arr.forEach((id) => set.add(id));
+      }
+    }
+  } catch (_) {}
+  return set;
+}
+
+/**
+ * Records a deleted job ID into the permanent tombstone registry.
+ */
+export function recordDeletedJobId(jobId: string): void {
+  try {
+    const set = getDeletedJobIds();
+    set.add(jobId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(DELETED_JOBS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+    }
+  } catch (_) {}
+}
+
+/**
  * Loads all available job listings.
  */
 export async function getAllJobs(): Promise<JobListing[]> {
+  const deletedIds = getDeletedJobIds();
   let localJobs: JobListing[] = [];
   try {
     const raw = localStorage.getItem(JOBS_STORAGE_KEY);
@@ -28,8 +60,11 @@ export async function getAllJobs(): Promise<JobListing[]> {
     }
   } catch (_) {}
 
+  // Filter out any tombstoned deleted jobs
+  localJobs = (localJobs || []).filter((j) => !deletedIds.has(j.id));
+
   if (!localJobs || localJobs.length === 0) {
-    localJobs = INITIAL_JOB_LISTINGS;
+    localJobs = INITIAL_JOB_LISTINGS.filter((j) => !deletedIds.has(j.id));
     try {
       localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(localJobs));
     } catch (_) {}
@@ -38,7 +73,7 @@ export async function getAllJobs(): Promise<JobListing[]> {
     const existingIds = new Set(localJobs.map((j) => j.id));
     let hasNew = false;
     INITIAL_JOB_LISTINGS.forEach((initJob) => {
-      if (!existingIds.has(initJob.id)) {
+      if (!existingIds.has(initJob.id) && !deletedIds.has(initJob.id)) {
         localJobs.push(initJob);
         hasNew = true;
       }
@@ -88,10 +123,11 @@ export async function getAllJobs(): Promise<JobListing[]> {
             isFeatured: Boolean(d.is_featured)
           }));
 
-          // Merge cloud jobs with local jobs ensuring no duplicates
+          // Merge cloud jobs with local jobs ensuring no duplicates and excluding deleted
+          const undeletedCloudJobs = cloudJobs.filter((j) => !deletedIds.has(j.id));
           const jobMap = new Map<string, JobListing>();
           localJobs.forEach((j) => jobMap.set(j.id, j));
-          cloudJobs.forEach((j) => jobMap.set(j.id, j));
+          undeletedCloudJobs.forEach((j) => jobMap.set(j.id, j));
           const merged = Array.from(jobMap.values());
           localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(merged));
           return merged;
@@ -503,12 +539,22 @@ export function updateApplicationReviewStatus(
  * Permanently removes a job vacancy from storage and synced tables.
  */
 export async function deleteJobListing(jobId: string): Promise<void> {
-  const all = await getAllJobs();
-  const updated = all.filter((j) => j.id !== jobId);
+  // 1. Immediately register tombstone to prevent resurrection
+  recordDeletedJobId(jobId);
+
+  // 2. Cleanse active local jobs synchronously
   try {
-    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
+    const raw = localStorage.getItem(JOBS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const filtered = parsed.filter((j: any) => j && j.id !== jobId);
+        localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(filtered));
+      }
+    }
   } catch (_) {}
 
+  // 3. Dispatch cloud delete to Supabase table
   if (isSupabaseConfigured()) {
     try {
       const client = getSupabaseClient();

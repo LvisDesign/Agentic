@@ -306,16 +306,19 @@ export const AdminJobsTab: React.FC<AdminJobsTabProps> = ({
       cancelText: 'Keep Active',
       variant: 'danger',
       onConfirm: async () => {
+        // Immediately remove from UI list optimistically
+        setJobsList((prev) => prev.filter((j) => j.id !== job.id));
         try {
           await deleteJobListing(job.id);
-          setJobsList((prev) => prev.filter((j) => j.id !== job.id));
           showToast('Job listing permanently deleted');
-          onRecordAuditLog(
-            'SETLLA_JOB_DELETED',
-            'job_listing',
-            job.title,
-            `Super Admin deleted job listing "${job.title}" by ${job.companyName}.`
-          );
+          try {
+            onRecordAuditLog(
+              'SETLLA_JOB_DELETED',
+              'job_listing',
+              job.title,
+              `Super Admin deleted job listing "${job.title}" by ${job.companyName}.`
+            );
+          } catch (_) {}
         } catch (_) {
           showToast('Failed to delete job listing');
         }

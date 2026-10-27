@@ -35,18 +35,41 @@ export const CustomConfirmModal: React.FC<CustomConfirmProps> = ({
   onConfirm,
   onCancel,
 }) => {
+  const [internalLoading, setInternalLoading] = React.useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setInternalLoading(false);
+    }
+  }, [isOpen]);
+
+  const isBusy = isLoading || internalLoading;
+
+  const handleConfirmClick = async () => {
+    if (isBusy) return;
+    try {
+      setInternalLoading(true);
+      await onConfirm();
+      onCancel();
+    } catch (err) {
+      console.error('Confirmation action error:', err);
+    } finally {
+      setInternalLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isLoading) {
+      if (e.key === 'Escape' && !isBusy) {
         onCancel();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isLoading, onCancel]);
+  }, [isOpen, isBusy, onCancel]);
 
   if (!isOpen) return null;
 
@@ -113,7 +136,7 @@ export const CustomConfirmModal: React.FC<CustomConfirmProps> = ({
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${currentStyles.badgeBg}`}>
             {badge || currentStyles.defaultBadge}
           </span>
-          {!isLoading && (
+          {!isBusy && (
             <button
               type="button"
               onClick={onCancel}
@@ -162,7 +185,7 @@ export const CustomConfirmModal: React.FC<CustomConfirmProps> = ({
           {!isAlertOnly && (
             <button
               type="button"
-              disabled={isLoading}
+              disabled={isBusy}
               onClick={onCancel}
               className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl border border-[#E5E7EB] hover:bg-[#F4F5F7] text-xs sm:text-sm font-semibold text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer disabled:opacity-50"
             >
@@ -171,11 +194,11 @@ export const CustomConfirmModal: React.FC<CustomConfirmProps> = ({
           )}
           <button
             type="button"
-            disabled={isLoading}
-            onClick={onConfirm}
+            disabled={isBusy}
+            onClick={handleConfirmClick}
             className={`flex-1 sm:flex-none py-2.5 px-5 rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 ${currentStyles.confirmBtn}`}
           >
-            {isLoading ? (
+            {isBusy ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                 <span>Processing...</span>

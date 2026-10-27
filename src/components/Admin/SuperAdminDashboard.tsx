@@ -3521,7 +3521,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           confirmText={confirmModalState.confirmText}
           cancelText={confirmModalState.cancelText}
           variant={confirmModalState.variant}
-          onConfirm={confirmModalState.onConfirm}
+          onConfirm={async () => {
+            try {
+              await confirmModalState.onConfirm();
+            } finally {
+              setConfirmModalState(null);
+            }
+          }}
           onCancel={() => setConfirmModalState(null)}
         />
       )}
