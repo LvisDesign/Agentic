@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, ListingAvailability } from '../../types/marketplace';
 import { formatNaira } from '../../utils/formatters';
@@ -55,7 +54,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showUnlockedContact, setShowUnlockedContact] = useState(false);
-  const [showAgentControls, setShowAgentControls] = useState(false);
   const [isReported, setIsReported] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [copiedShare, setCopiedShare] = useState(false);
@@ -71,13 +69,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
   // Primary slot to display capacity badge
   const primarySlot = listing.inspectionSlots[0];
-
-  const isFreshnessUnconfirmed = (() => {
-    if (!listing.lastConfirmedAt) return true;
-    const confirmedTime = new Date(listing.lastConfirmedAt).getTime();
-    const now = new Date('2026-10-19T23:24:27+01:00').getTime();
-    return (now - confirmedTime) > 48 * 60 * 60 * 1000;
-  })();
 
   const isConfirmed = activeBooking?.status === 'CONFIRMED_UNLOCKED' || activeBooking?.status === 'APPROVED_CONFIRMED' || activeBooking?.status === 'ACCEPTED_PENDING_PAYMENT';
   const isRentedOut = listing.availabilityStatus === 'Rented Out';
@@ -147,23 +138,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               </span>
             )}
 
-            {/* Quick Agent Status Toggle Trigger */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowAgentControls(!showAgentControls);
-              }}
-              aria-label="Toggle agent controls"
-              className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors cursor-pointer ${
-                showAgentControls 
-                  ? 'bg-[#000004] text-white border-[#000004]' 
-                  : 'bg-[#FCF9F5] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#000004] border-[#E5E7EB]'
-              }`}
-              title="Agent status & proof-of-life controls"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-            </button>
+
 
             {/* Subtle Flag Report Button */}
             <button
@@ -200,65 +175,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
         </div>
 
-        {/* 48-Hour Proof-of-Life Check Banner */}
-        {isFreshnessUnconfirmed && (
-          <div className="px-3.5 py-2 bg-amber-50 border-b border-amber-200 text-amber-900 text-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shrink-0">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-800">
-              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              <span>Availability Unconfirmed (&gt;48 hrs)</span>
-            </div>
-            {onConfirmFreshness && (
-              <button
-                type="button"
-                onClick={() => {
-                  onConfirmFreshness(listing.id);
-                  setToastMessage('Listing freshness verified! Ranking refreshed.');
-                  setTimeout(() => setToastMessage(null), 3000);
-                }}
-                className="w-full sm:w-auto text-center px-2.5 py-1.5 sm:py-1 rounded-[6px] bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
-              >
-                Confirm listing is still vacant
-              </button>
-            )}
-          </div>
-        )}
 
-        {/* Quick Agent Availability Controls (Management Bar) */}
-        {showAgentControls && (
-          <div className="px-3.5 py-2 bg-[#FCF9F5] border-b border-[rgba(112,121,140,0.22)] flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0 text-xs animate-fade-in">
-            <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider shrink-0">
-              Agent Availability:
-            </span>
-            <div className="grid grid-cols-3 sm:flex items-center gap-1.5 w-full sm:w-auto">
-              {(['Available', 'Under Inspection', 'Rented Out'] as ListingAvailability[]).map((st) => (
-                <button
-                  key={st}
-                  type="button"
-                  onClick={() => {
-                    if (onUpdateAvailability) {
-                      onUpdateAvailability(listing.id, st);
-                      if (st === 'Rented Out') {
-                        setToastMessage('Listing marked as Rented Out. Hiding from public feed in 3s...');
-                        setTimeout(() => setToastMessage(null), 3500);
-                      }
-                    }
-                  }}
-                  className={`w-full sm:w-auto text-center px-2.5 py-1 rounded-[6px] text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    listing.availabilityStatus === st || (!listing.availabilityStatus && st === 'Available')
-                      ? st === 'Rented Out'
-                        ? 'bg-[#F0544F] text-white shadow-xs'
-                        : st === 'Under Inspection'
-                        ? 'bg-amber-500 text-white shadow-xs'
-                        : 'bg-[#000004] text-white shadow-xs'
-                      : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:bg-slate-50'
-                  }`}
-                >
-                  {st}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* TOP SECTION: Media Carousel with Exact Natural Dimensions & Adaptive Aspect Ratio */}
         <div 
