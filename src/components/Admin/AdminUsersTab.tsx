@@ -55,7 +55,8 @@ import {
   normalizePhoneNumber,
   normalizeEmail,
   resolveUserPersona,
-  PlatformUserPersona 
+  PlatformUserPersona,
+  isDeletedUserRecord
 } from '../../utils/userRegistry';
 import { toggleAgentVerification, toggleTenantVerification, toggleUserSuspension } from '../../services/adminService';
 import { isElvisSuperAdmin, removeAdminCredential } from '../../services/adminAuthService';
@@ -183,7 +184,8 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
     let suspendedCount = 0;
     let cvCount = 0;
 
-    registeredUsers.forEach((u) => {
+    const activeUsers = registeredUsers.filter((u) => !isDeletedUserRecord(u));
+    activeUsers.forEach((u) => {
       const p = getUserPersona(u);
       if (p === 'agent' || p === 'admin') agents++;
       if (p === 'tenant') tenants++;
@@ -200,7 +202,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
     });
 
     return {
-      total: registeredUsers.length,
+      total: activeUsers.length,
       agents,
       tenants,
       jobSeekers,
@@ -217,6 +219,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   // Filtered Users List
   const filteredUsers = useMemo(() => {
     return registeredUsers.filter((u) => {
+      if (isDeletedUserRecord(u)) return false;
       const p = getUserPersona(u);
 
       // Persona Filter (Admin has upper-level authority across agents and employers)
@@ -469,7 +472,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
       createdAt: new Date().toISOString(),
     };
 
-    saveRegisteredUser(createdUser);
+    saveRegisteredUser(createdUser, { allowReRegistration: true });
     setRegisteredUsers((prev) => [createdUser, ...prev]);
     showToast(`Created new user "${createdUser.fullName}" as ${newUserForm.persona.replace('_', ' ').toUpperCase()}.`);
     onRecordAuditLog(

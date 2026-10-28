@@ -96,7 +96,7 @@ import {
   toggleUserSuspension, 
   exportPlatformDataSnapshot 
 } from '../../services/adminService';
-import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry, deleteUserFromRegistryAsync, normalizePhoneNumber, normalizeEmail } from '../../utils/userRegistry';
+import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry, deleteUserFromRegistryAsync, normalizePhoneNumber, normalizeEmail, isDeletedUserRecord, recordDeletedUser } from '../../utils/userRegistry';
 import { subscribeToRealtimeEvents } from '../../services/realtimeSync';
 import { DEFAULT_FALLBACK_IMAGE, getCloudinaryConfig, saveCloudinaryConfig, uploadMediaToCloudinary } from '../../utils/mediaStorage';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
@@ -634,13 +634,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     // 4. Fetch Supabase registered users
     try {
       const users = await fetchRegisteredUsersFromDb();
-      if (users && users.length > 0) {
-        setRegisteredUsers(users);
+      if (Array.isArray(users)) {
+        setRegisteredUsers(users.filter((u) => !isDeletedUserRecord(u)));
       } else {
-        setRegisteredUsers(getRegisteredUsers());
+        setRegisteredUsers(getRegisteredUsers().filter((u) => !isDeletedUserRecord(u)));
       }
     } catch (_) {
-      setRegisteredUsers(getRegisteredUsers());
+      setRegisteredUsers(getRegisteredUsers().filter((u) => !isDeletedUserRecord(u)));
     }
 
     // 5. Trigger parent synchronizer (syncs cloud listings, bookings, adverts, user profiles)
@@ -678,9 +678,11 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     // 1. Cross-device Realtime event listener for live registrations/updates
     const unsub = subscribeToRealtimeEvents((event) => {
       if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED') {
+        if (event.user && isDeletedUserRecord(event.user)) return;
         refreshAdminData();
       } else if (event.type === 'USER_DELETED' && event.user) {
         const delUser = event.user;
+        recordDeletedUser(delUser, false);
         const delPhone = delUser.phone ? normalizePhoneNumber(delUser.phone) : '';
         const delEmail = delUser.email ? normalizeEmail(delUser.email) : '';
         setRegisteredUsers((prev) => prev.filter((u) => {
@@ -695,8 +697,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     // 2. Poll Supabase every 12s so new accounts from mobile reflect automatically
     const interval = setInterval(() => {
       fetchRegisteredUsersFromDb().then((users) => {
-        if (users && users.length > 0) {
-          setRegisteredUsers(users);
+        if (Array.isArray(users)) {
+          setRegisteredUsers(users.filter((u) => !isDeletedUserRecord(u)));
         }
       });
     }, 12000);

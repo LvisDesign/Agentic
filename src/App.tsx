@@ -20,7 +20,9 @@ import {
   normalizePhoneNumber,
   normalizeEmail,
   getDeletedUserIds,
-  unrecordDeletedUserId
+  unrecordDeletedUserId,
+  isDeletedUserRecord,
+  recordDeletedUser
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
@@ -195,7 +197,8 @@ export function App() {
               item.id && 
               !deletedIds.has(item.id) &&
               item.availabilityStatus !== 'Deleted' &&
-              item.id.startsWith('prop-agent-')
+              item.id.startsWith('prop-agent-') &&
+              !(item.agent && isDeletedUserRecord(item.agent))
             )
             .map((item: PropertyListing, idx: number) => {
               const sanitizedMedia = (item.media || []).map((m, mIdx) => {
@@ -317,7 +320,12 @@ export function App() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          if (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012' || parsed.email === 'chinedu.okafor@gmail.com') {
+          if (
+            parsed.id === 'DT-USR-8492' ||
+            parsed.id === 'DT-AGT-9012' ||
+            parsed.email === 'chinedu.okafor@gmail.com' ||
+            isDeletedUserRecord(parsed)
+          ) {
             localStorage.removeItem('setlla_auth');
             localStorage.removeItem('deltarent_auth');
             localStorage.removeItem('setlla_user');
@@ -340,7 +348,12 @@ export function App() {
     if (isAuth && saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012' || parsed.email === 'chinedu.okafor@gmail.com') {
+        if (
+          parsed.id === 'DT-USR-8492' ||
+          parsed.id === 'DT-AGT-9012' ||
+          parsed.email === 'chinedu.okafor@gmail.com' ||
+          isDeletedUserRecord(parsed)
+        ) {
           return GUEST_USER;
         }
         if (isElvisSuperAdmin(parsed)) {
@@ -468,19 +481,33 @@ export function App() {
 
     let isMounted = true;
     const verifyUserSession = async () => {
-      // 1. Check if user ID is in client deleted tombstones
+      // 1. Check if user ID, phone, or email is in deleted tombstones
       const deletedIds = getDeletedUserIds();
-      if (deletedIds.has(currentUser.id)) {
-        console.warn('[App] Current user ID was deleted by administrator. Purging session from device...');
+      if (deletedIds.has(currentUser.id) || isDeletedUserRecord(currentUser)) {
+        console.warn('[App] Current user was deleted by administrator. Purging session from device...');
         handleSignOut();
         return;
       }
 
-      // 2. Validate against live Supabase platform_users database
+      // 2. Validate against live Supabase platform_users and deleted_adverts database
       if (isSupabaseConfigured()) {
         try {
           const client = getSupabaseClient();
           if (client) {
+            // Check cloud tombstone first
+            const { data: tombstone } = await client
+              .from('deleted_adverts')
+              .select('id')
+              .eq('id', `usr_id:${currentUser.id}`)
+              .maybeSingle();
+
+            if (tombstone && isMounted) {
+              console.warn('[App] Cloud tombstone detected for current user. Purging session from device...');
+              recordDeletedUser(currentUser, false);
+              handleSignOut();
+              return;
+            }
+
             const { data, error } = await client
               .from('platform_users')
               .select('id, is_suspended')
@@ -511,6 +538,7 @@ export function App() {
   // Auto-heal agent status if current user has published listings on this device or in cloud
   useEffect(() => {
     if (!currentUser || currentUser.id === 'GUEST_USER' || currentUser.isAgent || isElvisSuperAdmin(currentUser)) return;
+    if (isDeletedUserRecord(currentUser)) return;
     const phoneNorm = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
     const myListing = listings.find(
       (l) =>
@@ -538,8 +566,8 @@ export function App() {
       localStorage.setItem('deltarent_user', JSON.stringify(healedAgent));
       localStorage.setItem('setlla_active_role', 'agent');
       localStorage.setItem('deltarent_active_role', 'agent');
-      saveRegisteredUser(healedAgent);
-      saveRegisteredUserAsync(healedAgent);
+      saveRegisteredUser(healedAgent, { skipBroadcast: true });
+      saveRegisteredUserAsync(healedAgent, { skipBroadcast: true });
     }
   }, [listings, currentUser]);
 
@@ -634,12 +662,16 @@ export function App() {
       }
       // Keep active session in sync with central platform_users database
       if (fetchedUsers && currentUser.id && currentUser.id !== 'GUEST_USER' && currentUser.id !== 'DT-USR-GUEST') {
+        if (!isElvisSuperAdmin(currentUser) && isDeletedUserRecord(currentUser)) {
+          handleSignOut();
+          return;
+        }
         const matched = fetchedUsers.find(
           (u) =>
             u.id === currentUser.id ||
             (currentUser.phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(currentUser.phone))
         );
-        if (matched) {
+        if (matched && !isDeletedUserRecord(matched)) {
           const isAdmin = Boolean(
             matched.isAdmin || 
             matched.isSuperAdmin || 
@@ -881,13 +913,18 @@ export function App() {
       } else if (event.type === 'LISTING_DELETED' && event.listingId) {
         setListings((prev) => prev.filter((l) => l.id !== event.listingId));
       } else if ((event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED') && event.user) {
-        saveRegisteredUser(event.user);
+        if (isDeletedUserRecord(event.user)) return;
+        // CRITICAL: Never re-upsert to Supabase or re-broadcast on incoming realtime events!
+        // Doing so creates an infinite cross-tab ping-pong loop that resurrects deleted users.
+        saveRegisteredUser(event.user, { skipCloudSync: true, skipBroadcast: true });
         if (currentUser.id === event.user.id || (currentUser.phone && event.user.phone && normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(event.user.phone))) {
           setCurrentUser(event.user);
           localStorage.setItem('setlla_user', JSON.stringify(event.user));
         }
       } else if (event.type === 'USER_DELETED' && event.user) {
         const delUser = event.user;
+        // Record tombstone locally on this tab/device immediately so it cannot re-sync the deleted user
+        recordDeletedUser(delUser, false);
         const delNormPhone = delUser.phone ? normalizePhoneNumber(delUser.phone) : '';
         const delNormEmail = delUser.email ? normalizeEmail(delUser.email) : '';
         const myNormPhone = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
@@ -1092,9 +1129,20 @@ export function App() {
           { event: '*', schema: 'public', table: 'platform_users' },
           (payload) => {
             if (!isMounted) return;
+            if (payload.eventType === 'DELETE' && payload.old) {
+              const oldRow = payload.old as any;
+              if (oldRow.id) {
+                recordDeletedUser({ id: oldRow.id, phone: oldRow.phone, email: oldRow.email }, false);
+                if (currentUser.id === oldRow.id) {
+                  handleSignOut();
+                  return;
+                }
+              }
+            }
             fetchRegisteredUsersFromDb().then(() => {
-              if (payload.new) {
+              if (payload.new && payload.eventType !== 'DELETE') {
                 const updated = mapDbToUserProfile(payload.new);
+                if (isDeletedUserRecord(updated)) return;
                 if (currentUser.id === updated.id || (currentUser.phone && normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(updated.phone))) {
                   setCurrentUser(updated);
                   localStorage.setItem('setlla_user', JSON.stringify(updated));
@@ -1670,16 +1718,13 @@ export function App() {
     localStorage.setItem('setlla_user', JSON.stringify(upgraded));
     localStorage.setItem('deltarent_user', JSON.stringify(upgraded));
 
-    // Clear any tombstone so the agent is 100% visible on Super Admin console
-    if (newListing.agent?.id) {
-      unrecordDeletedUserId(newListing.agent.id);
-    }
-    if (upgraded.id) {
-      unrecordDeletedUserId(upgraded.id);
+    if (isDeletedUserRecord(upgraded)) {
+      handleSignOut();
+      return;
     }
 
-    saveRegisteredUser(upgraded);
-    saveRegisteredUserAsync(upgraded);
+    saveRegisteredUser(upgraded, { skipBroadcast: true });
+    saveRegisteredUserAsync(upgraded, { skipBroadcast: true });
 
     // Broadcast user registered/updated so admin console captures agent immediately
     broadcastRealtimeEvent('USER_REGISTERED', {
@@ -1732,6 +1777,11 @@ export function App() {
       lastProfileEditAt: new Date().toISOString(),
     };
 
+    if (isDeletedUserRecord(updatedAgentProfile)) {
+      handleSignOut();
+      return;
+    }
+
     // 1. Immediately persist to localStorage so mobile reloads / refreshes remain Agent
     localStorage.setItem('setlla_user', JSON.stringify(updatedAgentProfile));
     localStorage.setItem('deltarent_user', JSON.stringify(updatedAgentProfile));
@@ -1749,8 +1799,8 @@ export function App() {
     window.location.hash = '#/agent';
 
     // 3. Save to registry and Supabase platform_users database
-    saveRegisteredUser(updatedAgentProfile);
-    await saveRegisteredUserAsync(updatedAgentProfile);
+    saveRegisteredUser(updatedAgentProfile, { skipBroadcast: true });
+    await saveRegisteredUserAsync(updatedAgentProfile, { skipBroadcast: true });
 
     // 4. Broadcast live cross-device event so admin console updates immediately
     broadcastRealtimeEvent('USER_UPDATED', {
@@ -1952,7 +2002,7 @@ export function App() {
 
   // Handler: Update current user from signup/login modal
   const handleUpdateUser = (updatedUser: UserProfile, role?: UserRole, targetRoom?: 'rentals' | 'jobs') => {
-    saveRegisteredUser(updatedUser);
+    saveRegisteredUser(updatedUser, { allowReRegistration: true });
     setCurrentUser(updatedUser);
     setIsAuthenticated(true);
     localStorage.setItem('setlla_auth', 'true');

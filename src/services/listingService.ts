@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supa
 import { PropertyListing, ListingAvailability } from '../types/marketplace';
 import { INITIAL_LISTINGS } from '../data/mockListings';
 import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO, getBlobFromIDB, uploadMediaToSupabaseStorage } from '../utils/mediaStorage';
-import { unrecordDeletedUserId } from '../utils/userRegistry';
+import { unrecordDeletedUserId, isDeletedUserRecord } from '../utils/userRegistry';
 
 const LOCAL_STORAGE_KEY = 'setlla_listings';
 const LEGACY_STORAGE_KEY = 'deltarent_listings';
@@ -288,6 +288,7 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
             const status = row.availability_status || row.availabilityStatus;
             if (isNonActive(status)) return false;
             if (deletedIds.has(row.id)) return false;
+            if (row.agent && isDeletedUserRecord(row.agent)) return false;
             return true;
           })
           .map((row, idx) => {
@@ -412,9 +413,8 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
         console.log('[Setlla Supabase] Listing saved to cloud successfully:', sanitized.id);
       }
 
-      // Guarantee the listing agent is captured in platform_users
-      if (sanitized.agent && sanitized.agent.id) {
-        unrecordDeletedUserId(sanitized.agent.id);
+      // Guarantee the listing agent is captured in platform_users (unless deleted by admin)
+      if (sanitized.agent && sanitized.agent.id && !isDeletedUserRecord(sanitized.agent)) {
         Promise.resolve(
           client.from('platform_users').upsert({
             id: sanitized.agent.id,

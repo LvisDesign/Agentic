@@ -93,29 +93,61 @@ export function getDeletedEmails(): Set<string> {
 }
 
 /**
- * Records deleted user identifiers (ID, phone, email) so they do not resurface on admin dashboards.
+ * Records deleted user identifiers (ID, phone, email) in local storage and optionally cloud tombstones
+ * so they never resurface on admin dashboards or via stale background tab syncs.
  */
-export function recordDeletedUser(user: { id?: string; phone?: string; email?: string }): void {
+export function recordDeletedUser(
+  user: { id?: string; phone?: string; email?: string },
+  syncToCloud: boolean = true
+): void {
   if (typeof window === 'undefined' || !user) return;
+  const cloudTombstoneIds: string[] = [];
   try {
     if (user.id) {
-      const ids = getDeletedUserIds();
-      ids.add(user.id);
-      localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+      const cleanId = user.id.trim();
+      if (cleanId) {
+        const ids = getDeletedUserIds();
+        ids.add(cleanId);
+        localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+        cloudTombstoneIds.push(`usr_id:${cleanId}`);
+      }
     }
     const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
     if (normPhone) {
       const phones = getDeletedPhones();
       phones.add(normPhone);
+      const last10 = normPhone.slice(-10);
+      if (last10.length === 10) {
+        phones.add(`0${last10}`);
+      }
       localStorage.setItem(DELETED_PHONES_STORAGE_KEY, JSON.stringify(Array.from(phones)));
+      cloudTombstoneIds.push(`usr_phone:${normPhone}`);
+      if (last10.length === 10) {
+        cloudTombstoneIds.push(`usr_phone:0${last10}`);
+      }
     }
     const normEmail = user.email ? normalizeEmail(user.email) : '';
     if (normEmail) {
       const emails = getDeletedEmails();
       emails.add(normEmail);
       localStorage.setItem(DELETED_EMAILS_STORAGE_KEY, JSON.stringify(Array.from(emails)));
+      cloudTombstoneIds.push(`usr_email:${normEmail}`);
     }
   } catch (_) {}
+
+  if (syncToCloud && cloudTombstoneIds.length > 0 && isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        const now = new Date().toISOString();
+        const rows = Array.from(new Set(cloudTombstoneIds)).map((id) => ({
+          id,
+          deleted_at: now,
+        }));
+        Promise.resolve(client.from('deleted_adverts').upsert(rows, { onConflict: 'id' })).catch(() => {});
+      }
+    } catch (_) {}
+  }
 }
 
 export function recordDeletedUserId(id: string): void {
@@ -124,21 +156,34 @@ export function recordDeletedUserId(id: string): void {
 }
 
 /**
- * Removes a deleted user identifier from tombstone sets when a fresh signup
- * occurs using that phone/email.
+ * Removes a deleted user identifier from local and cloud tombstone sets ONLY when an explicit
+ * fresh signup occurs using that phone/email.
  */
 export function unrecordDeletedUser(user: { id?: string; phone?: string; email?: string }): void {
   if (typeof window === 'undefined' || !user) return;
+  const cloudTombstonesToRemove: string[] = [];
   try {
     if (user.id) {
+      const cleanId = user.id.trim();
       const ids = getDeletedUserIds();
-      ids.delete(user.id);
+      ids.delete(cleanId);
       localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+      cloudTombstonesToRemove.push(`usr_id:${cleanId}`);
     }
     const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
     if (normPhone) {
+      const last10 = normPhone.slice(-10);
       const phones = getDeletedPhones();
-      phones.delete(normPhone);
+      for (const existing of Array.from(phones)) {
+        if (existing === normPhone || (last10.length === 10 && existing.slice(-10) === last10)) {
+          phones.delete(existing);
+          cloudTombstonesToRemove.push(`usr_phone:${existing}`);
+        }
+      }
+      cloudTombstonesToRemove.push(`usr_phone:${normPhone}`);
+      if (last10.length === 10) {
+        cloudTombstonesToRemove.push(`usr_phone:0${last10}`);
+      }
       localStorage.setItem(DELETED_PHONES_STORAGE_KEY, JSON.stringify(Array.from(phones)));
     }
     const normEmail = user.email ? normalizeEmail(user.email) : '';
@@ -146,8 +191,20 @@ export function unrecordDeletedUser(user: { id?: string; phone?: string; email?:
       const emails = getDeletedEmails();
       emails.delete(normEmail);
       localStorage.setItem(DELETED_EMAILS_STORAGE_KEY, JSON.stringify(Array.from(emails)));
+      cloudTombstonesToRemove.push(`usr_email:${normEmail}`);
     }
   } catch (_) {}
+
+  if (cloudTombstonesToRemove.length > 0 && isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        Promise.resolve(
+          client.from('deleted_adverts').delete().in('id', Array.from(new Set(cloudTombstonesToRemove)))
+        ).catch(() => {});
+      }
+    } catch (_) {}
+  }
 }
 
 export function unrecordDeletedUserId(id: string): void {
@@ -155,17 +212,85 @@ export function unrecordDeletedUserId(id: string): void {
   unrecordDeletedUser({ id });
 }
 
+const ZOMBIE_PURGE_MIGRATION_KEY = 'setlla_purged_zombie_1350_v1';
+let zombieMigrationChecked = false;
+
+/**
+ * One-time migration on every client device/browser that guarantees the recurring
+ * deleted zombie account (DT-AGT-1350 / Augustine / 08094444363 / utiobaro@gmail.com)
+ * is recorded in local and cloud tombstones and purged from stale local sessions.
+ * Because it runs once per browser, if this user ever explicitly signs up again in the future
+ * via SignupModal (allowReRegistration: true), their new registration will succeed cleanly.
+ */
+export function ensureZombiePurgeMigration(): void {
+  if (typeof window === 'undefined' || zombieMigrationChecked) return;
+  zombieMigrationChecked = true;
+  try {
+    if (localStorage.getItem(ZOMBIE_PURGE_MIGRATION_KEY) === 'true') return;
+    localStorage.setItem(ZOMBIE_PURGE_MIGRATION_KEY, 'true');
+
+    recordDeletedUser(
+      {
+        id: 'DT-AGT-1350',
+        phone: '08094444363',
+        email: 'utiobaro@gmail.com',
+      },
+      true
+    );
+
+    // Purge any stale localStorage session for DT-AGT-1350
+    const activeRaw = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    if (activeRaw) {
+      const parsed = JSON.parse(activeRaw);
+      if (
+        parsed &&
+        (parsed.id === 'DT-AGT-1350' ||
+          normalizePhoneNumber(parsed.phone || '') === '08094444363' ||
+          normalizeEmail(parsed.email) === 'utiobaro@gmail.com')
+      ) {
+        localStorage.removeItem('setlla_user');
+        localStorage.removeItem('deltarent_user');
+        localStorage.removeItem('setlla_auth');
+        localStorage.removeItem('deltarent_auth');
+      }
+    }
+
+    // Purge from local registered users cache
+    const regRaw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (regRaw) {
+      const arr = JSON.parse(regRaw);
+      if (Array.isArray(arr)) {
+        const cleaned = arr.filter(
+          (u: any) =>
+            u &&
+            u.id !== 'DT-AGT-1350' &&
+            normalizePhoneNumber(u.phone || '') !== '08094444363' &&
+            normalizeEmail(u.email) !== 'utiobaro@gmail.com'
+        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+      }
+    }
+  } catch (_) {}
+}
+
 /**
  * Checks whether an account record matches any deleted ID, phone, or email tombstone.
  */
 export function isDeletedUserRecord(user: { id?: string; phone?: string; email?: string }): boolean {
   if (!user) return false;
+  ensureZombiePurgeMigration();
   const deletedIds = getDeletedUserIds();
-  if (user.id && deletedIds.has(user.id)) return true;
+  if (user.id && deletedIds.has(user.id.trim())) return true;
   const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
   if (normPhone) {
     const deletedPhones = getDeletedPhones();
     if (deletedPhones.has(normPhone)) return true;
+    const last10 = normPhone.slice(-10);
+    if (last10.length === 10) {
+      for (const dp of deletedPhones) {
+        if (dp.slice(-10) === last10) return true;
+      }
+    }
   }
   const normEmail = user.email ? normalizeEmail(user.email) : '';
   if (normEmail) {
@@ -181,6 +306,7 @@ export function isDeletedUserRecord(user: { id?: string; phone?: string; email?:
  */
 export function getRegisteredUsers(): UserProfile[] {
   if (typeof window === 'undefined') return DEFAULT_REGISTERED_USERS;
+  ensureZombiePurgeMigration();
 
   const usersMap = new Map<string, UserProfile>();
 
@@ -436,7 +562,6 @@ export function resolveUserPersona(
  * Syncs the local storage cache so that accounts created on mobile or web correlate automatically.
  */
 export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
-  const deletedIds = getDeletedUserIds();
   const localUsers = getRegisteredUsers();
 
   if (!isSupabaseConfigured()) {
@@ -447,11 +572,26 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
     const client = getSupabaseClient();
     if (!client) return localUsers;
 
-    const [usersRes, advertisersRes, listingsRes] = await Promise.all([
+    const [usersRes, advertisersRes, listingsRes, cloudTombstonesRes] = await Promise.all([
       client.from('platform_users').select('*').order('created_at', { ascending: false }),
       Promise.resolve(client.from('advertisers').select('*').order('created_at', { ascending: false })).catch(() => ({ data: null, error: null })),
       Promise.resolve(client.from('listings').select('id, title, city, state, agent, availability_status, created_at').in('availability_status', ['Available', 'Under Inspection'])).catch(() => ({ data: null, error: null })),
+      Promise.resolve(client.from('deleted_adverts').select('id').like('id', 'usr_%')).catch(() => ({ data: null, error: null })),
     ]);
+
+    // 0. Synchronize cloud deletion tombstones into local tombstone sets before processing rows
+    if (cloudTombstonesRes && 'data' in cloudTombstonesRes && Array.isArray(cloudTombstonesRes.data)) {
+      cloudTombstonesRes.data.forEach((t: any) => {
+        const rawId = typeof t?.id === 'string' ? t.id : '';
+        if (rawId.startsWith('usr_id:')) {
+          recordDeletedUser({ id: rawId.slice(7) }, false);
+        } else if (rawId.startsWith('usr_phone:')) {
+          recordDeletedUser({ phone: rawId.slice(10) }, false);
+        } else if (rawId.startsWith('usr_email:')) {
+          recordDeletedUser({ email: rawId.slice(10) }, false);
+        }
+      });
+    }
 
     const data = usersRes.data;
     const error = usersRes.error;
@@ -497,18 +637,27 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         dbUsersMap.set(resolved.id, resolved);
       };
 
-      // 1. Add all registered users from central platform_users
+      // 1. Add all registered users from central platform_users (and auto-purge any zombie row matching a tombstone)
       data.forEach((row) => {
         const u = mapDbToUserProfile(row);
-        if (u && !isDeletedUserRecord(u)) {
-          addOrMergeToDbMap(u);
+        if (!u) return;
+        if (isDeletedUserRecord(u)) {
+          if (row.id) {
+            Promise.resolve(client.from('platform_users').delete().eq('id', row.id)).catch(() => {});
+          }
+          return;
         }
+        addOrMergeToDbMap(u);
       });
 
       // 2. Merge registered advertisers into unified user registry
       if (advertisersRes && 'data' in advertisersRes && Array.isArray(advertisersRes.data)) {
         advertisersRes.data.forEach((adv: any) => {
-          if (!adv || !adv.id || isDeletedUserRecord({ id: adv.id, phone: adv.phone, email: adv.email })) return;
+          if (!adv || !adv.id) return;
+          if (isDeletedUserRecord({ id: adv.id, phone: adv.phone, email: adv.email })) {
+            Promise.resolve(client.from('advertisers').delete().eq('id', adv.id)).catch(() => {});
+            return;
+          }
           const advUser: UserProfile = {
             id: adv.id,
             fullName: adv.contact_name || adv.company_name || 'Advertiser Partner',
@@ -529,13 +678,17 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         });
       }
 
-      // 3. FAILSAFE: Ensure any agent who has an active published listing is ALWAYS captured
+      // 3. FAILSAFE: Ensure any agent who has an active published listing is ALWAYS captured (unless deleted)
       if (listingsRes && 'data' in listingsRes && Array.isArray(listingsRes.data)) {
         listingsRes.data.forEach((listing: any) => {
           const ag = listing.agent;
           if (ag && (ag.id || ag.phone)) {
             // Never harvest or re-upsert an agent that was explicitly deleted
             if (isDeletedUserRecord({ id: ag.id, phone: ag.phone, email: ag.email })) {
+              if (listing.id) {
+                Promise.resolve(client.from('listings').update({ availability_status: 'Deleted' }).eq('id', listing.id)).catch(() => {});
+                Promise.resolve(client.from('listings').delete().eq('id', listing.id)).catch(() => {});
+              }
               return;
             }
             const agentId = ag.id || (ag.phone ? `DT-AGT-${normalizePhoneNumber(ag.phone).slice(-4)}` : `DT-AGT-${Date.now()}`);
@@ -577,34 +730,33 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
                 createdAt: listing.created_at || new Date().toISOString(),
               };
               addOrMergeToDbMap(activeAgentUser);
-              Promise.resolve(
-                client.from('platform_users').upsert({
-                  id: activeAgentUser.id,
-                  full_name: activeAgentUser.fullName,
-                  phone: activeAgentUser.phone,
-                  whatsapp: activeAgentUser.whatsapp,
-                  agency_name: activeAgentUser.agencyName,
-                  cac_number: activeAgentUser.cacNumber,
-                  is_agent: true,
-                  persona: 'lister',
-                  city: activeAgentUser.city,
-                  state: activeAgentUser.state,
-                  kyc_status: activeAgentUser.kycStatus,
-                  created_at: activeAgentUser.createdAt,
-                }, { onConflict: 'id' })
-              ).catch(() => {});
             }
           }
         });
       }
 
-      // Keep active session user in database map if present locally
+      // 4. Validate local active session user: if deleted in cloud/local tombstones, purge session immediately
       try {
         const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
         if (rawCurrent) {
           const current: UserProfile = JSON.parse(rawCurrent);
           if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
-            addOrMergeToDbMap(current);
+            if (isDeletedUserRecord(current)) {
+              localStorage.removeItem('setlla_user');
+              localStorage.removeItem('deltarent_user');
+              localStorage.removeItem('setlla_auth');
+              localStorage.removeItem('deltarent_auth');
+            } else {
+              const isCurrentElvis = Boolean(
+                current.isAdmin ||
+                current.isSuperAdmin ||
+                (current.email && current.email.toLowerCase() === 'admin@setlla.com') ||
+                (current.fullName && current.fullName.toLowerCase().includes('elvis'))
+              );
+              if (isCurrentElvis) {
+                addOrMergeToDbMap(current);
+              }
+            }
           }
         }
       } catch (_) {}
@@ -623,14 +775,32 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
   return localUsers;
 }
 
+export interface SaveRegisteredUserOptions {
+  allowReRegistration?: boolean;
+  skipCloudSync?: boolean;
+  skipBroadcast?: boolean;
+}
+
 /**
  * Saves a new or updated user profile to the registry AND automatically
  * synchronizes to the shared Supabase database so all accounts correlate across
  * mobile, desktop, and all screens automatically.
+ *
+ * Strictly refuses to save or re-upsert any account matching a deletion tombstone
+ * unless `options.allowReRegistration` is explicitly set to `true` (on a fresh signup).
  */
-export function saveRegisteredUser(user: UserProfile): void {
+export function saveRegisteredUser(
+  user: UserProfile,
+  options?: SaveRegisteredUserOptions
+): void {
   if (typeof window === 'undefined' || !user) return;
-  unrecordDeletedUser(user);
+
+  if (options?.allowReRegistration) {
+    unrecordDeletedUser(user);
+  } else if (isDeletedUserRecord(user)) {
+    console.warn('[UserRegistry] Blocked saveRegisteredUser for deleted account:', user.id, user.phone, user.email);
+    return;
+  }
 
   const allUsers = getRegisteredUsers();
   const existingIndex = allUsers.findIndex(
@@ -656,6 +826,10 @@ export function saveRegisteredUser(user: UserProfile): void {
     console.error('[UserRegistry] Failed to save user to registry:', err);
   }
 
+  if (options?.skipCloudSync) {
+    return;
+  }
+
   // Synchronize to central Supabase platform_users table
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
@@ -663,6 +837,10 @@ export function saveRegisteredUser(user: UserProfile): void {
       const dbRow = mapUserProfileToDb(user);
       Promise.resolve(client.from('platform_users').upsert(dbRow, { onConflict: 'id' }))
         .then(async (res: any) => {
+          if (isDeletedUserRecord(user)) {
+            Promise.resolve(client.from('platform_users').delete().eq('id', user.id)).catch(() => {});
+            return;
+          }
           if (res?.error) {
             console.warn('[UserRegistry] Full upsert notice, falling back to verified columns:', res.error.message);
             const safeCoreRow: Record<string, any> = {};
@@ -672,12 +850,12 @@ export function saveRegisteredUser(user: UserProfile): void {
               }
             });
             const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
-            if (!retryRes?.error) {
+            if (!retryRes?.error && !options?.skipBroadcast && !isDeletedUserRecord(user)) {
               broadcastRealtimeEvent('USER_REGISTERED', { user });
-            } else {
+            } else if (retryRes?.error) {
               console.warn('[UserRegistry] Supabase platform_users retry error:', retryRes.error.message);
             }
-          } else {
+          } else if (!options?.skipBroadcast && !isDeletedUserRecord(user)) {
             broadcastRealtimeEvent('USER_REGISTERED', { user });
           }
         })
@@ -702,9 +880,19 @@ export function saveRegisteredUser(user: UserProfile): void {
 /**
  * Async version of saveRegisteredUser that waits for database confirmation.
  */
-export async function saveRegisteredUserAsync(user: UserProfile): Promise<boolean> {
-  saveRegisteredUser(user);
-  if (!isSupabaseConfigured()) return true;
+export async function saveRegisteredUserAsync(
+  user: UserProfile,
+  options?: SaveRegisteredUserOptions
+): Promise<boolean> {
+  if (options?.allowReRegistration) {
+    unrecordDeletedUser(user);
+  } else if (isDeletedUserRecord(user)) {
+    console.warn('[UserRegistry] Blocked saveRegisteredUserAsync for deleted account:', user.id, user.phone, user.email);
+    return false;
+  }
+
+  saveRegisteredUser(user, { ...options, skipCloudSync: true });
+  if (!isSupabaseConfigured() || options?.skipCloudSync) return true;
 
   try {
     const savePromise = (async (): Promise<boolean> => {
@@ -712,8 +900,14 @@ export async function saveRegisteredUserAsync(user: UserProfile): Promise<boolea
       if (!client) return true;
       const dbRow = mapUserProfileToDb(user);
       const { error } = await client.from('platform_users').upsert(dbRow, { onConflict: 'id' });
+      if (isDeletedUserRecord(user)) {
+        await client.from('platform_users').delete().eq('id', user.id);
+        return false;
+      }
       if (!error) {
-        broadcastRealtimeEvent('USER_REGISTERED', { user });
+        if (!options?.skipBroadcast) {
+          broadcastRealtimeEvent('USER_REGISTERED', { user });
+        }
         return true;
       } else {
         console.warn('[UserRegistry] Full async upsert notice, retrying with verified columns:', error.message);
@@ -725,7 +919,9 @@ export async function saveRegisteredUserAsync(user: UserProfile): Promise<boolea
         });
         const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
         if (!retryRes.error) {
-          broadcastRealtimeEvent('USER_REGISTERED', { user });
+          if (!options?.skipBroadcast && !isDeletedUserRecord(user)) {
+            broadcastRealtimeEvent('USER_REGISTERED', { user });
+          }
           return true;
         } else {
           console.error('[UserRegistry] Async save retry error:', retryRes.error.message);
@@ -991,10 +1187,10 @@ export async function deleteUserFromRegistryAsync(
     });
   } catch (_) {}
 
-  // 8. Record deleted user tombstone so this account does not resurface during database refetches
-  ids.forEach((id) => recordDeletedUserId(id));
-  phoneVariants.forEach((p) => recordDeletedUser({ phone: p }));
-  emailVariants.forEach((e) => recordDeletedUser({ email: e }));
+  // 8. Record deleted user tombstone locally & in cloud so this account never resurfaces
+  ids.forEach((id) => recordDeletedUser({ id }, true));
+  phoneVariants.forEach((p) => recordDeletedUser({ phone: p }, true));
+  emailVariants.forEach((e) => recordDeletedUser({ email: e }, true));
 
   // 9. Dispatch account deletion notice email directly to user's registered email
   const targetEmail = resolvedUser?.email || rawEmail;
@@ -1007,7 +1203,26 @@ export async function deleteUserFromRegistryAsync(
     }).catch((err) => console.warn('[UserRegistry] Failed to send deletion notice email:', err));
   }
 
-  // 10. Wipe from central Supabase database across all tables
+  // 10. Broadcast realtime event immediately so all active tabs/devices drop the user & stop syncing
+  const broadcastUser: UserProfile = resolvedUser || {
+    id: targetId,
+    fullName: 'Deleted User',
+    phone: rawPhone || '',
+    email: rawEmail || undefined,
+    state: 'Delta State',
+    city: 'Asaba',
+    isAgent: false,
+    isAdmin: false,
+    isSuperAdmin: false,
+    isVerifiedTenant: false,
+    savedListingIds: [],
+    createdAt: new Date().toISOString(),
+  };
+  try {
+    broadcastRealtimeEvent('USER_DELETED', { user: broadcastUser });
+  } catch (_) {}
+
+  // 11. Wipe from central Supabase database across all tables
   if (isSupabaseConfigured()) {
     try {
       const client = getSupabaseClient();
@@ -1015,8 +1230,34 @@ export async function deleteUserFromRegistryAsync(
         const idList = Array.from(ids);
         const phoneList = Array.from(phoneVariants);
         const emailList = Array.from(emailVariants);
+        const normPhoneMain = rawPhone ? normalizePhoneNumber(rawPhone) : '';
+        const last10Phone = normPhoneMain.slice(-10);
 
-        // A. Table: listings (delete all properties published by this agent)
+        const runPlatformUserPurge = async () => {
+          const ops: Promise<any>[] = [];
+          if (idList.length > 0) {
+            ops.push(Promise.resolve(client.from('platform_users').delete().in('id', idList)).catch(() => {}));
+            ops.push(Promise.resolve(client.from('profiles').delete().in('id', idList)).catch(() => {}));
+            ops.push(Promise.resolve(client.from('advertisers').delete().in('id', idList)).catch(() => {}));
+          }
+          for (const p of phoneList) {
+            ops.push(Promise.resolve(client.from('platform_users').delete().eq('phone', p)).catch(() => {}));
+            ops.push(Promise.resolve(client.from('profiles').delete().eq('phone', p)).catch(() => {}));
+            ops.push(Promise.resolve(client.from('advertisers').delete().eq('phone', p)).catch(() => {}));
+          }
+          if (last10Phone.length === 10) {
+            ops.push(Promise.resolve(client.from('platform_users').delete().ilike('phone', `%${last10Phone}%`)).catch(() => {}));
+          }
+          for (const e of emailList) {
+            ops.push(Promise.resolve(client.from('platform_users').delete().eq('email', e)).catch(() => {}));
+            ops.push(Promise.resolve(client.from('platform_users').delete().ilike('email', e)).catch(() => {}));
+            ops.push(Promise.resolve(client.from('profiles').delete().eq('email', e)).catch(() => {}));
+            ops.push(Promise.resolve(client.from('advertisers').delete().eq('email', e)).catch(() => {}));
+          }
+          await Promise.allSettled(ops);
+        };
+
+        // A. Table: listings (soft-delete AND hard-delete all properties published by this agent)
         try {
           const { data: listings } = await client.from('listings').select('id, agent');
           if (Array.isArray(listings)) {
@@ -1040,7 +1281,10 @@ export async function deleteUserFromRegistryAsync(
               }
             }
             if (toDeleteIds.length > 0) {
-              await client.from('listings').delete().in('id', toDeleteIds);
+              await Promise.allSettled([
+                Promise.resolve(client.from('listings').update({ availability_status: 'Deleted' }).in('id', toDeleteIds)),
+                Promise.resolve(client.from('listings').delete().in('id', toDeleteIds)),
+              ]);
             }
           }
         } catch (e) {
@@ -1048,59 +1292,39 @@ export async function deleteUserFromRegistryAsync(
         }
 
         // B. Tables: platform_users, profiles, advertisers, bookings, job_applications, job_listings
-        const dbDeletions: Promise<any>[] = [];
+        const dbDeletions: Promise<any>[] = [runPlatformUserPurge()];
 
         if (idList.length > 0) {
-          dbDeletions.push(Promise.resolve(client.from('platform_users').delete().in('id', idList)).catch(() => {}));
-          dbDeletions.push(Promise.resolve(client.from('profiles').delete().in('id', idList)).catch(() => {}));
-          dbDeletions.push(Promise.resolve(client.from('advertisers').delete().in('id', idList)).catch(() => {}));
           dbDeletions.push(Promise.resolve(client.from('job_applications').delete().in('applicant_id', idList)).catch(() => {}));
         }
 
         for (const p of phoneList) {
-          dbDeletions.push(Promise.resolve(client.from('platform_users').delete().eq('phone', p)).catch(() => {}));
-          dbDeletions.push(Promise.resolve(client.from('profiles').delete().eq('phone', p)).catch(() => {}));
-          dbDeletions.push(Promise.resolve(client.from('advertisers').delete().eq('phone', p)).catch(() => {}));
           dbDeletions.push(Promise.resolve(client.from('bookings').delete().eq('applicant_phone', p)).catch(() => {}));
           dbDeletions.push(Promise.resolve(client.from('job_applications').delete().eq('applicant_phone', p)).catch(() => {}));
           dbDeletions.push(Promise.resolve(client.from('job_listings').delete().eq('contact_phone', p)).catch(() => {}));
         }
 
         for (const e of emailList) {
-          dbDeletions.push(Promise.resolve(client.from('platform_users').delete().eq('email', e)).catch(() => {}));
-          dbDeletions.push(Promise.resolve(client.from('platform_users').delete().ilike('email', e)).catch(() => {}));
-          dbDeletions.push(Promise.resolve(client.from('profiles').delete().eq('email', e)).catch(() => {}));
-          dbDeletions.push(Promise.resolve(client.from('advertisers').delete().eq('email', e)).catch(() => {}));
           dbDeletions.push(Promise.resolve(client.from('bookings').delete().eq('applicant_email', e)).catch(() => {}));
           dbDeletions.push(Promise.resolve(client.from('job_applications').delete().eq('applicant_email', e)).catch(() => {}));
           dbDeletions.push(Promise.resolve(client.from('job_listings').delete().eq('contact_email', e)).catch(() => {}));
         }
 
         await Promise.allSettled(dbDeletions);
+
+        // C. Follow-up sweeps to catch any in-flight upsert that was mid-network when delete was triggered
+        setTimeout(() => {
+          runPlatformUserPurge().catch(() => {});
+          broadcastRealtimeEvent('USER_DELETED', { user: broadcastUser }).catch(() => {});
+        }, 1500);
+        setTimeout(() => {
+          runPlatformUserPurge().catch(() => {});
+        }, 4000);
       }
     } catch (err) {
       console.warn('[UserRegistry] Database purge error:', err);
     }
   }
-
-  // 10. Broadcast realtime event so all active tabs/devices immediately drop user
-  try {
-    const broadcastUser: UserProfile = resolvedUser || {
-      id: targetId,
-      fullName: 'Deleted User',
-      phone: rawPhone || '',
-      email: rawEmail || undefined,
-      state: 'Delta State',
-      city: 'Asaba',
-      isAgent: false,
-      isAdmin: false,
-      isSuperAdmin: false,
-      isVerifiedTenant: false,
-      savedListingIds: [],
-      createdAt: new Date().toISOString(),
-    };
-    broadcastRealtimeEvent('USER_DELETED', { user: broadcastUser });
-  } catch (_) {}
 
   return { success: true };
 }
@@ -1240,6 +1464,8 @@ export async function checkUserExistsAsync(
           if (excludeUserId && row.id === excludeUserId) continue;
 
           const user = mapDbToUserProfile(row);
+          if (isDeletedUserRecord(user)) continue;
+
           const userNormPhone = normalizePhoneNumber(user.phone);
           const userNormEmail = normalizeEmail(user.email);
 
@@ -1309,6 +1535,7 @@ export function findUserByCredential(query: string): UserProfile | null {
   const registeredUsers = getRegisteredUsers();
 
   for (const user of registeredUsers) {
+    if (isDeletedUserRecord(user)) continue;
     if (isEmailQuery) {
       if (normalizeEmail(user.email) === normEmail) {
         return user;
@@ -1369,15 +1596,16 @@ export async function findUserByCredentialAsync(query: string): Promise<UserProf
     if (!error && Array.isArray(data) && data.length > 0) {
       for (const row of data) {
         const user = mapDbToUserProfile(row);
+        if (isDeletedUserRecord(user)) continue;
         if (isEmail) {
           if (user.email && normalizeEmail(user.email) === normEmail) {
-            saveRegisteredUser(user);
+            saveRegisteredUser(user, { skipCloudSync: true, skipBroadcast: true });
             return user;
           }
         } else {
           const uPhone = normalizePhoneNumber(user.phone);
           if (uPhone === normPhone || (last10.length >= 7 && uPhone.slice(-10) === last10)) {
-            saveRegisteredUser(user);
+            saveRegisteredUser(user, { skipCloudSync: true, skipBroadcast: true });
             return user;
           }
         }
@@ -1387,6 +1615,7 @@ export async function findUserByCredentialAsync(query: string): Promise<UserProf
     // 3. Fallback: Fetch latest users from DB if targeted indexed query returned no hit
     const allDbUsers = await fetchRegisteredUsersFromDb();
     for (const user of allDbUsers) {
+      if (isDeletedUserRecord(user)) continue;
       if (isEmail) {
         if (user.email && normalizeEmail(user.email) === normEmail) {
           return user;

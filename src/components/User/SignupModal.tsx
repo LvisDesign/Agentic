@@ -263,7 +263,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   const handleFinishSignup = () => {
     if (pendingRegistration) {
-      saveRegisteredUser(pendingRegistration.user);
+      saveRegisteredUser(pendingRegistration.user, { allowReRegistration: true });
       const targetRoom: 'rentals' | 'jobs' = 
         (pendingRegistration.user.persona === 'job_seeker' || pendingRegistration.user.persona === 'employer')
           ? 'jobs'
@@ -449,7 +449,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       }
 
       // Save immediately to local storage AND Supabase platform_users database with confirmation
-      await saveRegisteredUserAsync(updated);
+      await saveRegisteredUserAsync(updated, { allowReRegistration: true });
 
       const targetRoom: 'rentals' | 'jobs' = 
         (resolvedPersona === 'job_seeker' || resolvedPersona === 'employer') ? 'jobs' : 'rentals';
@@ -613,7 +613,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       }
 
       // Save immediately to local storage AND Supabase platform_users database with confirmation
-      await saveRegisteredUserAsync(updated);
+      await saveRegisteredUserAsync(updated, { allowReRegistration: true });
 
       const targetRoom: 'rentals' | 'jobs' = resolvedPersona === 'employer' ? 'jobs' : 'rentals';
 

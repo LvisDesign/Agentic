@@ -196,7 +196,7 @@ export async function verifyEmailOTP(
   if (purpose === 'agent_signup' || purpose === 'employer_signup') {
     if (verifiedUser) {
       verifiedUser.isEmailVerified = true;
-      await saveRegisteredUserAsync(verifiedUser);
+      await saveRegisteredUserAsync(verifiedUser, { allowReRegistration: true });
     }
   }
 
