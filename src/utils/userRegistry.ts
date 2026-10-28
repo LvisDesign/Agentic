@@ -424,44 +424,6 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         }
       });
 
-      // Auto-harvest live agents from listings in Supabase
-      try {
-        const { data: listingRows } = await client
-          .from('listings')
-          .select('id, title, agent, city, state, availability_status')
-          .neq('availability_status', 'Deleted');
-
-        if (Array.isArray(listingRows)) {
-          listingRows.forEach((row: any) => {
-            const agent = row.agent;
-            if (agent && (agent.fullName || agent.name || agent.phone)) {
-              const rawPhone = agent.phone || '';
-              const phone = rawPhone.trim();
-              const id = agent.id || (phone ? `DT-AGT-${normalizePhoneNumber(phone).slice(-4)}` : `agent-${row.id}`);
-              if (!deletedIds.has(id)) {
-                addOrMergeToDbMap({
-                  id,
-                  fullName: agent.fullName || agent.name || 'Setlla Partner Agent',
-                  phone: agent.phone || '',
-                  email: agent.email || undefined,
-                  state: row.state || 'Delta State',
-                  city: row.city || 'Asaba',
-                  agencyName: agent.agencyName || 'Verified Agency',
-                  isAgent: true,
-                  isVerifiedTenant: false,
-                  isAdmin: false,
-                  isSuperAdmin: false,
-                  agentType: 'agency',
-                  kycStatus: 'verified',
-                  savedListingIds: [],
-                  createdAt: new Date().toISOString(),
-                });
-              }
-            }
-          });
-        }
-      } catch (e) {}
-
       // Keep active session user in database map if present locally
       try {
         const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');

@@ -605,7 +605,6 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   // Load and refresh platform records (users, settings, audit logs, adverts, jobs, listings/bookings)
   const refreshAdminData = useCallback(async () => {
     // 1. Immediately reload local state sources
-    setRegisteredUsers(getRegisteredUsers());
     setPlatformSettings(getPlatformSettings());
     setAuditLogs(getAuditLogs());
 
@@ -637,8 +636,12 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       const users = await fetchRegisteredUsersFromDb();
       if (users && users.length > 0) {
         setRegisteredUsers(users);
+      } else {
+        setRegisteredUsers(getRegisteredUsers());
       }
-    } catch (_) {}
+    } catch (_) {
+      setRegisteredUsers(getRegisteredUsers());
+    }
 
     // 5. Trigger parent synchronizer (syncs cloud listings, bookings, adverts, user profiles)
     if (onRefreshData) {
