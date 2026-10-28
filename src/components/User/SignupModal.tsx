@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, 
   User, 
@@ -240,6 +240,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [loginError, setLoginError] = useState<string | null>(null);
   const [signupError, setSignupError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isSubmittingAgent, setIsSubmittingAgent] = useState(false);
+  const [isSubmittingSeeker, setIsSubmittingSeeker] = useState(false);
+  const formScrollRef = useRef<HTMLDivElement>(null);
 
   // Success state
   const [isSuccess, setIsSuccess] = useState(false);
@@ -332,8 +335,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const handleSeekerSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupError(null);
+    setDuplicateError(null);
+
     if (!seekerFullName.trim() || !seekerPhone.trim()) {
       setSignupError('Please enter your full name and phone number.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -341,93 +347,110 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     if (selectedPersona !== 'tenant') {
       if (!seekerEmail.trim()) {
         setSignupError('Please enter your email address to continue.');
+        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
       if (!seekerPassword.trim() || seekerPassword.trim().length < 6) {
         setSignupError('Please create a secure password (minimum 6 characters).');
+        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
     }
 
-    // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
-    const localDupCheck = checkUserExists(seekerPhone, seekerEmail);
-    if (localDupCheck.exists) {
-      setDuplicateError(localDupCheck);
-      return;
-    }
-    const dupCheck = await checkUserExistsAsync(seekerPhone, seekerEmail);
-    if (dupCheck.exists) {
-      setDuplicateError(dupCheck);
-      return;
-    }
-    setDuplicateError(null);
+    setIsSubmittingSeeker(true);
 
-    const resolvedCity = seekerState === 'Delta State'
-      ? (seekerCity.trim() || 'Asaba')
-      : (seekerCity.trim() || 'Capital City');
-
-    const resolvedPersona: UserPersona = selectedPersona === 'lister' ? 'tenant' : (selectedPersona || 'job_seeker');
-    const updated: UserProfile = {
-      id: `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
-      fullName: seekerFullName.trim(),
-      phone: seekerPhone.trim(),
-      email: seekerEmail.trim() || undefined,
-      password: selectedPersona !== 'tenant' ? seekerPassword.trim() : (seekerPassword.trim() || undefined),
-      state: seekerState,
-      city: resolvedCity,
-      preferredPropertyType: 'Bedseater',
-      isVerifiedTenant: true,
-      isAgent: false,
-      persona: resolvedPersona,
-      savedListingIds: [],
-      createdAt: new Date().toISOString(),
-      isEmailVerified: resolvedPersona === 'employer' ? false : true,
-    };
-
-    // If employer, enforce email verification before activating
-    if (resolvedPersona === 'employer' && seekerEmail.trim()) {
-      try {
-        const otpRes = await sendEmailOTP(seekerEmail.trim(), 'employer_signup', updated);
-        setOtpEmail(seekerEmail.trim());
-        setOtpPurpose('employer_signup');
-        setOtpPendingUser(updated);
-        setOtpDigits(['', '', '', '', '', '']);
-        setOtpTestCode(otpRes.testOtp);
-        setOtpResendSeconds(60);
-        setOtpError(null);
-        setAuthMode('verify_email');
+    try {
+      // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
+      const localDupCheck = checkUserExists(seekerPhone, seekerEmail);
+      if (localDupCheck.exists) {
+        setDuplicateError(localDupCheck);
+        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        setIsSubmittingSeeker(false);
         return;
-      } catch (err: any) {
-        console.warn('[SignupModal] Employer email verification dispatch notice:', err);
       }
-    }
+      const dupCheck = await checkUserExistsAsync(seekerPhone, seekerEmail);
+      if (dupCheck.exists) {
+        setDuplicateError(dupCheck);
+        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        setIsSubmittingSeeker(false);
+        return;
+      }
+      setDuplicateError(null);
 
-    // Save immediately to local storage AND Supabase platform_users database with confirmation
-    await saveRegisteredUserAsync(updated);
+      const resolvedCity = seekerState === 'Delta State'
+        ? (seekerCity.trim() || 'Asaba')
+        : (seekerCity.trim() || 'Capital City');
 
-    const targetRoom: 'rentals' | 'jobs' = 
-      (resolvedPersona === 'job_seeker' || resolvedPersona === 'employer') ? 'jobs' : 'rentals';
+      const resolvedPersona: UserPersona = selectedPersona === 'lister' ? 'tenant' : (selectedPersona || 'job_seeker');
+      const updated: UserProfile = {
+        id: `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
+        fullName: seekerFullName.trim(),
+        phone: seekerPhone.trim(),
+        email: seekerEmail.trim() || undefined,
+        password: selectedPersona !== 'tenant' ? seekerPassword.trim() : (seekerPassword.trim() || undefined),
+        state: seekerState,
+        city: resolvedCity,
+        preferredPropertyType: 'Bedseater',
+        isVerifiedTenant: true,
+        isAgent: false,
+        persona: resolvedPersona,
+        savedListingIds: [],
+        createdAt: new Date().toISOString(),
+        isEmailVerified: resolvedPersona === 'employer' ? false : true,
+      };
 
-    // Immediately authenticate user into platform session so they never get locked out
-    onUpdateUser(updated, 'seeker', targetRoom);
+      // If employer, enforce email verification before activating
+      if (resolvedPersona === 'employer' && seekerEmail.trim()) {
+        try {
+          const otpRes = await sendEmailOTP(seekerEmail.trim(), 'employer_signup', updated);
+          setOtpEmail(seekerEmail.trim());
+          setOtpPurpose('employer_signup');
+          setOtpPendingUser(updated);
+          setOtpDigits(['', '', '', '', '', '']);
+          setOtpTestCode(otpRes.testOtp);
+          setOtpResendSeconds(60);
+          setOtpError(null);
+          setAuthMode('verify_email');
+          setIsSubmittingSeeker(false);
+          return;
+        } catch (err: any) {
+          console.warn('[SignupModal] Employer email verification dispatch notice:', err);
+        }
+      }
 
-    if (isStandalone || isInstalled) {
-      setSuccessMessage({
-        title: `Welcome, ${seekerFullName.trim()}!`,
-        subtitle: targetRoom === 'jobs'
-          ? `Your career profile is active. Redirecting to Setlla Jobs...`
-          : `Your tenant profile is active for ${seekerState}. Inspection bookings are now unlocked!`,
-      });
-      setIsSuccess(true);
+      // Save immediately to local storage AND Supabase platform_users database with confirmation
+      await saveRegisteredUserAsync(updated);
 
-      setTimeout(() => {
-        setIsSuccess(false);
-        onClose();
-      }, 1000);
-    } else {
-      // Trigger post-signup "Welcome & Add App" step!
-      setPendingRegistration({ user: updated, role: 'seeker' });
-      setShowPostSignupPrompt(true);
+      const targetRoom: 'rentals' | 'jobs' = 
+        (resolvedPersona === 'job_seeker' || resolvedPersona === 'employer') ? 'jobs' : 'rentals';
+
+      // Immediately authenticate user into platform session so they never get locked out
+      onUpdateUser(updated, 'seeker', targetRoom);
+
+      if (isStandalone || isInstalled) {
+        setSuccessMessage({
+          title: `Welcome, ${seekerFullName.trim()}!`,
+          subtitle: targetRoom === 'jobs'
+            ? `Your career profile is active. Redirecting to Setlla Jobs...`
+            : `Your tenant profile is active for ${seekerState}. Inspection bookings are now unlocked!`,
+        });
+        setIsSuccess(true);
+
+        setTimeout(() => {
+          setIsSuccess(false);
+          setIsSubmittingSeeker(false);
+          onClose();
+        }, 1000);
+      } else {
+        // Trigger post-signup "Welcome & Add App" step!
+        setPendingRegistration({ user: updated, role: 'seeker' });
+        setShowPostSignupPrompt(true);
+        setIsSubmittingSeeker(false);
+      }
+    } catch (err: any) {
+      console.error('[SignupModal] Seeker registration error:', err);
+      setSignupError('An unexpected error occurred while creating your account. Please try again.');
+      setIsSubmittingSeeker(false);
     }
   };
 
@@ -435,106 +458,126 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const handleAgentSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setSignupError(null);
+    setDuplicateError(null);
+
     if (!agentFullName.trim() || !agencyName.trim() || !agentPhone.trim()) {
       setSignupError('Please enter your full name, organization name, and phone number.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
     // All users except tenants must provide compulsory email and password
     if (!agentEmail.trim()) {
       setSignupError('Please enter your official email address to continue.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (!agentPassword.trim() || agentPassword.trim().length < 6) {
       setSignupError('Please create a secure password (minimum 6 characters).');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
-    const localDupCheck = checkUserExists(agentPhone, agentEmail);
-    if (localDupCheck.exists) {
-      setDuplicateError(localDupCheck);
-      return;
-    }
-    const dupCheck = await checkUserExistsAsync(agentPhone, agentEmail);
-    if (dupCheck.exists) {
-      setDuplicateError(dupCheck);
-      return;
-    }
-    setDuplicateError(null);
+    setIsSubmittingAgent(true);
 
-    const resolvedCity = agentState === 'Delta State'
-      ? (agentCitySelection === 'Others' ? (customAgentCity.trim() || 'Others') : (agentCitySelection || agentCity || 'Asaba'))
-      : (agentCity.trim() || 'Asaba');
-
-    const finalWhatsapp = sameAsPhone ? agentPhone.trim() : (agentWhatsapp.trim() || agentPhone.trim());
-
-    const resolvedPersona: UserPersona = selectedPersona === 'employer' ? 'employer' : 'lister';
-    const updated: UserProfile = {
-      id: `DT-AGT-${Math.floor(1000 + Math.random() * 9000)}`,
-      fullName: agentFullName.trim(),
-      agencyName: agencyName.trim(),
-      agentType: agentType,
-      phone: agentPhone.trim(),
-      whatsapp: finalWhatsapp,
-      email: agentEmail.trim() || undefined,
-      password: agentPassword.trim(),
-      operatingState: agentState,
-      operatingCity: resolvedCity,
-      state: agentState,
-      city: resolvedCity,
-      cacNumber: agentCac.trim() || 'VERIFIED-REG',
-      isVerifiedTenant: false,
-      isAgent: true,
-      persona: resolvedPersona,
-      savedListingIds: [],
-      createdAt: new Date().toISOString(),
-      isEmailVerified: false,
-    };
-
-    // Enforce email verification for Agents
-    if (agentEmail.trim()) {
-      try {
-        const otpRes = await sendEmailOTP(agentEmail.trim(), 'agent_signup', updated);
-        setOtpEmail(agentEmail.trim());
-        setOtpPurpose('agent_signup');
-        setOtpPendingUser(updated);
-        setOtpDigits(['', '', '', '', '', '']);
-        setOtpTestCode(otpRes.testOtp);
-        setOtpResendSeconds(60);
-        setOtpError(null);
-        setAuthMode('verify_email');
+    try {
+      // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
+      const localDupCheck = checkUserExists(agentPhone, agentEmail);
+      if (localDupCheck.exists) {
+        setDuplicateError(localDupCheck);
+        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        setIsSubmittingAgent(false);
         return;
-      } catch (err: any) {
-        console.warn('[SignupModal] Agent email verification dispatch notice:', err);
       }
-    }
+      const dupCheck = await checkUserExistsAsync(agentPhone, agentEmail);
+      if (dupCheck.exists) {
+        setDuplicateError(dupCheck);
+        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        setIsSubmittingAgent(false);
+        return;
+      }
+      setDuplicateError(null);
 
-    // Save immediately to local storage AND Supabase platform_users database with confirmation
-    await saveRegisteredUserAsync(updated);
+      const resolvedCity = agentState === 'Delta State'
+        ? (agentCitySelection === 'Others' ? (customAgentCity.trim() || 'Others') : (agentCitySelection || agentCity || 'Asaba'))
+        : (agentCity.trim() || 'Asaba');
 
-    const targetRoom: 'rentals' | 'jobs' = resolvedPersona === 'employer' ? 'jobs' : 'rentals';
+      const finalWhatsapp = sameAsPhone ? agentPhone.trim() : (agentWhatsapp.trim() || agentPhone.trim());
 
-    // Immediately authenticate user into platform session so they never get locked out
-    onUpdateUser(updated, 'agent', targetRoom);
+      const resolvedPersona: UserPersona = selectedPersona === 'employer' ? 'employer' : 'lister';
+      const updated: UserProfile = {
+        id: `DT-AGT-${Math.floor(1000 + Math.random() * 9000)}`,
+        fullName: agentFullName.trim(),
+        agencyName: agencyName.trim(),
+        agentType: agentType,
+        phone: agentPhone.trim(),
+        whatsapp: finalWhatsapp,
+        email: agentEmail.trim() || undefined,
+        password: agentPassword.trim(),
+        operatingState: agentState,
+        operatingCity: resolvedCity,
+        state: agentState,
+        city: resolvedCity,
+        cacNumber: agentCac.trim() || 'VERIFIED-REG',
+        isVerifiedTenant: false,
+        isAgent: true,
+        persona: resolvedPersona,
+        savedListingIds: [],
+        createdAt: new Date().toISOString(),
+        isEmailVerified: false,
+      };
 
-    if (isStandalone || isInstalled) {
-      setSuccessMessage({
-        title: `Welcome, ${agentFullName.trim()}!`,
-        subtitle: targetRoom === 'jobs'
-          ? `${agencyName.trim()} is now registered. Redirecting to Setlla Jobs...`
-          : `${agencyName.trim()} is now registered. Redirecting to your Agent Listing Portal...`,
-      });
-      setIsSuccess(true);
+      // Enforce email verification for Agents
+      if (agentEmail.trim()) {
+        try {
+          const otpRes = await sendEmailOTP(agentEmail.trim(), 'agent_signup', updated);
+          setOtpEmail(agentEmail.trim());
+          setOtpPurpose('agent_signup');
+          setOtpPendingUser(updated);
+          setOtpDigits(['', '', '', '', '', '']);
+          setOtpTestCode(otpRes.testOtp);
+          setOtpResendSeconds(60);
+          setOtpError(null);
+          setAuthMode('verify_email');
+          setIsSubmittingAgent(false);
+          return;
+        } catch (err: any) {
+          console.warn('[SignupModal] Agent email verification dispatch notice:', err);
+        }
+      }
 
-      setTimeout(() => {
-        setIsSuccess(false);
-        onClose();
-      }, 1000);
-    } else {
-      // Trigger post-signup "Welcome & Add App" step!
-      setPendingRegistration({ user: updated, role: 'agent' });
-      setShowPostSignupPrompt(true);
+      // Save immediately to local storage AND Supabase platform_users database with confirmation
+      await saveRegisteredUserAsync(updated);
+
+      const targetRoom: 'rentals' | 'jobs' = resolvedPersona === 'employer' ? 'jobs' : 'rentals';
+
+      // Immediately authenticate user into platform session so they never get locked out
+      onUpdateUser(updated, 'agent', targetRoom);
+
+      if (isStandalone || isInstalled) {
+        setSuccessMessage({
+          title: `Welcome, ${agentFullName.trim()}!`,
+          subtitle: targetRoom === 'jobs'
+            ? `${agencyName.trim()} is now registered. Redirecting to Setlla Jobs...`
+            : `${agencyName.trim()} is now registered. Redirecting to your Agent Listing Portal...`,
+        });
+        setIsSuccess(true);
+
+        setTimeout(() => {
+          setIsSuccess(false);
+          setIsSubmittingAgent(false);
+          onClose();
+        }, 1000);
+      } else {
+        // Trigger post-signup "Welcome & Add App" step!
+        setPendingRegistration({ user: updated, role: 'agent' });
+        setShowPostSignupPrompt(true);
+        setIsSubmittingAgent(false);
+      }
+    } catch (err: any) {
+      console.error('[SignupModal] Agent registration error:', err);
+      setSignupError('An unexpected error occurred while setting up your account. Please try again.');
+      setIsSubmittingAgent(false);
     }
   };
 
@@ -943,7 +986,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           </div>
 
           {/* RIGHT COLUMN: Authentication Form (Responsive & Streamlined for Mobile) */}
-          <div className="flex-1 flex flex-col justify-between p-4 sm:p-6 md:p-7 lg:p-8 bg-white overflow-y-auto max-h-[min(94dvh,780px)] no-scrollbar">
+          <div ref={formScrollRef} className="flex-1 flex flex-col justify-between p-4 sm:p-6 md:p-7 lg:p-8 bg-white overflow-y-auto max-h-[min(94dvh,780px)] no-scrollbar">
             <div>
               {/* Notice Banner (If triggered by attempting to book inspection) */}
               {notice && (
@@ -1858,22 +1901,60 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     {/* Action Buttons */}
                     <div className="pt-1">
+                      {signupError && (
+                        <div className="mb-2 p-2.5 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] flex items-center gap-2 animate-fade-in shadow-xs">
+                          <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0" />
+                          <span className="text-xs font-semibold text-[#F0544F]">{signupError}</span>
+                        </div>
+                      )}
+
+                      {duplicateError && (
+                        <div className="mb-2 p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <h5 className="font-bold text-xs text-[#000004] leading-tight">Account Already Exists</h5>
+                              <p className="text-[11px] text-[#70798C] leading-relaxed mt-0.5">
+                                {duplicateError.message}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="pt-0.5 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
+                              className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                            >
+                              <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
+                              <span>Sign In With This Account</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <button
                         type="submit"
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        disabled={isSubmittingSeeker}
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                       >
-                        {selectedPersona === 'job_seeker' ? (
+                        {isSubmittingSeeker ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            <span>Setting Up Account...</span>
+                          </>
+                        ) : selectedPersona === 'job_seeker' ? (
                           <>
                             <Briefcase className="w-4 h-4 text-white" />
                             <span>Create Job Seeker Account</span>
+                            <ArrowRight className="w-4 h-4" />
                           </>
                         ) : (
                           <>
                             <User className="w-4 h-4 text-[#F95700]" />
                             <span>Create Tenant Account</span>
+                            <ArrowRight className="w-4 h-4" />
                           </>
                         )}
-                        <ArrowRight className="w-4 h-4" />
                       </button>
                     </div>
                   </form>
@@ -2286,13 +2367,54 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     {/* Submit Button */}
                     <div className="pt-1">
+                      {signupError && (
+                        <div className="mb-2 p-2.5 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] flex items-center gap-2 animate-fade-in shadow-xs">
+                          <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0" />
+                          <span className="text-xs font-semibold text-[#F0544F]">{signupError}</span>
+                        </div>
+                      )}
+
+                      {duplicateError && (
+                        <div className="mb-2 p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <h5 className="font-bold text-xs text-[#000004] leading-tight">Account Already Exists</h5>
+                              <p className="text-[11px] text-[#70798C] leading-relaxed mt-0.5">
+                                {duplicateError.message}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="pt-0.5 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
+                              className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                            >
+                              <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
+                              <span>Sign In With This Account</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <button
                         type="submit"
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                        disabled={isSubmittingAgent}
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                       >
-                        <Building2 className="w-4 h-4 text-white" />
-                        <span>{selectedPersona === 'employer' ? 'Register as Employer & Post Jobs' : 'Register as Agent'}</span>
-                        <ArrowRight className="w-4 h-4" />
+                        {isSubmittingAgent ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            <span>Processing Registration...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Building2 className="w-4 h-4 text-white" />
+                            <span>{selectedPersona === 'employer' ? 'Register as Employer & Post Jobs' : 'Register as Agent'}</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
                       </button>
                     </div>
                   </form>

@@ -91,17 +91,26 @@ export async function sendEmailOTP(
     localStorage.setItem(PENDING_EMAIL_OTP_KEY, JSON.stringify(record));
   }
 
-  // Best-effort Supabase Auth OTP delivery via Hostinger custom SMTP
+  // Best-effort Supabase Auth OTP delivery via Hostinger custom SMTP with 4s timeout protection
   if (isSupabaseConfigured()) {
     try {
-      await supabase.auth.signInWithOtp({
+      const sendPromise = supabase.auth.signInWithOtp({
         email: cleanEmail,
         options: {
           shouldCreateUser: true,
         },
       });
+
+      const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: new Error('Supabase email dispatch timed out') }), 4000)
+      );
+
+      const res: any = await Promise.race([sendPromise, timeoutPromise]);
+      if (res?.error) {
+        console.warn('[Setlla Email Service] Supabase delivery notice:', res.error?.message || res.error);
+      }
     } catch (err) {
-      console.warn('[Setlla Email Service] Supabase delivery notice:', err);
+      console.warn('[Setlla Email Service] Supabase delivery notice exception:', err);
     }
   }
 
