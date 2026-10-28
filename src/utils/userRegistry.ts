@@ -254,157 +254,53 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
       .select('*')
       .order('created_at', { ascending: false });
 
-    const userMap = new Map<string, UserProfile>();
+    // When Supabase responds successfully, its data is the single source of truth
+    if (!error && Array.isArray(data)) {
+      const dbUsersMap = new Map<string, UserProfile>();
 
-    // 1. Seed defaults (excluding explicitly deleted)
-    DEFAULT_REGISTERED_USERS.forEach((u) => {
-      if (!deletedIds.has(u.id)) {
-        userMap.set(u.id, u);
-      }
-    });
-
-    // 2. Add local storage users
-    localUsers.forEach((u) => {
-      if (u && u.id && !deletedIds.has(u.id)) {
-        userMap.set(u.id, u);
-      }
-    });
-
-    // 3. Database platform_users records take precedence
-    if (Array.isArray(data)) {
       data.forEach((row) => {
         const u = mapDbToUserProfile(row);
         if (u && u.id && !deletedIds.has(u.id)) {
-          userMap.set(u.id, u);
+          dbUsersMap.set(u.id, u);
         }
       });
-    }
 
-    // 4. Auto-harvest live agents from active listings in Supabase
-    try {
-      const { data: listingRows } = await client
-        .from('listings')
-        .select('id, title, agent, city, state')
-        .neq('availability_status', 'Deleted');
+      // Auto-harvest live agents ONLY from verified 'Available' listings in Supabase
+      try {
+        const { data: listingRows } = await client
+          .from('listings')
+          .select('id, title, agent, city, state, availability_status')
+          .eq('availability_status', 'Available');
 
-      if (Array.isArray(listingRows)) {
-        listingRows.forEach((row: any) => {
-          const agent = row.agent;
-          if (agent && (agent.fullName || agent.name || agent.phone)) {
-            const rawPhone = agent.phone || '';
-            const phone = rawPhone.trim();
-            const id = agent.id || (phone ? `DT-AGT-${normalizePhoneNumber(phone).slice(-4)}` : `agent-${row.id}`);
-            if (!deletedIds.has(id)) {
-              const existingWithPhone = Array.from(userMap.values()).find(
-                (u) =>
-                  (phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(phone)) ||
-                  (agent.id && u.id === agent.id)
-              );
-              if (existingWithPhone) {
-                // The user has active published listings: they are definitively an AGENT!
-                existingWithPhone.isAgent = true;
-                existingWithPhone.isVerifiedTenant = false;
-                if (agent.agencyName) {
-                  existingWithPhone.agencyName = agent.agencyName;
+        if (Array.isArray(listingRows)) {
+          listingRows.forEach((row: any) => {
+            const agent = row.agent;
+            if (agent && (agent.fullName || agent.name || agent.phone)) {
+              const rawPhone = agent.phone || '';
+              const phone = rawPhone.trim();
+              const id = agent.id || (phone ? `DT-AGT-${normalizePhoneNumber(phone).slice(-4)}` : `agent-${row.id}`);
+              if (!deletedIds.has(id)) {
+                const existing = dbUsersMap.get(id);
+                if (existing) {
+                  existing.isAgent = true;
+                  existing.agentType = 'agency';
+                  if (agent.agencyName) existing.agencyName = agent.agencyName;
+                  if (agent.fullName) existing.fullName = agent.fullName;
+                  dbUsersMap.set(existing.id, existing);
                 }
-                if (agent.fullName) {
-                  existingWithPhone.fullName = agent.fullName;
-                }
-                if (agent.cacNumber) {
-                  existingWithPhone.cacNumber = agent.cacNumber;
-                }
-                if (agent.operatingCity) {
-                  existingWithPhone.operatingCity = agent.operatingCity;
-                }
-                if (agent.whatsapp) {
-                  existingWithPhone.whatsapp = agent.whatsapp;
-                }
-                existingWithPhone.agentType = 'agency';
-                userMap.set(existingWithPhone.id, existingWithPhone);
-              } else {
-                userMap.set(id, {
-                  id,
-                  fullName: agent.fullName || agent.name || 'Verified Agent',
-                  phone: phone || '08000000000',
-                  whatsapp: agent.whatsapp || phone || '',
-                  agencyName: agent.agencyName || 'Independent Real Estate Partner',
-                  agentType: 'agency',
-                  isAgent: true,
-                  isVerifiedTenant: false,
-                  cacNumber: agent.cacNumber || 'VERIFIED-REG',
-                  operatingState: row.state || 'Delta State',
-                  operatingCity: row.city || 'Asaba',
-                  state: row.state || 'Delta State',
-                  city: row.city || 'Asaba',
-                  savedListingIds: [],
-                  createdAt: new Date().toISOString(),
-                });
               }
             }
-          }
-        });
-      }
-    } catch (e) {}
+          });
+        }
+      } catch (e) {}
 
-    // 5. Auto-harvest live tenants from real bookings in Supabase
-    try {
-      const { data: bookingRows } = await client
-        .from('bookings')
-        .select('id, applicant_name, applicant_phone, applicant_email, created_at');
+      const cleanList = Array.from(dbUsersMap.values());
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanList));
+      } catch (_) {}
 
-      if (Array.isArray(bookingRows)) {
-        bookingRows.forEach((b: any) => {
-          const rawPhone = b.applicant_phone || '';
-          const phone = rawPhone.trim();
-          const name = b.applicant_name || '';
-          if (name && phone) {
-            const id = `DT-USR-${normalizePhoneNumber(phone).slice(-4)}`;
-            if (!deletedIds.has(id)) {
-              const existing = Array.from(userMap.values()).find(
-                (u) => normalizePhoneNumber(u.phone) === normalizePhoneNumber(phone)
-              );
-              if (!existing) {
-                userMap.set(id, {
-                  id,
-                  fullName: name,
-                  phone,
-                  email: b.applicant_email || undefined,
-                  state: 'Delta State',
-                  city: 'Asaba',
-                  isVerifiedTenant: true,
-                  isAgent: false,
-                  savedListingIds: [],
-                  createdAt: b.created_at || new Date().toISOString(),
-                });
-              }
-            }
-          }
-        });
-      }
-    } catch (e) {}
-
-    const mergedList = Array.from(userMap.values());
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedList));
-    } catch (err) {
-      // quota exceeded or SSR
+      return cleanList;
     }
-
-    // Auto-seed: Ensure all platform agents & tenants exist in Supabase database
-    if (Array.isArray(data) && !error) {
-      const dbIds = new Set(data.map((r: any) => r.id));
-      const missingUsers = mergedList.filter((u) => !dbIds.has(u.id) && !deletedIds.has(u.id));
-      if (missingUsers.length > 0) {
-        const rows = missingUsers.map(mapUserProfileToDb);
-        Promise.resolve(client.from('platform_users').upsert(rows, { onConflict: 'id' }))
-          .then(() => {
-            console.log(`[UserRegistry] Synchronized ${missingUsers.length} users into Supabase database.`);
-          })
-          .catch(() => {});
-      }
-    }
-
-    return mergedList;
   } catch (err) {
     console.warn('[UserRegistry] Network error fetching platform users:', err);
   }

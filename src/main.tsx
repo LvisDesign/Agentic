@@ -3,6 +3,10 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { registerServiceWorker, clearAppBadge } from './utils/pwa'
+import { runClientCacheSanitization } from './utils/cacheSanitizer'
+
+// Immediately purge any stale mock data cached in client storage
+runClientCacheSanitization();
 
 // Initialize PWA Service Worker & clear stale home-screen badge on app open
 if (typeof window !== 'undefined') {

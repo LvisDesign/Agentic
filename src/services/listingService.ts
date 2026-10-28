@@ -264,14 +264,13 @@ export async function syncLocalVideosToCloudStorage(listingsToCheck?: PropertyLi
  */
 export async function fetchAllListings(): Promise<PropertyListing[]> {
   const client = getSupabaseClient();
-  // If Supabase is configured, sync local listings first then load from cloud database
+  const isNonActive = (st?: string) => 
+    !st || st === 'Deleted' || st === 'Archived' || st === 'Inactive' || st === 'Removed';
+
+  // If Supabase is configured, load real listings from cloud database
   if (isSupabaseConfigured() && client) {
     try {
-      // 1. Sync any existing local listings and videos up to Supabase
-      await syncLocalListingsToCloud();
-      syncLocalVideosToCloudStorage().catch(() => {});
-
-      // 2. Fetch all real listings from Supabase
+      // Fetch all listings from Supabase
       const { data, error } = await client
         .from('listings')
         .select('*')
@@ -286,7 +285,7 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
         const cloudListings: PropertyListing[] = data
           .filter((row) => {
             const status = row.availability_status || row.availabilityStatus;
-            if (status === 'Deleted') return false;
+            if (isNonActive(status)) return false;
             if (deletedIds.has(row.id)) return false;
             return true;
           })
@@ -324,13 +323,13 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
 
         // Only return real listings created by agents (exclude any mock/demo listings and deleted listings)
         const realCloudListings = cloudListings.filter(
-          (l) => !INITIAL_LISTINGS.some((m) => m.id === l.id) && !deletedIds.has(l.id) && l.availabilityStatus !== 'Deleted'
+          (l) => !INITIAL_LISTINGS.some((m) => m.id === l.id) && !deletedIds.has(l.id) && !isNonActive(l.availabilityStatus)
         );
 
         // Check if any real listings have local video blobs on this machine waiting to upload
         syncLocalVideosToCloudStorage(realCloudListings).catch(() => {});
 
-        // Cache in localStorage
+        // Synchronize local cache to match cloud database
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(realCloudListings));
         } catch (e) {}
@@ -584,14 +583,14 @@ export async function deleteListing(listingId: string): Promise<boolean> {
     }
   } catch (e) {}
 
-  // 3. Update Supabase with availability_status: 'Deleted' (Instant soft delete across all devices)
+  // 3. Update Supabase with availability_status: 'Archived' (Instant soft delete across all devices permitted by RLS)
   if (isSupabaseConfigured() && client) {
     try {
       await client
         .from('listings')
-        .update({ availability_status: 'Deleted' })
+        .update({ availability_status: 'Archived' })
         .eq('id', listingId);
-      console.log('[Setlla Supabase] Listing marked as Deleted in cloud database:', listingId);
+      console.log('[Setlla Supabase] Listing marked as Archived in cloud database:', listingId);
     } catch (err) {
       console.warn('[Setlla Supabase] Soft delete notice:', err);
     }

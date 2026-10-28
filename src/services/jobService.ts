@@ -52,93 +52,72 @@ export function recordDeletedJobId(jobId: string): void {
  */
 export async function getAllJobs(): Promise<JobListing[]> {
   const deletedIds = getDeletedJobIds();
+  const isDemoJob = (id?: string) => Boolean(id && (id.startsWith('job-asaba-') || id.startsWith('job-warri-')));
+
   let localJobs: JobListing[] = [];
   try {
     const raw = localStorage.getItem(JOBS_STORAGE_KEY);
     if (raw) {
-      localJobs = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        localJobs = parsed.filter((j) => j && j.id && !deletedIds.has(j.id) && !isDemoJob(j.id));
+      }
     }
   } catch (_) {}
 
-  // Filter out any tombstoned deleted jobs
-  localJobs = (localJobs || []).filter((j) => !deletedIds.has(j.id));
+  // Save cleaned local jobs without demo items
+  try {
+    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(localJobs));
+  } catch (_) {}
 
-  if (!localJobs || localJobs.length === 0) {
-    localJobs = INITIAL_JOB_LISTINGS.filter((j) => !deletedIds.has(j.id));
-    try {
-      localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(localJobs));
-    } catch (_) {}
-  } else {
-    // Ensure any newly added initial job listings (e.g. PPA corper roles) are synced in
-    const existingIds = new Set(localJobs.map((j) => j.id));
-    let hasNew = false;
-    INITIAL_JOB_LISTINGS.forEach((initJob) => {
-      if (!existingIds.has(initJob.id) && !deletedIds.has(initJob.id)) {
-        localJobs.push(initJob);
-        hasNew = true;
-      }
-    });
-    if (hasNew) {
-      try {
-        localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(localJobs));
-      } catch (_) {}
-    }
-  }
-
-  // Normalize freemium fields (Free Organic ₦0 vs Sponsored Spotlight ₦2,000)
-  localJobs = localJobs.map((j) => ({
-    ...j,
-    isFeatured: Boolean(j.isFeatured),
-    listingFeePaid: j.listingFeePaid !== undefined ? j.listingFeePaid : (j.isFeatured ? 2000 : 0),
-    paymentReference: j.paymentReference || (j.isFeatured ? `SET-PAY-${j.id.slice(-6)}` : 'FREE_ORGANIC_POST'),
-  }));
-
-  // If Supabase is configured, attempt background sync with `job_listings` table
+  // If Supabase is configured, fetch live jobs from `job_listings` table
   if (isSupabaseConfigured()) {
     try {
       const client = getSupabaseClient();
       if (client) {
         const { data, error } = await client.from('job_listings').select('*');
-        if (!error && data && data.length > 0) {
-          const cloudJobs: JobListing[] = data.map((d: any) => ({
-            id: d.id,
-            title: d.title,
-            companyName: d.company_name || d.companyName,
-            companyLogo: d.company_logo || d.companyLogo,
-            companyInitial: d.company_initial || (d.company_name ? d.company_name.slice(0, 2).toUpperCase() : 'ST'),
-            state: d.state || 'Delta State',
-            city: d.city || 'Asaba',
-            address: d.address || '',
-            workplaceType: d.workplace_type || 'On-Site',
-            roleType: d.role_type || 'Full-Time',
-            salaryRange: d.salary_range || 'Negotiable',
-            postedDate: d.posted_date || 'Recently Posted',
-            createdAt: d.created_at || new Date().toISOString(),
-            summary: d.summary || '',
-            description: d.description || '',
-            responsibilities: Array.isArray(d.responsibilities) ? d.responsibilities : [],
-            requirements: Array.isArray(d.requirements) ? d.requirements : [],
-            benefits: Array.isArray(d.benefits) ? d.benefits : [],
-            category: d.category || 'General',
-            isFeatured: Boolean(d.is_featured)
-          }));
+        if (!error && Array.isArray(data)) {
+          const cloudJobs: JobListing[] = data
+            .filter((d: any) => d && d.id && !deletedIds.has(d.id) && !isDemoJob(d.id))
+            .map((d: any) => ({
+              id: d.id,
+              title: d.title,
+              companyName: d.company_name || d.companyName,
+              companyLogo: d.company_logo || d.companyLogo,
+              companyInitial: d.company_initial || (d.company_name ? d.company_name.slice(0, 2).toUpperCase() : 'ST'),
+              state: d.state || 'Delta State',
+              city: d.city || 'Asaba',
+              address: d.address || '',
+              workplaceType: d.workplace_type || 'On-Site',
+              roleType: d.role_type || 'Full-Time',
+              salaryRange: d.salary_range || 'Negotiable',
+              postedDate: d.posted_date || 'Recently Posted',
+              createdAt: d.created_at || new Date().toISOString(),
+              summary: d.summary || '',
+              description: d.description || '',
+              responsibilities: Array.isArray(d.responsibilities) ? d.responsibilities : [],
+              requirements: Array.isArray(d.requirements) ? d.requirements : [],
+              benefits: Array.isArray(d.benefits) ? d.benefits : [],
+              category: d.category || 'General',
+              isFeatured: Boolean(d.is_featured)
+            }));
 
-          // Merge cloud jobs with local jobs ensuring no duplicates and excluding deleted
-          const undeletedCloudJobs = cloudJobs.filter((j) => !deletedIds.has(j.id));
-          const jobMap = new Map<string, JobListing>();
-          localJobs.forEach((j) => jobMap.set(j.id, j));
-          undeletedCloudJobs.forEach((j) => jobMap.set(j.id, j));
-          const merged = Array.from(jobMap.values());
-          localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(merged));
-          return merged;
+          localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(cloudJobs));
+          return cloudJobs;
         }
       }
     } catch (e) {
-      console.warn('[JobService] Cloud jobs sync fallback to local mock:', e);
+      console.warn('[JobService] Cloud jobs sync notice:', e);
     }
   }
 
-  return localJobs;
+  // Normalize freemium fields (Free Organic ₦0 vs Sponsored Spotlight ₦2,000)
+  return localJobs.map((j) => ({
+    ...j,
+    isFeatured: Boolean(j.isFeatured),
+    listingFeePaid: j.listingFeePaid !== undefined ? j.listingFeePaid : (j.isFeatured ? 2000 : 0),
+    paymentReference: j.paymentReference || (j.isFeatured ? `SET-PAY-${j.id.slice(-6)}` : 'FREE_ORGANIC_POST'),
+  }));
 }
 
 /**
