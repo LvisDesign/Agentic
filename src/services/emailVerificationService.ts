@@ -91,13 +91,13 @@ export async function sendEmailOTP(
     localStorage.setItem(PENDING_EMAIL_OTP_KEY, JSON.stringify(record));
   }
 
-  // Best-effort Supabase Auth OTP delivery if configured
+  // Best-effort Supabase Auth OTP delivery via Hostinger custom SMTP
   if (isSupabaseConfigured()) {
     try {
       await supabase.auth.signInWithOtp({
         email: cleanEmail,
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser: true,
         },
       });
     } catch (err) {
@@ -115,6 +115,7 @@ export async function sendEmailOTP(
 
 /**
  * Verifies the 6-digit email OTP.
+ * Validates against both local record and Supabase Auth (sent via Hostinger SMTP).
  * On success for signups, marks account as email-verified and persists to database.
  */
 export async function verifyEmailOTP(
@@ -134,7 +135,34 @@ export async function verifyEmailOTP(
   }
 
   const isMasterOtp = enteredCode.trim() === '123456';
-  const matches = record.otp === enteredCode.trim() || isMasterOtp;
+  let matches = record.otp === enteredCode.trim() || isMasterOtp;
+
+  // If local code doesn't match, verify against Supabase Auth OTP (code sent via Hostinger SMTP)
+  if (!matches && isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: enteredCode.trim(),
+        type: 'email',
+      });
+      if (!error && (data?.session || data?.user)) {
+        matches = true;
+      }
+    } catch (_) {}
+
+    if (!matches) {
+      try {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: enteredCode.trim(),
+          type: 'magiclink',
+        });
+        if (!error && (data?.session || data?.user)) {
+          matches = true;
+        }
+      } catch (_) {}
+    }
+  }
 
   if (!matches) {
     throw new Error('Invalid verification code. Please check your email and try again.');
