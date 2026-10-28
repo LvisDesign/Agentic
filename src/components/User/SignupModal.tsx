@@ -28,8 +28,11 @@ import {
   Key,
   ArrowLeft,
   Eye,
-  EyeOff
+  EyeOff,
+  ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { DeltaCity, UserProfile, UserRole } from '../../types/marketplace';
 import { UserPersona } from '../../types/jobs';
 import { StateDropdown } from '../UI/StateDropdown';
@@ -48,6 +51,11 @@ import {
   saveRegisteredUserAsync,
   DuplicateCheckResult 
 } from '../../utils/userRegistry';
+import { 
+  sendEmailOTP, 
+  verifyEmailOTP, 
+  resetUserPassword 
+} from '../../services/emailVerificationService';
 import { isElvisSuperAdmin } from '../../services/adminAuthService';
 
 export const NIGERIAN_STATES = [
@@ -117,9 +125,38 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 }) => {
   // Navigation & mode state
   const [activeRoleTab, setActiveRoleTab] = useState<'seeker' | 'agent'>(initialRole);
-  const [authMode, setAuthMode] = useState<'signup' | 'login'>(initialMode);
+  const [authMode, setAuthMode] = useState<'signup' | 'login' | 'verify_email' | 'forgot_password' | 'reset_password'>(initialMode);
   const [signupStep, setSignupStep] = useState<'persona' | 'form'>(initialMode === 'login' ? 'form' : 'persona');
   const [selectedPersona, setSelectedPersona] = useState<UserPersona>(initialPersona || (initialRole === 'agent' ? 'lister' : 'job_seeker'));
+
+  // Email OTP Verification State (Agents, Employers, Password Recovery)
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [otpPurpose, setOtpPurpose] = useState<'agent_signup' | 'employer_signup' | 'forgot_password'>('agent_signup');
+  const [otpPendingUser, setOtpPendingUser] = useState<UserProfile | null>(null);
+  const [otpResendSeconds, setOtpResendSeconds] = useState(0);
+  const [otpTestCode, setOtpTestCode] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+
+  // Forgot Password State
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [isSendingResetOtp, setIsSendingResetOtp] = useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetPasswordError, setResetPasswordError] = useState<string | null>(null);
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (otpResendSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setOtpResendSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpResendSeconds]);
 
   // Sync initial props when opened
   useEffect(() => {
@@ -344,7 +381,26 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       persona: resolvedPersona,
       savedListingIds: [],
       createdAt: new Date().toISOString(),
+      isEmailVerified: resolvedPersona === 'employer' ? false : true,
     };
+
+    // If employer, enforce email verification before activating
+    if (resolvedPersona === 'employer' && seekerEmail.trim()) {
+      try {
+        const otpRes = await sendEmailOTP(seekerEmail.trim(), 'employer_signup', updated);
+        setOtpEmail(seekerEmail.trim());
+        setOtpPurpose('employer_signup');
+        setOtpPendingUser(updated);
+        setOtpDigits(['', '', '', '', '', '']);
+        setOtpTestCode(otpRes.testOtp);
+        setOtpResendSeconds(60);
+        setOtpError(null);
+        setAuthMode('verify_email');
+        return;
+      } catch (err: any) {
+        console.warn('[SignupModal] Employer email verification dispatch notice:', err);
+      }
+    }
 
     // Save immediately to local storage AND Supabase platform_users database with confirmation
     await saveRegisteredUserAsync(updated);
@@ -433,7 +489,26 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       persona: resolvedPersona,
       savedListingIds: [],
       createdAt: new Date().toISOString(),
+      isEmailVerified: false,
     };
+
+    // Enforce email verification for Agents
+    if (agentEmail.trim()) {
+      try {
+        const otpRes = await sendEmailOTP(agentEmail.trim(), 'agent_signup', updated);
+        setOtpEmail(agentEmail.trim());
+        setOtpPurpose('agent_signup');
+        setOtpPendingUser(updated);
+        setOtpDigits(['', '', '', '', '', '']);
+        setOtpTestCode(otpRes.testOtp);
+        setOtpResendSeconds(60);
+        setOtpError(null);
+        setAuthMode('verify_email');
+        return;
+      } catch (err: any) {
+        console.warn('[SignupModal] Agent email verification dispatch notice:', err);
+      }
+    }
 
     // Save immediately to local storage AND Supabase platform_users database with confirmation
     await saveRegisteredUserAsync(updated);
@@ -460,6 +535,172 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       // Trigger post-signup "Welcome & Add App" step!
       setPendingRegistration({ user: updated, role: 'agent' });
       setShowPostSignupPrompt(true);
+    }
+  };
+
+  // --- OTP Input & Verification Handlers ---
+  const handleDigitChange = (index: number, value: string) => {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length > 1) {
+      const chars = cleaned.slice(0, 6).split('');
+      const newDigits = [...otpDigits];
+      chars.forEach((c, idx) => {
+        if (idx < 6) newDigits[idx] = c;
+      });
+      setOtpDigits(newDigits);
+      if (otpError) setOtpError(null);
+      const nextIdx = Math.min(chars.length, 5);
+      const nextInput = document.getElementById(`otp-box-${nextIdx}`);
+      if (nextInput) nextInput.focus();
+      return;
+    }
+
+    const newDigits = [...otpDigits];
+    newDigits[index] = cleaned;
+    setOtpDigits(newDigits);
+    if (otpError) setOtpError(null);
+
+    if (cleaned && index < 5) {
+      const nextInput = document.getElementById(`otp-box-${index + 1}`);
+      if (nextInput) nextInput.focus();
+    }
+  };
+
+  const handleDigitKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-box-${index - 1}`);
+      if (prevInput) prevInput.focus();
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (otpResendSeconds > 0 || !otpEmail) return;
+    try {
+      const res = await sendEmailOTP(otpEmail, otpPurpose, otpPendingUser || undefined);
+      setOtpTestCode(res.testOtp);
+      setOtpResendSeconds(60);
+      setOtpError(null);
+    } catch (err: any) {
+      setOtpError(err.message || 'Failed to resend verification code.');
+    }
+  };
+
+  const handleVerifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const code = otpDigits.join('').trim();
+    if (code.length < 6) {
+      setOtpError('Please enter the full 6-digit code sent to your email.');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setOtpError(null);
+
+    try {
+      const res = await verifyEmailOTP(otpEmail, code);
+      if (res.purpose === 'forgot_password') {
+        setAuthMode('reset_password');
+        setIsVerifyingOtp(false);
+        return;
+      }
+
+      // Signup verified
+      const user = res.user || otpPendingUser;
+      if (user) {
+        try {
+          confetti({
+            particleCount: 75,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ['#342A21', '#10B981', '#FCF9F5', '#000004']
+          });
+        } catch (_) {}
+
+        const targetRoom: 'rentals' | 'jobs' =
+          (user.persona === 'job_seeker' || user.persona === 'employer') ? 'jobs' : 'rentals';
+
+        setSuccessMessage({
+          title: `Email Verified! Welcome, ${user.fullName}`,
+          subtitle: user.isAgent ? 'Your Agent portal is now active. Loading...' : 'Your Employer portal is active. Loading...'
+        });
+        setIsSuccess(true);
+
+        setTimeout(() => {
+          onUpdateUser(user, user.isAgent ? 'agent' : 'seeker', targetRoom);
+          setIsSuccess(false);
+          setIsVerifyingOtp(false);
+          onClose();
+        }, 1200);
+      }
+    } catch (err: any) {
+      setOtpError(err.message || 'Invalid or expired code. Please try again.');
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  // --- Password Recovery Handlers ---
+  const handleSendForgotPasswordOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail.trim()) {
+      setForgotPasswordError('Please enter your registered email address.');
+      return;
+    }
+    setIsSendingResetOtp(true);
+    setForgotPasswordError(null);
+    try {
+      const res = await sendEmailOTP(forgotPasswordEmail.trim(), 'forgot_password');
+      setOtpEmail(forgotPasswordEmail.trim());
+      setOtpPurpose('forgot_password');
+      setOtpDigits(['', '', '', '', '', '']);
+      setOtpTestCode(res.testOtp);
+      setOtpResendSeconds(60);
+      setOtpError(null);
+      setAuthMode('verify_email');
+    } catch (err: any) {
+      setForgotPasswordError(err.message || 'Failed to dispatch recovery code.');
+    } finally {
+      setIsSendingResetOtp(false);
+    }
+  };
+
+  const handleResetPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword.trim() || newPassword.trim().length < 6) {
+      setResetPasswordError('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword.trim() !== confirmNewPassword.trim()) {
+      setResetPasswordError('Passwords do not match. Please re-enter.');
+      return;
+    }
+
+    setIsResettingPassword(true);
+    setResetPasswordError(null);
+    try {
+      const updatedUser = await resetUserPassword(otpEmail, newPassword.trim());
+      try {
+        confetti({
+          particleCount: 60,
+          spread: 60,
+          origin: { y: 0.6 }
+        });
+      } catch (_) {}
+      setSuccessMessage({
+        title: 'Password Updated Successfully!',
+        subtitle: 'Signing you in with your new credentials...'
+      });
+      setIsSuccess(true);
+      setTimeout(() => {
+        const targetRoom: 'rentals' | 'jobs' =
+          (updatedUser.persona === 'job_seeker' || updatedUser.persona === 'employer') ? 'jobs' : 'rentals';
+        onUpdateUser(updatedUser, updatedUser.isAgent ? 'agent' : 'seeker', targetRoom);
+        setIsSuccess(false);
+        setIsResettingPassword(false);
+        onClose();
+      }, 1200);
+    } catch (err: any) {
+      setResetPasswordError(err.message || 'Failed to update password.');
+      setIsResettingPassword(false);
     }
   };
 
@@ -674,13 +915,21 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             {/* Top Headline Section */}
             <div className="relative z-10 space-y-3">
               <h2 className="font-display text-xl lg:text-2xl font-extrabold text-white leading-tight tracking-tight">
-                {authMode === 'signup' && activeRoleTab === 'agent'
+                {authMode === 'verify_email'
+                  ? 'Verify your email address'
+                  : authMode === 'forgot_password' || authMode === 'reset_password'
+                  ? 'Reset your password'
+                  : authMode === 'signup' && activeRoleTab === 'agent'
                   ? 'List verified rentals and close deals faster.'
                   : 'Find, inspect, and secure verified apartments.'}
               </h2>
 
               <p className="text-xs text-white/70 leading-relaxed">
-                {authMode === 'signup' && activeRoleTab === 'agent'
+                {authMode === 'verify_email'
+                  ? 'We send a 6-digit confirmation code to safeguard your partner credentials.'
+                  : authMode === 'forgot_password' || authMode === 'reset_password'
+                  ? 'Securely restore access to your account and continue managing your listings or applications.'
+                  : authMode === 'signup' && activeRoleTab === 'agent'
                   ? 'Direct connection with serious pre-screened tenants. Manage inspection slots and close leases with zero hassle.'
                   : 'Direct access to video-verified apartments, scam-free inspections, and secure booking passes.'}
               </p>
@@ -732,8 +981,96 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 </button>
               </div>
 
-              {/* Persona Selection (Step 1) vs Form View (Step 2) vs Login View */}
-              {authMode === 'login' ? (
+              {/* Persona Selection (Step 1) vs Form View (Step 2) vs Login View vs Email OTP / Reset Password */}
+              {authMode === 'verify_email' ? (
+                /* VERIFY EMAIL HEADER */
+                <>
+                  <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#E5E7EB]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (otpPurpose === 'forgot_password') {
+                          setAuthMode('forgot_password');
+                        } else {
+                          setAuthMode('signup');
+                          setSignupStep('form');
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#000004] hover:underline cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>{otpPurpose === 'forgot_password' ? 'Back to password reset' : 'Back to registration form'}</span>
+                    </button>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                      Step 2 of 2
+                    </span>
+                  </div>
+
+                  <div className="mb-2.5 sm:mb-3">
+                    <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
+                      Confirm your email
+                    </h2>
+                    <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
+                      Enter the 6-digit verification code sent to <strong className="text-[#000004]">{otpEmail}</strong>
+                    </p>
+                  </div>
+                </>
+              ) : authMode === 'forgot_password' ? (
+                /* FORGOT PASSWORD HEADER */
+                <>
+                  <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#E5E7EB]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('login');
+                        setForgotPasswordError(null);
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#000004] hover:underline cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back to Sign In</span>
+                    </button>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F4F5F7] text-[#000004] border border-[#E5E7EB]">
+                      Account Recovery
+                    </span>
+                  </div>
+
+                  <div className="mb-2.5 sm:mb-3">
+                    <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
+                      Forgot Password?
+                    </h2>
+                    <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
+                      Enter your account email to receive a 6-digit recovery code.
+                    </p>
+                  </div>
+                </>
+              ) : authMode === 'reset_password' ? (
+                /* RESET PASSWORD HEADER */
+                <>
+                  <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#E5E7EB]">
+                    <button
+                      type="button"
+                      onClick={() => setAuthMode('forgot_password')}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#000004] hover:underline cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back to code entry</span>
+                    </button>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      Final Step
+                    </span>
+                  </div>
+
+                  <div className="mb-2.5 sm:mb-3">
+                    <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
+                      Set New Password
+                    </h2>
+                    <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
+                      Enter your new secure password for <strong className="text-[#000004]">{otpEmail}</strong>
+                    </p>
+                  </div>
+                </>
+              ) : authMode === 'login' ? (
                 <>
                   <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-2 gap-1 mb-2.5 sm:mb-3">
                     <button
@@ -936,6 +1273,238 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       {successMessage.subtitle}
                     </p>
                   </div>
+                ) : authMode === 'verify_email' ? (
+                  /* --- 6-DIGIT EMAIL OTP VERIFICATION SCREEN --- */
+                  <form onSubmit={handleVerifyOtp} className="space-y-4 py-1 text-xs">
+                    {otpError && (
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#F0544F] text-[11px] flex items-start gap-2 animate-fade-in shadow-2xs">
+                        <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
+                        <span className="flex-1 font-semibold">{otpError}</span>
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className="block text-xs font-semibold text-[#70798C] text-center">
+                        Enter 6-digit confirmation code
+                      </label>
+                      <div className="flex items-center justify-center gap-2 sm:gap-2.5 my-2">
+                        {otpDigits.map((digit, idx) => (
+                          <input
+                            key={idx}
+                            id={`otp-box-${idx}`}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={1}
+                            autoFocus={idx === 0}
+                            value={digit}
+                            onChange={(e) => handleDigitChange(idx, e.target.value)}
+                            onKeyDown={(e) => handleDigitKeyDown(idx, e)}
+                            className="w-10 h-12 sm:w-11 sm:h-13 text-center text-lg sm:text-xl font-black rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] text-[#000004] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/20 focus:border-[#F95700] transition-all"
+                          />
+                        ))}
+                      </div>
+
+                      {/* Sandbox test code helper for quick seamless testing */}
+                      {otpTestCode && (
+                        <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 font-medium">
+                            <span>Sandbox code:</span>
+                            <code className="font-bold bg-white px-1.5 py-0.5 rounded border border-amber-300 tracking-wider text-[#000004]">
+                              {otpTestCode}
+                            </code>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const chars = otpTestCode.slice(0, 6).split('');
+                              setOtpDigits(chars);
+                              if (otpError) setOtpError(null);
+                            }}
+                            className="text-[11px] font-bold text-[#F95700] hover:underline cursor-pointer"
+                          >
+                            Fill in
+                          </button>
+                        </div>
+                      )}
+
+                      <p className="text-[11px] text-[#70798C] text-center">
+                        Code expires in 10 minutes. Check your inbox or spam folder.
+                      </p>
+                    </div>
+
+                    <div className="pt-2 space-y-2.5">
+                      <button
+                        type="submit"
+                        disabled={isVerifyingOtp || otpDigits.join('').length < 6}
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                      >
+                        {isVerifyingOtp ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            <span>Verifying Code...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>{otpPurpose === 'forgot_password' ? 'Confirm Code & Continue' : 'Confirm & Activate Account'}</span>
+                          </>
+                        )}
+                      </button>
+
+                      <div className="text-center pt-1">
+                        {otpResendSeconds > 0 ? (
+                          <span className="text-[11px] text-[#70798C]">
+                            Resend code in <strong className="text-[#000004]">{otpResendSeconds}s</strong>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleResendOtp}
+                            className="text-[11px] font-bold text-[#F95700] hover:text-[#E65100] hover:underline cursor-pointer"
+                          >
+                            Didn't receive the code? Resend Code
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </form>
+                ) : authMode === 'forgot_password' ? (
+                  /* --- FORGOT PASSWORD EMAIL SCREEN --- */
+                  <form onSubmit={handleSendForgotPasswordOtp} className="space-y-3 py-1 text-xs">
+                    {forgotPasswordError && (
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#F0544F] text-[11px] flex items-start gap-2 animate-fade-in shadow-2xs">
+                        <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
+                        <span className="flex-1 font-semibold">{forgotPasswordError}</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                        Registered Email Address <span className="text-[#F0544F]">*</span>
+                      </label>
+                      <div className="relative">
+                        <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="email"
+                          required
+                          autoFocus
+                          autoComplete="email"
+                          placeholder="e.g. name@domain.com"
+                          value={forgotPasswordEmail}
+                          onChange={(e) => {
+                            setForgotPasswordEmail(e.target.value);
+                            if (forgotPasswordError) setForgotPasswordError(null);
+                          }}
+                          className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                        />
+                      </div>
+                      <p className="text-[11px] text-[#70798C] mt-1.5 leading-snug">
+                        We'll send an instant 6-digit security code to this email to reset your password.
+                      </p>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={isSendingResetOtp || !forgotPasswordEmail.trim()}
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                      >
+                        {isSendingResetOtp ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            <span>Sending Security Code...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Send Recovery Code</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                ) : authMode === 'reset_password' ? (
+                  /* --- SET NEW PASSWORD SCREEN --- */
+                  <form onSubmit={handleResetPasswordSubmit} className="space-y-3 py-1 text-xs">
+                    {resetPasswordError && (
+                      <div className="p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#F0544F] text-[11px] flex items-start gap-2 animate-fade-in shadow-2xs">
+                        <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
+                        <span className="flex-1 font-semibold">{resetPasswordError}</span>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                        New Password (minimum 6 characters) <span className="text-[#F0544F]">*</span>
+                      </label>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          required
+                          autoFocus
+                          minLength={6}
+                          placeholder="Enter new password"
+                          value={newPassword}
+                          onChange={(e) => {
+                            setNewPassword(e.target.value);
+                            if (resetPasswordError) setResetPasswordError(null);
+                          }}
+                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                          tabIndex={-1}
+                          title={showNewPassword ? "Hide password" : "Show password"}
+                        >
+                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                        Confirm New Password <span className="text-[#F0544F]">*</span>
+                      </label>
+                      <div className="relative">
+                        <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          required
+                          minLength={6}
+                          placeholder="Re-enter new password"
+                          value={confirmNewPassword}
+                          onChange={(e) => {
+                            setConfirmNewPassword(e.target.value);
+                            if (resetPasswordError) setResetPasswordError(null);
+                          }}
+                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={isResettingPassword || !newPassword.trim() || !confirmNewPassword.trim()}
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                      >
+                        {isResettingPassword ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            <span>Updating Password...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span>Save Password & Sign In</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
                 ) : authMode === 'login' ? (
                   /* --- 1. SIGN IN FORM --- */
                   <form onSubmit={handleLogin} className="space-y-3 py-1 text-xs">
@@ -990,9 +1559,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <label className="text-xs font-semibold text-[#70798C]">
                           Password
                         </label>
-                        <span className="text-[10px] text-[#70798C] font-normal">
-                          Required for protected accounts
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForgotPasswordEmail(loginPhoneOrEmail.includes('@') ? loginPhoneOrEmail.trim() : '');
+                            setForgotPasswordError(null);
+                            setAuthMode('forgot_password');
+                          }}
+                          className="text-[11px] font-bold text-[#F95700] hover:text-[#E65100] hover:underline cursor-pointer"
+                        >
+                          Forgot Password?
+                        </button>
                       </div>
                       <div className="relative">
                         <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1725,7 +2302,40 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
             {/* Bottom Footer Switcher */}
             <div className="pt-3 border-t border-[#E5E7EB] text-center text-xs text-[#70798C] mt-3 space-y-1">
-              {authMode === 'login' ? (
+              {authMode === 'verify_email' ? (
+                <p>
+                  Entered the wrong email?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (otpPurpose === 'forgot_password') {
+                        setAuthMode('forgot_password');
+                      } else {
+                        setAuthMode('signup');
+                        setSignupStep('form');
+                      }
+                    }}
+                    className="font-bold text-[#000004] hover:underline cursor-pointer ml-1"
+                  >
+                    Change Email
+                  </button>
+                </p>
+              ) : authMode === 'forgot_password' || authMode === 'reset_password' ? (
+                <p>
+                  Remembered your password?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('login');
+                      setForgotPasswordError(null);
+                      setResetPasswordError(null);
+                    }}
+                    className="font-bold text-[#000004] hover:underline cursor-pointer ml-1"
+                  >
+                    Back to Sign In
+                  </button>
+                </p>
+              ) : authMode === 'login' ? (
                 <p>
                   No account yet?{' '}
                   <button

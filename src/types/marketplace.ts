@@ -229,6 +229,7 @@ export interface UserProfile {
   companyName?: string;
   cvUrl?: string;
   cvFileName?: string;
+  isEmailVerified?: boolean;
 }
 
 export interface AdminAuditLog {
