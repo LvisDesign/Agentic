@@ -885,12 +885,8 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-bold text-sm text-[#000004]">{user.fullName}</span>
                               {user.isAdmin && (
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 ${
-                                  isElvisSuperAdmin(user)
-                                    ? 'bg-amber-400 text-slate-950 font-extrabold shadow-2xs border border-amber-300'
-                                    : 'bg-slate-900 text-white'
-                                }`}>
-                                  {isElvisSuperAdmin(user) ? '★ SUPER ADMIN (ELVIS)' : 'ADMIN'}
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900 text-white">
+                                  {isElvisSuperAdmin(user) ? 'Primary Admin' : 'Admin'}
                                 </span>
                               )}
                             </div>
@@ -1316,7 +1312,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-[#70798C]">Access Level:</span>
                         <span className="font-bold text-slate-900">
-                          {isElvisSuperAdmin(user) ? 'Supreme Super Admin (Elvis)' : 'Platform Administrator'}
+                          {isElvisSuperAdmin(user) ? 'Primary Administrator' : 'Platform Administrator'}
                         </span>
                       </div>
                     )}

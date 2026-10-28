@@ -296,13 +296,9 @@ export const Header: React.FC<HeaderProps> = ({
             return (
               <button
                 onClick={onOpenProfile}
-                className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group cursor-pointer shrink-0 ${
-                  isSuperAdmin 
-                    ? 'bg-amber-400/20 hover:bg-amber-400/30 text-amber-900 border border-amber-400/40 shadow-xs' 
-                    : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80'
-                }`}
-                aria-label={isSuperAdmin ? 'Super Admin Profile' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
-                title={isSuperAdmin ? 'Super Administrator' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
+                className="relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 transition-all duration-200 active:scale-95 group cursor-pointer shrink-0"
+                aria-label={isSuperAdmin ? 'Admin Profile' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
+                title={isSuperAdmin ? 'Admin Profile' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
               >
                 {currentUser.avatarUrl ? (
                   <img
@@ -311,32 +307,26 @@ export const Header: React.FC<HeaderProps> = ({
                     className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full object-cover shrink-0 border border-[#342A21]/20"
                   />
                 ) : (
-                  <div className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full text-[9px] sm:text-[10px] font-bold flex items-center justify-center shrink-0 ${
-                    isSuperAdmin ? 'bg-amber-500 text-black' : 'bg-[#342A21] text-white'
-                  }`}>
-                    {isSuperAdmin ? (
-                      <ShieldCheck className="w-3 h-3 text-black" />
-                    ) : currentUser.fullName ? (
-                      currentUser.fullName
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .slice(0, 2)
-                        .toUpperCase()
-                    ) : (
-                      'U'
-                    )}
+                  <div className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full bg-[#342A21] text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center shrink-0">
+                    {currentUser.fullName
+                      ? currentUser.fullName
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .slice(0, 2)
+                          .toUpperCase()
+                      : 'U'}
                   </div>
                 )}
 
                 {/* Desktop Label */}
-                <span className={`hidden md:inline font-semibold text-xs whitespace-nowrap ${isSuperAdmin ? 'font-bold text-amber-900' : ''}`}>
-                  {isSuperAdmin ? '★ Elvis (Admin)' : currentUser.fullName ? currentUser.fullName.split(' ')[0] : 'Profile'}
+                <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
+                  {currentUser.fullName ? currentUser.fullName.split(' ')[0] : 'Profile'}
                 </span>
 
                 {/* Mobile Tooltip */}
                 <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-                  {isSuperAdmin ? `Super Admin (${currentUser.fullName})` : (currentUser.isAgent || currentRole === 'agent') ? `Agent Portal (${currentUser.fullName})` : currentUser.fullName || 'Profile'}
+                  {isSuperAdmin ? `Admin (${currentUser.fullName})` : (currentUser.isAgent || currentRole === 'agent') ? `Agent Portal (${currentUser.fullName})` : currentUser.fullName || 'Profile'}
                 </span>
               </button>
             );

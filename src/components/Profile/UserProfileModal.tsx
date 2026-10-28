@@ -28,7 +28,8 @@ import {
   Megaphone,
   RotateCw,
   ShieldCheck,
-  Shield
+  Shield,
+  LayoutDashboard
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNigerianPhone } from '../../utils/formatters';
@@ -274,17 +275,15 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
           <div className="flex items-center gap-2.5">
-            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center shadow-xs ${
-              isSuperAdmin ? 'bg-amber-500 text-[#000004]' : 'bg-[#000004] text-white'
-            }`}>
-              {isSuperAdmin ? <ShieldCheck className="w-5 h-5 text-[#000004]" /> : <User className="w-4 h-4" />}
+            <div className="w-9 h-9 rounded-2xl bg-[#000004] text-white flex items-center justify-center shadow-xs">
+              {isSuperAdmin ? <Shield className="w-4 h-4 text-white" /> : <User className="w-4 h-4 text-white" />}
             </div>
             <div>
               <h3 className="font-display text-lg font-bold text-[#000004]">
-                {isSuperAdmin ? 'Super Admin Profile' : isAgent ? 'Agent Profile' : 'Tenant Profile'}
+                {isSuperAdmin ? 'Admin Profile' : isAgent ? 'Agent Profile' : 'Tenant Profile'}
               </h3>
               <p className="text-xs text-[#70798C]">
-                {isSuperAdmin ? 'Setlla Supreme Platform Governance' : isAgent ? 'Setlla Partner Agent Account' : 'Setlla Member Account'}
+                {isSuperAdmin ? 'Setlla Platform Governance' : isAgent ? 'Setlla Partner Agent Account' : 'Setlla Member Account'}
               </p>
             </div>
           </div>
@@ -344,7 +343,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#000004] text-amber-300 border-2 border-white flex items-center justify-center shadow-xs hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#000004] text-white border-2 border-white flex items-center justify-center shadow-xs hover:scale-110 active:scale-95 transition-all cursor-pointer"
                   title="Upload profile photo"
                   aria-label="Upload profile photo"
                 >
@@ -383,9 +382,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <span>•</span>
                   <span>
                     {isSuperAdmin ? (
-                      <span className="font-bold text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-md text-[10px] tracking-wide inline-flex items-center gap-1">
-                        <ShieldCheck className="w-3 h-3 text-amber-700" />
-                        ★ Super Administrator
+                      <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md text-[10px] inline-flex items-center gap-1">
+                        <Shield className="w-3 h-3 text-slate-600" />
+                        Administrator
                       </span>
                     ) : isAgent ? (
                       currentUser.agencyName || 'Partner Agency'
@@ -399,21 +398,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
 
           {/* Account Role & Scope Notice */}
-          <div className={`p-3.5 rounded-2xl border space-y-1.5 ${
-            isSuperAdmin
-              ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30'
-              : 'bg-slate-50 border-[#E5E7EB]'
-          }`}>
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-[#E5E7EB] space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="font-bold text-[#000004] text-xs flex items-center gap-1.5">
                 {isSuperAdmin ? (
                   <>
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-                    Account Type: Master Super Administrator
+                    <Shield className="w-3.5 h-3.5 text-[#342A21]" />
+                    Account Type: Administrator
                   </>
                 ) : isAgent ? (
                   <>
-                    <Building2 className="w-3.5 h-3.5 text-amber-600" />
+                    <Building2 className="w-3.5 h-3.5 text-[#342A21]" />
                     Account Type: Partner Agent
                   </>
                 ) : (
@@ -423,39 +418,29 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </>
                 )}
               </span>
-              {isSuperAdmin && (
-                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#000004] text-amber-400">
-                  Supreme Authority
-                </span>
-              )}
             </div>
             <p className="text-[11px] text-[#70798C] leading-relaxed">
               {isSuperAdmin
-                ? 'You hold supreme platform authority across Setlla. You have master privileges to inspect and delete or disable every account (including other administrators), audit system logs, manage property listings and jobs, and control platform settings.'
+                ? 'Administrative account with platform management privileges to manage users and administrators, oversee property listings, review applications, and configure system settings.'
                 : isAgent
                 ? 'You have full access to list apartments, set inspection time slots, accept inspection bookings, and connect directly with verified tenants.'
                 : 'You have full, unrestricted access to browse apartments uploaded by verified partner agents and book as many inspections as you want. Only agents are restricted to 5 bookings per window so your time is never wasted.'}
             </p>
           </div>
 
-          {/* ACTION CARD: Super Admin Governance Center vs Become an Agent (Tenants only) */}
+          {/* ACTION CARD: Admin Dashboard vs Become an Agent (Tenants only) */}
           {isSuperAdmin ? (
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-[#000004] to-[#1a2332] text-white shadow-sm space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center border border-amber-400/30">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                  </div>
-                  <span className="font-bold text-xs text-white">
-                    Super Admin Control Center
-                  </span>
+            <div className="p-4 rounded-2xl bg-[#000004] text-white shadow-sm space-y-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-white/10 text-white flex items-center justify-center border border-white/10">
+                  <LayoutDashboard className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-[#000004]">
-                  Master Authority
+                <span className="font-bold text-xs text-white">
+                  Admin Dashboard
                 </span>
               </div>
               <p className="text-[11px] text-white/80 leading-relaxed">
-                Open the central governance console to inspect all registered users, delete or disable accounts, manage property listings, review applications, and audit platform security logs.
+                Open the central console to manage registered users, oversee listings, review applications, and audit security logs.
               </p>
               <button
                 type="button"
@@ -464,10 +449,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   onChangeRole('admin');
                   window.location.hash = '#/admin';
                 }}
-                className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                className="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
               >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Launch Super Admin Dashboard</span>
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Open Admin Dashboard</span>
               </button>
             </div>
           ) : !isAgent ? (
@@ -705,10 +690,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <>
                   <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
                     <span className="text-[#70798C] flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-amber-600" /> Platform Role
+                      <Shield className="w-3.5 h-3.5 text-[#342A21]" /> Platform Role
                     </span>
-                    <span className="font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md text-[11px]">
-                      Master Super Administrator (Elvis)
+                    <span className="font-semibold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md text-[11px]">
+                      Administrator
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
@@ -736,7 +721,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Account Status
                     </span>
                     <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
-                      Active Supreme Governance
+                      Active
                     </span>
                   </div>
                 </>
@@ -1080,17 +1065,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </div>
           ) : null}
 
-          {/* Super Admin Console Access (Strictly visible ONLY to actively authenticated Super Admins) */}
-          {isSuperAdminAuthenticated() && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.email === 'admin@setlla.com') ? (
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex items-center justify-between gap-3">
+          {/* Admin Console Access (Only shown if primary admin card above was not already displayed) */}
+          {!isSuperAdmin && isSuperAdminAuthenticated() && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.email === 'admin@setlla.com') ? (
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-[#E5E7EB] flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-[#000004] text-white flex items-center justify-center shadow-xs shrink-0">
                   <Lock className="w-4 h-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-bold text-xs text-[#000004] truncate">Super Admin Authority</div>
-                  <div className="text-[11px] text-amber-900 truncate">
-                    Master control over agents, tenants, listings & escrow
+                  <div className="font-bold text-xs text-[#000004] truncate">Admin Console</div>
+                  <div className="text-[11px] text-[#70798C] truncate">
+                    Platform management and operations
                   </div>
                 </div>
               </div>
@@ -1099,7 +1084,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   onChangeRole('admin');
                   onClose();
                 }}
-                className="shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                className="shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
               >
                 Admin Console
               </button>

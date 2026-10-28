@@ -502,7 +502,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         setSuccessMessage({
           title: `Welcome back, ${registeredMatch.fullName}!`,
           subtitle: isElvis
-            ? 'Signed in as Master Super Administrator. Loading system governance portal...'
+            ? 'Signed in as Administrator. Loading management portal...'
             : isAgent
             ? 'Signed in as Agent. Loading your listings and inspection requests...'
             : 'Signed in as Tenant. Your saved inspections and passes are ready!',
