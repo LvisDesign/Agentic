@@ -45,6 +45,7 @@ import {
   findUserByCredential, 
   findUserByCredentialAsync,
   saveRegisteredUser, 
+  saveRegisteredUserAsync,
   DuplicateCheckResult 
 } from '../../utils/userRegistry';
 import { isElvisSuperAdmin } from '../../services/adminAuthService';
@@ -345,11 +346,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       createdAt: new Date().toISOString(),
     };
 
-    // Save immediately to local storage AND Supabase platform_users database
-    saveRegisteredUser(updated);
+    // Save immediately to local storage AND Supabase platform_users database with confirmation
+    await saveRegisteredUserAsync(updated);
 
     const targetRoom: 'rentals' | 'jobs' = 
       (resolvedPersona === 'job_seeker' || resolvedPersona === 'employer') ? 'jobs' : 'rentals';
+
+    // Immediately authenticate user into platform session so they never get locked out
+    onUpdateUser(updated, 'seeker', targetRoom);
 
     if (isStandalone || isInstalled) {
       setSuccessMessage({
@@ -361,7 +365,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       setIsSuccess(true);
 
       setTimeout(() => {
-        onUpdateUser(updated, 'seeker', targetRoom);
         setIsSuccess(false);
         onClose();
       }, 1000);
@@ -432,10 +435,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       createdAt: new Date().toISOString(),
     };
 
-    // Save immediately to local storage AND Supabase platform_users database
-    saveRegisteredUser(updated);
+    // Save immediately to local storage AND Supabase platform_users database with confirmation
+    await saveRegisteredUserAsync(updated);
 
     const targetRoom: 'rentals' | 'jobs' = resolvedPersona === 'employer' ? 'jobs' : 'rentals';
+
+    // Immediately authenticate user into platform session so they never get locked out
+    onUpdateUser(updated, 'agent', targetRoom);
 
     if (isStandalone || isInstalled) {
       setSuccessMessage({
@@ -447,7 +453,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       setIsSuccess(true);
 
       setTimeout(() => {
-        onUpdateUser(updated, 'agent', targetRoom);
         setIsSuccess(false);
         onClose();
       }, 1000);

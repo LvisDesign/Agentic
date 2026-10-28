@@ -161,9 +161,44 @@ export function getRegisteredUsers(): UserProfile[] {
 
 
 /**
+ * Safe base columns verified to exist in the platform_users Supabase table.
+ * Used for zero-failure fallback if extended columns (e.g. password, persona, nin) are not yet in the DB schema.
+ */
+export const SAFE_BASE_PLATFORM_USER_COLUMNS = [
+  'id',
+  'full_name',
+  'phone',
+  'email',
+  'state',
+  'city',
+  'preferred_property_type',
+  'budget',
+  'is_verified_tenant',
+  'is_agent',
+  'agency_name',
+  'cac_number',
+  'whatsapp',
+  'operating_state',
+  'operating_city',
+  'agent_type',
+  'is_admin',
+  'is_super_admin',
+  'is_suspended',
+  'suspension_reason',
+  'kyc_status',
+  'kyc_documents',
+  'saved_listing_ids',
+  'avatar_url',
+  'last_profile_edit_at',
+  'created_at',
+  'updated_at'
+];
+
+/**
  * Maps a raw Supabase platform_users database record into a clean UserProfile object.
  */
 export function mapDbToUserProfile(row: any): UserProfile {
+  const meta = row.kyc_documents && typeof row.kyc_documents === 'object' ? (row.kyc_documents._meta || {}) : {};
   const isAdmin = Boolean(
     row.is_admin || 
     row.is_super_admin || 
@@ -171,22 +206,23 @@ export function mapDbToUserProfile(row: any): UserProfile {
     (row.full_name && row.full_name.toLowerCase().includes('elvis'))
   );
   const isAgent = Boolean(row.is_agent || isAdmin);
+  const persona = row.persona || row.role || meta.persona || meta.role || (isAdmin ? 'admin' : isAgent ? 'lister' : 'tenant');
 
   return {
     id: row.id,
     fullName: row.full_name || '',
     email: row.email || undefined,
-    password: row.password || undefined,
+    password: row.password || meta.password || undefined,
     phone: row.phone || '',
     state: row.state || 'Delta State',
     city: row.city || 'Asaba',
     preferredPropertyType: row.preferred_property_type || undefined,
     budget: row.budget !== null && row.budget !== undefined ? Number(row.budget) : undefined,
-    nin: row.nin || undefined,
+    nin: row.nin || meta.nin || undefined,
     isVerifiedTenant: Boolean(row.is_verified_tenant),
     avatarUrl: row.avatar_url || undefined,
     isAgent: isAgent,
-    agencyName: row.agency_name || (isAdmin ? 'Setlla Executive Office' : undefined),
+    agencyName: row.agency_name || meta.company_name || (isAdmin ? 'Setlla Executive Office' : undefined),
     cacNumber: row.cac_number || undefined,
     whatsapp: row.whatsapp || undefined,
     operatingState: row.operating_state || row.state || 'Delta State',
@@ -202,16 +238,17 @@ export function mapDbToUserProfile(row: any): UserProfile {
     kycDocuments: row.kyc_documents && typeof row.kyc_documents === 'object' ? row.kyc_documents : undefined,
     createdAt: row.created_at || new Date().toISOString(),
     lastProfileEditAt: row.last_profile_edit_at || undefined,
-    persona: row.persona || row.role || (isAdmin ? 'admin' : isAgent ? 'lister' : 'tenant'),
-    cvUrl: row.cv_url || undefined,
-    cvFileName: row.cv_file_name || undefined,
-    targetRole: row.target_role || row.preferred_property_type || undefined,
-    companyName: row.company_name || row.agency_name || (isAdmin ? 'Setlla Executive Office' : undefined),
+    persona: persona,
+    cvUrl: row.cv_url || meta.cv_url || undefined,
+    cvFileName: row.cv_file_name || meta.cv_file_name || undefined,
+    targetRole: row.target_role || meta.target_role || row.preferred_property_type || undefined,
+    companyName: row.company_name || meta.company_name || row.agency_name || (isAdmin ? 'Setlla Executive Office' : undefined),
   };
 }
 
 /**
  * Maps a UserProfile object into a Supabase platform_users database record format.
+ * Mirrors extra metadata into kyc_documents._meta for cross-device persistence even if custom DB columns are missing.
  */
 export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
   const isAdmin = Boolean(
@@ -222,6 +259,22 @@ export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
   );
   const isAgent = Boolean(user.isAgent || isAdmin);
   const resolvedRole = user.persona || (isAdmin ? 'admin' : isAgent ? 'lister' : 'tenant');
+
+  const baseKycDocs = (user.kycDocuments && typeof user.kycDocuments === 'object') ? user.kycDocuments : {};
+  const metaKyc = {
+    ...baseKycDocs,
+    _meta: {
+      password: user.password || null,
+      persona: resolvedRole,
+      role: resolvedRole,
+      nin: user.nin || null,
+      company_name: user.companyName || user.agencyName || null,
+      cv_url: user.cvUrl || null,
+      cv_file_name: user.cvFileName || null,
+      target_role: user.targetRole || null,
+    }
+  };
+
   return {
     id: user.id,
     full_name: user.fullName,
@@ -248,7 +301,7 @@ export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
     is_suspended: Boolean(user.isSuspended),
     suspension_reason: user.suspensionReason || null,
     kyc_status: isAdmin ? 'verified' : (user.kycStatus || 'not_submitted'),
-    kyc_documents: user.kycDocuments || {},
+    kyc_documents: metaKyc,
     created_at: user.createdAt || new Date().toISOString(),
     last_profile_edit_at: user.lastProfileEditAt || null,
     persona: resolvedRole,
@@ -451,13 +504,18 @@ export function saveRegisteredUser(user: UserProfile): void {
       Promise.resolve(client.from('platform_users').upsert(dbRow, { onConflict: 'id' }))
         .then(async (res: any) => {
           if (res?.error) {
-            // Fallback retry with core columns if extra columns caused the failure
-            const { avatar_url, saved_listing_ids, last_profile_edit_at, password, ...coreDbRow } = dbRow;
-            const retryRes = await client.from('platform_users').upsert(coreDbRow, { onConflict: 'id' });
+            console.warn('[UserRegistry] Full upsert notice, falling back to verified columns:', res.error.message);
+            const safeCoreRow: Record<string, any> = {};
+            SAFE_BASE_PLATFORM_USER_COLUMNS.forEach((col) => {
+              if (dbRow[col] !== undefined) {
+                safeCoreRow[col] = dbRow[col];
+              }
+            });
+            const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
             if (!retryRes?.error) {
               broadcastRealtimeEvent('USER_REGISTERED', { user });
             } else {
-              console.warn('[UserRegistry] Supabase platform_users sync notice:', res.error.message);
+              console.warn('[UserRegistry] Supabase platform_users retry error:', retryRes.error.message);
             }
           } else {
             broadcastRealtimeEvent('USER_REGISTERED', { user });
@@ -497,12 +555,19 @@ export async function saveRegisteredUserAsync(user: UserProfile): Promise<boolea
       broadcastRealtimeEvent('USER_REGISTERED', { user });
       return true;
     } else {
-      // Retry with core columns if extra columns don't exist in Supabase
-      const { avatar_url, saved_listing_ids, last_profile_edit_at, password, ...coreDbRow } = dbRow;
-      const retryRes = await client.from('platform_users').upsert(coreDbRow, { onConflict: 'id' });
+      console.warn('[UserRegistry] Full async upsert notice, retrying with verified columns:', error.message);
+      const safeCoreRow: Record<string, any> = {};
+      SAFE_BASE_PLATFORM_USER_COLUMNS.forEach((col) => {
+        if (dbRow[col] !== undefined) {
+          safeCoreRow[col] = dbRow[col];
+        }
+      });
+      const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
       if (!retryRes.error) {
         broadcastRealtimeEvent('USER_REGISTERED', { user });
         return true;
+      } else {
+        console.error('[UserRegistry] Async save retry error:', retryRes.error.message);
       }
     }
   } catch (e) {
