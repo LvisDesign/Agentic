@@ -145,6 +145,7 @@ export interface AgentProfile {
   responseTime: string; // e.g. "Usually responds in <15 mins"
   phone: string; // Protected until unlocked!
   whatsapp: string; // Protected until unlocked!
+  email?: string;
   avatarUrl: string;
 }
 

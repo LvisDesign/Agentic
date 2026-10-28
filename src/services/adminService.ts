@@ -1,5 +1,6 @@
 import { AdminAuditLog, PlatformSettings, UserProfile, PropertyListing, BookingRecord } from '../types/marketplace';
-import { getRegisteredUsers, adminUpdateUser, deleteUserFromRegistry } from '../utils/userRegistry';
+import { getRegisteredUsers, adminUpdateUser, deleteUserFromRegistry, deleteUserFromRegistryAsync } from '../utils/userRegistry';
+export { deleteUserFromRegistry, deleteUserFromRegistryAsync };
 
 const AUDIT_LOGS_KEY = 'setlla_admin_audit_logs';
 const SETTINGS_KEY = 'setlla_platform_settings';

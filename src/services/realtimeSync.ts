@@ -10,7 +10,8 @@ export type RealtimeEventType =
   | 'LISTING_UPDATED'
   | 'LISTING_DELETED'
   | 'USER_REGISTERED'
-  | 'USER_UPDATED';
+  | 'USER_UPDATED'
+  | 'USER_DELETED';
 
 export interface RealtimeEventPayload {
   type: RealtimeEventType;

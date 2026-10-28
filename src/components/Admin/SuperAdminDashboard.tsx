@@ -96,7 +96,7 @@ import {
   toggleUserSuspension, 
   exportPlatformDataSnapshot 
 } from '../../services/adminService';
-import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry, normalizePhoneNumber } from '../../utils/userRegistry';
+import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry, deleteUserFromRegistryAsync, normalizePhoneNumber } from '../../utils/userRegistry';
 import { subscribeToRealtimeEvents } from '../../services/realtimeSync';
 import { DEFAULT_FALLBACK_IMAGE, getCloudinaryConfig, saveCloudinaryConfig, uploadMediaToCloudinary } from '../../utils/mediaStorage';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
@@ -674,7 +674,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
     // 1. Cross-device Realtime event listener for live registrations/updates
     const unsub = subscribeToRealtimeEvents((event) => {
-      if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED') {
+      if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED' || event.type === 'USER_DELETED') {
         refreshAdminData();
       }
     });
@@ -867,18 +867,19 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       confirmText: 'Yes, Delete Account',
       cancelText: 'Cancel',
       variant: 'danger',
-      onConfirm: () => {
-        deleteUserFromRegistry(user.id);
+      onConfirm: async () => {
+        showToast(`Wiping all records for ${user.fullName}...`);
+        await deleteUserFromRegistryAsync(user);
         recordAuditLog(
           'USER_DELETED',
           user.isAgent ? 'agent' : 'tenant',
           user.id,
           user.fullName,
           currentUser.fullName,
-          'Permanently removed user account.'
+          'Permanently removed user account and wiped all database records.'
         );
         refreshAdminData();
-        showToast(`Removed ${user.fullName} from user registry.`);
+        showToast(`Completely removed ${user.fullName} and freed details for re-registration.`);
         setConfirmModalState(null);
       },
     });

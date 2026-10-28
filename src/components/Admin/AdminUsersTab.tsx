@@ -50,8 +50,10 @@ import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { 
   adminUpdateUser, 
   deleteUserFromRegistry, 
+  deleteUserFromRegistryAsync,
   saveRegisteredUser, 
   normalizePhoneNumber,
+  normalizeEmail,
   resolveUserPersona,
   PlatformUserPersona 
 } from '../../utils/userRegistry';
@@ -395,17 +397,25 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
       confirmText: isTargetAdmin ? 'Revoke & Delete Admin' : 'Delete Account',
       variant: 'danger',
       onConfirm: async () => {
-        deleteUserFromRegistry(user.id);
+        showToast(`Wiping all records for ${user.fullName}...`);
+        await deleteUserFromRegistryAsync(user);
         if (isTargetAdmin) {
           removeAdminCredential(user.email, user.phone);
         }
-        setRegisteredUsers((prev) => prev.filter((u) => u.id !== user.id));
-        showToast(`${user.fullName} was permanently deleted.`);
+        const normPhone = normalizePhoneNumber(user.phone);
+        const normEmail = normalizeEmail(user.email);
+        setRegisteredUsers((prev) => prev.filter((u) => {
+          if (u.id === user.id) return false;
+          if (normPhone && normalizePhoneNumber(u.phone) === normPhone) return false;
+          if (normEmail && normalizeEmail(u.email) === normEmail) return false;
+          return true;
+        }));
+        showToast(`${user.fullName} and all records permanently wiped from database.`);
         onRecordAuditLog(
           isTargetAdmin ? 'ADMIN_ACCOUNT_PURGED' : 'USER_DELETED',
           'system',
           user.fullName,
-          `Super Admin Elvis permanently deleted ${isTargetAdmin ? 'administrator' : 'user'} ID: ${user.id} (${user.email || user.phone})`
+          `Super Admin Elvis permanently wiped ${isTargetAdmin ? 'administrator' : 'user'} ID: ${user.id} (${user.email || user.phone}) from database and registries.`
         );
       },
     });

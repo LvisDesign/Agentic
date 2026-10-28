@@ -18,6 +18,7 @@ import {
   fetchRegisteredUsersFromDb,
   mapDbToUserProfile,
   normalizePhoneNumber,
+  normalizeEmail,
   getDeletedUserIds
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
@@ -884,6 +885,42 @@ export function App() {
           setCurrentUser(event.user);
           localStorage.setItem('setlla_user', JSON.stringify(event.user));
         }
+      } else if (event.type === 'USER_DELETED' && event.user) {
+        const delUser = event.user;
+        const delNormPhone = delUser.phone ? normalizePhoneNumber(delUser.phone) : '';
+        const delNormEmail = delUser.email ? normalizeEmail(delUser.email) : '';
+        const myNormPhone = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
+        const myNormEmail = currentUser.email ? normalizeEmail(currentUser.email) : '';
+
+        const isMe = 
+          Boolean(delUser.id && currentUser.id === delUser.id) ||
+          Boolean(delNormPhone && myNormPhone && delNormPhone === myNormPhone) ||
+          Boolean(delNormEmail && myNormEmail && delNormEmail === myNormEmail);
+
+        if (isMe) {
+          localStorage.removeItem('setlla_user');
+          localStorage.removeItem('deltarent_user');
+          localStorage.removeItem('setlla_auth');
+          localStorage.removeItem('deltarent_auth');
+          sessionStorage.clear();
+          setCurrentUser(GUEST_USER);
+          setIsAuthenticated(false);
+          setPushNotification({
+            title: 'Account Deleted',
+            body: 'This account has been removed by platform administration.',
+            type: 'inspection_declined',
+          });
+        }
+
+        // Clean any listing from deleted agent from state
+        setListings((prev) => prev.filter((l) => {
+          const ag = l.agent;
+          if (!ag) return true;
+          if (delUser.id && ag.id === delUser.id) return false;
+          if (delNormPhone && ag.phone && normalizePhoneNumber(ag.phone) === delNormPhone) return false;
+          if (delNormEmail && ag.email && normalizeEmail(ag.email) === delNormEmail) return false;
+          return true;
+        }));
       }
     });
 

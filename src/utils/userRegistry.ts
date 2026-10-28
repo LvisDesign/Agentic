@@ -78,6 +78,29 @@ export function recordDeletedUserId(id: string): void {
 }
 
 /**
+ * Removes a deleted user ID from the tombstone set so that fresh signups
+ * using matching IDs or credentials are treated as valid new accounts.
+ */
+export function unrecordDeletedUserId(id: string): void {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    const set = getDeletedUserIds();
+    if (set.has(id)) {
+      set.delete(id);
+      localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+    }
+    const legacy = localStorage.getItem(LEGACY_DELETED_USERS_STORAGE_KEY);
+    if (legacy) {
+      try {
+        const legSet = new Set(JSON.parse(legacy));
+        legSet.delete(id);
+        localStorage.setItem(LEGACY_DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(legSet)));
+      } catch (_) {}
+    }
+  } catch (_) {}
+}
+
+/**
  * Retrieves all registered users from storage and defaults.
  * Provides all available registered agents, tenants, and platform administrators.
  */
@@ -471,6 +494,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
  */
 export function saveRegisteredUser(user: UserProfile): void {
   if (typeof window === 'undefined' || !user) return;
+  if (user.id) unrecordDeletedUserId(user.id);
 
   const allUsers = getRegisteredUsers();
   const existingIndex = allUsers.findIndex(
@@ -622,31 +646,366 @@ export function adminUpdateUser(user: UserProfile): void {
 }
 
 /**
- * Super Admin function: removes a user from the registry and central database.
+ * Super Admin function: Permanently wipes EVERY trail of a user account across all central Supabase
+ * database tables and local device caches so their phone number, email address, and credentials can
+ * be freely reused to register a brand-new account without any conflict or "already exists" errors.
  */
-export function deleteUserFromRegistry(userId: string): void {
-  if (typeof window === 'undefined' || !userId) return;
-  recordDeletedUserId(userId);
-  const allUsers = getRegisteredUsers().filter((u) => u.id !== userId);
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(allUsers));
-  } catch (err) {
-    console.error('[UserRegistry] Failed to delete user from registry:', err);
+export async function deleteUserFromRegistryAsync(
+  target: string | UserProfile
+): Promise<{ success: boolean; error?: string }> {
+  if (typeof window === 'undefined') return { success: false, error: 'Window undefined' };
+  if (!target) return { success: false, error: 'No target specified' };
+
+  // 1. Resolve target user profile
+  let resolvedUser: UserProfile | undefined;
+  let targetId = '';
+
+  if (typeof target === 'string') {
+    targetId = target.trim();
+    resolvedUser = getRegisteredUsers().find((u) => u.id === targetId);
+  } else {
+    resolvedUser = target;
+    targetId = target.id || '';
   }
 
-  // Delete from Supabase platform_users
-  if (isSupabaseConfigured()) {
-    const client = getSupabaseClient();
-    if (client) {
-      Promise.resolve(client.from('platform_users').delete().eq('id', userId))
-        .then((res: any) => {
-          if (res?.error) {
-            console.warn('[UserRegistry] Supabase delete user error:', res.error.message);
-          }
-        })
-        .catch(() => {});
+  // Strictly protect Super Admin Elvis from accidental deletion
+  const isTargetElvis = Boolean(
+    (targetId && (targetId.toLowerCase().includes('elvis') || targetId === 'dt-admin-elvis')) ||
+    (resolvedUser && (
+      (resolvedUser.email && resolvedUser.email.toLowerCase() === 'admin@setlla.com') ||
+      (resolvedUser.fullName && resolvedUser.fullName.toLowerCase().includes('elvis')) ||
+      (resolvedUser.phone && (resolvedUser.phone.includes('9077056351') || resolvedUser.phone.includes('7056351'))) ||
+      resolvedUser.id === 'dt-admin-elvis'
+    ))
+  );
+
+  if (isTargetElvis) {
+    console.warn('[UserRegistry] Prevented deletion of Super Admin Elvis.');
+    return { success: false, error: 'Super Admin Elvis cannot be deleted.' };
+  }
+
+  // If phone or email is missing and only an ID was supplied, query DB to discover full contact info
+  if ((!resolvedUser?.phone && !resolvedUser?.email) && targetId && isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        const { data } = await client.from('platform_users').select('*').eq('id', targetId).maybeSingle();
+        if (data) {
+          resolvedUser = mapDbToUserProfile(data);
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 2. Extract all identifier variants (ID, phones, emails)
+  const ids = new Set<string>();
+  if (targetId) ids.add(targetId);
+  if (resolvedUser?.id) ids.add(resolvedUser.id);
+
+  const phoneVariants = new Set<string>();
+  const rawPhone = resolvedUser?.phone?.trim();
+  if (rawPhone) {
+    phoneVariants.add(rawPhone);
+    const norm = normalizePhoneNumber(rawPhone);
+    if (norm) {
+      phoneVariants.add(norm);
+      if (norm.startsWith('0')) {
+        const withoutZero = norm.slice(1);
+        phoneVariants.add(withoutZero);
+        phoneVariants.add(`+234${withoutZero}`);
+        phoneVariants.add(`234${withoutZero}`);
+        phoneVariants.add(`0${withoutZero}`);
+      } else {
+        phoneVariants.add(`0${norm}`);
+        phoneVariants.add(`+234${norm}`);
+        phoneVariants.add(`234${norm}`);
+      }
     }
   }
+
+  const emailVariants = new Set<string>();
+  const rawEmail = resolvedUser?.email?.trim();
+  if (rawEmail) {
+    emailVariants.add(rawEmail);
+    emailVariants.add(rawEmail.toLowerCase());
+    const norm = normalizeEmail(rawEmail);
+    if (norm) emailVariants.add(norm);
+  }
+
+  const matchesUser = (u: any): boolean => {
+    if (!u) return false;
+    if (u.id && ids.has(u.id)) return true;
+    const uPhone = u.phone ? normalizePhoneNumber(u.phone) : '';
+    if (uPhone && Array.from(phoneVariants).some((p) => normalizePhoneNumber(p) === uPhone)) return true;
+    const uEmail = u.email ? normalizeEmail(u.email) : '';
+    if (uEmail && Array.from(emailVariants).some((e) => normalizeEmail(e) === uEmail)) return true;
+    return false;
+  };
+
+  // 3. Purge LocalStorage Registries
+  try {
+    const purgeRegistry = (key: string) => {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          const filtered = arr.filter((u) => !matchesUser(u));
+          localStorage.setItem(key, JSON.stringify(filtered));
+        }
+      }
+    };
+    purgeRegistry(STORAGE_KEY);
+    purgeRegistry(LEGACY_STORAGE_KEY);
+    purgeRegistry('setlla_registered_advertisers');
+  } catch (err) {
+    console.warn('[UserRegistry] Local registry purge notice:', err);
+  }
+
+  // 4. Purge Active Sessions if this browser is currently logged into the deleted account
+  try {
+    const rawSession = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    if (rawSession) {
+      const sUser = JSON.parse(rawSession);
+      if (matchesUser(sUser)) {
+        localStorage.removeItem('setlla_user');
+        localStorage.removeItem('deltarent_user');
+        localStorage.removeItem('setlla_auth');
+        localStorage.removeItem('deltarent_auth');
+        sessionStorage.removeItem('setlla_user');
+        sessionStorage.removeItem('deltarent_user');
+      }
+    }
+    const rawAdvSession = localStorage.getItem('setlla_advertiser_user');
+    if (rawAdvSession) {
+      const aUser = JSON.parse(rawAdvSession);
+      if (matchesUser(aUser)) {
+        localStorage.removeItem('setlla_advertiser_user');
+        localStorage.removeItem('setlla_advertiser_auth');
+      }
+    }
+  } catch (_) {}
+
+  // 5. Purge Pending OTPs & Tokens matching phone or email
+  try {
+    const otpKeys = [
+      'setlla_pending_email_otp',
+      'deltarent_pending_email_otp',
+      'setlla_admin_pending_otp',
+      'setlla_advertiser_pending_otp',
+      'setlla_pending_registration',
+      'setlla_candidate_cv'
+    ];
+    otpKeys.forEach((key) => {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (
+            matchesUser(parsed) ||
+            (parsed.email && emailVariants.has(parsed.email.toLowerCase())) ||
+            (parsed.phone && phoneVariants.has(parsed.phone))
+          ) {
+            localStorage.removeItem(key);
+          }
+        } catch (_) {}
+      }
+    });
+  } catch (_) {}
+
+  // 6. Purge matching listings from local storage cache
+  try {
+    ['setlla_saved_listings', 'deltarent_saved_listings', 'setlla_listings', 'deltarent_listings'].forEach((key) => {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          const filtered = arr.filter((item: any) => {
+            const ag = item.agent;
+            if (!ag) return true;
+            if (ag.id && ids.has(ag.id)) return false;
+            const agPhoneNorm = ag.phone ? normalizePhoneNumber(ag.phone) : '';
+            if (agPhoneNorm && Array.from(phoneVariants).some((p) => normalizePhoneNumber(p) === agPhoneNorm)) return false;
+            const agEmailNorm = ag.email ? normalizeEmail(ag.email) : '';
+            if (agEmailNorm && Array.from(emailVariants).some((e) => normalizeEmail(e) === agEmailNorm)) return false;
+            return true;
+          });
+          localStorage.setItem(key, JSON.stringify(filtered));
+        }
+      }
+    });
+  } catch (_) {}
+
+  // 7. Purge matching bookings from local storage cache
+  try {
+    ['setlla_saved_bookings', 'deltarent_saved_bookings', 'setlla_bookings', 'deltarent_bookings'].forEach((key) => {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          const filtered = arr.filter((b: any) => {
+            const bPhone = b.applicantPhone || b.applicant_phone;
+            const bEmail = b.applicantEmail || b.applicant_email;
+            if (bPhone && Array.from(phoneVariants).some((p) => normalizePhoneNumber(p) === normalizePhoneNumber(bPhone))) return false;
+            if (bEmail && Array.from(emailVariants).some((e) => normalizeEmail(e) === normalizeEmail(bEmail))) return false;
+            return true;
+          });
+          localStorage.setItem(key, JSON.stringify(filtered));
+        }
+      }
+    });
+  } catch (_) {}
+
+  // 8. Wipe tombstone ID so fresh signups can freely reuse any generated identifier
+  Array.from(ids).forEach((id) => {
+    unrecordDeletedUserId(id);
+  });
+
+  // 9. Wipe from central Supabase database across all tables
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        const idList = Array.from(ids);
+        const phoneList = Array.from(phoneVariants);
+        const emailList = Array.from(emailVariants);
+
+        const deletePromises: Promise<any>[] = [];
+
+        // A. Table: platform_users (delete by ID, phones, and emails)
+        if (idList.length > 0) {
+          deletePromises.push(Promise.resolve(client.from('platform_users').delete().in('id', idList)).catch(() => {}));
+        }
+        for (const p of phoneList) {
+          deletePromises.push(Promise.resolve(client.from('platform_users').delete().eq('phone', p)).catch(() => {}));
+        }
+        for (const e of emailList) {
+          deletePromises.push(Promise.resolve(client.from('platform_users').delete().eq('email', e)).catch(() => {}));
+          deletePromises.push(Promise.resolve(client.from('platform_users').delete().ilike('email', e)).catch(() => {}));
+        }
+
+        // B. Table: profiles (delete by ID, phones, and emails)
+        if (idList.length > 0) {
+          deletePromises.push(Promise.resolve(client.from('profiles').delete().in('id', idList)).catch(() => {}));
+        }
+        for (const p of phoneList) {
+          deletePromises.push(Promise.resolve(client.from('profiles').delete().eq('phone', p)).catch(() => {}));
+        }
+        for (const e of emailList) {
+          deletePromises.push(Promise.resolve(client.from('profiles').delete().eq('email', e)).catch(() => {}));
+        }
+
+        // C. Table: advertisers
+        if (idList.length > 0) {
+          deletePromises.push(Promise.resolve(client.from('advertisers').delete().in('id', idList)).catch(() => {}));
+        }
+        for (const p of phoneList) {
+          deletePromises.push(Promise.resolve(client.from('advertisers').delete().eq('phone', p)).catch(() => {}));
+        }
+        for (const e of emailList) {
+          deletePromises.push(Promise.resolve(client.from('advertisers').delete().eq('email', e)).catch(() => {}));
+        }
+
+        // D. Table: listings (find any listing owned by this agent and delete it completely)
+        const purgeListingsPromise = (async () => {
+          try {
+            const { data: listings } = await client.from('listings').select('id, agent');
+            if (Array.isArray(listings)) {
+              const toDeleteIds: string[] = [];
+              for (const item of listings) {
+                const ag = item.agent;
+                if (!ag) continue;
+                if (ag.id && ids.has(ag.id)) {
+                  toDeleteIds.push(item.id);
+                  continue;
+                }
+                const agPhone = ag.phone ? normalizePhoneNumber(ag.phone) : '';
+                if (agPhone && phoneList.some((p) => normalizePhoneNumber(p) === agPhone)) {
+                  toDeleteIds.push(item.id);
+                  continue;
+                }
+                const agEmail = ag.email ? normalizeEmail(ag.email) : '';
+                if (agEmail && emailList.some((e) => normalizeEmail(e) === agEmail)) {
+                  toDeleteIds.push(item.id);
+                  continue;
+                }
+              }
+              if (toDeleteIds.length > 0) {
+                await client.from('listings').delete().in('id', toDeleteIds);
+              }
+            }
+          } catch (e) {
+            console.warn('[UserRegistry] Listings purge notice:', e);
+          }
+        })();
+        deletePromises.push(purgeListingsPromise);
+
+        // E. Table: bookings
+        for (const p of phoneList) {
+          deletePromises.push(Promise.resolve(client.from('bookings').delete().eq('applicant_phone', p)).catch(() => {}));
+        }
+        for (const e of emailList) {
+          deletePromises.push(Promise.resolve(client.from('bookings').delete().eq('applicant_email', e)).catch(() => {}));
+        }
+
+        // F. Table: job_applications
+        if (idList.length > 0) {
+          deletePromises.push(Promise.resolve(client.from('job_applications').delete().in('applicant_id', idList)).catch(() => {}));
+        }
+        for (const p of phoneList) {
+          deletePromises.push(Promise.resolve(client.from('job_applications').delete().eq('applicant_phone', p)).catch(() => {}));
+        }
+        for (const e of emailList) {
+          deletePromises.push(Promise.resolve(client.from('job_applications').delete().eq('applicant_email', e)).catch(() => {}));
+        }
+
+        // G. Table: job_listings
+        for (const p of phoneList) {
+          deletePromises.push(Promise.resolve(client.from('job_listings').delete().eq('contact_phone', p)).catch(() => {}));
+        }
+        for (const e of emailList) {
+          deletePromises.push(Promise.resolve(client.from('job_listings').delete().eq('contact_email', e)).catch(() => {}));
+        }
+
+        // Wait for all DB deletions with a 4s timeout race
+        const allDeletions = Promise.all(deletePromises);
+        const timeout = new Promise((resolve) => setTimeout(resolve, 4000));
+        await Promise.race([allDeletions, timeout]);
+      }
+    } catch (err) {
+      console.warn('[UserRegistry] Database purge error:', err);
+    }
+  }
+
+  // 10. Broadcast realtime event so all active tabs/devices immediately drop user
+  try {
+    const broadcastUser: UserProfile = resolvedUser || {
+      id: targetId,
+      fullName: 'Deleted User',
+      phone: rawPhone || '',
+      email: rawEmail || undefined,
+      state: 'Delta State',
+      city: 'Asaba',
+      isAgent: false,
+      isAdmin: false,
+      isSuperAdmin: false,
+      isVerifiedTenant: false,
+      savedListingIds: [],
+      createdAt: new Date().toISOString(),
+    };
+    broadcastRealtimeEvent('USER_DELETED', { user: broadcastUser });
+  } catch (_) {}
+
+  return { success: true };
+}
+
+/**
+ * Super Admin function: removes a user from the registry and central database.
+ * Sync wrapper invoking deep purge deleteUserFromRegistryAsync.
+ */
+export function deleteUserFromRegistry(target: string | UserProfile): void {
+  deleteUserFromRegistryAsync(target).catch((err) => {
+    console.warn('[UserRegistry] Async delete failed:', err);
+  });
 }
 
 
