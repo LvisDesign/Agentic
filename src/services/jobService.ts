@@ -399,7 +399,7 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
     try {
       const client = getSupabaseClient();
       if (client) {
-        await client.from('job_listings').insert([{
+        const baseRow = {
           id: newJob.id,
           title: newJob.title,
           company_name: newJob.companyName,
@@ -417,10 +417,17 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
           requirements: newJob.requirements,
           benefits: newJob.benefits,
           category: newJob.category,
-          contact_email: newJob.contactEmail || null,
           is_featured: newJob.isFeatured,
           created_at: newJob.createdAt,
-        }]);
+        };
+
+        const fullRow = newJob.contactEmail ? { ...baseRow, contact_email: newJob.contactEmail } : baseRow;
+        const { error } = await client.from('job_listings').insert([fullRow]);
+        if (error) {
+          // If contact_email or optional column isn't in DB schema, retry with base columns
+          console.warn('[JobService] Cloud job insert notice, retrying with core columns:', error.message);
+          await client.from('job_listings').insert([baseRow]);
+        }
       }
     } catch (e) {
       console.warn('[JobService] Cloud job insert notice:', e);
