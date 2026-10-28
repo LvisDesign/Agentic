@@ -17,7 +17,8 @@ import {
   recordNotifiedAgentBookingId,
   fetchRegisteredUsersFromDb,
   mapDbToUserProfile,
-  normalizePhoneNumber
+  normalizePhoneNumber,
+  getDeletedUserIds
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
@@ -442,6 +443,54 @@ export function App() {
         } catch (_) {}
       }
     }
+  }, [currentUser]);
+
+  // Live Account Verification: If account was deleted or suspended in cloud database, log out device immediately
+  useEffect(() => {
+    if (!currentUser || !currentUser.id || currentUser.id === 'GUEST_USER' || currentUser.id === 'DT-USR-GUEST' || isElvisSuperAdmin(currentUser)) {
+      return;
+    }
+
+    let isMounted = true;
+    const verifyUserSession = async () => {
+      // 1. Check if user ID is in client deleted tombstones
+      const deletedIds = getDeletedUserIds();
+      if (deletedIds.has(currentUser.id)) {
+        console.warn('[App] Current user ID was deleted by administrator. Purging session from device...');
+        handleSignOut();
+        return;
+      }
+
+      // 2. Validate against live Supabase platform_users database
+      if (isSupabaseConfigured()) {
+        try {
+          const client = getSupabaseClient();
+          if (client) {
+            const { data, error } = await client
+              .from('platform_users')
+              .select('id, is_suspended')
+              .eq('id', currentUser.id)
+              .maybeSingle();
+
+            if (!error && isMounted) {
+              if (!data) {
+                console.warn('[App] User record was deleted from database. Purging session from device...');
+                handleSignOut();
+              } else if (data.is_suspended) {
+                console.warn('[App] User account was suspended. Purging session from device...');
+                handleSignOut();
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    };
+
+    verifyUserSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentUser]);
 
   // Auto-heal agent status if current user has published listings on this device or in cloud
@@ -1787,6 +1836,10 @@ export function App() {
     localStorage.removeItem('deltarent_active_role');
     localStorage.removeItem('setlla_active_view');
     localStorage.removeItem('deltarent_active_view');
+    localStorage.removeItem('setlla_listings');
+    localStorage.removeItem('deltarent_listings');
+    localStorage.removeItem('setlla_job_listings');
+    localStorage.removeItem('deltarent_job_listings');
     clearMyDeviceBookingIds();
     setMyDeviceBookingIds(new Set());
     setCurrentUser(GUEST_USER);
@@ -1794,6 +1847,7 @@ export function App() {
     setSavedPropertyIds([]);
     setUserView('feed');
     window.location.hash = '#/explore';
+    fetchAllListings().then((fresh) => setListings(fresh)).catch(() => {});
   };
 
   const handleUpdateAvatar = (avatarUrl: string) => {

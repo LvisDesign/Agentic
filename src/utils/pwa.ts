@@ -329,25 +329,28 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
       scope: '/',
     });
 
-    // Check if there is already a waiting service worker on register
+    // Check if there is already a waiting service worker on register - auto-activate immediately
     if (registration.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       notifyUpdateAvailable(true);
     }
 
-    // When an updated service worker is found, notify subscribers
+    // When an updated service worker is found, notify and auto-skip waiting
     registration.addEventListener('updatefound', () => {
       const installingWorker = registration.installing;
       if (installingWorker) {
         installingWorker.addEventListener('statechange', () => {
           if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('[PWA] New version ready! Update available.');
+            console.log('[PWA] New version ready! Auto-activating...');
+            installingWorker.postMessage({ type: 'SKIP_WAITING' });
             notifyUpdateAvailable(true);
           }
         });
       }
     });
 
-    // Check for updates on window focus
+    // Check for updates immediately upon registration and on window focus
+    registration.update().catch(() => {});
     window.addEventListener('focus', () => {
       registration.update().catch(() => {});
     });

@@ -52,7 +52,16 @@ export function recordDeletedJobId(jobId: string): void {
  */
 export async function getAllJobs(): Promise<JobListing[]> {
   const deletedIds = getDeletedJobIds();
-  const isDemoJob = (id?: string) => Boolean(id && (id.startsWith('job-asaba-') || id.startsWith('job-warri-')));
+  const isDemoJob = (id?: string) =>
+    Boolean(
+      id &&
+        (id.startsWith('job-asaba-') ||
+          id.startsWith('job-warri-') ||
+          id.startsWith('job-sapele-') ||
+          id.startsWith('job-demo-') ||
+          id.startsWith('demo-') ||
+          id.startsWith('mock-'))
+    );
 
   let localJobs: JobListing[] = [];
   try {

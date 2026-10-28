@@ -1,7 +1,7 @@
 // Service Worker for Setlla Progressive Web App (setlla.com)
 // Handles static caching, offline fallback, web push notifications, and app badging API
 
-const CACHE_NAME = 'setlla-pwa-v3';
+const CACHE_NAME = 'setlla-pwa-v4';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -83,7 +83,7 @@ self.addEventListener('fetch', (event) => {
   // Navigation requests (HTML pages): Network First with offline fallback
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-cache' })
         .then((response) => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
@@ -110,7 +110,7 @@ self.addEventListener('fetch', (event) => {
 
   if (isCodeAsset) {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-cache' })
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const copy = networkResponse.clone();
