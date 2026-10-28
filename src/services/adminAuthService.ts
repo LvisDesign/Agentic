@@ -73,6 +73,7 @@ export const DEFAULT_SUPER_ADMIN_USER: UserProfile = {
   isSuperAdmin: true,
   isDemoAdmin: false,
   persona: 'admin',
+  kycStatus: 'verified',
   savedListingIds: [],
   createdAt: '2026-09-01T08:00:00.000Z',
 };
@@ -511,8 +512,11 @@ export function completeAdminRegistration(
         email: newAdmin.email,
         state: newAdmin.state,
         city: newAdmin.city,
+        is_agent: true,
         is_admin: true,
         is_super_admin: true,
+        kyc_status: 'verified',
+        agency_name: newAdmin.agencyName || 'Setlla Executive Office',
         created_at: newAdmin.createdAt,
       })
     ).then(({ error }: any) => {

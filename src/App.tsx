@@ -86,12 +86,15 @@ const ADMIN_USER: UserProfile = {
   fullName: 'Elvis',
   email: 'admin@setlla.com',
   phone: '0907 705 6351',
+  agencyName: 'Setlla Administration',
+  companyName: 'Setlla Executive Office',
   state: 'Delta State',
   city: 'Asaba',
   isVerifiedTenant: false,
-  isAgent: false,
+  isAgent: true, // Admin is seen as an agent/employer with upper-level access
   isAdmin: true,
   isSuperAdmin: true,
+  kycStatus: 'verified',
   savedListingIds: [],
   createdAt: '2026-09-01T08:00:00.000Z',
 };
@@ -343,6 +346,8 @@ export function App() {
             ...parsed,
             isAdmin: true,
             isSuperAdmin: true,
+            isAgent: true,
+            kycStatus: 'verified',
             persona: 'admin',
           };
         }
@@ -633,7 +638,17 @@ export function App() {
             (currentUser.phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(currentUser.phone))
         );
         if (matched) {
-          setCurrentUser((prev) => ({ ...prev, ...matched }));
+          const isAdmin = Boolean(
+            matched.isAdmin || 
+            matched.isSuperAdmin || 
+            isElvisSuperAdmin(matched) ||
+            isElvisSuperAdmin(currentUser)
+          );
+          setCurrentUser((prev) => ({ 
+            ...prev, 
+            ...matched,
+            ...(isAdmin ? { isAgent: true, kycStatus: 'verified', isVerifiedTenant: false } : {})
+          }));
         }
       }
     } catch (err) {

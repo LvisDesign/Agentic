@@ -649,8 +649,17 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   }, [refreshAdminData]);
 
   // Split users into agents and tenants: Any user marked isAgent or who has active published listings is categorized as an Agent
+  // In Setlla, platform administrator also possesses agent/employer authority
   const isAgentUser = useCallback((u: UserProfile) => {
-    if (u.isAgent) return true;
+    if (
+      u.isAgent || 
+      u.isAdmin || 
+      u.isSuperAdmin || 
+      (u.email && u.email.toLowerCase() === 'admin@setlla.com') ||
+      (u.fullName && u.fullName.toLowerCase().includes('elvis'))
+    ) {
+      return true;
+    }
     const phoneNorm = u.phone ? normalizePhoneNumber(u.phone) : '';
     return listings.some(
       (l) =>
@@ -665,12 +674,14 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   }, [registeredUsers, isAgentUser]);
 
   const tenantsList = useMemo(() => {
-    return registeredUsers.filter((u) => !isAgentUser(u) && !u.isAdmin);
+    return registeredUsers.filter((u) => !isAgentUser(u) && !u.isAdmin && !u.isSuperAdmin);
   }, [registeredUsers, isAgentUser]);
 
   // Derived KPI Metrics
-  const totalVerifiedAgents = agentsList.filter((a) => a.kycStatus === 'verified' || a.isVerifiedTenant).length;
-  const pendingKycAgents = agentsList.filter((a) => a.kycStatus === 'pending').length;
+  const totalVerifiedAgents = agentsList.filter(
+    (a) => a.kycStatus === 'verified' || a.isVerifiedTenant || a.isAdmin || a.isSuperAdmin
+  ).length;
+  const pendingKycAgents = agentsList.filter((a) => a.kycStatus === 'pending' && !a.isAdmin && !a.isSuperAdmin).length;
   const suspendedUsersCount = registeredUsers.filter((u) => u.isSuspended).length;
 
   const totalListingsValue = useMemo(() => {

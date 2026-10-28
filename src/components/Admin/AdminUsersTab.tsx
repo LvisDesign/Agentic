@@ -183,16 +183,16 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
 
     registeredUsers.forEach((u) => {
       const p = getUserPersona(u);
-      if (p === 'agent') agents++;
-      else if (p === 'tenant') tenants++;
+      if (p === 'agent' || p === 'admin') agents++;
+      if (p === 'tenant') tenants++;
       else if (p === 'job_seeker') {
         jobSeekers++;
         if (u.cvUrl || u.cvFileName) cvCount++;
-      } else if (p === 'employer') employers++;
-      else if (p === 'advertiser') advertisers++;
-      else if (p === 'admin') admins++;
+      } else if (p === 'employer' || p === 'admin') employers++;
+      if (p === 'advertiser') advertisers++;
+      if (p === 'admin') admins++;
 
-      if (u.isVerifiedTenant || u.kycStatus === 'verified') verifiedCount++;
+      if (u.isVerifiedTenant || u.kycStatus === 'verified' || p === 'admin') verifiedCount++;
       if (u.kycStatus === 'pending') pendingKycCount++;
       if (u.isSuspended) suspendedCount++;
     });
@@ -217,8 +217,11 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
     return registeredUsers.filter((u) => {
       const p = getUserPersona(u);
 
-      // Persona Filter
-      if (personaFilter !== 'all' && p !== personaFilter) return false;
+      // Persona Filter (Admin has upper-level authority across agents and employers)
+      if (personaFilter !== 'all') {
+        const matches = p === personaFilter || (p === 'admin' && (personaFilter === 'agent' || personaFilter === 'employer'));
+        if (!matches) return false;
+      }
 
       // City Filter
       if (cityFilter !== 'All Cities') {
