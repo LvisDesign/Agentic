@@ -98,7 +98,7 @@ import {
 } from '../../services/adminService';
 import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry, normalizePhoneNumber } from '../../utils/userRegistry';
 import { subscribeToRealtimeEvents } from '../../services/realtimeSync';
-import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
+import { DEFAULT_FALLBACK_IMAGE, getCloudinaryConfig, saveCloudinaryConfig, uploadMediaToCloudinary } from '../../utils/mediaStorage';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
 import { CreateListingModal } from '../Agent/CreateListingModal';
 
@@ -222,6 +222,57 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>(() => getRegisteredUsers());
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(getPlatformSettings());
   const [auditLogs, setAuditLogs] = useState<AdminAuditLog[]>([]);
+
+  // Cloudinary CDN Configuration state
+  const [cloudinaryCloudName, setCloudinaryCloudName] = useState(() => getCloudinaryConfig().cloudName);
+  const [cloudinaryPreset, setCloudinaryPreset] = useState(() => getCloudinaryConfig().uploadPreset);
+  const [isTestingCloudinary, setIsTestingCloudinary] = useState(false);
+  const [cloudinaryTestResult, setCloudinaryTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleSaveCloudinary = (e: React.FormEvent) => {
+    e.preventDefault();
+    saveCloudinaryConfig(cloudinaryCloudName, cloudinaryPreset);
+    showToast('Cloudinary CDN configuration updated successfully.');
+  };
+
+  const handleTestCloudinary = async () => {
+    if (!cloudinaryCloudName.trim() || !cloudinaryPreset.trim()) {
+      setCloudinaryTestResult({ success: false, message: 'Please enter both Cloud Name and Upload Preset before testing.' });
+      return;
+    }
+    setIsTestingCloudinary(true);
+    setCloudinaryTestResult(null);
+    try {
+      saveCloudinaryConfig(cloudinaryCloudName, cloudinaryPreset);
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#342A21';
+        ctx.fillRect(0, 0, 1, 1);
+      }
+      const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, 'image/png'));
+      if (!blob) throw new Error('Could not create test blob');
+      const res = await uploadMediaToCloudinary(blob, { folder: 'setlla/test' });
+      if (res && res.url) {
+        setCloudinaryTestResult({
+          success: true,
+          message: 'Cloudinary CDN connected & verified! Property videos and photos will stream via high-speed global edge CDN.'
+        });
+        showToast('Cloudinary connected & active!');
+      } else {
+        setCloudinaryTestResult({
+          success: false,
+          message: 'Upload failed. Please check your Cloud Name and ensure your Upload Preset signing mode is set to "Unsigned" in Cloudinary settings.'
+        });
+      }
+    } catch (err: any) {
+      setCloudinaryTestResult({ success: false, message: err?.message || 'Connection error' });
+    } finally {
+      setIsTestingCloudinary(false);
+    }
+  };
 
   // Setlla Jobs Registry State
   const [jobsList, setJobsList] = useState<JobListing[]>([]);
@@ -2755,6 +2806,102 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 <SaveSettingsIcon />
                 <span>Save Platform Settings</span>
               </button>
+            </div>
+          </form>
+
+          {/* Cloudinary Media CDN Acceleration Card */}
+          <form onSubmit={handleSaveCloudinary} className="bg-white rounded-3xl p-6 border border-[#E5E7EB] shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-display font-bold text-lg text-[#000004] flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-indigo-600" />
+                  <span>Media CDN Acceleration (Cloudinary)</span>
+                </h3>
+                <p className="text-xs text-[#70798C] mt-1">
+                  High-speed global edge network for automatic video compression (q_auto, f_auto) and instant photo delivery across Nigeria.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
+                  Boolean(cloudinaryCloudName && cloudinaryPreset)
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}>
+                  <span className={`w-2 h-2 rounded-full ${Boolean(cloudinaryCloudName && cloudinaryPreset) ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                  <span>{Boolean(cloudinaryCloudName && cloudinaryPreset) ? 'Cloudinary CDN Active' : 'Fallback Mode'}</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#000004]">Cloudinary Cloud Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. setlla-cloud"
+                  value={cloudinaryCloudName}
+                  onChange={(e) => setCloudinaryCloudName(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-mono text-[#000004] focus:outline-none focus:ring-2 focus:ring-black/10"
+                />
+                <p className="text-[11px] text-[#70798C]">
+                  Found in your Cloudinary Dashboard under Account Details.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#000004]">Upload Preset (Unsigned)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. setlla_unsigned"
+                  value={cloudinaryPreset}
+                  onChange={(e) => setCloudinaryPreset(e.target.value)}
+                  className="w-full p-3 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] text-xs font-mono text-[#000004] focus:outline-none focus:ring-2 focus:ring-black/10"
+                />
+                <p className="text-[11px] text-[#70798C]">
+                  Created under Settings → Upload → Upload presets (Signing Mode: Unsigned).
+                </p>
+              </div>
+            </div>
+
+            {cloudinaryTestResult && (
+              <div className={`p-3.5 rounded-xl border text-xs flex items-start gap-2.5 animate-fade-in ${
+                cloudinaryTestResult.success 
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
+                  : 'bg-rose-50 border-rose-200 text-rose-900'
+              }`}>
+                {cloudinaryTestResult.success ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                )}
+                <span className="leading-relaxed">{cloudinaryTestResult.message}</span>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-[#E5E7EB] flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-[11px] text-[#70798C]">
+                If left empty, Setlla automatically falls back to Supabase Storage and client-side IndexedDB backup.
+              </p>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleTestCloudinary}
+                  disabled={isTestingCloudinary}
+                  className="w-full sm:w-auto py-2.5 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#70798C] ${isTestingCloudinary ? 'animate-spin' : ''}`} />
+                  <span>{isTestingCloudinary ? 'Testing Upload...' : 'Test Connection'}</span>
+                </button>
+
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                >
+                  <span>Save CDN Keys</span>
+                </button>
+              </div>
             </div>
           </form>
         </div>

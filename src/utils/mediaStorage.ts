@@ -251,6 +251,106 @@ export interface ProcessedMedia {
   caption: string;
 }
 
+export interface CloudinaryConfig {
+  cloudName: string;
+  uploadPreset: string;
+  isConfigured: boolean;
+}
+
+const CLOUDINARY_CLOUD_NAME_KEY = 'setlla_cloudinary_cloud_name';
+const CLOUDINARY_PRESET_KEY = 'setlla_cloudinary_preset';
+
+export function getCloudinaryConfig(): CloudinaryConfig {
+  const localCloudName = typeof window !== 'undefined' ? localStorage.getItem(CLOUDINARY_CLOUD_NAME_KEY) || '' : '';
+  const localPreset = typeof window !== 'undefined' ? localStorage.getItem(CLOUDINARY_PRESET_KEY) || '' : '';
+
+  const envCloudName = ((import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME || '').trim();
+  const envPreset = ((import.meta as any).env?.VITE_CLOUDINARY_UPLOAD_PRESET || '').trim();
+
+  const cloudName = localCloudName || envCloudName;
+  const uploadPreset = localPreset || envPreset;
+
+  return {
+    cloudName,
+    uploadPreset,
+    isConfigured: Boolean(cloudName && uploadPreset),
+  };
+}
+
+export function saveCloudinaryConfig(cloudName: string, uploadPreset: string): void {
+  if (typeof window === 'undefined') return;
+  if (cloudName && cloudName.trim()) {
+    localStorage.setItem(CLOUDINARY_CLOUD_NAME_KEY, cloudName.trim());
+  } else {
+    localStorage.removeItem(CLOUDINARY_CLOUD_NAME_KEY);
+  }
+  if (uploadPreset && uploadPreset.trim()) {
+    localStorage.setItem(CLOUDINARY_PRESET_KEY, uploadPreset.trim());
+  } else {
+    localStorage.removeItem(CLOUDINARY_PRESET_KEY);
+  }
+}
+
+/**
+ * Uploads media file (video or image) directly to Cloudinary via unsigned upload preset.
+ * Automatically injects adaptive quality (q_auto) and format optimization (f_auto).
+ */
+export async function uploadMediaToCloudinary(
+  file: File | Blob, 
+  options?: { folder?: string; defaultName?: string }
+): Promise<{ url: string; poster?: string; publicId?: string } | null> {
+  const config = getCloudinaryConfig();
+  if (!config.isConfigured) return null;
+
+  try {
+    const isVideo = file.type.startsWith('video/');
+    const resourceType = isVideo ? 'video' : 'image';
+    const folder = options?.folder || (isVideo ? 'setlla/videos' : 'setlla/properties');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', config.uploadPreset);
+    formData.append('folder', folder);
+
+    const endpoint = `https://api.cloudinary.com/v1_1/${config.cloudName}/${resourceType}/upload`;
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      console.warn('[Setlla Cloudinary] Upload error:', res.status, errJson);
+      return null;
+    }
+
+    const data = await res.json();
+    let url = data.secure_url || data.url;
+
+    // Apply auto-format and auto-quality if it's a standard Cloudinary upload URL
+    if (url && url.includes('/upload/')) {
+      url = url.replace('/upload/', '/upload/f_auto,q_auto/');
+    }
+
+    let poster: string | undefined = undefined;
+    if (isVideo && url) {
+      // Cloudinary video thumbnail poster: replace extension with .jpg or inject poster transformation
+      let rawPoster = url.replace(/\.[^/.]+$/, '.jpg');
+      if (rawPoster.includes('/upload/')) {
+        rawPoster = rawPoster.replace('/upload/', '/upload/so_0,f_auto,q_auto/');
+      }
+      poster = rawPoster;
+    }
+
+    console.log('[Setlla Cloudinary] Successfully uploaded to CDN:', { url, poster });
+    return { url, poster, publicId: data.public_id };
+  } catch (err) {
+    console.warn('[Setlla Cloudinary] Exception during upload:', err);
+    return null;
+  }
+}
+
 /**
  * Uploads media file (video or photo) directly to Supabase Storage bucket 'property-media'
  * If the bucket is available, returns the permanent public CDN streaming URL.
@@ -291,16 +391,32 @@ export async function uploadMediaToSupabaseStorage(file: File | Blob, defaultNam
 
 /**
  * Main ingestion handler for uploaded files:
- * 1. For images: compress to lightweight base64 Data URL and back up in IndexedDB + cloud storage if available.
- * 2. For videos: capture crisp poster snapshot frame, upload to Supabase cloud CDN if available, and back up in IndexedDB.
+ * 1. Primary: Direct Cloudinary CDN upload with auto-compression (q_auto, f_auto) & video poster extraction.
+ * 2. Secondary Fallback: Supabase Storage bucket 'property-media'.
+ * 3. Client Backup: Compressed local Data URL / IndexedDB blob for offline resilience.
  */
 export async function processUploadedFile(file: File, index: number): Promise<ProcessedMedia> {
   const isVideo = file.type.startsWith('video/');
   const id = `media-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 7)}`;
   const caption = file.name.replace(/\.[^/.]+$/, '');
 
-  // Attempt upload to Supabase Storage for universal cross-device playback
-  const cloudUrl = await uploadMediaToSupabaseStorage(file);
+  // 1. Primary CDN: Attempt upload to Cloudinary for instant edge compression and streaming
+  const cloudinaryRes = await uploadMediaToCloudinary(file);
+  if (cloudinaryRes && cloudinaryRes.url) {
+    // Store in IndexedDB for immediate responsive playback
+    await storeBlobInIDB(id, file, { type: isVideo ? 'video' : 'image', name: file.name });
+
+    return {
+      id,
+      type: isVideo ? 'video' : 'image',
+      url: cloudinaryRes.url,
+      poster: cloudinaryRes.poster || (isVideo ? await captureVideoPoster(file) : undefined),
+      caption,
+    };
+  }
+
+  // 2. Secondary Fallback: Attempt upload to Supabase Storage
+  const supabaseUrl = await uploadMediaToSupabaseStorage(file);
 
   if (isVideo) {
     // Generate poster snapshot frame first
@@ -313,7 +429,7 @@ export async function processUploadedFile(file: File, index: number): Promise<Pr
     return {
       id,
       type: 'video',
-      url: cloudUrl || localUrl,
+      url: supabaseUrl || localUrl,
       poster,
       caption,
     };
@@ -326,7 +442,7 @@ export async function processUploadedFile(file: File, index: number): Promise<Pr
     return {
       id,
       type: 'image',
-      url: cloudUrl || dataUrl,
+      url: supabaseUrl || dataUrl,
       caption,
     };
   }
