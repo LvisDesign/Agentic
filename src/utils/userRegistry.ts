@@ -547,33 +547,42 @@ export async function saveRegisteredUserAsync(user: UserProfile): Promise<boolea
   if (!isSupabaseConfigured()) return true;
 
   try {
-    const client = getSupabaseClient();
-    if (!client) return true;
-    const dbRow = mapUserProfileToDb(user);
-    const { error } = await client.from('platform_users').upsert(dbRow, { onConflict: 'id' });
-    if (!error) {
-      broadcastRealtimeEvent('USER_REGISTERED', { user });
-      return true;
-    } else {
-      console.warn('[UserRegistry] Full async upsert notice, retrying with verified columns:', error.message);
-      const safeCoreRow: Record<string, any> = {};
-      SAFE_BASE_PLATFORM_USER_COLUMNS.forEach((col) => {
-        if (dbRow[col] !== undefined) {
-          safeCoreRow[col] = dbRow[col];
-        }
-      });
-      const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
-      if (!retryRes.error) {
+    const savePromise = (async (): Promise<boolean> => {
+      const client = getSupabaseClient();
+      if (!client) return true;
+      const dbRow = mapUserProfileToDb(user);
+      const { error } = await client.from('platform_users').upsert(dbRow, { onConflict: 'id' });
+      if (!error) {
         broadcastRealtimeEvent('USER_REGISTERED', { user });
         return true;
       } else {
-        console.error('[UserRegistry] Async save retry error:', retryRes.error.message);
+        console.warn('[UserRegistry] Full async upsert notice, retrying with verified columns:', error.message);
+        const safeCoreRow: Record<string, any> = {};
+        SAFE_BASE_PLATFORM_USER_COLUMNS.forEach((col) => {
+          if (dbRow[col] !== undefined) {
+            safeCoreRow[col] = dbRow[col];
+          }
+        });
+        const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
+        if (!retryRes.error) {
+          broadcastRealtimeEvent('USER_REGISTERED', { user });
+          return true;
+        } else {
+          console.error('[UserRegistry] Async save retry error:', retryRes.error.message);
+        }
       }
-    }
+      return false;
+    })();
+
+    const timeoutPromise = new Promise<boolean>((resolve) =>
+      setTimeout(() => resolve(true), 3000)
+    );
+
+    return await Promise.race([savePromise, timeoutPromise]);
   } catch (e) {
     console.warn('[UserRegistry] Async user save error:', e);
   }
-  return false;
+  return true;
 }
 
 /**
@@ -740,21 +749,26 @@ export async function checkUserExistsAsync(
     const client = getSupabaseClient();
     if (!client) return { exists: false };
 
-    let queryBuilder = client.from('platform_users').select('*');
-    const filters: string[] = [];
+    const queryPromise = (async (): Promise<DuplicateCheckResult> => {
+      const filters: string[] = [];
 
-    if (last10.length >= 7) {
-      filters.push(`phone.ilike.%${last10}%`);
-    } else if (phone && phone.trim()) {
-      filters.push(`phone.eq.${phone.trim()}`);
-    }
+      if (phone && phone.trim()) {
+        filters.push(`phone.eq.${phone.trim()}`);
+      }
+      if (normPhone && normPhone !== phone.trim()) {
+        filters.push(`phone.eq.${normPhone}`);
+      }
+      if (normEmail) {
+        filters.push(`email.eq.${normEmail}`);
+      }
 
-    if (normEmail) {
-      filters.push(`email.ilike.${normEmail}`);
-    }
+      if (filters.length === 0) return { exists: false };
 
-    if (filters.length > 0) {
-      const { data, error } = await queryBuilder.or(filters.join(','));
+      const { data, error } = await client
+        .from('platform_users')
+        .select('id, full_name, phone, email, is_agent, agency_name, persona')
+        .or(filters.join(','));
+
       if (!error && Array.isArray(data)) {
         for (const row of data) {
           if (excludeUserId && row.id === excludeUserId) continue;
@@ -800,7 +814,14 @@ export async function checkUserExistsAsync(
           }
         }
       }
-    }
+      return { exists: false };
+    })();
+
+    const timeoutPromise = new Promise<DuplicateCheckResult>((resolve) =>
+      setTimeout(() => resolve({ exists: false }), 2000)
+    );
+
+    return await Promise.race([queryPromise, timeoutPromise]);
   } catch (err) {
     console.warn('[UserRegistry] Exception during checkUserExistsAsync:', err);
   }
