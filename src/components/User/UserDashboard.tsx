@@ -7,6 +7,8 @@ import {
   ArrowUpRight, 
   MapPin, 
   ShieldCheck, 
+  Shield,
+  LayoutDashboard,
   Phone, 
   CheckCircle, 
   CheckCircle2,
@@ -26,6 +28,7 @@ import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { PropertyListing, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
+import { isElvisSuperAdmin } from '../../services/adminAuthService';
 
 interface UserDashboardProps {
   currentUser: UserProfile;
@@ -62,6 +65,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'passes' | 'inventory' | 'saved'>('passes');
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+
+  // Identify platform administrator status
+  const isAdmin = Boolean(
+    currentUser.isAdmin ||
+    currentUser.isSuperAdmin ||
+    (currentUser as any).persona === 'admin' ||
+    isElvisSuperAdmin(currentUser)
+  );
 
   const handleCopyPhone = (bookingId: string, phone: string) => {
     navigator.clipboard.writeText(phone);
@@ -105,7 +116,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 {isAuthenticated ? currentUser.fullName : 'Guest Explorer'}
               </h1>
               {isAuthenticated ? (
-                currentUser.isAgent ? (
+                isAdmin ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#000004] text-white text-xs font-semibold">
+                    <Shield className="w-3 h-3 text-white" />
+                    Administrator
+                  </span>
+                ) : currentUser.isAgent ? (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#000004] text-amber-300 text-xs font-semibold">
                     <Building className="w-3 h-3" />
                     Partner Agent
@@ -124,7 +140,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             </div>
             <p className="text-xs text-[#70798C] mt-0.5">
               {isAuthenticated
-                ? currentUser.isAgent
+                ? isAdmin
+                  ? `Setlla Platform Administrator • Member ID: ${currentUser.id} • Headquarters: ${currentUser.city || 'Asaba'}, Delta State`
+                  : currentUser.isAgent
                   ? `${currentUser.agencyName || 'Partner Agency'} • Agent ID: ${currentUser.id} • Operating in ${currentUser.operatingCity || currentUser.city || 'Network'}`
                   : `${currentUser.state || 'Active'} Tenant • Member ID: ${currentUser.id} • Looking in ${currentUser.city || 'All Cities'}`
                 : 'Browsing rentals as guest • Create an account to book inspection appointments'}
@@ -137,7 +155,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   </span>
                   <span>•</span>
                   <span className="text-[#342A21] font-medium">
-                    {currentUser.isAgent
+                    {isAdmin
+                      ? 'Platform Governance & Management'
+                      : currentUser.isAgent
                       ? `CAC: ${currentUser.cacNumber || 'Registered Agent'}`
                       : `Seeking: ${currentUser.preferredPropertyType || 'Any Rental'}`}
                   </span>
@@ -154,9 +174,19 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons: Become an Agent + View Live Feed */}
+        {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-          {currentUser.isAgent ? (
+          {isAdmin ? (
+            <button
+              onClick={() => {
+                window.location.hash = '#/admin';
+              }}
+              className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Admin Console</span>
+            </button>
+          ) : currentUser.isAgent ? (
             <button
               onClick={() => onSwitchToAgent?.()}
               className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
@@ -192,7 +222,32 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       </div>
 
       {/* 2. Notice Box */}
-      {currentUser.isAgent ? (
+      {isAdmin ? (
+        <div className="mb-6 p-4 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#000004] text-white flex items-center justify-center shrink-0 mt-0.5">
+              <Shield className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <h4 className="font-bold text-[#000004]">
+                Administrator Account Active
+              </h4>
+              <p className="text-[11px] text-[#70798C] mt-0.5">
+                You are signed in as a platform administrator. You can monitor platform activity, view live bookings, inspect inventory, or open the central Admin Console.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              window.location.hash = '#/admin';
+            }}
+            className="shrink-0 px-3.5 py-2 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          >
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Open Admin Console →</span>
+          </button>
+        </div>
+      ) : currentUser.isAgent ? (
         <div className="mb-6 p-4 rounded-2xl bg-[#FCF9F5] border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-xl bg-[#000004] text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
@@ -304,7 +359,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
           }`}
         >
-          <span>My Inspections & Queue</span>
+          <span>{isAdmin ? 'Passes & Queue Monitor' : 'My Inspections & Queue'}</span>
           {(confirmedPasses.length > 0 || pendingRequests.length > 0 || queuedRequests.length > 0) && (
             <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[#000004] text-white">
               {confirmedPasses.length + pendingRequests.length + queuedRequests.length}
@@ -320,7 +375,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               : 'border-transparent text-[#70798C] hover:text-[#000004]'
           }`}
         >
-          <span>Available Agent Apartments ({listings.length})</span>
+          <span>{isAdmin ? 'Platform Apartments' : 'Available Agent Apartments'} ({listings.length})</span>
         </button>
 
         <button
