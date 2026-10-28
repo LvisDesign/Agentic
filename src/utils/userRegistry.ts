@@ -373,10 +373,13 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
     const client = getSupabaseClient();
     if (!client) return localUsers;
 
-    const { data, error } = await client
-      .from('platform_users')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [usersRes, advertisersRes] = await Promise.all([
+      client.from('platform_users').select('*').order('created_at', { ascending: false }),
+      Promise.resolve(client.from('advertisers').select('*').order('created_at', { ascending: false })).catch(() => ({ data: null, error: null })),
+    ]);
+
+    const data = usersRes.data;
+    const error = usersRes.error;
 
     // When Supabase responds successfully, its data is the single source of truth
     if (!error && Array.isArray(data)) {
@@ -423,6 +426,30 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
           addOrMergeToDbMap(u);
         }
       });
+
+      // Merge registered advertisers into unified user registry
+      if (advertisersRes && 'data' in advertisersRes && Array.isArray(advertisersRes.data)) {
+        advertisersRes.data.forEach((adv: any) => {
+          if (!adv || !adv.id || deletedIds.has(adv.id)) return;
+          const advUser: UserProfile = {
+            id: adv.id,
+            fullName: adv.contact_name || adv.company_name || 'Advertiser Partner',
+            phone: adv.phone || '',
+            email: adv.email || '',
+            state: 'Delta State',
+            city: adv.operating_city || 'Asaba',
+            persona: 'advertiser',
+            isAgent: false,
+            isAdmin: false,
+            isEmailVerified: true,
+            isVerifiedTenant: false,
+            savedListingIds: [],
+            createdAt: adv.created_at || new Date().toISOString(),
+            agencyName: adv.company_name,
+          };
+          addOrMergeToDbMap(advUser);
+        });
+      }
 
       // Keep active session user in database map if present locally
       try {

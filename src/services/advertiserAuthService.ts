@@ -116,7 +116,7 @@ export async function saveRegisteredAdvertiser(advertiser: AdvertiserUser): Prom
   list.unshift(advertiser);
   localStorage.setItem(ADVERTISERS_REGISTRY_KEY, JSON.stringify(list));
 
-  // Sync to Supabase
+  // Sync to Supabase (both advertisers and central platform_users table)
   if (isSupabaseConfigured()) {
     try {
       await supabase.from('advertisers').upsert(
@@ -138,6 +138,25 @@ export async function saveRegisteredAdvertiser(advertiser: AdvertiserUser): Prom
           last_login_at: advertiser.lastLoginAt || new Date().toISOString(),
         },
         { onConflict: 'email' }
+      );
+
+      // Also ensure unified visibility in central platform_users
+      await supabase.from('platform_users').upsert(
+        {
+          id: advertiser.id,
+          full_name: advertiser.contactName || advertiser.companyName,
+          phone: advertiser.phone,
+          email: advertiser.email.toLowerCase(),
+          persona: 'advertiser',
+          agency_name: advertiser.companyName,
+          city: advertiser.operatingCity || 'Asaba',
+          state: 'Delta State',
+          is_agent: false,
+          is_admin: false,
+          is_email_verified: true,
+          created_at: advertiser.createdAt,
+        },
+        { onConflict: 'id' }
       );
     } catch (e) {
       console.warn('[AdvertiserAuth] Supabase sync notice:', e);

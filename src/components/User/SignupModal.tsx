@@ -136,7 +136,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [otpPurpose, setOtpPurpose] = useState<'agent_signup' | 'employer_signup' | 'forgot_password'>('agent_signup');
   const [otpPendingUser, setOtpPendingUser] = useState<UserProfile | null>(null);
   const [otpResendSeconds, setOtpResendSeconds] = useState(0);
-  const [otpTestCode, setOtpTestCode] = useState('');
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
 
@@ -439,7 +438,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           setOtpPurpose('employer_signup');
           setOtpPendingUser(updated);
           setOtpDigits(['', '', '', '', '', '']);
-          setOtpTestCode(otpRes.testOtp);
           setOtpResendSeconds(60);
           setOtpError(null);
           setAuthMode('verify_email');
@@ -604,7 +602,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           setOtpPurpose('agent_signup');
           setOtpPendingUser(updated);
           setOtpDigits(['', '', '', '', '', '']);
-          setOtpTestCode(otpRes.testOtp);
           setOtpResendSeconds(60);
           setOtpError(null);
           setAuthMode('verify_email');
@@ -688,8 +685,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const handleResendOtp = async () => {
     if (otpResendSeconds > 0 || !otpEmail) return;
     try {
-      const res = await sendEmailOTP(otpEmail, otpPurpose, otpPendingUser || undefined);
-      setOtpTestCode(res.testOtp);
+      await sendEmailOTP(otpEmail, otpPurpose, otpPendingUser || undefined);
       setOtpResendSeconds(60);
       setOtpError(null);
     } catch (err: any) {
@@ -764,7 +760,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       setOtpEmail(forgotPasswordEmail.trim());
       setOtpPurpose('forgot_password');
       setOtpDigits(['', '', '', '', '', '']);
-      setOtpTestCode(res.testOtp);
       setOtpResendSeconds(60);
       setOtpError(null);
       setAuthMode('verify_email');
@@ -1437,28 +1432,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         ))}
                       </div>
 
-                      {/* Sandbox test code helper for quick seamless testing */}
-                      {otpTestCode && (
-                        <div className="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/80 text-[11px] text-amber-900 flex items-center justify-between">
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <span>Sandbox code:</span>
-                            <code className="font-bold bg-white px-1.5 py-0.5 rounded border border-amber-300 tracking-wider text-[#000004]">
-                              {otpTestCode}
-                            </code>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const chars = otpTestCode.slice(0, 6).split('');
-                              setOtpDigits(chars);
-                              if (otpError) setOtpError(null);
-                            }}
-                            className="text-[11px] font-bold text-[#F95700] hover:underline cursor-pointer"
-                          >
-                            Fill in
-                          </button>
-                        </div>
-                      )}
 
                       <p className="text-[11px] text-[#70798C] text-center">
                         Code expires in 10 minutes. Check your inbox or spam folder.
