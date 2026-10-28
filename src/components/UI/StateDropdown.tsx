@@ -78,6 +78,7 @@ export const StateDropdown: React.FC<StateDropdownProps> = ({
   placeholder = 'Select state',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpwards, setOpenUpwards] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [inactiveNotice, setInactiveNotice] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -102,6 +103,15 @@ export const StateDropdown: React.FC<StateDropdownProps> = ({
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleKeyDown);
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+        const viewportHeight = vv ? vv.height : window.innerHeight;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const isMobile = window.innerWidth < 768;
+        setOpenUpwards(isMobile ? (spaceAbove >= 160 || spaceAbove > spaceBelow) : (spaceBelow < 260 && spaceAbove > spaceBelow));
+      }
       setTimeout(() => {
         containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 60);
@@ -182,7 +192,9 @@ export const StateDropdown: React.FC<StateDropdownProps> = ({
       {/* Custom Dropdown Popover */}
       {isOpen && (
         <div 
-          className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-[#E5E7EB] p-2 overflow-hidden animate-slide-up flex flex-col max-h-[320px]"
+          className={`absolute left-0 right-0 ${
+            openUpwards ? 'bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]'
+          } z-50 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-[#E5E7EB] p-2 overflow-hidden flex flex-col max-h-[240px] sm:max-h-[300px]`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Search Box */}

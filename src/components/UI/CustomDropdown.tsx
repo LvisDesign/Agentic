@@ -95,12 +95,23 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
     const spaceBelow = viewportHeight - (rect.bottom - viewportTop);
     const spaceAbove = rect.top - viewportTop;
 
-    // Prefer opening upwards if space below is tight and space above is larger
-    const openUpwards = spaceBelow < 250 && spaceAbove > spaceBelow;
+    const isMobile = viewportWidth < 768;
 
-    // Total maximum height for the entire popover card
+    // On mobile screens, move UP into the signup container whenever space above is adequate (>= 160px)
+    // or larger than space below. This keeps the dropdown neatly inside the upper half of the signup card
+    // rather than bleeding off the bottom of the container or phone screen.
+    const openUpwards = isMobile
+      ? (spaceAbove >= 160 || spaceAbove > spaceBelow)
+      : (spaceBelow < 280 && spaceAbove > spaceBelow);
+
+    // Maximum height for the dropdown card:
+    // On mobile, cap it to roughly half of the signup screen (around 220px - 250px)
+    // so it is neatly housed inside the container, and as users scroll more cities are displayed.
     const availableVerticalSpace = openUpwards ? spaceAbove - 16 : spaceBelow - 16;
-    const maxMenuHeight = Math.min(270, Math.max(120, availableVerticalSpace));
+    const mobileHalfScreen = Math.min(250, Math.max(160, Math.round(viewportHeight * 0.40)));
+    const maxMenuHeight = isMobile
+      ? Math.min(mobileHalfScreen, Math.max(120, availableVerticalSpace))
+      : Math.min(280, Math.max(120, availableVerticalSpace));
 
     let menuWidth = variant === 'form' ? rect.width : Math.max(rect.width, 240);
     let left = rect.left;
