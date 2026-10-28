@@ -103,7 +103,6 @@ export const StateDropdown: React.FC<StateDropdownProps> = ({
       document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleKeyDown);
       setTimeout(() => {
-        searchInputRef.current?.focus();
         containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 60);
     }

@@ -87,41 +87,54 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   const updatePosition = useCallback(() => {
     if (!dropdownRef.current) return;
     const rect = dropdownRef.current.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const viewportWidth = window.innerWidth;
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    const viewportHeight = vv ? vv.height : window.innerHeight;
+    const viewportWidth = vv ? vv.width : window.innerWidth;
+    const viewportTop = vv ? vv.offsetTop : 0;
 
-    const estimatedMenuHeight = 280;
-    const spaceBelow = viewportHeight - rect.bottom;
-    const spaceAbove = rect.top;
+    const spaceBelow = viewportHeight - (rect.bottom - viewportTop);
+    const spaceAbove = rect.top - viewportTop;
 
-    const openUpwards = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
+    // Prefer opening upwards if space below is tight and space above is larger
+    const openUpwards = spaceBelow < 250 && spaceAbove > spaceBelow;
+
+    // Total maximum height for the entire popover card
+    const availableVerticalSpace = openUpwards ? spaceAbove - 16 : spaceBelow - 16;
+    const maxMenuHeight = Math.min(270, Math.max(120, availableVerticalSpace));
 
     let menuWidth = variant === 'form' ? rect.width : Math.max(rect.width, 240);
-
     let left = rect.left;
-    if (align === 'right') {
-      left = rect.right - menuWidth;
-    } else if (align === 'center') {
-      left = rect.left + rect.width / 2 - menuWidth / 2;
+
+    if (variant === 'form') {
+      // In form variant, align precisely with the input field
+      // If modal or field extends beyond viewport on very small screens, keep it inside
+      if (left + menuWidth > viewportWidth - 8) {
+        menuWidth = Math.max(160, viewportWidth - left - 8);
+      }
+    } else {
+      if (align === 'right') {
+        left = rect.right - menuWidth;
+      } else if (align === 'center') {
+        left = rect.left + rect.width / 2 - menuWidth / 2;
+      }
+
+      // Keep pill menu strictly within horizontal viewport
+      if (left + menuWidth > viewportWidth - 12) {
+        left = Math.max(12, viewportWidth - menuWidth - 12);
+      }
+      if (left < 12) {
+        left = 12;
+      }
     }
 
-    // Keep menu strictly within horizontal viewport
-    if (left + menuWidth > viewportWidth - 12) {
-      left = Math.max(12, viewportWidth - menuWidth - 12);
-    }
-    if (left < 12) {
-      left = 12;
-    }
-
-    const availableSpace = openUpwards ? spaceAbove - 16 : spaceBelow - 16;
-    const maxHeight = Math.min(280, Math.max(120, availableSpace));
+    const top = openUpwards ? rect.top - 6 : rect.bottom + 6;
 
     setCoords({
-      top: openUpwards ? rect.top - 6 : rect.bottom + 6,
+      top,
       left,
       width: menuWidth,
       openUpwards,
-      maxHeight,
+      maxHeight: maxMenuHeight,
     });
   }, [variant, align]);
 
@@ -164,22 +177,33 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       }
     };
 
+    const handleViewportChange = () => {
+      updatePosition();
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', updatePosition);
     window.addEventListener('scroll', handleScroll, true);
 
-    if (isSearchable) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-      }, 50);
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (vv) {
+      vv.addEventListener('resize', handleViewportChange);
+      vv.addEventListener('scroll', handleViewportChange);
     }
+
+    // Do NOT auto-focus the search input on open:
+    // Virtual keyboard should only emerge when the user explicitly engages the search input field.
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', updatePosition);
       window.removeEventListener('scroll', handleScroll, true);
+      if (vv) {
+        vv.removeEventListener('resize', handleViewportChange);
+        vv.removeEventListener('scroll', handleViewportChange);
+      }
     };
   }, [isOpen, isSearchable, updatePosition]);
 
@@ -318,16 +342,17 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
               position: 'fixed',
               top: coords.top,
               left: coords.left,
-              minWidth: coords.width,
+              width: `${coords.width}px`,
+              maxHeight: `${coords.maxHeight}px`,
               transform: coords.openUpwards ? 'translateY(-100%)' : 'none',
               zIndex: 99999,
             }}
-            className={`bg-white/98 backdrop-blur-md rounded-2xl shadow-elevated border border-[#E5E7EB] p-1.5 overflow-hidden animate-dropdown ${
-              variant === 'form' ? 'w-full max-w-sm' : 'min-w-[240px] w-max max-w-[320px]'
+            className={`bg-white/98 backdrop-blur-md rounded-2xl shadow-elevated border border-[#E5E7EB] p-1.5 flex flex-col overflow-hidden animate-dropdown ${
+              variant === 'form' ? '' : 'min-w-[240px] max-w-[320px]'
             } ${menuClassName}`}
           >
             {headerTitle && (
-              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#70798C] border-b border-slate-100 mb-1">
+              <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#70798C] border-b border-slate-100 mb-1 shrink-0">
                 <span>{headerTitle}</span>
               </div>
             )}
@@ -359,7 +384,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
 
             {/* Custom Search Option (if user typed a query and allowCustomInput is enabled) */}
             {allowCustomInput && searchQuery.trim() && (
-              <div className="px-1 mb-1">
+              <div className="px-1 mb-1 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleSelect(searchQuery.trim())}
@@ -389,8 +414,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
             )}
 
             <div 
-              style={{ maxHeight: `${coords.maxHeight}px` }}
-              className="overflow-y-auto space-y-0.5 overscroll-contain"
+              className="flex-1 min-h-0 overflow-y-auto space-y-0.5 overscroll-contain"
             >
               {displayedOptions.map((option) => {
                 const isSelected = option.value === value;
