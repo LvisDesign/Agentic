@@ -56,6 +56,7 @@ import {
   PlatformUserPersona 
 } from '../../utils/userRegistry';
 import { toggleAgentVerification, toggleTenantVerification, toggleUserSuspension } from '../../services/adminService';
+import { isElvisSuperAdmin, removeAdminCredential } from '../../services/adminAuthService';
 
 export interface AdminUsersTabProps {
   currentUser: UserProfile;
@@ -293,18 +294,52 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
     }
   };
 
+  const isCurrentElvis = isElvisSuperAdmin(currentUser);
+
+  // Authority check helpers: Elvis has super authority to delete or disable every other account, including other admins
+  const canDeleteUser = (target: UserProfile): boolean => {
+    if (target.id === currentUser.id) return false;
+    if (isElvisSuperAdmin(target)) return false;
+    if (target.isAdmin || target.isSuperAdmin) {
+      return isCurrentElvis;
+    }
+    return true;
+  };
+
+  const canSuspendUser = (target: UserProfile): boolean => {
+    if (target.id === currentUser.id) return false;
+    if (isElvisSuperAdmin(target)) return false;
+    if (target.isAdmin || target.isSuperAdmin) {
+      return isCurrentElvis;
+    }
+    return true;
+  };
+
   // Handler: Suspend User
   const handleConfirmSuspension = () => {
     if (!suspendingUser) return;
+    if (isElvisSuperAdmin(suspendingUser)) {
+      showToast('Super Admin Elvis account is protected and cannot be disabled.');
+      setSuspendingUser(null);
+      return;
+    }
+
+    const isTargetAdmin = Boolean(suspendingUser.isAdmin || suspendingUser.isSuperAdmin);
+    if (isTargetAdmin && !isCurrentElvis) {
+      showToast('Only Super Admin Elvis has authority to disable administrator accounts.');
+      setSuspendingUser(null);
+      return;
+    }
+
     const reason = suspensionReason.trim() || 'Administrative freeze';
     const updated = toggleUserSuspension(suspendingUser, reason, currentUser.fullName);
     setRegisteredUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
-    showToast(`${suspendingUser.fullName} account has been suspended.`);
+    showToast(`${suspendingUser.fullName} account has been ${isTargetAdmin ? 'disabled' : 'suspended'}.`);
     onRecordAuditLog(
-      'USER_SUSPENDED',
+      isTargetAdmin ? 'ADMIN_ACCOUNT_DISABLED' : 'USER_SUSPENDED',
       'system',
       suspendingUser.fullName,
-      `Reason: ${reason}`
+      `Reason: ${reason} (Enforced by Super Admin ${currentUser.fullName})`
     );
     setSuspendingUser(null);
     setSuspensionReason('Violation of platform verification guidelines');
@@ -312,41 +347,62 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
 
   // Handler: Reinstate User
   const handleReinstateUser = (user: UserProfile) => {
+    const isTargetAdmin = Boolean(user.isAdmin || user.isSuperAdmin);
+    if (isTargetAdmin && !isCurrentElvis) {
+      showToast('Only Super Admin Elvis has authority to modify administrator accounts.');
+      return;
+    }
     const updated = toggleUserSuspension(user, 'Reinstated', currentUser.fullName);
     setRegisteredUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
     showToast(`${user.fullName} account has been reinstated active.`);
     onRecordAuditLog(
-      'USER_REINSTATED',
+      isTargetAdmin ? 'ADMIN_ACCOUNT_REINSTATED' : 'USER_REINSTATED',
       'system',
       user.fullName,
-      'Reinstated account active status'
+      `Reinstated active status by Super Admin ${currentUser.fullName}`
     );
   };
 
   // Handler: Delete User
   const handleDeleteUser = (user: UserProfile) => {
-    if (user.isAdmin || user.isSuperAdmin) {
-      showToast('Cannot delete Platform Administrator accounts.');
+    if (user.id === currentUser.id) {
+      showToast('You cannot delete your own active administrator account.');
+      return;
+    }
+
+    if (isElvisSuperAdmin(user)) {
+      showToast('Super Admin Elvis account is protected and cannot be deleted.');
+      return;
+    }
+
+    const isTargetAdmin = Boolean(user.isAdmin || user.isSuperAdmin);
+    if (isTargetAdmin && !isCurrentElvis) {
+      showToast('Only Super Admin Elvis has authority to delete administrator accounts.');
       return;
     }
 
     openConfirmDialog({
-      title: `Delete ${user.fullName}'s Account?`,
-      message: `Are you sure you want to permanently remove this user account from Setlla? This action removes their credentials and cannot be undone.`,
+      title: isTargetAdmin ? `Revoke & Delete Admin (${user.fullName})?` : `Delete ${user.fullName}'s Account?`,
+      message: isTargetAdmin
+        ? `Permanently revoke all administrator privileges and platform credentials for ${user.fullName} (${user.phone}). This administrator account will be permanently erased.`
+        : `Are you sure you want to permanently remove this user account from Setlla? This action removes their credentials and cannot be undone.`,
       itemTitle: user.fullName,
-      itemSubtitle: `${user.phone} · ${user.city || 'Delta State'}`,
-      badge: getUserPersona(user).toUpperCase(),
-      confirmText: 'Delete Account',
+      itemSubtitle: `${user.phone} · ${user.city || 'Delta State'}${isTargetAdmin ? ' · Platform Administrator' : ''}`,
+      badge: isTargetAdmin ? 'SUPER ADMIN REVOCATION' : getUserPersona(user).toUpperCase(),
+      confirmText: isTargetAdmin ? 'Revoke & Delete Admin' : 'Delete Account',
       variant: 'danger',
-      onConfirm: () => {
+      onConfirm: async () => {
         deleteUserFromRegistry(user.id);
+        if (isTargetAdmin) {
+          removeAdminCredential(user.email, user.phone);
+        }
         setRegisteredUsers((prev) => prev.filter((u) => u.id !== user.id));
         showToast(`${user.fullName} was permanently deleted.`);
         onRecordAuditLog(
-          'USER_DELETED',
+          isTargetAdmin ? 'ADMIN_ACCOUNT_PURGED' : 'USER_DELETED',
           'system',
           user.fullName,
-          `Permanently deleted ID: ${user.id} (${user.email || user.phone})`
+          `Super Admin Elvis permanently deleted ${isTargetAdmin ? 'administrator' : 'user'} ID: ${user.id} (${user.email || user.phone})`
         );
       },
     });
@@ -829,8 +885,12 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-bold text-sm text-[#000004]">{user.fullName}</span>
                               {user.isAdmin && (
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 text-white">
-                                  ADMIN
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 ${
+                                  isElvisSuperAdmin(user)
+                                    ? 'bg-amber-400 text-slate-950 font-extrabold shadow-2xs border border-amber-300'
+                                    : 'bg-slate-900 text-white'
+                                }`}>
+                                  {isElvisSuperAdmin(user) ? '★ SUPER ADMIN (ELVIS)' : 'ADMIN'}
                                 </span>
                               )}
                             </div>
@@ -968,8 +1028,12 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
 
                         {persona === 'admin' && (
                           <div className="space-y-0.5">
-                            <span className="font-bold text-xs text-slate-900 block">Full Governance</span>
-                            <span className="text-[10px] text-[#70798C] font-mono">System Audit Log Access</span>
+                            <span className="font-bold text-xs text-slate-900 block">
+                              {isElvisSuperAdmin(user) ? 'Supreme Platform Authority' : 'Full Governance'}
+                            </span>
+                            <span className="text-[10px] text-[#70798C] font-mono">
+                              {isElvisSuperAdmin(user) ? 'Master Access & Deletion Control' : 'System Audit Log Access'}
+                            </span>
                           </div>
                         )}
                       </td>
@@ -979,7 +1043,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                         {isSuspended ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 text-red-800 text-[10px] font-bold">
                             <Lock className="w-3 h-3 text-red-600" />
-                            <span>Suspended</span>
+                            <span>{user.isAdmin ? 'Disabled Admin' : 'Suspended'}</span>
                           </span>
                         ) : user.kycStatus === 'pending' ? (
                           <button
@@ -1079,7 +1143,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                           </button>
 
                           {/* Suspend / Reinstate Toggle */}
-                          {!user.isAdmin && (
+                          {canSuspendUser(user) && (
                             <button
                               onClick={() => {
                                 if (isSuspended) {
@@ -1093,18 +1157,18 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                                   ? 'bg-red-600 text-white border-red-600 hover:bg-red-700'
                                   : 'border-[#E5E7EB] bg-white text-[#70798C] hover:text-red-600 hover:bg-red-50'
                               }`}
-                              title={isSuspended ? 'Reactivate Account' : 'Suspend Account'}
+                              title={isSuspended ? (user.isAdmin ? 'Reactivate Administrator' : 'Reactivate Account') : (user.isAdmin ? 'Disable Administrator' : 'Suspend Account')}
                             >
                               {isSuspended ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                             </button>
                           )}
 
                           {/* Delete Account */}
-                          {!user.isAdmin && (
+                          {canDeleteUser(user) && (
                             <button
                               onClick={() => handleDeleteUser(user)}
                               className="p-1.5 rounded-lg border border-[#E5E7EB] bg-white text-[#70798C] hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                              title="Delete Account"
+                              title={user.isAdmin ? 'Revoke & Delete Administrator' : 'Delete Account'}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1251,7 +1315,9 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                     {persona === 'admin' && (
                       <div className="flex items-center justify-between">
                         <span className="text-[#70798C]">Access Level:</span>
-                        <span className="font-bold text-slate-900">Platform Super Admin</span>
+                        <span className="font-bold text-slate-900">
+                          {isElvisSuperAdmin(user) ? 'Supreme Super Admin (Elvis)' : 'Platform Administrator'}
+                        </span>
                       </div>
                     )}
 
@@ -1340,7 +1406,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                       <Edit3 className="w-3.5 h-3.5" />
                     </button>
 
-                    {!user.isAdmin && (
+                    {canSuspendUser(user) && (
                       <button
                         onClick={() => {
                           if (isSuspended) {
@@ -1354,17 +1420,17 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                             ? 'bg-red-600 text-white border-red-600'
                             : 'border-[#E5E7EB] hover:bg-red-50 text-[#70798C] hover:text-red-600'
                         }`}
-                        title={isSuspended ? 'Reactivate' : 'Suspend'}
+                        title={isSuspended ? (user.isAdmin ? 'Reactivate Administrator' : 'Reactivate') : (user.isAdmin ? 'Disable Administrator' : 'Suspend')}
                       >
                         {isSuspended ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
                       </button>
                     )}
 
-                    {!user.isAdmin && (
+                    {canDeleteUser(user) && (
                       <button
                         onClick={() => handleDeleteUser(user)}
                         className="p-2 rounded-xl border border-[#E5E7EB] hover:bg-red-50 text-[#70798C] hover:text-red-600 transition-colors cursor-pointer"
-                        title="Delete User"
+                        title={user.isAdmin ? 'Revoke & Delete Administrator' : 'Delete Account'}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -2155,16 +2221,20 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
               </div>
               <div>
                 <h4 className="font-display font-bold text-base text-red-900">
-                  Suspend {suspendingUser.fullName}?
+                  {suspendingUser.isAdmin ? 'Disable Administrator' : 'Suspend'} {suspendingUser.fullName}?
                 </h4>
                 <p className="text-xs text-[#70798C]">
-                  This will temporarily block platform access and freeze account activity.
+                  {suspendingUser.isAdmin
+                    ? 'This will revoke administrative portal privileges and freeze account access.'
+                    : 'This will temporarily block platform access and freeze account activity.'}
                 </p>
               </div>
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <label className="font-bold text-[#000004]">Suspension Reason:</label>
+              <label className="font-bold text-[#000004]">
+                {suspendingUser.isAdmin ? 'Disable Reason:' : 'Suspension Reason:'}
+              </label>
               <textarea
                 value={suspensionReason}
                 onChange={(e) => setSuspensionReason(e.target.value)}
@@ -2186,7 +2256,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                 onClick={handleConfirmSuspension}
                 className="py-2 px-5 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition-all cursor-pointer shadow-xs"
               >
-                Confirm Freeze
+                {suspendingUser.isAdmin ? 'Confirm Disable' : 'Confirm Freeze'}
               </button>
             </div>
           </div>

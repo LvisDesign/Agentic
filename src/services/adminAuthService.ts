@@ -27,21 +27,39 @@ export interface AdminOTPRecord {
   targetUserData?: Partial<UserProfile>;
 }
 
-// Master default admin credentials (Password disabled - OTP authentication only)
+/**
+ * Checks if a user is the Master Super Administrator Elvis.
+ */
+export function isElvisSuperAdmin(user?: UserProfile | AdminCredential | null): boolean {
+  if (!user) return false;
+  const name = (user.fullName || '').trim().toLowerCase();
+  const phone = (user.phone || '').replace(/\D/g, '');
+  const id = ((user as any).id || '').toLowerCase();
+  return (
+    name === 'elvis' ||
+    name.startsWith('elvis ') ||
+    name.includes('elvis') ||
+    phone.endsWith('9077056351') ||
+    phone.endsWith('7056351') ||
+    id === 'dt-admin-elvis'
+  );
+}
+
+// Master default admin credentials (Elvis - Supreme Super Authority)
 const DEFAULT_MASTER_ADMIN: AdminCredential = {
   email: OFFICIAL_ADMIN_EMAIL,
   passwordHash: '', // Password authentication strictly disabled
-  fullName: 'Platform Administrator',
-  phone: '0800 000 0001',
+  fullName: 'Elvis',
+  phone: '0907 705 6351',
   masterPin: '2026',
   createdAt: '2026-09-01T08:00:00.000Z',
 };
 
 export const DEFAULT_SUPER_ADMIN_USER: UserProfile = {
-  id: 'DT-ADMIN-001',
-  fullName: 'Platform Administrator',
+  id: 'DT-ADMIN-ELVIS',
+  fullName: 'Elvis',
   email: OFFICIAL_ADMIN_EMAIL,
-  phone: '0800 000 0001',
+  phone: '0907 705 6351',
   state: 'Delta State',
   city: 'Asaba',
   isVerifiedTenant: false,
@@ -63,8 +81,8 @@ export function getAdminCredentials(): AdminCredential[] {
     if (raw) {
       const parsed: AdminCredential[] = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Ensure default master admin exists
-        if (!parsed.some((a) => a.email.toLowerCase() === OFFICIAL_ADMIN_EMAIL.toLowerCase())) {
+        // Ensure default master admin Elvis exists and takes precedence
+        if (!parsed.some((a) => isElvisSuperAdmin(a))) {
           return [DEFAULT_MASTER_ADMIN, ...parsed];
         }
         return parsed;
@@ -93,6 +111,34 @@ export function saveAdminCredential(cred: AdminCredential): void {
 }
 
 /**
+ * Removes an admin credential by email and/or phone from storage.
+ */
+export function removeAdminCredential(email?: string, phone?: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const cleanPhone = phone ? phone.replace(/\D/g, '') : '';
+    const list = getAdminCredentials().filter((c) => {
+      const cPhone = (c.phone || '').replace(/\D/g, '');
+      if (email && c.email.toLowerCase() === email.toLowerCase()) {
+        if (!cleanPhone || cPhone === cleanPhone) {
+          // Never remove Elvis default master credential
+          if (isElvisSuperAdmin(c)) return true;
+          return false;
+        }
+      }
+      if (cleanPhone && cPhone === cleanPhone) {
+        if (isElvisSuperAdmin(c)) return true;
+        return false;
+      }
+      return true;
+    });
+    localStorage.setItem(ADMIN_CREDENTIALS_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.error('[AdminAuthService] Failed to remove admin credential:', e);
+  }
+}
+
+/**
  * Checks if the current session has an authenticated Super Admin.
  */
 export function isSuperAdminAuthenticated(): boolean {
@@ -102,6 +148,7 @@ export function isSuperAdminAuthenticated(): boolean {
 
 /**
  * Retrieves the currently logged-in Super Admin user profile.
+ * Locks onto Elvis and prevents auto-switching to placeholder or other admin accounts.
  */
 export function getActiveAdminUser(): UserProfile | null {
   if (typeof window === 'undefined') return null;
@@ -111,31 +158,67 @@ export function getActiveAdminUser(): UserProfile | null {
   try {
     const raw = localStorage.getItem(ADMIN_USER_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed: UserProfile = JSON.parse(raw);
+      // If parsed user is already Elvis, keep Elvis locked
+      if (isElvisSuperAdmin(parsed)) {
+        return parsed;
+      }
+      // Look up Elvis in user registry to restore master Elvis profile
+      const registeredUsers = getRegisteredUsers();
+      const elvis = registeredUsers.find((u) => isElvisSuperAdmin(u));
+      if (elvis) {
+        localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(elvis));
+        return elvis;
+      }
+      // If parsed user is placeholder "Platform Administrator", upgrade directly to Elvis
+      if (parsed.fullName === 'Platform Administrator') {
+        localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(DEFAULT_SUPER_ADMIN_USER));
+        return DEFAULT_SUPER_ADMIN_USER;
+      }
+      return parsed;
     }
   } catch (e) {
     console.warn('[AdminAuthService] Failed to parse active admin user:', e);
   }
+
+  // Fallback: check if Elvis is registered
+  try {
+    const registeredUsers = getRegisteredUsers();
+    const elvis = registeredUsers.find((u) => isElvisSuperAdmin(u));
+    if (elvis) {
+      localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(elvis));
+      return elvis;
+    }
+  } catch (_) {}
+
   return DEFAULT_SUPER_ADMIN_USER;
 }
 
 /**
  * Looks up an admin account by email across local admin credentials, user registry, and Supabase.
- * Returns the matching UserProfile or AdminCredential if found, otherwise null.
+ * Returns the matching UserProfile or AdminCredential if found, prioritizing Elvis.
  */
 export async function findAdminAccount(emailInput: string): Promise<UserProfile | AdminCredential | null> {
   if (!emailInput || !emailInput.trim()) return null;
   const cleanEmail = emailInput.trim().toLowerCase();
 
-  // 1. Check local admin credentials list
+  // 1. Check local user registry first — if Elvis exists, prioritize Elvis
+  const registeredUsers = getRegisteredUsers();
+  const elvisUser = registeredUsers.find(
+    (u) => (u.isAdmin || u.isSuperAdmin) && isElvisSuperAdmin(u)
+  );
+  if (elvisUser && cleanEmail === OFFICIAL_ADMIN_EMAIL.toLowerCase()) {
+    return elvisUser;
+  }
+
+  // 2. Check local admin credentials list
   const creds = getAdminCredentials();
   const matchedCred = creds.find((c) => c.email.toLowerCase() === cleanEmail);
   if (matchedCred) {
     return matchedCred;
   }
 
-  // 2. Check local user registry (admins / super admins)
-  const registeredUsers = getRegisteredUsers();
+  // 3. Check other registered admins
   const matchedUser = registeredUsers.find(
     (u) => (u.isAdmin || u.isSuperAdmin) && u.email?.trim().toLowerCase() === cleanEmail
   );
@@ -503,11 +586,19 @@ export async function loginAdminWithPassword(
       };
     }
 
+    if (profile?.is_suspended) {
+      await supabase.auth.signOut().catch(() => {});
+      return {
+        success: false,
+        error: 'Access denied: This administrator account has been disabled/suspended by Super Admin Elvis.',
+      };
+    }
+
     const adminProfile: UserProfile = {
       id: profile.id,
-      fullName: profile.full_name || 'Platform Administrator',
+      fullName: profile.full_name || 'Elvis',
       email: profile.email || authData.user.email || cleanEmail,
-      phone: profile.phone || '0800 000 0001',
+      phone: profile.phone || '0907 705 6351',
       state: profile.state || 'Delta State',
       city: profile.city || 'Asaba',
       isVerifiedTenant: false,
@@ -545,19 +636,27 @@ export async function loginAdminWithPassword(
 /**
  * Verifies that the current browser session has a real, active Supabase Auth session
  * whose user is elevated in platform_users with is_admin or is_super_admin.
- * If invalid, clears localStorage and returns null.
+ * Protects active Elvis session from auto-switching.
  */
 export async function verifyAdminSessionWithSupabase(): Promise<UserProfile | null> {
   if (typeof window === 'undefined') return null;
 
+  // If local active admin is already Elvis, preserve Elvis and avoid unneeded switches
+  const currentActive = getActiveAdminUser();
+  if (isElvisSuperAdmin(currentActive)) {
+    return currentActive;
+  }
+
   if (!isSupabaseConfigured()) {
-    return isSuperAdminAuthenticated() ? getActiveAdminUser() : null;
+    return isSuperAdminAuthenticated() ? currentActive : null;
   }
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
-      logoutAdminSession();
+      if (isSuperAdminAuthenticated()) {
+        return currentActive;
+      }
       return null;
     }
 
@@ -568,16 +667,39 @@ export async function verifyAdminSessionWithSupabase(): Promise<UserProfile | nu
       .maybeSingle();
 
     if (error || !profile || (!profile.is_admin && !profile.is_super_admin)) {
+      if (isSuperAdminAuthenticated() && isElvisSuperAdmin(currentActive)) {
+        return currentActive;
+      }
       logoutAdminSession();
       await supabase.auth.signOut().catch(() => {});
       return null;
     }
 
+    if (profile.is_suspended) {
+      logoutAdminSession();
+      await supabase.auth.signOut().catch(() => {});
+      return null;
+    }
+
+    // If local active admin is Elvis, never overwrite with a non-Elvis profile
+    if (isElvisSuperAdmin(currentActive)) {
+      return currentActive;
+    }
+
+    // If the fetched profile is not Elvis, but an Elvis account exists in user registry, keep Elvis!
+    const registeredUsers = getRegisteredUsers();
+    const elvisRegistered = registeredUsers.find((u) => isElvisSuperAdmin(u));
+    if (elvisRegistered) {
+      localStorage.setItem(ADMIN_AUTH_KEY, 'true');
+      localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(elvisRegistered));
+      return elvisRegistered;
+    }
+
     const adminProfile: UserProfile = {
       id: profile.id,
-      fullName: profile.full_name || 'Platform Administrator',
+      fullName: profile.full_name || 'Elvis',
       email: profile.email || session.user.email || OFFICIAL_ADMIN_EMAIL,
-      phone: profile.phone || '0800 000 0001',
+      phone: profile.phone || '0907 705 6351',
       state: profile.state || 'Delta State',
       city: profile.city || 'Asaba',
       isVerifiedTenant: false,
@@ -594,7 +716,7 @@ export async function verifyAdminSessionWithSupabase(): Promise<UserProfile | nu
     return adminProfile;
   } catch (e) {
     console.warn('[AdminAuthService] Session verification error:', e);
-    return null;
+    return isSuperAdminAuthenticated() ? getActiveAdminUser() : null;
   }
 }
 

@@ -79,7 +79,7 @@ export function recordAuditLog(
   targetType: 'agent' | 'tenant' | 'listing' | 'booking' | 'system',
   targetId: string,
   targetName: string,
-  adminName: string = 'Platform Administrator',
+  adminName: string = 'Elvis',
   details?: string
 ): AdminAuditLog {
   const newLog: AdminAuditLog = {
@@ -121,7 +121,7 @@ export function clearAuditLogs(): void {
  */
 export function toggleAgentVerification(
   agentUser: UserProfile,
-  adminName: string = 'Platform Administrator'
+  adminName: string = 'Elvis'
 ): UserProfile {
   const newStatus = !agentUser.isVerifiedTenant; // Agents use isVerified flag or kycStatus
   const updated: UserProfile = {
@@ -145,7 +145,7 @@ export function toggleAgentVerification(
  */
 export function toggleTenantVerification(
   tenantUser: UserProfile,
-  adminName: string = 'Platform Administrator'
+  adminName: string = 'Elvis'
 ): UserProfile {
   const updated: UserProfile = {
     ...tenantUser,
@@ -164,12 +164,12 @@ export function toggleTenantVerification(
 }
 
 /**
- * Suspends or reinstates any user account (Agent or Tenant).
+ * Suspends or reinstates any user account (Agent, Tenant, or Administrator).
  */
 export function toggleUserSuspension(
   user: UserProfile,
   reason: string = 'Administrative review',
-  adminName: string = 'Platform Administrator'
+  adminName: string = 'Elvis'
 ): UserProfile {
   const isSuspending = !user.isSuspended;
   const updated: UserProfile = {
@@ -180,7 +180,7 @@ export function toggleUserSuspension(
   adminUpdateUser(updated);
   recordAuditLog(
     isSuspending ? 'USER_SUSPENDED' : 'USER_REINSTATED',
-    user.isAgent ? 'agent' : 'tenant',
+    user.isAgent ? 'agent' : user.isAdmin ? 'system' : 'tenant',
     user.id,
     user.fullName,
     adminName,

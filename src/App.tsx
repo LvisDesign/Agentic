@@ -54,7 +54,8 @@ import {
   logoutAdminSession, 
   DEFAULT_SUPER_ADMIN_USER,
   OFFICIAL_ADMIN_EMAIL,
-  verifyAdminSessionWithSupabase
+  verifyAdminSessionWithSupabase,
+  isElvisSuperAdmin
 } from './services/adminAuthService';
 import { getPlatformSettings } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
@@ -78,12 +79,12 @@ const GUEST_USER: UserProfile = {
   createdAt: '',
 };
 
-// Platform Administrator Profile for Super Admin
+// Master Platform Administrator Profile for Super Admin (Elvis)
 const ADMIN_USER: UserProfile = {
-  id: 'DT-ADMIN-001',
-  fullName: 'Platform Administrator',
+  id: 'DT-ADMIN-ELVIS',
+  fullName: 'Elvis',
   email: 'admin@setlla.com',
-  phone: '0800 000 0001',
+  phone: '0907 705 6351',
   state: 'Delta State',
   city: 'Asaba',
   isVerifiedTenant: false,
@@ -1674,9 +1675,14 @@ export function App() {
           currentPath.includes('/partner') || 
           userView === 'partner';
 
+        // Always preserve Elvis as supreme authority and prevent auto-switching
+        const resolved = (activeAdminUser && isElvisSuperAdmin(activeAdminUser))
+          ? activeAdminUser
+          : (isElvisSuperAdmin(verified) ? verified : (getActiveAdminUser() || verified));
+
         setIsAdminAuthenticated(true);
-        setActiveAdminUser(verified);
-        setCurrentUser(verified);
+        setActiveAdminUser(resolved);
+        setCurrentUser(resolved);
 
         if (isPartnerTarget) {
           setUserView('partner');
