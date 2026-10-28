@@ -127,6 +127,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [activeRoleTab, setActiveRoleTab] = useState<'seeker' | 'agent'>(initialRole);
   const [authMode, setAuthMode] = useState<'signup' | 'login' | 'verify_email' | 'forgot_password' | 'reset_password'>(initialMode);
   const [signupStep, setSignupStep] = useState<'persona' | 'form'>(initialMode === 'login' ? 'form' : 'persona');
+  const [formStep, setFormStep] = useState<1 | 2>(1);
   const [selectedPersona, setSelectedPersona] = useState<UserPersona>(initialPersona || (initialRole === 'agent' ? 'lister' : 'job_seeker'));
 
   // Email OTP Verification State (Agents, Employers, Password Recovery)
@@ -171,6 +172,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       } else if (initialRole === 'agent') {
         setSelectedPersona('lister');
       }
+      setFormStep(1);
       setDuplicateError(null);
       setSignupError(null);
 
@@ -331,9 +333,39 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
+  // Step 1 -> Step 2 validation for Tenant / Seeker
+  const handleSeekerNextStep = () => {
+    setSignupError(null);
+    setDuplicateError(null);
+
+    if (!seekerFullName.trim()) {
+      setSignupError('Please enter your full name to proceed.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (!seekerState.trim()) {
+      setSignupError('Please select your state.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const resolvedCity = seekerCity.trim();
+    if (!resolvedCity) {
+      setSignupError(seekerState === 'Delta State' ? 'Please select or enter your preferred city in Delta State.' : 'Please enter your preferred city or town.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setFormStep(2);
+    formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Submission for Tenant / Job Seeker Signup
   const handleSeekerSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formStep === 1) {
+      handleSeekerNextStep();
+      return;
+    }
     setSignupError(null);
     setDuplicateError(null);
 
@@ -454,9 +486,46 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
+  // Step 1 -> Step 2 validation for Agent / Employer
+  const handleAgentNextStep = () => {
+    setSignupError(null);
+    setDuplicateError(null);
+
+    if (!agentFullName.trim()) {
+      setSignupError(selectedPersona === 'employer' ? 'Please enter the contact person name.' : 'Please enter your full name.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (!agencyName.trim()) {
+      setSignupError(selectedPersona === 'employer' ? 'Please enter your company or business name.' : 'Please enter your agency or business name.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (!agentState.trim()) {
+      setSignupError('Please select your operating state.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const resolvedCity = agentState === 'Delta State'
+      ? (agentCitySelection === 'Others' ? customAgentCity.trim() : (agentCitySelection || agentCity))
+      : agentCity.trim();
+    if (!resolvedCity) {
+      setSignupError(agentCitySelection === 'Others' ? 'Please enter your custom city or town name.' : 'Please select or enter your operating city.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setFormStep(2);
+    formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Submission for Agent / Employer Signup
   const handleAgentSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formStep === 1) {
+      handleAgentNextStep();
+      return;
+    }
     setSignupError(null);
     setDuplicateError(null);
 
@@ -1251,6 +1320,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       } else {
                         setActiveRoleTab('agent');
                       }
+                      setFormStep(1);
                       setSignupStep('form');
                     }}
                     className="w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#000004] hover:bg-[#18181B] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
@@ -1260,43 +1330,63 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   </button>
                 </div>
               ) : (
-                /* STEP 2: Profile Form Header */
+                /* PROFILE FORM HEADER (2 Steps) */
                 <>
-                  <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-[#E5E7EB]">
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-[#E5E7EB]">
                     <button
                       type="button"
-                      onClick={() => setSignupStep('persona')}
+                      onClick={() => {
+                        if (formStep === 2) {
+                          setFormStep(1);
+                          setSignupError(null);
+                          setDuplicateError(null);
+                          formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else {
+                          setSignupStep('persona');
+                          setFormStep(1);
+                        }
+                      }}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#000004] hover:underline cursor-pointer"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Back to focus selection</span>
+                      <span>{formStep === 2 ? 'Back to Step 1' : 'Back to focus selection'}</span>
                     </button>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F4F5F7] text-[#000004] border border-[#E5E7EB]">
-                      {selectedPersona === 'job_seeker' && 'Job Seeker'}
-                      {selectedPersona === 'employer' && 'Employer'}
-                      {selectedPersona === 'tenant' && 'Tenant'}
-                      {selectedPersona === 'lister' && 'Property Lister'}
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#F4F5F7] text-[#000004] border border-[#E5E7EB]">
+                      <span>Step {formStep} of 2</span>
+                      <span className="text-[#70798C] font-normal">•</span>
+                      <span>
+                        {selectedPersona === 'job_seeker' && 'Job Seeker'}
+                        {selectedPersona === 'employer' && 'Employer'}
+                        {selectedPersona === 'tenant' && 'Tenant'}
+                        {selectedPersona === 'lister' && 'Property Lister'}
+                      </span>
                     </span>
                   </div>
 
-                  <div className="mb-2.5 sm:mb-3">
+                  {/* 2-Step Progress Indicator */}
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <div className={`h-1 flex-1 rounded-full transition-all duration-300 ${formStep >= 1 ? 'bg-[#000004]' : 'bg-[#E5E7EB]'}`} />
+                    <div className={`h-1 flex-1 rounded-full transition-all duration-300 ${formStep >= 2 ? 'bg-[#000004]' : 'bg-[#E5E7EB]'}`} />
+                  </div>
+
+                  <div className="mb-2 sm:mb-2.5">
                     <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
-                      {selectedPersona === 'job_seeker'
-                        ? 'Create Job Seeker Account'
-                        : selectedPersona === 'employer'
-                          ? 'Employer Partner Registration'
-                          : selectedPersona === 'lister'
-                            ? 'Agent Partner Registration'
-                            : 'Create Tenant Account'}
+                      {formStep === 1
+                        ? (selectedPersona === 'employer'
+                            ? 'Company & Office Location'
+                            : selectedPersona === 'lister'
+                            ? 'Agency & Operating Location'
+                            : 'Personal Profile & Location')
+                        : 'Contact & Account Security'}
                     </h2>
                     <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
-                      {selectedPersona === 'job_seeker'
-                        ? 'Find career opportunities & apply with your CV in 1 tap.'
-                        : selectedPersona === 'employer'
-                          ? 'Post open vacancies & discover local talent in Delta State.'
-                          : selectedPersona === 'lister'
-                            ? 'List verified rentals and connect directly with tenants.'
-                            : 'Direct access to verified homes & scam-free inspections.'}
+                      {formStep === 1
+                        ? (selectedPersona === 'employer'
+                            ? 'Step 1 of 2: Organization category, contact person, and office branch.'
+                            : selectedPersona === 'lister'
+                            ? 'Step 1 of 2: Listing category, business identity, and operating city.'
+                            : 'Step 1 of 2: Enter your name and preferred location.')
+                        : 'Step 2 of 2: Enter your login credentials and contact details.'}
                     </p>
                   </div>
                 </>
@@ -1660,7 +1750,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     </div>
                   </form>
                 ) : signupStep === 'persona' ? null : activeRoleTab === 'seeker' ? (
-                  /* --- 2. TENANT / JOB SEEKER SIGNUP FORM --- */
+                  /* --- 2. TENANT / JOB SEEKER SIGNUP FORM (2 STEPS) --- */
                   <form onSubmit={handleSeekerSignup} className="space-y-2.5 sm:space-y-3 text-xs">
                     {/* Form Validation Alert Banner */}
                     {signupError && (
@@ -1697,269 +1787,284 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     )}
 
-                    {/* Full Name & Phone Number */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
-                      <div>
-                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          Full Name <span className="text-[#F0544F]">*</span>
-                        </label>
-                        <div className="relative">
-                          <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <input
-                            type="text"
-                            required
-                            autoComplete="name"
-                            placeholder="e.g. Chinedu Okafor"
-                            value={seekerFullName}
-                            onChange={(e) => setSeekerFullName(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          Phone Number <span className="text-[#F0544F]">*</span>
-                        </label>
-                        <div className="relative">
-                          <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                            duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                              ? 'text-[#F0544F]'
-                              : 'text-[#70798C]'
-                          }`} />
-                          <input
-                            type="tel"
-                            required
-                            inputMode="tel"
-                            autoComplete="tel"
-                            placeholder="0803 000 0000"
-                            value={seekerPhone}
-                            onChange={(e) => {
-                              setSeekerPhone(e.target.value);
-                              if (duplicateError) setDuplicateError(null);
-                            }}
-                            className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                                ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
-                                : 'border-[#E5E7EB]'
-                            }`}
-                          />
-                        </div>
-                        {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
-                          <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>Phone already registered.</span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Email Address - COMPULSORY for Job Seekers */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-[#70798C]">
-                          Email Address {selectedPersona === 'job_seeker' ? <span className="text-[#F0544F]">*</span> : null}
-                        </label>
-                        {selectedPersona === 'job_seeker' ? (
-                          <span className="text-[10px] text-[#F95700] font-semibold">Compulsory for job alerts</span>
-                        ) : (
-                          <span className="text-[10px] text-[#70798C] font-normal">(Optional)</span>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                          duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                            ? 'text-[#F0544F]'
-                            : 'text-[#70798C]'
-                        }`} />
-                        <input
-                          type="email"
-                          required={selectedPersona === 'job_seeker'}
-                          autoComplete="email"
-                          inputMode="email"
-                          spellCheck={false}
-                          placeholder={selectedPersona === 'job_seeker' ? 'e.g. name@domain.com (for job & interview alerts)' : 'name@email.com'}
-                          value={seekerEmail}
-                          onChange={(e) => {
-                            setSeekerEmail(e.target.value);
-                            if (duplicateError) setDuplicateError(null);
-                          }}
-                          className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
-                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                              ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
-                              : 'border-[#E5E7EB]'
-                          }`}
-                        />
-                      </div>
-                      {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                        <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>Email already registered.</span>
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Password - COMPULSORY for all users except tenants */}
-                    {selectedPersona === 'job_seeker' && (
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#70798C]">
-                            Create Password <span className="text-[#F0544F]">*</span>
+                    {formStep === 1 ? (
+                      /* --- STEP 1: Personal Profile & Location --- */
+                      <div className="space-y-2.5 sm:space-y-3 animate-fade-in">
+                        {/* Full Name */}
+                        <div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            Full Name <span className="text-[#F0544F]">*</span>
                           </label>
-                          <span className="text-[10px] text-[#F95700] font-semibold">
-                            Minimum 6 characters
+                          <div className="relative">
+                            <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type="text"
+                              required
+                              autoFocus
+                              autoComplete="name"
+                              placeholder="e.g. Chinedu Okafor"
+                              value={seekerFullName}
+                              onChange={(e) => {
+                                setSeekerFullName(e.target.value);
+                                if (signupError) setSignupError(null);
+                              }}
+                              className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                            />
+                          </div>
+                        </div>
+
+                        {/* State & Preferred City (Both Compulsory) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                          <div>
+                            <StateDropdown
+                              value={seekerState}
+                              onChange={(val) => {
+                                setSeekerState(val);
+                                if (val !== 'Delta State' && seekerCity === 'Asaba') {
+                                  setSeekerCity('');
+                                }
+                                if (signupError) setSignupError(null);
+                              }}
+                              label={selectedPersona === 'job_seeker' ? 'Target State' : 'Choose State'}
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-xs font-semibold text-[#70798C]">
+                                {selectedPersona === 'job_seeker' ? 'Preferred Job Location' : (seekerState === 'Delta State' ? 'Preferred City' : 'Preferred City / Town')} <span className="text-[#F0544F]">*</span>
+                              </label>
+                              {seekerCity && (
+                                <span className="text-[10px] text-[#342A21] font-semibold bg-[#342A21]/5 px-1.5 py-0.5 rounded">
+                                  {seekerCity}
+                                </span>
+                              )}
+                            </div>
+                            {seekerState === 'Delta State' ? (
+                              <CustomDropdown
+                                options={DELTA_CITY_OPTIONS}
+                                value={seekerCity}
+                                onChange={(c) => {
+                                  setSeekerCity(c);
+                                  if (signupError) setSignupError(null);
+                                }}
+                                headerTitle="Cities & Towns"
+                                placeholder={selectedPersona === 'job_seeker' ? 'Select Preferred City (e.g. Asaba, Warri)' : 'Select City (e.g. Asaba, Warri, Ughelli)'}
+                                icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                                variant="form"
+                                allowCustomInput={true}
+                              />
+                            ) : (
+                              <input
+                                type="text"
+                                required
+                                placeholder={`e.g. City in ${seekerState}`}
+                                value={seekerCity}
+                                onChange={(e) => {
+                                  setSeekerCity(e.target.value);
+                                  if (signupError) setSignupError(null);
+                                }}
+                                className="w-full px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Quick 1-line Info Notice */}
+                        <div className="px-2.5 py-1.5 rounded-lg bg-[#F4F5F7] border border-[#E5E7EB] flex items-center gap-2 text-[11px] text-[#70798C]">
+                          <Info className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
+                          <span>
+                            {selectedPersona === 'job_seeker'
+                              ? 'Fast 1-tap CV applications & direct email notifications from employers.'
+                              : 'Zero inspection fees are charged until booking acceptance.'}
                           </span>
                         </div>
-                        <div className="relative">
-                          <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <input
-                            type={showSeekerPassword ? 'text' : 'password'}
-                            required
-                            minLength={6}
-                            autoComplete="new-password"
-                            placeholder="Create a secure password (min 6 characters)"
-                            value={seekerPassword}
-                            onChange={(e) => {
-                              setSeekerPassword(e.target.value);
-                              if (signupError) setSignupError(null);
-                            }}
-                            className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
-                          />
+
+                        {/* Step 1 Next Button */}
+                        <div className="pt-2">
                           <button
                             type="button"
-                            onClick={() => setShowSeekerPassword(!showSeekerPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
-                            tabIndex={-1}
-                            title={showSeekerPassword ? "Hide password" : "Show password"}
+                            onClick={handleSeekerNextStep}
+                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
                           >
-                            {showSeekerPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            <span>Next: Contact & Security</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* --- STEP 2: Contact Details & Security --- */
+                      <div className="space-y-2.5 sm:space-y-3 animate-fade-in">
+                        {/* Phone Number */}
+                        <div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            Phone Number <span className="text-[#F0544F]">*</span>
+                          </label>
+                          <div className="relative">
+                            <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                                ? 'text-[#F0544F]'
+                                : 'text-[#70798C]'
+                            }`} />
+                            <input
+                              type="tel"
+                              required
+                              autoFocus
+                              inputMode="tel"
+                              autoComplete="tel"
+                              placeholder="0803 000 0000"
+                              value={seekerPhone}
+                              onChange={(e) => {
+                                setSeekerPhone(e.target.value);
+                                if (duplicateError) setDuplicateError(null);
+                                if (signupError) setSignupError(null);
+                              }}
+                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                                duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                                  ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                                  : 'border-[#E5E7EB]'
+                              }`}
+                            />
+                          </div>
+                          {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                            <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>Phone already registered.</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Email Address - COMPULSORY for Job Seekers */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-[#70798C]">
+                              Email Address {selectedPersona === 'job_seeker' ? <span className="text-[#F0544F]">*</span> : null}
+                            </label>
+                            {selectedPersona === 'job_seeker' ? (
+                              <span className="text-[10px] text-[#F95700] font-semibold">Compulsory for job alerts</span>
+                            ) : (
+                              <span className="text-[10px] text-[#70798C] font-normal">(Optional)</span>
+                            )}
+                          </div>
+                          <div className="relative">
+                            <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                              duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                ? 'text-[#F0544F]'
+                                : 'text-[#70798C]'
+                            }`} />
+                            <input
+                              type="email"
+                              required={selectedPersona === 'job_seeker'}
+                              autoComplete="email"
+                              inputMode="email"
+                              spellCheck={false}
+                              placeholder={selectedPersona === 'job_seeker' ? 'e.g. name@domain.com (for job & interview alerts)' : 'name@email.com'}
+                              value={seekerEmail}
+                              onChange={(e) => {
+                                setSeekerEmail(e.target.value);
+                                if (duplicateError) setDuplicateError(null);
+                                if (signupError) setSignupError(null);
+                              }}
+                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                                duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                  ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                                  : 'border-[#E5E7EB]'
+                              }`}
+                            />
+                          </div>
+                          {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                            <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>Email already registered.</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Password - COMPULSORY for Job Seekers */}
+                        {selectedPersona === 'job_seeker' && (
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-xs font-semibold text-[#70798C]">
+                                Create Password <span className="text-[#F0544F]">*</span>
+                              </label>
+                              <span className="text-[10px] text-[#F95700] font-semibold">
+                                Minimum 6 characters
+                              </span>
+                            </div>
+                            <div className="relative">
+                              <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              <input
+                                type={showSeekerPassword ? 'text' : 'password'}
+                                required
+                                minLength={6}
+                                autoComplete="new-password"
+                                placeholder="Create a secure password (min 6 characters)"
+                                value={seekerPassword}
+                                onChange={(e) => {
+                                  setSeekerPassword(e.target.value);
+                                  if (signupError) setSignupError(null);
+                                }}
+                                className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowSeekerPassword(!showSeekerPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                                tabIndex={-1}
+                                title={showSeekerPassword ? "Hide password" : "Show password"}
+                              >
+                                {showSeekerPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Step 2 Back & Submit Buttons */}
+                        <div className="pt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormStep(1);
+                              setSignupError(null);
+                              formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] text-[#000004] font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shrink-0"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Back</span>
+                          </button>
+
+                          <button
+                            type="submit"
+                            disabled={isSubmittingSeeker}
+                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                          >
+                            {isSubmittingSeeker ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                <span>Setting Up Account...</span>
+                              </>
+                            ) : selectedPersona === 'job_seeker' ? (
+                              <>
+                                <Briefcase className="w-4 h-4 text-white" />
+                                <span>Create Job Seeker Account</span>
+                                <ArrowRight className="w-4 h-4" />
+                              </>
+                            ) : (
+                              <>
+                                <User className="w-4 h-4 text-[#F95700]" />
+                                <span>Create Tenant Account</span>
+                                <ArrowRight className="w-4 h-4" />
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
                     )}
-
-                    {/* State & Preferred City (Both Compulsory - NEVER Hidden) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
-                      <div>
-                        <StateDropdown
-                          value={seekerState}
-                          onChange={(val) => {
-                            setSeekerState(val);
-                            if (val !== 'Delta State' && seekerCity === 'Asaba') {
-                              setSeekerCity('');
-                            }
-                          }}
-                          label={selectedPersona === 'job_seeker' ? 'Target State' : 'Choose State'}
-                          required
-                        />
-                      </div>
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#70798C]">
-                            {selectedPersona === 'job_seeker' ? 'Preferred Job Location' : (seekerState === 'Delta State' ? 'Preferred City' : 'Preferred City / Town')} <span className="text-[#F0544F]">*</span>
-                          </label>
-                          {seekerCity && (
-                            <span className="text-[10px] text-[#342A21] font-semibold bg-[#342A21]/5 px-1.5 py-0.5 rounded">
-                              {seekerCity}
-                            </span>
-                          )}
-                        </div>
-                        {seekerState === 'Delta State' ? (
-                          <CustomDropdown
-                            options={DELTA_CITY_OPTIONS}
-                            value={seekerCity}
-                            onChange={(c) => setSeekerCity(c)}
-                            headerTitle="Cities & Towns"
-                            placeholder={selectedPersona === 'job_seeker' ? 'Select Preferred City (e.g. Asaba, Warri)' : 'Select City (e.g. Asaba, Warri, Ughelli)'}
-                            icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
-                            variant="form"
-                            allowCustomInput={true}
-                          />
-                        ) : (
-                          <input
-                            type="text"
-                            required
-                            placeholder={`e.g. City in ${seekerState}`}
-                            value={seekerCity}
-                            onChange={(e) => setSeekerCity(e.target.value)}
-                            className="w-full px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Quick 1-line Info Notice */}
-                    <div className="px-2.5 py-1.5 rounded-lg bg-[#F4F5F7] border border-[#E5E7EB] flex items-center gap-2 text-[11px] text-[#70798C]">
-                      <Info className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
-                      <span>
-                        {selectedPersona === 'job_seeker'
-                          ? 'Fast 1-tap CV applications & direct email notifications from employers.'
-                          : 'Zero inspection fees are charged until booking acceptance.'}
-                      </span>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="pt-1">
-                      {signupError && (
-                        <div className="mb-2 p-2.5 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] flex items-center gap-2 animate-fade-in shadow-xs">
-                          <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0" />
-                          <span className="text-xs font-semibold text-[#F0544F]">{signupError}</span>
-                        </div>
-                      )}
-
-                      {duplicateError && (
-                        <div className="mb-2 p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-bold text-xs text-[#000004] leading-tight">Account Already Exists</h5>
-                              <p className="text-[11px] text-[#70798C] leading-relaxed mt-0.5">
-                                {duplicateError.message}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="pt-0.5 flex justify-end">
-                            <button
-                              type="button"
-                              onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                              className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
-                            >
-                              <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
-                              <span>Sign In With This Account</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      <button
-                        type="submit"
-                        disabled={isSubmittingSeeker}
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
-                      >
-                        {isSubmittingSeeker ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin text-white" />
-                            <span>Setting Up Account...</span>
-                          </>
-                        ) : selectedPersona === 'job_seeker' ? (
-                          <>
-                            <Briefcase className="w-4 h-4 text-white" />
-                            <span>Create Job Seeker Account</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        ) : (
-                          <>
-                            <User className="w-4 h-4 text-[#F95700]" />
-                            <span>Create Tenant Account</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-                    </div>
                   </form>
                 ) : (
-                  /* --- 3. AGENT SIGNUP FORM --- */
+                  /* --- 3. AGENT SIGNUP FORM (2 STEPS) --- */
                   <form onSubmit={handleAgentSignup} className="space-y-2.5 sm:space-y-3 text-xs">
                     {/* Form Validation Alert Banner */}
                     {signupError && (
@@ -1996,427 +2101,443 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
                     )}
 
-                    {/* Account Type Selector */}
-                    <div>
-                      <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        {selectedPersona === 'employer' ? 'Organization Category' : 'Listing Category'} <span className="text-[#F0544F]">*</span>
-                      </label>
-                      <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setAgentType('agency')}
-                          className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
-                            agentType === 'agency'
-                              ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
-                              : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
-                          }`}
-                        >
-                          {selectedPersona === 'employer' ? 'Corporate / Firm' : 'Agency / Firm'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAgentType('individual')}
-                          className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
-                            agentType === 'individual'
-                              ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
-                              : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
-                          }`}
-                        >
-                          {selectedPersona === 'employer' ? 'Recruiter / HR' : 'Realtor / Agent'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAgentType('landlord')}
-                          className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
-                            agentType === 'landlord'
-                              ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
-                              : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
-                          }`}
-                        >
-                          {selectedPersona === 'employer' ? 'Business Owner' : 'Direct Landlord'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Full Name & Agency / Company Name */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
-                      <div>
-                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          {selectedPersona === 'employer' ? 'Contact Person Name' : 'Agent Full Name'} <span className="text-[#F0544F]">*</span>
-                        </label>
-                        <div className="relative">
-                          <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <input
-                            type="text"
-                            required
-                            autoComplete="name"
-                            placeholder="e.g. Victor Ossai"
-                            value={agentFullName}
-                            onChange={(e) => setAgentFullName(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                          {selectedPersona === 'employer' ? 'Company / Business Name' : 'Agency / Business Name'} <span className="text-[#F0544F]">*</span>
-                        </label>
-                        <div className="relative">
-                          <Building2 className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                          <input
-                            type="text"
-                            required
-                            autoComplete="organization"
-                            placeholder={selectedPersona === 'employer' ? 'e.g. Apex Tech Solutions Ltd' : 'e.g. Apex Real Estate Ltd'}
-                            value={agencyName}
-                            onChange={(e) => setAgencyName(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Official Email - COMPULSORY for both Lister & Employer */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-[#70798C]">
-                          {selectedPersona === 'employer' ? 'Official Work Email' : 'Official Agent Email'} <span className="text-[#F0544F]">*</span>
-                        </label>
-                        <span className="text-[10px] text-[#F95700] font-semibold">
-                          {selectedPersona === 'employer' ? 'Compulsory for candidate alerts' : 'Compulsory for notifications & sign-in'}
-                        </span>
-                      </div>
-                      <div className="relative">
-                        <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                          duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                            ? 'text-[#F0544F]'
-                            : 'text-[#70798C]'
-                        }`} />
-                        <input
-                          type="email"
-                          required
-                          autoComplete="email"
-                          inputMode="email"
-                          spellCheck={false}
-                          placeholder={selectedPersona === 'employer' ? 'e.g. hr@company.com or recruiting@domain.com' : 'e.g. agent@agency.ng or name@domain.com'}
-                          value={agentEmail}
-                          onChange={(e) => {
-                            setAgentEmail(e.target.value);
-                            if (duplicateError) setDuplicateError(null);
-                            if (signupError) setSignupError(null);
-                          }}
-                          className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
-                            duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
-                              ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
-                              : 'border-[#E5E7EB]'
-                          }`}
-                        />
-                      </div>
-                      {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
-                        <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>Email already registered.</span>
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Create Password - COMPULSORY for both Lister & Employer */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-[#70798C]">
-                          Create Password <span className="text-[#F0544F]">*</span>
-                        </label>
-                        <span className="text-[10px] text-[#F95700] font-semibold">
-                          Minimum 6 characters
-                        </span>
-                      </div>
-                      <div className="relative">
-                        <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        <input
-                          type={showAgentPassword ? 'text' : 'password'}
-                          required
-                          minLength={6}
-                          autoComplete="new-password"
-                          placeholder="Create a secure password (min 6 characters)"
-                          value={agentPassword}
-                          onChange={(e) => {
-                            setAgentPassword(e.target.value);
-                            if (signupError) setSignupError(null);
-                          }}
-                          className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowAgentPassword(!showAgentPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
-                          tabIndex={-1}
-                          title={showAgentPassword ? "Hide password" : "Show password"}
-                        >
-                          {showAgentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Direct Phone & WhatsApp Toggle */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-[#70798C]">
-                          {selectedPersona === 'employer' ? 'Contact Phone Number' : 'Direct Phone Number'} <span className="text-[#F0544F]">*</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer select-none text-[10px] text-[#70798C] hover:text-[#000004]">
-                          <input
-                            type="checkbox"
-                            checked={sameAsPhone}
-                            onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
-                            className="w-3.5 h-3.5 rounded accent-[#F95700]"
-                          />
-                          <span>WhatsApp is same</span>
-                        </label>
-                      </div>
-                      <div className="relative">
-                        <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                          duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                            ? 'text-[#F0544F]'
-                            : 'text-[#70798C]'
-                        }`} />
-                        <input
-                          type="tel"
-                          required
-                          inputMode="tel"
-                          autoComplete="tel"
-                          placeholder="0803 123 4567"
-                          value={agentPhone}
-                          onChange={(e) => handleAgentPhoneChange(e.target.value)}
-                          className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all ${
-                            duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                              ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
-                              : 'border-[#E5E7EB]'
-                          }`}
-                        />
-                      </div>
-                      {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
-                        <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>Phone already registered.</span>
-                        </p>
-                      )}
-
-                      {/* Display separate WhatsApp input ONLY when unchecked */}
-                      {!sameAsPhone && (
-                        <div className="mt-2 animate-fade-in">
-                          <label className="block text-[11px] font-semibold text-[#70798C] mb-1">
-                            WhatsApp Number <span className="text-[#F0544F]">*</span>
+                    {formStep === 1 ? (
+                      /* --- STEP 1: Organization & Operating Location --- */
+                      <div className="space-y-2.5 sm:space-y-3 animate-fade-in">
+                        {/* Account Type Selector */}
+                        <div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            {selectedPersona === 'employer' ? 'Organization Category' : 'Listing Category'} <span className="text-[#F0544F]">*</span>
                           </label>
-                          <div className="relative">
-                            <WhatsAppIcon className="w-4 h-4 text-emerald-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                            <input
-                              type="tel"
-                              required={!sameAsPhone}
-                              inputMode="tel"
-                              autoComplete="tel"
-                              placeholder="0803 000 0000"
-                              value={agentWhatsapp}
-                              onChange={(e) => setAgentWhatsapp(e.target.value)}
-                              className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]"
-                            />
+                          <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setAgentType('agency')}
+                              className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
+                                agentType === 'agency'
+                                  ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
+                                  : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                              }`}
+                            >
+                              {selectedPersona === 'employer' ? 'Corporate / Firm' : 'Agency / Firm'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAgentType('individual')}
+                              className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
+                                agentType === 'individual'
+                                  ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
+                                  : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                              }`}
+                            >
+                              {selectedPersona === 'employer' ? 'Recruiter / HR' : 'Realtor / Agent'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAgentType('landlord')}
+                              className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
+                                agentType === 'landlord'
+                                  ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
+                                  : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                              }`}
+                            >
+                              {selectedPersona === 'employer' ? 'Business Owner' : 'Direct Landlord'}
+                            </button>
                           </div>
                         </div>
-                      )}
-                    </div>
 
-                    {/* Operating State & City (Both Compulsory - NEVER Hidden) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
-                      <div>
-                        <StateDropdown
-                          value={agentState}
-                          onChange={(val) => {
-                            setAgentState(val);
-                            if (val !== 'Delta State') {
-                              setAgentCitySelection('');
-                              setAgentCity('');
-                            }
-                          }}
-                          label={selectedPersona === 'employer' ? 'Office State' : 'Operating State'}
-                          required
-                        />
-                      </div>
+                        {/* Full Name & Agency / Company Name */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                          <div>
+                            <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                              {selectedPersona === 'employer' ? 'Contact Person Name' : 'Agent Full Name'} <span className="text-[#F0544F]">*</span>
+                            </label>
+                            <div className="relative">
+                              <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              <input
+                                type="text"
+                                required
+                                autoFocus
+                                autoComplete="name"
+                                placeholder="e.g. Victor Ossai"
+                                value={agentFullName}
+                                onChange={(e) => {
+                                  setAgentFullName(e.target.value);
+                                  if (signupError) setSignupError(null);
+                                }}
+                                className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                              />
+                            </div>
+                          </div>
 
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-semibold text-[#70798C]">
-                            {selectedPersona === 'employer'
-                              ? 'Office / Branch City'
-                              : (agentState === 'Delta State' ? 'Operating City' : 'Operating City / Town')} <span className="text-[#F0544F]">*</span>
-                          </label>
-                          {agentCitySelection && agentCitySelection !== 'Others' && (
-                            <span className="text-[10px] text-[#70798C] font-semibold">
-                              {agentCitySelection}
-                            </span>
-                          )}
+                          <div>
+                            <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                              {selectedPersona === 'employer' ? 'Company / Business Name' : 'Agency / Business Name'} <span className="text-[#F0544F]">*</span>
+                            </label>
+                            <div className="relative">
+                              <Building2 className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              <input
+                                type="text"
+                                required
+                                autoComplete="organization"
+                                placeholder={selectedPersona === 'employer' ? 'e.g. Apex Tech Solutions Ltd' : 'e.g. Apex Real Estate Ltd'}
+                                value={agencyName}
+                                onChange={(e) => {
+                                  setAgencyName(e.target.value);
+                                  if (signupError) setSignupError(null);
+                                }}
+                                className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        {agentState === 'Delta State' ? (
-                          <div className="space-y-1.5">
-                            <CustomDropdown
-                              options={[
-                                ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
-                                {
-                                  value: 'Others',
-                                  label: 'Others (Enter City Manually)',
-                                  subtitle: 'If your town or community is not listed above',
-                                  badge: 'Manual Entry',
-                                },
-                              ]}
-                              value={agentCitySelection}
+
+                        {/* Operating State & City (Both Compulsory) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                          <div>
+                            <StateDropdown
+                              value={agentState}
                               onChange={(val) => {
-                                setAgentCitySelection(val);
-                                if (val !== 'Others') {
-                                  setAgentCity(val);
-                                } else {
-                                  setAgentCity(customAgentCity || '');
+                                setAgentState(val);
+                                if (val !== 'Delta State') {
+                                  setAgentCitySelection('');
+                                  setAgentCity('');
                                 }
+                                if (signupError) setSignupError(null);
                               }}
-                              headerTitle="Cities & Towns"
-                              placeholder={selectedPersona === 'employer' ? "Select Company City (e.g. Asaba, Warri)" : "Select Operating City (e.g. Asaba, Warri)"}
-                              icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
-                              variant="form"
-                              allowCustomInput={true}
+                              label={selectedPersona === 'employer' ? 'Office State' : 'Operating State'}
+                              required
                             />
-                            {agentCitySelection === 'Others' && (
-                              <div className="animate-fade-in">
-                                <input
-                                  type="text"
-                                  required
-                                  placeholder="Enter town or community name"
-                                  value={customAgentCity}
-                                  onChange={(e) => {
-                                    setCustomAgentCity(e.target.value);
-                                    setAgentCity(e.target.value);
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="text-xs font-semibold text-[#70798C]">
+                                {selectedPersona === 'employer'
+                                  ? 'Office / Branch City'
+                                  : (agentState === 'Delta State' ? 'Operating City' : 'Operating City / Town')} <span className="text-[#F0544F]">*</span>
+                              </label>
+                              {agentCitySelection && agentCitySelection !== 'Others' && (
+                                <span className="text-[10px] text-[#70798C] font-semibold">
+                                  {agentCitySelection}
+                                </span>
+                              )}
+                            </div>
+                            {agentState === 'Delta State' ? (
+                              <div className="space-y-1.5">
+                                <CustomDropdown
+                                  options={[
+                                    ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
+                                    {
+                                      value: 'Others',
+                                      label: 'Others (Enter City Manually)',
+                                      subtitle: 'If your town or community is not listed above',
+                                      badge: 'Manual Entry',
+                                    },
+                                  ]}
+                                  value={agentCitySelection}
+                                  onChange={(val) => {
+                                    setAgentCitySelection(val);
+                                    if (val !== 'Others') {
+                                      setAgentCity(val);
+                                    } else {
+                                      setAgentCity(customAgentCity || '');
+                                    }
+                                    if (signupError) setSignupError(null);
                                   }}
-                                  className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F95700]/5 focus:bg-white"
+                                  headerTitle="Cities & Towns"
+                                  placeholder={selectedPersona === 'employer' ? "Select Company City (e.g. Asaba, Warri)" : "Select Operating City (e.g. Asaba, Warri)"}
+                                  icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                                  variant="form"
+                                  allowCustomInput={true}
                                 />
+                                {agentCitySelection === 'Others' && (
+                                  <div className="animate-fade-in">
+                                    <input
+                                      type="text"
+                                      required
+                                      placeholder="Enter town or community name"
+                                      value={customAgentCity}
+                                      onChange={(e) => {
+                                        setCustomAgentCity(e.target.value);
+                                        setAgentCity(e.target.value);
+                                        if (signupError) setSignupError(null);
+                                      }}
+                                      className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F95700]/5 focus:bg-white font-medium"
+                                    />
+                                  </div>
+                                )}
                               </div>
+                            ) : (
+                              <input
+                                type="text"
+                                required
+                                placeholder={`e.g. City in ${agentState}`}
+                                value={agentCity}
+                                onChange={(e) => {
+                                  setAgentCity(e.target.value);
+                                  if (signupError) setSignupError(null);
+                                }}
+                                className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white font-medium"
+                              />
                             )}
                           </div>
-                        ) : (
-                          <input
-                            type="text"
-                            required
-                            placeholder={`e.g. City in ${agentState}`}
-                            value={agentCity}
-                            onChange={(e) => setAgentCity(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white"
-                          />
-                        )}
-                      </div>
-                    </div>
+                        </div>
 
-                    {/* Optional CAC / Business Verification Section */}
-                    <div className="pt-0.5">
-                      {!showOptionalAgentFields ? (
-                        <button
-                          type="button"
-                          onClick={() => setShowOptionalAgentFields(true)}
-                          className="text-xs font-semibold text-[#F95700] hover:text-[#E65100] inline-flex items-center gap-1 cursor-pointer py-1"
-                        >
-                          <ChevronDown className="w-3.5 h-3.5" />
-                          <span>
-                            {selectedPersona === 'employer'
-                              ? 'Add Business Registration / CAC Number (Optional)'
-                              : 'Add CAC / License / Reg Number (Optional)'}
-                          </span>
-                        </button>
-                      ) : (
-                        <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] animate-fade-in">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-[#000004]">Business Verification (Optional)</span>
+                        {/* Step 1 Next Button */}
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={handleAgentNextStep}
+                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                          >
+                            <span>Next: Contact & Security</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* --- STEP 2: Contact Details & Security --- */
+                      <div className="space-y-2.5 sm:space-y-3 animate-fade-in">
+                        {/* Official Email - COMPULSORY for both Lister & Employer */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-[#70798C]">
+                              {selectedPersona === 'employer' ? 'Official Work Email' : 'Official Agent Email'} <span className="text-[#F0544F]">*</span>
+                            </label>
+                            <span className="text-[10px] text-[#F95700] font-semibold">
+                              {selectedPersona === 'employer' ? 'Compulsory for candidate alerts' : 'Compulsory for notifications & sign-in'}
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                              duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                ? 'text-[#F0544F]'
+                                : 'text-[#70798C]'
+                            }`} />
+                            <input
+                              type="email"
+                              required
+                              autoFocus
+                              autoComplete="email"
+                              inputMode="email"
+                              spellCheck={false}
+                              placeholder={selectedPersona === 'employer' ? 'e.g. hr@company.com or recruiting@domain.com' : 'e.g. agent@agency.ng or name@domain.com'}
+                              value={agentEmail}
+                              onChange={(e) => {
+                                setAgentEmail(e.target.value);
+                                if (duplicateError) setDuplicateError(null);
+                                if (signupError) setSignupError(null);
+                              }}
+                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                                duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
+                                  ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                                  : 'border-[#E5E7EB]'
+                              }`}
+                            />
+                          </div>
+                          {duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both') && (
+                            <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>Email already registered.</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Create Password - COMPULSORY for both Lister & Employer */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-[#70798C]">
+                              Create Password <span className="text-[#F0544F]">*</span>
+                            </label>
+                            <span className="text-[10px] text-[#F95700] font-semibold">
+                              Minimum 6 characters
+                            </span>
+                          </div>
+                          <div className="relative">
+                            <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type={showAgentPassword ? 'text' : 'password'}
+                              required
+                              minLength={6}
+                              autoComplete="new-password"
+                              placeholder="Create a secure password (min 6 characters)"
+                              value={agentPassword}
+                              onChange={(e) => {
+                                setAgentPassword(e.target.value);
+                                if (signupError) setSignupError(null);
+                              }}
+                              className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                            />
                             <button
                               type="button"
-                              onClick={() => setShowOptionalAgentFields(false)}
-                              className="text-[11px] text-[#70798C] hover:text-[#000004] inline-flex items-center gap-0.5 cursor-pointer"
+                              onClick={() => setShowAgentPassword(!showAgentPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                              tabIndex={-1}
+                              title={showAgentPassword ? "Hide password" : "Show password"}
                             >
-                              <ChevronUp className="w-3 h-3" />
-                              <span>Hide</span>
+                              {showAgentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
-                          <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <label className="text-xs font-semibold text-[#70798C]">
-                                  {selectedPersona === 'employer' ? 'CAC / RC Number (Optional)' : 'CAC / License No. (Optional)'}
-                                </label>
-                                <span className="text-[10px] text-[#342A21] bg-[#342A21]/5 px-1 py-0.5 rounded font-semibold">
-                                  {selectedPersona === 'employer' ? 'Verified Employer' : 'Badge'}
-                                </span>
-                              </div>
+                        </div>
+
+                        {/* Direct Phone & WhatsApp Toggle */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-[#70798C]">
+                              {selectedPersona === 'employer' ? 'Contact Phone Number' : 'Direct Phone Number'} <span className="text-[#F0544F]">*</span>
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer select-none text-[10px] text-[#70798C] hover:text-[#000004]">
+                              <input
+                                type="checkbox"
+                                checked={sameAsPhone}
+                                onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
+                                className="w-3.5 h-3.5 rounded accent-[#F95700]"
+                              />
+                              <span>WhatsApp is same</span>
+                            </label>
+                          </div>
+                          <div className="relative">
+                            <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
+                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                                ? 'text-[#F0544F]'
+                                : 'text-[#70798C]'
+                            }`} />
+                            <input
+                              type="tel"
+                              required
+                              inputMode="tel"
+                              autoComplete="tel"
+                              placeholder="0803 123 4567"
+                              value={agentPhone}
+                              onChange={(e) => handleAgentPhoneChange(e.target.value)}
+                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                                duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                                  ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                                  : 'border-[#E5E7EB]'
+                              }`}
+                            />
+                          </div>
+                          {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                            <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>Phone already registered.</span>
+                            </p>
+                          )}
+
+                          {/* Display separate WhatsApp input ONLY when unchecked */}
+                          {!sameAsPhone && (
+                            <div className="mt-2 animate-fade-in">
+                              <label className="block text-[11px] font-semibold text-[#70798C] mb-1">
+                                WhatsApp Number <span className="text-[#F0544F]">*</span>
+                              </label>
                               <div className="relative">
-                                <FileText className="w-4 h-4 text-[#F95700] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <WhatsAppIcon className="w-4 h-4 text-emerald-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                 <input
-                                  type="text"
-                                  placeholder="e.g. RC-182903 or BN-293810"
-                                  value={agentCac}
-                                  onChange={(e) => setAgentCac(e.target.value)}
-                                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700]"
+                                  type="tel"
+                                  required={!sameAsPhone}
+                                  inputMode="tel"
+                                  autoComplete="tel"
+                                  placeholder="0803 000 0000"
+                                  value={agentWhatsapp}
+                                  onChange={(e) => setAgentWhatsapp(e.target.value)}
+                                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] font-medium"
                                 />
                               </div>
                             </div>
-                          </div>
+                          )}
                         </div>
-                      )}
-                    </div>
 
-                    {/* Submit Button */}
-                    <div className="pt-1">
-                      {signupError && (
-                        <div className="mb-2 p-2.5 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] flex items-center gap-2 animate-fade-in shadow-xs">
-                          <AlertCircle className="w-4 h-4 text-[#F0544F] shrink-0" />
-                          <span className="text-xs font-semibold text-[#F0544F]">{signupError}</span>
-                        </div>
-                      )}
-
-                      {duplicateError && (
-                        <div className="mb-2 p-3 rounded-xl bg-[#FEECEB] border border-[#F0544F]/30 text-[#000004] space-y-1.5 animate-fade-in shadow-xs">
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle className="w-4 h-4 text-[#F0544F] shrink-0 mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <h5 className="font-bold text-xs text-[#000004] leading-tight">Account Already Exists</h5>
-                              <p className="text-[11px] text-[#70798C] leading-relaxed mt-0.5">
-                                {duplicateError.message}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="pt-0.5 flex justify-end">
+                        {/* Optional CAC / Business Verification Section */}
+                        <div className="pt-0.5">
+                          {!showOptionalAgentFields ? (
                             <button
                               type="button"
-                              onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                              className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                              onClick={() => setShowOptionalAgentFields(true)}
+                              className="text-xs font-semibold text-[#F95700] hover:text-[#E65100] inline-flex items-center gap-1 cursor-pointer py-1"
                             >
-                              <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
-                              <span>Sign In With This Account</span>
+                              <ChevronDown className="w-3.5 h-3.5" />
+                              <span>
+                                {selectedPersona === 'employer'
+                                  ? 'Add Business Registration / CAC Number (Optional)'
+                                  : 'Add CAC / License / Reg Number (Optional)'}
+                              </span>
                             </button>
-                          </div>
+                          ) : (
+                            <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] animate-fade-in">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-[#000004]">Business Verification (Optional)</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowOptionalAgentFields(false)}
+                                  className="text-[11px] text-[#70798C] hover:text-[#000004] inline-flex items-center gap-0.5 cursor-pointer"
+                                >
+                                  <ChevronUp className="w-3 h-3" />
+                                  <span>Hide</span>
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <label className="text-xs font-semibold text-[#70798C]">
+                                      {selectedPersona === 'employer' ? 'CAC / RC Number (Optional)' : 'CAC / License No. (Optional)'}
+                                    </label>
+                                    <span className="text-[10px] text-[#342A21] bg-[#342A21]/5 px-1 py-0.5 rounded font-semibold">
+                                      {selectedPersona === 'employer' ? 'Verified Employer' : 'Badge'}
+                                    </span>
+                                  </div>
+                                  <div className="relative">
+                                    <FileText className="w-4 h-4 text-[#F95700] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. RC-182903 or BN-293810"
+                                      value={agentCac}
+                                      onChange={(e) => setAgentCac(e.target.value)}
+                                      className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] font-medium"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
 
-                      <button
-                        type="submit"
-                        disabled={isSubmittingAgent}
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
-                      >
-                        {isSubmittingAgent ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin text-white" />
-                            <span>Processing Registration...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Building2 className="w-4 h-4 text-white" />
-                            <span>{selectedPersona === 'employer' ? 'Register as Employer & Post Jobs' : 'Register as Agent'}</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-                    </div>
+                        {/* Step 2 Back & Submit Buttons */}
+                        <div className="pt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormStep(1);
+                              setSignupError(null);
+                              formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="py-2.5 sm:py-3 px-3.5 sm:px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F9FAFB] text-[#000004] font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shrink-0"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Back</span>
+                          </button>
+
+                          <button
+                            type="submit"
+                            disabled={isSubmittingAgent}
+                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                          >
+                            {isSubmittingAgent ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                <span>Processing Registration...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Building2 className="w-4 h-4 text-white" />
+                                <span>{selectedPersona === 'employer' ? 'Register as Employer & Post Jobs' : 'Register as Agent'}</span>
+                                <ArrowRight className="w-4 h-4" />
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </form>
                 )}
               </div>
