@@ -163,6 +163,19 @@ export async function verifyEmailOTP(
         const { data, error } = await supabase.auth.verifyOtp({
           email: cleanEmail,
           token: enteredCode.trim(),
+          type: 'signup',
+        });
+        if (!error && (data?.session || data?.user)) {
+          matches = true;
+        }
+      } catch (_) {}
+    }
+
+    if (!matches) {
+      try {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: enteredCode.trim(),
           type: 'magiclink',
         });
         if (!error && (data?.session || data?.user)) {
