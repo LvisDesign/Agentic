@@ -908,8 +908,12 @@ export function App() {
           setIsAuthenticated(false);
           setPushNotification({
             title: 'Account Deleted',
-            body: 'This account has been removed by platform administration.',
-            type: 'inspection_declined',
+            body: 'Your Setlla account has been removed by platform administration. For inquiries or further investigation, please contact support@setlla.com.',
+            type: 'account_deleted',
+            actionText: 'Contact Support: support@setlla.com',
+            onAction: () => {
+              window.location.href = 'mailto:support@setlla.com?subject=Inquiry%20Regarding%20Deleted%20Setlla%20Account';
+            },
           });
         }
 

@@ -96,7 +96,7 @@ import {
   toggleUserSuspension, 
   exportPlatformDataSnapshot 
 } from '../../services/adminService';
-import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry, deleteUserFromRegistryAsync, normalizePhoneNumber } from '../../utils/userRegistry';
+import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, deleteUserFromRegistry, deleteUserFromRegistryAsync, normalizePhoneNumber, normalizeEmail } from '../../utils/userRegistry';
 import { subscribeToRealtimeEvents } from '../../services/realtimeSync';
 import { DEFAULT_FALLBACK_IMAGE, getCloudinaryConfig, saveCloudinaryConfig, uploadMediaToCloudinary } from '../../utils/mediaStorage';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
@@ -677,8 +677,18 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
     // 1. Cross-device Realtime event listener for live registrations/updates
     const unsub = subscribeToRealtimeEvents((event) => {
-      if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED' || event.type === 'USER_DELETED') {
+      if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED') {
         refreshAdminData();
+      } else if (event.type === 'USER_DELETED' && event.user) {
+        const delUser = event.user;
+        const delPhone = delUser.phone ? normalizePhoneNumber(delUser.phone) : '';
+        const delEmail = delUser.email ? normalizeEmail(delUser.email) : '';
+        setRegisteredUsers((prev) => prev.filter((u) => {
+          if (delUser.id && u.id === delUser.id) return false;
+          if (delPhone && u.phone && normalizePhoneNumber(u.phone) === delPhone) return false;
+          if (delEmail && u.email && normalizeEmail(u.email) === delEmail) return false;
+          return true;
+        }));
       }
     });
 
@@ -881,7 +891,14 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           currentUser.fullName,
           'Permanently removed user account and wiped all database records.'
         );
-        refreshAdminData();
+        const delPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
+        const delEmail = user.email ? normalizeEmail(user.email) : '';
+        setRegisteredUsers((prev) => prev.filter((u) => {
+          if (user.id && u.id === user.id) return false;
+          if (delPhone && u.phone && normalizePhoneNumber(u.phone) === delPhone) return false;
+          if (delEmail && u.email && normalizeEmail(u.email) === delEmail) return false;
+          return true;
+        }));
         showToast(`Completely removed ${user.fullName} and freed details for re-registration.`);
         setConfirmModalState(null);
       },

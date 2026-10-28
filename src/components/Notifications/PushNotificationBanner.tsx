@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { BellRing, CheckCircle2, ChevronRight, X, Building2, AlertCircle } from 'lucide-react';
+import { BellRing, CheckCircle2, ChevronRight, X, Building2, AlertCircle, UserX } from 'lucide-react';
 import { PropertyListing, BookingRecord } from '../../types/marketplace';
 import { triggerDeviceVibration, playNotificationSound } from '../../utils/realtimeNotifications';
 
-export type NotificationType = 'inspection_request' | 'inspection_confirmed' | 'inspection_declined' | 'new_listing' | 'listing_updated' | 'general';
+export type NotificationType = 
+  | 'inspection_request' 
+  | 'inspection_confirmed' 
+  | 'inspection_declined' 
+  | 'new_listing' 
+  | 'listing_updated' 
+  | 'general'
+  | 'account_deleted';
 
 export interface PushNotificationData {
   title: string;
@@ -54,17 +61,21 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
   const notifType = notification.type || 'inspection_confirmed';
 
   // Determine badge styling and default action copy
-  let badgeLabel = 'Setlla Real-Time Alert';
-  let badgeColor = 'text-[#342A21] bg-[#F6F3EF] border-[#E5E7EB]';
+  let badgeLabel = 'Setlla Alert';
+  let badgeColor = 'text-[#342A21] bg-[#FAF7F2] border-[#342A21]/20';
   let actionLabel = notification.actionText || 'Tap to view details';
 
-  if (notifType === 'inspection_request') {
+  if (notifType === 'account_deleted') {
+    badgeLabel = 'Account Removed';
+    badgeColor = 'text-[#342A21] bg-[#FAF7F2] border-[#342A21]/20';
+    if (!notification.actionText) actionLabel = 'Contact Support: support@setlla.com';
+  } else if (notifType === 'inspection_request') {
     badgeLabel = 'New Inspection Request';
-    badgeColor = 'text-[#342A21] bg-[#F6F3EF] border-[#E5E7EB]';
+    badgeColor = 'text-[#342A21] bg-[#FAF7F2] border-[#342A21]/20';
     if (!notification.actionText) actionLabel = 'Review in Agent Portal';
   } else if (notifType === 'inspection_confirmed') {
     badgeLabel = 'Inspection Confirmed';
-    badgeColor = 'text-[#342A21] bg-[#F6F3EF] border-[#E5E7EB]';
+    badgeColor = 'text-[#342A21] bg-[#FAF7F2] border-[#342A21]/20';
     if (!notification.actionText) actionLabel = 'View Contact Details';
   } else if (notifType === 'inspection_declined') {
     badgeLabel = 'Inspection Declined';
@@ -72,7 +83,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
     if (!notification.actionText) actionLabel = 'Explore Other Properties';
   } else if (notifType === 'new_listing') {
     badgeLabel = 'New Property';
-    badgeColor = 'text-[#342A21] bg-[#F6F3EF] border-[#E5E7EB]';
+    badgeColor = 'text-[#342A21] bg-[#FAF7F2] border-[#342A21]/20';
     if (!notification.actionText) actionLabel = 'Inspect in Feed';
   }
 
@@ -91,7 +102,9 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
       >
         {/* Dynamic App Logo / Notification Icon Badge */}
         <div className="w-10 h-10 rounded-[12px] bg-[#342A21] border border-[#342A21] text-white flex items-center justify-center shrink-0 shadow-sm">
-          {notifType === 'inspection_request' ? (
+          {notifType === 'account_deleted' ? (
+            <UserX className="w-5 h-5 text-amber-200" />
+          ) : notifType === 'inspection_request' ? (
             <BellRing className="w-5 h-5 text-amber-300 animate-bounce" />
           ) : notifType === 'new_listing' ? (
             <Building2 className="w-5 h-5 text-amber-200" />
@@ -150,7 +163,7 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
             setIsVisible(false);
             setTimeout(onDismiss, 200);
           }}
-          className="w-6 h-6 rounded-full bg-[#F4F5F7] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#342A21] flex items-center justify-center transition-colors shrink-0 cursor-pointer border border-[#E5E7EB]"
+          className="w-6 h-6 rounded-full bg-[#FAF7F2] hover:bg-[#EAE5DE] text-[#342A21] flex items-center justify-center transition-colors shrink-0 cursor-pointer border border-[#E5E7EB]"
           title="Dismiss notification"
           aria-label="Dismiss notification"
         >

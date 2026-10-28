@@ -2,6 +2,7 @@ import { UserProfile, BookingRecord } from '../types/marketplace';
 import { isLocalUrl } from './environment';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from './supabaseClient';
 import { broadcastRealtimeEvent } from '../services/realtimeSync';
+import { sendAccountDeletionEmail } from '../services/accountDeletionEmailService';
 
 // Clean production registry (strictly real registered accounts from database/local session)
 export const DEFAULT_REGISTERED_USERS: UserProfile[] = [];
@@ -49,6 +50,8 @@ export function normalizeEmail(email?: string): string {
 
 const DELETED_USERS_STORAGE_KEY = 'setlla_deleted_user_ids';
 const LEGACY_DELETED_USERS_STORAGE_KEY = 'deltarent_deleted_user_ids';
+const DELETED_PHONES_STORAGE_KEY = 'setlla_deleted_user_phones';
+const DELETED_EMAILS_STORAGE_KEY = 'setlla_deleted_user_emails';
 
 /**
  * Returns a Set of user IDs that were explicitly deleted by the Super Administrator.
@@ -65,39 +68,111 @@ export function getDeletedUserIds(): Set<string> {
   return new Set();
 }
 
-/**
- * Records a deleted user ID so that explicitly deleted users do not resurface.
- */
-export function recordDeletedUserId(id: string): void {
-  if (typeof window === 'undefined' || !id) return;
+export function getDeletedPhones(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
   try {
-    const set = getDeletedUserIds();
-    set.add(id);
-    localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+    const raw = localStorage.getItem(DELETED_PHONES_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
   } catch (_) {}
+  return new Set();
+}
+
+export function getDeletedEmails(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(DELETED_EMAILS_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) return new Set(arr);
+    }
+  } catch (_) {}
+  return new Set();
 }
 
 /**
- * Removes a deleted user ID from the tombstone set so that fresh signups
- * using matching IDs or credentials are treated as valid new accounts.
+ * Records deleted user identifiers (ID, phone, email) so they do not resurface on admin dashboards.
  */
-export function unrecordDeletedUserId(id: string): void {
-  if (typeof window === 'undefined' || !id) return;
+export function recordDeletedUser(user: { id?: string; phone?: string; email?: string }): void {
+  if (typeof window === 'undefined' || !user) return;
   try {
-    const set = getDeletedUserIds();
-    if (set.has(id)) {
-      set.delete(id);
-      localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+    if (user.id) {
+      const ids = getDeletedUserIds();
+      ids.add(user.id);
+      localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
     }
-    const legacy = localStorage.getItem(LEGACY_DELETED_USERS_STORAGE_KEY);
-    if (legacy) {
-      try {
-        const legSet = new Set(JSON.parse(legacy));
-        legSet.delete(id);
-        localStorage.setItem(LEGACY_DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(legSet)));
-      } catch (_) {}
+    const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
+    if (normPhone) {
+      const phones = getDeletedPhones();
+      phones.add(normPhone);
+      localStorage.setItem(DELETED_PHONES_STORAGE_KEY, JSON.stringify(Array.from(phones)));
+    }
+    const normEmail = user.email ? normalizeEmail(user.email) : '';
+    if (normEmail) {
+      const emails = getDeletedEmails();
+      emails.add(normEmail);
+      localStorage.setItem(DELETED_EMAILS_STORAGE_KEY, JSON.stringify(Array.from(emails)));
     }
   } catch (_) {}
+}
+
+export function recordDeletedUserId(id: string): void {
+  if (typeof window === 'undefined' || !id) return;
+  recordDeletedUser({ id });
+}
+
+/**
+ * Removes a deleted user identifier from tombstone sets when a fresh signup
+ * occurs using that phone/email.
+ */
+export function unrecordDeletedUser(user: { id?: string; phone?: string; email?: string }): void {
+  if (typeof window === 'undefined' || !user) return;
+  try {
+    if (user.id) {
+      const ids = getDeletedUserIds();
+      ids.delete(user.id);
+      localStorage.setItem(DELETED_USERS_STORAGE_KEY, JSON.stringify(Array.from(ids)));
+    }
+    const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
+    if (normPhone) {
+      const phones = getDeletedPhones();
+      phones.delete(normPhone);
+      localStorage.setItem(DELETED_PHONES_STORAGE_KEY, JSON.stringify(Array.from(phones)));
+    }
+    const normEmail = user.email ? normalizeEmail(user.email) : '';
+    if (normEmail) {
+      const emails = getDeletedEmails();
+      emails.delete(normEmail);
+      localStorage.setItem(DELETED_EMAILS_STORAGE_KEY, JSON.stringify(Array.from(emails)));
+    }
+  } catch (_) {}
+}
+
+export function unrecordDeletedUserId(id: string): void {
+  if (typeof window === 'undefined' || !id) return;
+  unrecordDeletedUser({ id });
+}
+
+/**
+ * Checks whether an account record matches any deleted ID, phone, or email tombstone.
+ */
+export function isDeletedUserRecord(user: { id?: string; phone?: string; email?: string }): boolean {
+  if (!user) return false;
+  const deletedIds = getDeletedUserIds();
+  if (user.id && deletedIds.has(user.id)) return true;
+  const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
+  if (normPhone) {
+    const deletedPhones = getDeletedPhones();
+    if (deletedPhones.has(normPhone)) return true;
+  }
+  const normEmail = user.email ? normalizeEmail(user.email) : '';
+  if (normEmail) {
+    const deletedEmails = getDeletedEmails();
+    if (deletedEmails.has(normEmail)) return true;
+  }
+  return false;
 }
 
 /**
@@ -107,11 +182,10 @@ export function unrecordDeletedUserId(id: string): void {
 export function getRegisteredUsers(): UserProfile[] {
   if (typeof window === 'undefined') return DEFAULT_REGISTERED_USERS;
 
-  const deletedIds = getDeletedUserIds();
   const usersMap = new Map<string, UserProfile>();
 
   const addOrMergeUser = (user: UserProfile) => {
-    if (!user || !user.id || deletedIds.has(user.id)) return;
+    if (!user || !user.id || isDeletedUserRecord(user)) return;
     const isAdmin = Boolean(
       user.isAdmin || 
       user.isSuperAdmin || 
@@ -388,8 +462,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
 
       const addOrMergeToDbMap = (user: UserProfile) => {
         if (!user || !user.id) return;
-        // Self-heal: ensure live database users are never blocked by any stale local tombstone
-        unrecordDeletedUserId(user.id);
+        if (isDeletedUserRecord(user)) return;
 
         const isAdmin = Boolean(
           user.isAdmin || 
@@ -427,7 +500,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
       // 1. Add all registered users from central platform_users
       data.forEach((row) => {
         const u = mapDbToUserProfile(row);
-        if (u) {
+        if (u && !isDeletedUserRecord(u)) {
           addOrMergeToDbMap(u);
         }
       });
@@ -435,7 +508,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
       // 2. Merge registered advertisers into unified user registry
       if (advertisersRes && 'data' in advertisersRes && Array.isArray(advertisersRes.data)) {
         advertisersRes.data.forEach((adv: any) => {
-          if (!adv || !adv.id) return;
+          if (!adv || !adv.id || isDeletedUserRecord({ id: adv.id, phone: adv.phone, email: adv.email })) return;
           const advUser: UserProfile = {
             id: adv.id,
             fullName: adv.contact_name || adv.company_name || 'Advertiser Partner',
@@ -461,6 +534,10 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         listingsRes.data.forEach((listing: any) => {
           const ag = listing.agent;
           if (ag && (ag.id || ag.phone)) {
+            // Never harvest or re-upsert an agent that was explicitly deleted
+            if (isDeletedUserRecord({ id: ag.id, phone: ag.phone, email: ag.email })) {
+              return;
+            }
             const agentId = ag.id || (ag.phone ? `DT-AGT-${normalizePhoneNumber(ag.phone).slice(-4)}` : `DT-AGT-${Date.now()}`);
             const agentPhoneNorm = ag.phone ? normalizePhoneNumber(ag.phone) : '';
             
@@ -553,7 +630,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
  */
 export function saveRegisteredUser(user: UserProfile): void {
   if (typeof window === 'undefined' || !user) return;
-  if (user.id) unrecordDeletedUserId(user.id);
+  unrecordDeletedUser(user);
 
   const allUsers = getRegisteredUsers();
   const existingIndex = allUsers.findIndex(
@@ -914,12 +991,23 @@ export async function deleteUserFromRegistryAsync(
     });
   } catch (_) {}
 
-  // 8. Wipe tombstone ID so fresh signups can freely reuse any generated identifier
-  Array.from(ids).forEach((id) => {
-    unrecordDeletedUserId(id);
-  });
+  // 8. Record deleted user tombstone so this account does not resurface during database refetches
+  ids.forEach((id) => recordDeletedUserId(id));
+  phoneVariants.forEach((p) => recordDeletedUser({ phone: p }));
+  emailVariants.forEach((e) => recordDeletedUser({ email: e }));
 
-  // 9. Wipe from central Supabase database across all tables
+  // 9. Dispatch account deletion notice email directly to user's registered email
+  const targetEmail = resolvedUser?.email || rawEmail;
+  if (targetEmail && targetEmail.includes('@')) {
+    sendAccountDeletionEmail({
+      email: targetEmail,
+      fullName: resolvedUser?.fullName || 'Valued User',
+      phone: resolvedUser?.phone || rawPhone,
+      id: targetId,
+    }).catch((err) => console.warn('[UserRegistry] Failed to send deletion notice email:', err));
+  }
+
+  // 10. Wipe from central Supabase database across all tables
   if (isSupabaseConfigured()) {
     try {
       const client = getSupabaseClient();
@@ -928,107 +1016,67 @@ export async function deleteUserFromRegistryAsync(
         const phoneList = Array.from(phoneVariants);
         const emailList = Array.from(emailVariants);
 
-        const deletePromises: Promise<any>[] = [];
-
-        // A. Table: platform_users (delete by ID, phones, and emails)
-        if (idList.length > 0) {
-          deletePromises.push(Promise.resolve(client.from('platform_users').delete().in('id', idList)).catch(() => {}));
-        }
-        for (const p of phoneList) {
-          deletePromises.push(Promise.resolve(client.from('platform_users').delete().eq('phone', p)).catch(() => {}));
-        }
-        for (const e of emailList) {
-          deletePromises.push(Promise.resolve(client.from('platform_users').delete().eq('email', e)).catch(() => {}));
-          deletePromises.push(Promise.resolve(client.from('platform_users').delete().ilike('email', e)).catch(() => {}));
-        }
-
-        // B. Table: profiles (delete by ID, phones, and emails)
-        if (idList.length > 0) {
-          deletePromises.push(Promise.resolve(client.from('profiles').delete().in('id', idList)).catch(() => {}));
-        }
-        for (const p of phoneList) {
-          deletePromises.push(Promise.resolve(client.from('profiles').delete().eq('phone', p)).catch(() => {}));
-        }
-        for (const e of emailList) {
-          deletePromises.push(Promise.resolve(client.from('profiles').delete().eq('email', e)).catch(() => {}));
-        }
-
-        // C. Table: advertisers
-        if (idList.length > 0) {
-          deletePromises.push(Promise.resolve(client.from('advertisers').delete().in('id', idList)).catch(() => {}));
-        }
-        for (const p of phoneList) {
-          deletePromises.push(Promise.resolve(client.from('advertisers').delete().eq('phone', p)).catch(() => {}));
-        }
-        for (const e of emailList) {
-          deletePromises.push(Promise.resolve(client.from('advertisers').delete().eq('email', e)).catch(() => {}));
-        }
-
-        // D. Table: listings (find any listing owned by this agent and delete it completely)
-        const purgeListingsPromise = (async () => {
-          try {
-            const { data: listings } = await client.from('listings').select('id, agent');
-            if (Array.isArray(listings)) {
-              const toDeleteIds: string[] = [];
-              for (const item of listings) {
-                const ag = item.agent;
-                if (!ag) continue;
-                if (ag.id && ids.has(ag.id)) {
-                  toDeleteIds.push(item.id);
-                  continue;
-                }
-                const agPhone = ag.phone ? normalizePhoneNumber(ag.phone) : '';
-                if (agPhone && phoneList.some((p) => normalizePhoneNumber(p) === agPhone)) {
-                  toDeleteIds.push(item.id);
-                  continue;
-                }
-                const agEmail = ag.email ? normalizeEmail(ag.email) : '';
-                if (agEmail && emailList.some((e) => normalizeEmail(e) === agEmail)) {
-                  toDeleteIds.push(item.id);
-                  continue;
-                }
+        // A. Table: listings (delete all properties published by this agent)
+        try {
+          const { data: listings } = await client.from('listings').select('id, agent');
+          if (Array.isArray(listings)) {
+            const toDeleteIds: string[] = [];
+            for (const item of listings) {
+              const ag = item.agent;
+              if (!ag) continue;
+              if (ag.id && ids.has(ag.id)) {
+                toDeleteIds.push(item.id);
+                continue;
               }
-              if (toDeleteIds.length > 0) {
-                await client.from('listings').delete().in('id', toDeleteIds);
+              const agPhone = ag.phone ? normalizePhoneNumber(ag.phone) : '';
+              if (agPhone && phoneList.some((p) => normalizePhoneNumber(p) === agPhone)) {
+                toDeleteIds.push(item.id);
+                continue;
+              }
+              const agEmail = ag.email ? normalizeEmail(ag.email) : '';
+              if (agEmail && emailList.some((e) => normalizeEmail(e) === agEmail)) {
+                toDeleteIds.push(item.id);
+                continue;
               }
             }
-          } catch (e) {
-            console.warn('[UserRegistry] Listings purge notice:', e);
+            if (toDeleteIds.length > 0) {
+              await client.from('listings').delete().in('id', toDeleteIds);
+            }
           }
-        })();
-        deletePromises.push(purgeListingsPromise);
-
-        // E. Table: bookings
-        for (const p of phoneList) {
-          deletePromises.push(Promise.resolve(client.from('bookings').delete().eq('applicant_phone', p)).catch(() => {}));
-        }
-        for (const e of emailList) {
-          deletePromises.push(Promise.resolve(client.from('bookings').delete().eq('applicant_email', e)).catch(() => {}));
+        } catch (e) {
+          console.warn('[UserRegistry] Listings purge notice:', e);
         }
 
-        // F. Table: job_applications
+        // B. Tables: platform_users, profiles, advertisers, bookings, job_applications, job_listings
+        const dbDeletions: Promise<any>[] = [];
+
         if (idList.length > 0) {
-          deletePromises.push(Promise.resolve(client.from('job_applications').delete().in('applicant_id', idList)).catch(() => {}));
-        }
-        for (const p of phoneList) {
-          deletePromises.push(Promise.resolve(client.from('job_applications').delete().eq('applicant_phone', p)).catch(() => {}));
-        }
-        for (const e of emailList) {
-          deletePromises.push(Promise.resolve(client.from('job_applications').delete().eq('applicant_email', e)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('platform_users').delete().in('id', idList)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('profiles').delete().in('id', idList)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('advertisers').delete().in('id', idList)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('job_applications').delete().in('applicant_id', idList)).catch(() => {}));
         }
 
-        // G. Table: job_listings
         for (const p of phoneList) {
-          deletePromises.push(Promise.resolve(client.from('job_listings').delete().eq('contact_phone', p)).catch(() => {}));
-        }
-        for (const e of emailList) {
-          deletePromises.push(Promise.resolve(client.from('job_listings').delete().eq('contact_email', e)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('platform_users').delete().eq('phone', p)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('profiles').delete().eq('phone', p)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('advertisers').delete().eq('phone', p)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('bookings').delete().eq('applicant_phone', p)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('job_applications').delete().eq('applicant_phone', p)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('job_listings').delete().eq('contact_phone', p)).catch(() => {}));
         }
 
-        // Wait for all DB deletions with a 4s timeout race
-        const allDeletions = Promise.all(deletePromises);
-        const timeout = new Promise((resolve) => setTimeout(resolve, 4000));
-        await Promise.race([allDeletions, timeout]);
+        for (const e of emailList) {
+          dbDeletions.push(Promise.resolve(client.from('platform_users').delete().eq('email', e)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('platform_users').delete().ilike('email', e)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('profiles').delete().eq('email', e)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('advertisers').delete().eq('email', e)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('bookings').delete().eq('applicant_email', e)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('job_applications').delete().eq('applicant_email', e)).catch(() => {}));
+          dbDeletions.push(Promise.resolve(client.from('job_listings').delete().eq('contact_email', e)).catch(() => {}));
+        }
+
+        await Promise.allSettled(dbDeletions);
       }
     } catch (err) {
       console.warn('[UserRegistry] Database purge error:', err);
