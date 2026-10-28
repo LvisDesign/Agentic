@@ -145,7 +145,6 @@ export const StateDropdown: React.FC<StateDropdownProps> = ({
         <label className="block text-[11px] font-bold text-[#000004] mb-1 flex items-center gap-1">
           <MapPin className="w-3.5 h-3.5 text-[#342A21]" />
           <span>{label}</span>
-          {required && <span className="text-rose-500">*</span>}
         </label>
       )}
 

@@ -339,7 +339,7 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search city, area, or posted location..."
+                  placeholder={variant === 'form' ? 'Search...' : 'Search city, area, or posted location...'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearchInputKeyDown}

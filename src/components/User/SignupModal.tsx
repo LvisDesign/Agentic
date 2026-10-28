@@ -100,6 +100,37 @@ export const NIGERIAN_STATES = [
   'Ebonyi State'
 ];
 
+export const SIGNUP_DELTA_CITIES: string[] = [
+  'Asaba',
+  'Warri',
+  'Effurun',
+  'Ughelli',
+  'Sapele',
+  'Abraka',
+  'Agbor',
+  'Ogwashi-Uku',
+  'Kwale',
+  'Ozoro',
+  'Oghara',
+  'Udu',
+  'Ibusa',
+  'Okpanam',
+  'Issele-Uku',
+  'Ekpan',
+  'Osubi',
+  'Aladja',
+  'Patani',
+  'Bomadi',
+  'Koko',
+  'Burutu',
+  'Others'
+];
+
+const SIGNUP_DELTA_CITY_OPTIONS = SIGNUP_DELTA_CITIES.map((city) => ({
+  value: city,
+  label: city === 'Others' ? 'Others (Enter City Manually)' : city,
+}));
+
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -1423,25 +1454,16 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <div className={`h-1 flex-1 rounded-full transition-all duration-300 ${formStep >= 2 ? 'bg-[#000004]' : 'bg-[#E5E7EB]'}`} />
                   </div>
 
-                  <div className="mb-2 sm:mb-2.5">
-                    <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
+                  <div className="mb-2.5">
+                    <h2 className="font-display text-lg sm:text-xl font-bold text-[#000004] tracking-tight">
                       {formStep === 1
                         ? (selectedPersona === 'employer'
-                            ? 'Company & Office Location'
+                            ? 'Company & Location'
                             : selectedPersona === 'lister'
-                            ? 'Agency & Operating Location'
-                            : 'Personal Profile & Location')
-                        : 'Contact & Account Security'}
+                            ? 'Agency & Location'
+                            : 'Personal Profile')
+                        : 'Contact & Security'}
                     </h2>
-                    <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
-                      {formStep === 1
-                        ? (selectedPersona === 'employer'
-                            ? 'Step 1 of 2: Organization category, contact person, and office branch.'
-                            : selectedPersona === 'lister'
-                            ? 'Step 1 of 2: Listing category, business identity, and operating city.'
-                            : 'Step 1 of 2: Enter your name and preferred location.')
-                        : 'Step 2 of 2: Enter your login credentials and contact details.'}
-                    </p>
                   </div>
                 </>
               )}
@@ -1544,7 +1566,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Registered Email Address <span className="text-[#F0544F]">*</span>
+                        Registered Email Address
                       </label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1559,7 +1581,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setForgotPasswordEmail(e.target.value);
                             if (forgotPasswordError) setForgotPasswordError(null);
                           }}
-                          className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                          className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                         />
                       </div>
                       <p className="text-[11px] text-[#70798C] mt-1.5 leading-snug">
@@ -1599,7 +1621,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        New Password (minimum 6 characters) <span className="text-[#F0544F]">*</span>
+                        New Password (minimum 6 characters)
                       </label>
                       <div className="relative">
                         <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1614,7 +1636,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setNewPassword(e.target.value);
                             if (resetPasswordError) setResetPasswordError(null);
                           }}
-                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                         />
                         <button
                           type="button"
@@ -1630,7 +1652,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Confirm New Password <span className="text-[#F0544F]">*</span>
+                        Confirm New Password
                       </label>
                       <div className="relative">
                         <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1644,7 +1666,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setConfirmNewPassword(e.target.value);
                             if (resetPasswordError) setResetPasswordError(null);
                           }}
-                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                         />
                       </div>
                     </div>
@@ -1696,7 +1718,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     <div>
                       <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                        Email address or Phone number <span className="text-[#F0544F]">*</span>
+                        Email address or Phone number
                       </label>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1713,7 +1735,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setLoginPhoneOrEmail(e.target.value);
                             if (loginError) setLoginError(null);
                           }}
-                          className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                          className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                         />
                       </div>
                     </div>
@@ -1746,7 +1768,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setLoginPassword(e.target.value);
                             if (loginError) setLoginError(null);
                           }}
-                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                         />
                         <button
                           type="button"
@@ -1820,11 +1842,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     {formStep === 1 ? (
                       /* --- STEP 1: Personal Profile & Location --- */
-                      <div className="space-y-2.5 sm:space-y-3 animate-fade-in">
+                      <div className="space-y-3 animate-fade-in">
                         {/* Full Name */}
                         <div>
                           <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                            Full Name <span className="text-[#F0544F]">*</span>
+                            Full Name
                           </label>
                           <div className="relative">
                             <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -1839,12 +1861,12 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 setSeekerFullName(e.target.value);
                                 if (signupError) setSignupError(null);
                               }}
-                              className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                              className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                             />
                           </div>
                         </div>
 
-                        {/* State & Preferred City (Both Compulsory) */}
+                        {/* State & Preferred City */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                           <div>
                             <StateDropdown
@@ -1856,7 +1878,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 }
                                 if (signupError) setSignupError(null);
                               }}
-                              label={selectedPersona === 'job_seeker' ? 'Target State' : 'Choose State'}
+                              label={selectedPersona === 'job_seeker' ? 'Target State' : 'State'}
                               required
                             />
                           </div>
@@ -1864,27 +1886,26 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <div>
                             <div className="flex items-center justify-between mb-1">
                               <label className="text-xs font-semibold text-[#70798C]">
-                                {selectedPersona === 'job_seeker' ? 'Preferred Job Location' : (seekerState === 'Delta State' ? 'Preferred City' : 'Preferred City / Town')} <span className="text-[#F0544F]">*</span>
+                                {selectedPersona === 'job_seeker' ? 'Preferred Job Location' : 'City'}
                               </label>
                               {seekerCity && (
-                                <span className="text-[10px] text-[#342A21] font-semibold bg-[#342A21]/5 px-1.5 py-0.5 rounded">
+                                <span className="text-[10px] text-[#70798C] font-semibold">
                                   {seekerCity}
                                 </span>
                               )}
                             </div>
                             {seekerState === 'Delta State' ? (
                               <CustomDropdown
-                                options={DELTA_CITY_OPTIONS}
+                                options={SIGNUP_DELTA_CITY_OPTIONS}
                                 value={seekerCity}
                                 onChange={(c) => {
                                   setSeekerCity(c);
                                   if (signupError) setSignupError(null);
                                 }}
-                                headerTitle="Cities & Towns"
-                                placeholder={selectedPersona === 'job_seeker' ? 'Select Preferred City (e.g. Asaba, Warri)' : 'Select City (e.g. Asaba, Warri, Ughelli)'}
-                                icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                                placeholder="Select City"
+                                icon={<MapPin className="w-3.5 h-3.5 text-[#70798C]" />}
                                 variant="form"
-                                allowCustomInput={true}
+                                allowCustomInput={false}
                               />
                             ) : (
                               <input
@@ -1896,20 +1917,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   setSeekerCity(e.target.value);
                                   if (signupError) setSignupError(null);
                                 }}
-                                className="w-full px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                                className="w-full px-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                               />
                             )}
                           </div>
-                        </div>
-
-                        {/* Quick 1-line Info Notice */}
-                        <div className="px-2.5 py-1.5 rounded-lg bg-[#F4F5F7] border border-[#E5E7EB] flex items-center gap-2 text-[11px] text-[#70798C]">
-                          <Info className="w-3.5 h-3.5 text-[#10B981] shrink-0" />
-                          <span>
-                            {selectedPersona === 'job_seeker'
-                              ? 'Fast 1-tap CV applications & direct email notifications from employers.'
-                              : 'Zero inspection fees are charged until booking acceptance.'}
-                          </span>
                         </div>
 
                         {/* Step 1 Next Button */}
@@ -1917,7 +1928,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="button"
                             onClick={handleSeekerNextStep}
-                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
                             <span>Next: Contact & Security</span>
                             <ArrowRight className="w-4 h-4" />
@@ -1930,7 +1941,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         {/* Phone Number */}
                         <div>
                           <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                            Phone Number <span className="text-[#F0544F]">*</span>
+                            Phone Number
                           </label>
                           <div className="relative">
                             <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
@@ -1951,7 +1962,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 if (duplicateError) setDuplicateError(null);
                                 if (signupError) setSignupError(null);
                               }}
-                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium ${
                                 duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
                                   ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                   : 'border-[#E5E7EB]'
@@ -1966,14 +1977,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           )}
                         </div>
 
-                        {/* Email Address - COMPULSORY for Job Seekers */}
+                        {/* Email Address */}
                         <div>
                           <div className="flex items-center justify-between mb-1">
                             <label className="text-xs font-semibold text-[#70798C]">
-                              Email Address {selectedPersona === 'job_seeker' ? <span className="text-[#F0544F]">*</span> : null}
+                              Email Address
                             </label>
                             {selectedPersona === 'job_seeker' ? (
-                              <span className="text-[10px] text-[#F95700] font-semibold">Compulsory for job alerts</span>
+                              <span className="text-[10px] text-[#70798C]">Required for job alerts</span>
                             ) : (
                               <span className="text-[10px] text-[#70798C] font-normal">(Optional)</span>
                             )}
@@ -1990,14 +2001,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               autoComplete="email"
                               inputMode="email"
                               spellCheck={false}
-                              placeholder={selectedPersona === 'job_seeker' ? 'e.g. name@domain.com (for job & interview alerts)' : 'name@email.com'}
+                              placeholder={selectedPersona === 'job_seeker' ? 'e.g. name@domain.com' : 'name@email.com'}
                               value={seekerEmail}
                               onChange={(e) => {
                                 setSeekerEmail(e.target.value);
                                 if (duplicateError) setDuplicateError(null);
                                 if (signupError) setSignupError(null);
                               }}
-                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium ${
                                 duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
                                   ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                   : 'border-[#E5E7EB]'
@@ -2012,15 +2023,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           )}
                         </div>
 
-                        {/* Password - COMPULSORY for Job Seekers */}
+                        {/* Password - for Job Seekers */}
                         {selectedPersona === 'job_seeker' && (
                           <div>
                             <div className="flex items-center justify-between mb-1">
                               <label className="text-xs font-semibold text-[#70798C]">
-                                Create Password <span className="text-[#F0544F]">*</span>
+                                Create Password
                               </label>
-                              <span className="text-[10px] text-[#F95700] font-semibold">
-                                Minimum 6 characters
+                              <span className="text-[10px] text-[#70798C]">
+                                Min. 6 characters
                               </span>
                             </div>
                             <div className="relative">
@@ -2030,13 +2041,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 required
                                 minLength={6}
                                 autoComplete="new-password"
-                                placeholder="Create a secure password (min 6 characters)"
+                                placeholder="Create password (min 6 characters)"
                                 value={seekerPassword}
                                 onChange={(e) => {
                                   setSeekerPassword(e.target.value);
                                   if (signupError) setSignupError(null);
                                 }}
-                                className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                                className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                               />
                               <button
                                 type="button"
@@ -2134,20 +2145,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     {formStep === 1 ? (
                       /* --- STEP 1: Organization & Operating Location --- */
-                      <div className="space-y-2.5 sm:space-y-3 animate-fade-in">
+                      <div className="space-y-3 animate-fade-in">
                         {/* Account Type Selector */}
                         <div>
                           <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                            {selectedPersona === 'employer' ? 'Organization Category' : 'Listing Category'} <span className="text-[#F0544F]">*</span>
+                            {selectedPersona === 'employer' ? 'Organization Category' : 'Listing Category'}
                           </label>
-                          <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
+                          <div className="grid grid-cols-3 gap-1 p-1 bg-[#F4F5F7] rounded-xl border border-[#E5E7EB]">
                             <button
                               type="button"
                               onClick={() => setAgentType('agency')}
-                              className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
+                              className={`py-1.5 px-1 sm:px-2 rounded-lg text-[11px] sm:text-xs font-medium transition-all cursor-pointer truncate ${
                                 agentType === 'agency'
-                                  ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
-                                  : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                                  ? 'bg-white text-[#000004] shadow-xs font-semibold'
+                                  : 'text-[#70798C] hover:text-[#000004]'
                               }`}
                             >
                               {selectedPersona === 'employer' ? 'Corporate / Firm' : 'Agency / Firm'}
@@ -2155,10 +2166,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setAgentType('individual')}
-                              className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
+                              className={`py-1.5 px-1 sm:px-2 rounded-lg text-[11px] sm:text-xs font-medium transition-all cursor-pointer truncate ${
                                 agentType === 'individual'
-                                  ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
-                                  : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                                  ? 'bg-white text-[#000004] shadow-xs font-semibold'
+                                  : 'text-[#70798C] hover:text-[#000004]'
                               }`}
                             >
                               {selectedPersona === 'employer' ? 'Recruiter / HR' : 'Realtor / Agent'}
@@ -2166,10 +2177,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setAgentType('landlord')}
-                              className={`py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-bold border transition-all cursor-pointer truncate ${
+                              className={`py-1.5 px-1 sm:px-2 rounded-lg text-[11px] sm:text-xs font-medium transition-all cursor-pointer truncate ${
                                 agentType === 'landlord'
-                                  ? 'bg-[#000004] text-white border-[#000004] shadow-xs'
-                                  : 'bg-white text-[#70798C] border-[#E5E7EB] hover:text-[#000004]'
+                                  ? 'bg-white text-[#000004] shadow-xs font-semibold'
+                                  : 'text-[#70798C] hover:text-[#000004]'
                               }`}
                             >
                               {selectedPersona === 'employer' ? 'Business Owner' : 'Direct Landlord'}
@@ -2181,7 +2192,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                           <div>
                             <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                              {selectedPersona === 'employer' ? 'Contact Person Name' : 'Agent Full Name'} <span className="text-[#F0544F]">*</span>
+                              {selectedPersona === 'employer' ? 'Contact Person Name' : 'Agent Full Name'}
                             </label>
                             <div className="relative">
                               <User className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2196,14 +2207,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   setAgentFullName(e.target.value);
                                   if (signupError) setSignupError(null);
                                 }}
-                                className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                                className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                               />
                             </div>
                           </div>
 
                           <div>
                             <label className="block text-xs font-semibold text-[#70798C] mb-1">
-                              {selectedPersona === 'employer' ? 'Company / Business Name' : 'Agency / Business Name'} <span className="text-[#F0544F]">*</span>
+                              {selectedPersona === 'employer' ? 'Company / Business Name' : 'Agency / Business Name'}
                             </label>
                             <div className="relative">
                               <Building2 className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2217,13 +2228,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   setAgencyName(e.target.value);
                                   if (signupError) setSignupError(null);
                                 }}
-                                className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                                className="w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                               />
                             </div>
                           </div>
                         </div>
 
-                        {/* Operating State & City (Both Compulsory) */}
+                        {/* Operating State & City */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
                           <div>
                             <StateDropdown
@@ -2245,8 +2256,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <div className="flex items-center justify-between mb-1">
                               <label className="text-xs font-semibold text-[#70798C]">
                                 {selectedPersona === 'employer'
-                                  ? 'Office / Branch City'
-                                  : (agentState === 'Delta State' ? 'Operating City' : 'Operating City / Town')} <span className="text-[#F0544F]">*</span>
+                                  ? 'Office City'
+                                  : 'Operating City'}
                               </label>
                               {agentCitySelection && agentCitySelection !== 'Others' && (
                                 <span className="text-[10px] text-[#70798C] font-semibold">
@@ -2257,15 +2268,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             {agentState === 'Delta State' ? (
                               <div className="space-y-1.5">
                                 <CustomDropdown
-                                  options={[
-                                    ...DELTA_CITY_OPTIONS.filter((opt) => opt.value !== 'Others'),
-                                    {
-                                      value: 'Others',
-                                      label: 'Others (Enter City Manually)',
-                                      subtitle: 'If your town or community is not listed above',
-                                      badge: 'Manual Entry',
-                                    },
-                                  ]}
+                                  options={SIGNUP_DELTA_CITY_OPTIONS}
                                   value={agentCitySelection}
                                   onChange={(val) => {
                                     setAgentCitySelection(val);
@@ -2276,11 +2279,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                     }
                                     if (signupError) setSignupError(null);
                                   }}
-                                  headerTitle="Cities & Towns"
-                                  placeholder={selectedPersona === 'employer' ? "Select Company City (e.g. Asaba, Warri)" : "Select Operating City (e.g. Asaba, Warri)"}
-                                  icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                                  placeholder="Select City"
+                                  icon={<MapPin className="w-3.5 h-3.5 text-[#70798C]" />}
                                   variant="form"
-                                  allowCustomInput={true}
+                                  allowCustomInput={false}
                                 />
                                 {agentCitySelection === 'Others' && (
                                   <div className="animate-fade-in">
@@ -2294,7 +2296,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                         setAgentCity(e.target.value);
                                         if (signupError) setSignupError(null);
                                       }}
-                                      className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F95700]/5 focus:bg-white font-medium"
+                                      className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white font-medium"
                                     />
                                   </div>
                                 )}
@@ -2309,7 +2311,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   setAgentCity(e.target.value);
                                   if (signupError) setSignupError(null);
                                 }}
-                                className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#F95700] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white font-medium"
+                                className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#000004] text-xs sm:text-sm text-[#000004] outline-none bg-[#F9FAFB] focus:bg-white font-medium"
                               />
                             )}
                           </div>
@@ -2320,7 +2322,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="button"
                             onClick={handleAgentNextStep}
-                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer"
+                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
                             <span>Next: Contact & Security</span>
                             <ArrowRight className="w-4 h-4" />
@@ -2330,14 +2332,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     ) : (
                       /* --- STEP 2: Contact Details & Security --- */
                       <div className="space-y-2.5 sm:space-y-3 animate-fade-in">
-                        {/* Official Email - COMPULSORY for both Lister & Employer */}
+                        {/* Official Email */}
                         <div>
                           <div className="flex items-center justify-between mb-1">
                             <label className="text-xs font-semibold text-[#70798C]">
-                              {selectedPersona === 'employer' ? 'Official Work Email' : 'Official Agent Email'} <span className="text-[#F0544F]">*</span>
+                              {selectedPersona === 'employer' ? 'Official Work Email' : 'Official Agent Email'}
                             </label>
-                            <span className="text-[10px] text-[#F95700] font-semibold">
-                              {selectedPersona === 'employer' ? 'Compulsory for candidate alerts' : 'Compulsory for notifications & sign-in'}
+                            <span className="text-[10px] text-[#70798C]">
+                              {selectedPersona === 'employer' ? 'For alerts & sign-in' : 'For notifications & sign-in'}
                             </span>
                           </div>
                           <div className="relative">
@@ -2353,14 +2355,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               autoComplete="email"
                               inputMode="email"
                               spellCheck={false}
-                              placeholder={selectedPersona === 'employer' ? 'e.g. hr@company.com or recruiting@domain.com' : 'e.g. agent@agency.ng or name@domain.com'}
+                              placeholder={selectedPersona === 'employer' ? 'e.g. hr@company.com' : 'e.g. agent@agency.ng'}
                               value={agentEmail}
                               onChange={(e) => {
                                 setAgentEmail(e.target.value);
                                 if (duplicateError) setDuplicateError(null);
                                 if (signupError) setSignupError(null);
                               }}
-                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium ${
                                 duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
                                   ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                   : 'border-[#E5E7EB]'
@@ -2375,14 +2377,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           )}
                         </div>
 
-                        {/* Create Password - COMPULSORY for both Lister & Employer */}
+                        {/* Create Password */}
                         <div>
                           <div className="flex items-center justify-between mb-1">
                             <label className="text-xs font-semibold text-[#70798C]">
-                              Create Password <span className="text-[#F0544F]">*</span>
+                              Create Password
                             </label>
-                            <span className="text-[10px] text-[#F95700] font-semibold">
-                              Minimum 6 characters
+                            <span className="text-[10px] text-[#70798C]">
+                              Min. 6 characters
                             </span>
                           </div>
                           <div className="relative">
@@ -2392,13 +2394,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               required
                               minLength={6}
                               autoComplete="new-password"
-                              placeholder="Create a secure password (min 6 characters)"
+                              placeholder="Create password (min 6 characters)"
                               value={agentPassword}
                               onChange={(e) => {
                                 setAgentPassword(e.target.value);
                                 if (signupError) setSignupError(null);
                               }}
-                              className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium"
+                              className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
                             />
                             <button
                               type="button"
@@ -2416,14 +2418,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <div>
                           <div className="flex items-center justify-between mb-1">
                             <label className="text-xs font-semibold text-[#70798C]">
-                              {selectedPersona === 'employer' ? 'Contact Phone Number' : 'Direct Phone Number'} <span className="text-[#F0544F]">*</span>
+                              {selectedPersona === 'employer' ? 'Contact Phone Number' : 'Direct Phone Number'}
                             </label>
                             <label className="flex items-center gap-1.5 cursor-pointer select-none text-[10px] text-[#70798C] hover:text-[#000004]">
                               <input
                                 type="checkbox"
                                 checked={sameAsPhone}
                                 onChange={(e) => handleToggleSameAsPhone(e.target.checked)}
-                                className="w-3.5 h-3.5 rounded accent-[#F95700]"
+                                className="w-3.5 h-3.5 rounded accent-[#000004]"
                               />
                               <span>WhatsApp is same</span>
                             </label>
@@ -2442,7 +2444,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               placeholder="0803 123 4567"
                               value={agentPhone}
                               onChange={(e) => handleAgentPhoneChange(e.target.value)}
-                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] transition-all font-medium ${
+                              className={`w-full pl-9 pr-3 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium ${
                                 duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
                                   ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                   : 'border-[#E5E7EB]'
@@ -2460,7 +2462,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           {!sameAsPhone && (
                             <div className="mt-2 animate-fade-in">
                               <label className="block text-[11px] font-semibold text-[#70798C] mb-1">
-                                WhatsApp Number <span className="text-[#F0544F]">*</span>
+                                WhatsApp Number
                               </label>
                               <div className="relative">
                                 <WhatsAppIcon className="w-4 h-4 text-emerald-600 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2472,7 +2474,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   placeholder="0803 000 0000"
                                   value={agentWhatsapp}
                                   onChange={(e) => setAgentWhatsapp(e.target.value)}
-                                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] font-medium"
+                                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] font-medium"
                                 />
                               </div>
                             </div>
@@ -2485,7 +2487,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <button
                               type="button"
                               onClick={() => setShowOptionalAgentFields(true)}
-                              className="text-xs font-semibold text-[#F95700] hover:text-[#E65100] inline-flex items-center gap-1 cursor-pointer py-1"
+                              className="text-xs font-semibold text-[#70798C] hover:text-[#000004] inline-flex items-center gap-1 cursor-pointer py-1"
                             >
                               <ChevronDown className="w-3.5 h-3.5" />
                               <span>
@@ -2518,13 +2520,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                     </span>
                                   </div>
                                   <div className="relative">
-                                    <FileText className="w-4 h-4 text-[#F95700] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    <FileText className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                     <input
                                       type="text"
                                       placeholder="e.g. RC-182903 or BN-293810"
                                       value={agentCac}
                                       onChange={(e) => setAgentCac(e.target.value)}
-                                      className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#F95700]/15 focus:border-[#F95700] font-medium"
+                                      className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] font-medium"
                                     />
                                   </div>
                                 </div>
