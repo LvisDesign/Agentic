@@ -34,8 +34,11 @@ export function isElvisSuperAdmin(user?: UserProfile | AdminCredential | null): 
   if (!user) return false;
   const name = (user.fullName || '').trim().toLowerCase();
   const phone = (user.phone || '').replace(/\D/g, '');
+  const email = ((user as any).email || '').trim().toLowerCase();
   const id = ((user as any).id || '').toLowerCase();
   return (
+    email === OFFICIAL_ADMIN_EMAIL.toLowerCase() ||
+    email === 'admin@setlla.com' ||
     name === 'elvis' ||
     name.startsWith('elvis ') ||
     name.includes('elvis') ||

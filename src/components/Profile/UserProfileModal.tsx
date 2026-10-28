@@ -26,7 +26,9 @@ import {
   Check,
   ArrowRight,
   Megaphone,
-  RotateCw
+  RotateCw,
+  ShieldCheck,
+  Shield
 } from 'lucide-react';
 import { UserRole, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNigerianPhone } from '../../utils/formatters';
@@ -35,7 +37,7 @@ import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { CustomDropdown } from '../UI/CustomDropdown';
 import { ModalPortal } from '../UI/ModalPortal';
 import { isLocalUrl } from '../../utils/environment';
-import { isSuperAdminAuthenticated } from '../../services/adminAuthService';
+import { isSuperAdminAuthenticated, isElvisSuperAdmin } from '../../services/adminAuthService';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -251,7 +253,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     }
   };
 
-  const isAgent = Boolean(currentUser.isAgent || currentRole === 'agent');
+  const isSuperAdmin = Boolean(
+    currentUser.isSuperAdmin ||
+    currentUser.isAdmin ||
+    currentUser.persona === 'admin' ||
+    isElvisSuperAdmin(currentUser) ||
+    currentRole === 'admin'
+  );
+  const isAgent = !isSuperAdmin && Boolean(currentUser.isAgent || currentRole === 'agent');
 
   if (!isOpen) return null;
 
@@ -265,15 +274,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-[#000004] text-white flex items-center justify-center shadow-xs">
-              <User className="w-4 h-4" />
+            <div className={`w-9 h-9 rounded-2xl flex items-center justify-center shadow-xs ${
+              isSuperAdmin ? 'bg-amber-500 text-[#000004]' : 'bg-[#000004] text-white'
+            }`}>
+              {isSuperAdmin ? <ShieldCheck className="w-5 h-5 text-[#000004]" /> : <User className="w-4 h-4" />}
             </div>
             <div>
               <h3 className="font-display text-lg font-bold text-[#000004]">
-                {isAgent ? 'Agent Profile' : 'Tenant Profile'}
+                {isSuperAdmin ? 'Super Admin Profile' : isAgent ? 'Agent Profile' : 'Tenant Profile'}
               </h3>
               <p className="text-xs text-[#70798C]">
-                {isAgent ? 'Setlla Partner Agent Account' : 'Setlla Member Account'}
+                {isSuperAdmin ? 'Setlla Supreme Platform Governance' : isAgent ? 'Setlla Partner Agent Account' : 'Setlla Member Account'}
               </p>
             </div>
           </div>
@@ -370,17 +381,37 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     <MapPin className="w-3 h-3 text-[#342A21]" /> {currentUser.city || currentUser.operatingCity || 'Asaba'}
                   </span>
                   <span>•</span>
-                  <span>{isAgent ? (currentUser.agencyName || 'Partner Agency') : 'Tenant'}</span>
+                  <span>
+                    {isSuperAdmin ? (
+                      <span className="font-bold text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-md text-[10px] tracking-wide inline-flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3 text-amber-700" />
+                        ★ Super Administrator
+                      </span>
+                    ) : isAgent ? (
+                      currentUser.agencyName || 'Partner Agency'
+                    ) : (
+                      'Tenant'
+                    )}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Account Role & Scope Notice */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 border border-[#E5E7EB] space-y-1.5">
+          <div className={`p-3.5 rounded-2xl border space-y-1.5 ${
+            isSuperAdmin
+              ? 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30'
+              : 'bg-slate-50 border-[#E5E7EB]'
+          }`}>
             <div className="flex items-center justify-between">
               <span className="font-bold text-[#000004] text-xs flex items-center gap-1.5">
-                {isAgent ? (
+                {isSuperAdmin ? (
+                  <>
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                    Account Type: Master Super Administrator
+                  </>
+                ) : isAgent ? (
                   <>
                     <Building2 className="w-3.5 h-3.5 text-amber-600" />
                     Account Type: Partner Agent
@@ -392,16 +423,54 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </>
                 )}
               </span>
+              {isSuperAdmin && (
+                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#000004] text-amber-400">
+                  Supreme Authority
+                </span>
+              )}
             </div>
             <p className="text-[11px] text-[#70798C] leading-relaxed">
-              {isAgent
+              {isSuperAdmin
+                ? 'You hold supreme platform authority across Setlla. You have master privileges to inspect and delete or disable every account (including other administrators), audit system logs, manage property listings and jobs, and control platform settings.'
+                : isAgent
                 ? 'You have full access to list apartments, set inspection time slots, accept inspection bookings, and connect directly with verified tenants.'
                 : 'You have full, unrestricted access to browse apartments uploaded by verified partner agents and book as many inspections as you want. Only agents are restricted to 5 bookings per window so your time is never wasted.'}
             </p>
           </div>
 
-          {/* BECOME AN AGENT OPTION CARD (Only shown if not already an agent) */}
-          {!isAgent && (
+          {/* ACTION CARD: Super Admin Governance Center vs Become an Agent (Tenants only) */}
+          {isSuperAdmin ? (
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-[#000004] to-[#1a2332] text-white shadow-sm space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center border border-amber-400/30">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="font-bold text-xs text-white">
+                    Super Admin Control Center
+                  </span>
+                </div>
+                <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-[#000004]">
+                  Master Authority
+                </span>
+              </div>
+              <p className="text-[11px] text-white/80 leading-relaxed">
+                Open the central governance console to inspect all registered users, delete or disable accounts, manage property listings, review applications, and audit platform security logs.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onChangeRole('admin');
+                  window.location.hash = '#/admin';
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Launch Super Admin Dashboard</span>
+              </button>
+            </div>
+          ) : !isAgent ? (
             <div className="p-4 rounded-2xl bg-gradient-to-br from-[#000004] to-[#1a2332] text-white shadow-sm space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -430,7 +499,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <span>Apply to Become an Agent</span>
               </button>
             </div>
-          )}
+          ) : null}
 
           {/* Success Banner */}
           {saveSuccessMessage && (
@@ -632,7 +701,46 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </div>
               )}
 
-              {isAgent ? (
+              {isSuperAdmin ? (
+                <>
+                  <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
+                    <span className="text-[#70798C] flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-amber-600" /> Platform Role
+                    </span>
+                    <span className="font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded-md text-[11px]">
+                      Master Super Administrator (Elvis)
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
+                    <span className="text-[#70798C] flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-[#342A21]" /> Phone
+                    </span>
+                    <span className="font-semibold text-[#000004]">
+                      {formatNigerianPhone(currentUser.phone)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
+                    <span className="text-[#70798C] flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-[#342A21]" /> Email
+                    </span>
+                    <span className="font-semibold text-[#000004]">{currentUser.email || 'admin@setlla.com'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
+                    <span className="text-[#70798C] flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#342A21]" /> Headquarters
+                    </span>
+                    <span className="font-semibold text-[#000004]">{currentUser.city || 'Asaba'}, Delta State</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs py-1">
+                    <span className="text-[#70798C] flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Account Status
+                    </span>
+                    <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
+                      Active Supreme Governance
+                    </span>
+                  </div>
+                </>
+              ) : isAgent ? (
                 <>
                   <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
                     <span className="text-[#70798C] flex items-center gap-1.5">
@@ -711,7 +819,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           )}
 
           {/* Active Inspection Quick View */}
-          {isAgent ? (
+          {isSuperAdmin ? null : isAgent ? (
             <div 
               onClick={() => {
                 onChangeRole('agent');

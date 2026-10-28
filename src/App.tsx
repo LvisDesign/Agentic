@@ -337,6 +337,14 @@ export function App() {
         if (parsed.id === 'DT-USR-8492' || parsed.id === 'DT-AGT-9012' || parsed.email === 'chinedu.okafor@gmail.com') {
           return GUEST_USER;
         }
+        if (isElvisSuperAdmin(parsed)) {
+          return {
+            ...parsed,
+            isAdmin: true,
+            isSuperAdmin: true,
+            persona: 'admin',
+          };
+        }
         return parsed;
       } catch (e) {
         // fallback
@@ -366,7 +374,7 @@ export function App() {
         try {
           const parsed = JSON.parse(savedUser);
           isAgent = Boolean(parsed.isAgent);
-          isAdmin = Boolean(parsed.isAdmin || parsed.isSuperAdmin);
+          isAdmin = Boolean(parsed.isAdmin || parsed.isSuperAdmin || isElvisSuperAdmin(parsed));
         } catch (_) {}
       }
     }
@@ -416,9 +424,29 @@ export function App() {
     }
   }, [userView, currentRole]);
 
+  // Ensure Elvis is always elevated to Super Administrator with complete authority
+  useEffect(() => {
+    if (currentUser && currentUser.id !== 'GUEST_USER' && isElvisSuperAdmin(currentUser)) {
+      if (!currentUser.isAdmin || !currentUser.isSuperAdmin || currentUser.persona !== 'admin') {
+        const elevated: UserProfile = {
+          ...currentUser,
+          isAdmin: true,
+          isSuperAdmin: true,
+          persona: 'admin',
+        };
+        setCurrentUser(elevated);
+        try {
+          localStorage.setItem('setlla_user', JSON.stringify(elevated));
+          localStorage.setItem('deltarent_user', JSON.stringify(elevated));
+          localStorage.setItem('setlla_admin_auth', 'true');
+        } catch (_) {}
+      }
+    }
+  }, [currentUser]);
+
   // Auto-heal agent status if current user has published listings on this device or in cloud
   useEffect(() => {
-    if (!currentUser || currentUser.id === 'GUEST_USER' || currentUser.isAgent) return;
+    if (!currentUser || currentUser.id === 'GUEST_USER' || currentUser.isAgent || isElvisSuperAdmin(currentUser)) return;
     const phoneNorm = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
     const myListing = listings.find(
       (l) =>

@@ -47,6 +47,7 @@ import {
   saveRegisteredUser, 
   DuplicateCheckResult 
 } from '../../utils/userRegistry';
+import { isElvisSuperAdmin } from '../../services/adminAuthService';
 
 export const NIGERIAN_STATES = [
   'Delta State',
@@ -491,10 +492,18 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         }
 
         setLoginError(null);
-        const isAgent = registeredMatch.isAgent;
+        const isElvis = isElvisSuperAdmin(registeredMatch);
+        if (isElvis) {
+          registeredMatch.isAdmin = true;
+          registeredMatch.isSuperAdmin = true;
+          registeredMatch.persona = 'admin';
+        }
+        const isAgent = !isElvis && registeredMatch.isAgent;
         setSuccessMessage({
           title: `Welcome back, ${registeredMatch.fullName}!`,
-          subtitle: isAgent
+          subtitle: isElvis
+            ? 'Signed in as Master Super Administrator. Loading system governance portal...'
+            : isAgent
             ? 'Signed in as Agent. Loading your listings and inspection requests...'
             : 'Signed in as Tenant. Your saved inspections and passes are ready!',
         });
@@ -503,7 +512,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         const targetRoom: 'rentals' | 'jobs' =
           (registeredMatch.persona === 'job_seeker' || registeredMatch.persona === 'employer') ? 'jobs' : 'rentals';
         setTimeout(() => {
-          onUpdateUser(registeredMatch!, isAgent ? 'agent' : 'seeker', targetRoom);
+          onUpdateUser(registeredMatch!, isElvis ? 'admin' : isAgent ? 'agent' : 'seeker', targetRoom);
           setIsSuccess(false);
           setIsLoggingIn(false);
           onClose();
