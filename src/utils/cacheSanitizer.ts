@@ -54,7 +54,32 @@ export function runClientCacheSanitization(): void {
       }
     }
 
-    // 3. Mark client as synced to v3
+    // 3. Purge legacy mock users from local user registry cache
+    ['setlla_registered_users', 'deltarent_registered_users'].forEach((key) => {
+      const rawUsers = localStorage.getItem(key);
+      if (rawUsers) {
+        try {
+          const users = JSON.parse(rawUsers);
+          if (Array.isArray(users)) {
+            const realUsers = users.filter(
+              (u: any) =>
+                u &&
+                u.id &&
+                u.id !== 'DT-USR-8492' &&
+                u.id !== 'DT-AGT-9012' &&
+                u.email !== 'chinedu.okafor@gmail.com' &&
+                !u.id.startsWith('mock-') &&
+                !u.id.startsWith('demo-')
+            );
+            localStorage.setItem(key, JSON.stringify(realUsers));
+          }
+        } catch (_) {
+          localStorage.removeItem(key);
+        }
+      }
+    });
+
+    // 4. Mark client as synced to v3
     localStorage.setItem(SYNC_VERSION_KEY, 'v3');
   } catch (err) {
     console.warn('[Setlla] Cache sanitizer notice:', err);
