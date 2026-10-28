@@ -117,8 +117,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </h1>
               {isAuthenticated ? (
                 isAdmin ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#000004] text-white text-xs font-semibold">
-                    <Shield className="w-3 h-3 text-white" />
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#342A21] text-white text-xs font-semibold">
                     Administrator
                   </span>
                 ) : currentUser.isAgent ? (
@@ -184,7 +183,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
             >
               <LayoutDashboard className="w-4 h-4" />
-              <span>Admin Console</span>
+              <span>Admin Dashboard</span>
             </button>
           ) : currentUser.isAgent ? (
             <button
@@ -233,7 +232,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 Administrator Account Active
               </h4>
               <p className="text-[11px] text-[#70798C] mt-0.5">
-                You are signed in as a platform administrator. You can monitor platform activity, view live bookings, inspect inventory, or open the central Admin Console.
+                You are signed in as a platform administrator with full agent & employer privileges. You can monitor platform activity, view live bookings, inspect inventory, publish listings, or open the central Admin Dashboard.
               </p>
             </div>
           </div>
@@ -244,7 +243,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             className="shrink-0 px-3.5 py-2 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Open Admin Console →</span>
+            <span>Open Admin Dashboard →</span>
           </button>
         </div>
       ) : currentUser.isAgent ? (

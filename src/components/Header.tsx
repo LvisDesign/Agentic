@@ -166,40 +166,39 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Center / Right: Squircle Navigation Island (Zero Overflow on Mobile) */}
         <div className="flex items-center gap-0.5 sm:gap-1.5 p-0.5 sm:p-1 rounded-[16px] sm:rounded-[22px] bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs shrink-0 max-w-full">
-          {/* TAB 1: User Dashboard (Based on active room) or Admin Console */}
+          {/* TAB 1: User Dashboard (Based on active room) or Admin Dashboard (Directs to Agent Dashboard) */}
           {isAuthenticated && (isSuperAdmin || (currentRole !== 'agent' && !currentUser.isAgent)) && (
             <button
               onClick={() => {
                 if (isSuperAdmin) {
-                  onChangeRole('admin');
-                  window.location.hash = '#/admin';
+                  onChangeRole('agent');
                 } else {
                   onChangeRole('tenant');
                   onChangeUserView('dashboard');
                 }
               }}
               className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-                (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard'))
+                (isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard')))
                   ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
                   : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
               }`}
-              aria-label={isSuperAdmin ? 'Admin Console' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'User Dashboard'}
-              title={isSuperAdmin ? 'Admin Console' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'User Dashboard'}
+              aria-label={isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'User Dashboard'}
+              title={isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'User Dashboard'}
             >
-              <LayoutDashboard className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard')) ? 'text-white' : ''}`} />
+              <LayoutDashboard className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard'))) ? 'text-white' : ''}`} />
               
               {/* Desktop Label */}
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-                {isSuperAdmin ? 'Admin Console' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'My Dashboard'}
+                {isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'My Dashboard'}
               </span>
 
-              {(currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard')) && (
+              {(isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard'))) && (
                 <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
               )}
 
               {/* Mobile Tooltip */}
               <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
-                {isSuperAdmin ? 'Admin Console' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'Dashboard'}
+                {isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'Dashboard'}
               </span>
             </button>
           )}
@@ -236,7 +235,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* TAB 3: Agent / Employer Management Portal */}
-          {isAuthenticated && (currentRole === 'agent' || currentUser.isAgent || currentUser.persona === 'employer') && (
+          {isAuthenticated && !isSuperAdmin && (currentRole === 'agent' || currentUser.isAgent || currentUser.persona === 'employer') && (
             <button
               onClick={() => {
                 onChangeRole('agent');

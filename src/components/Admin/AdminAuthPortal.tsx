@@ -800,7 +800,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4" />
-                      <span>Authorize & Access Admin Console</span>
+                      <span>Authorize & Access Admin Dashboard</span>
                     </>
                   )}
                 </button>

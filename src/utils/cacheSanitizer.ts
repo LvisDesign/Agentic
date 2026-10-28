@@ -4,16 +4,16 @@
  * mobile or desktop browsers during previous visits is thoroughly purged on startup.
  */
 
-const SYNC_VERSION_KEY = 'setlla_live_sync_v4';
+const SYNC_VERSION_KEY = 'setlla_live_sync_v5';
 
 export function runClientCacheSanitization(): void {
   if (typeof window === 'undefined') return;
 
   try {
     const currentVersion = localStorage.getItem(SYNC_VERSION_KEY);
-    if (currentVersion === 'v4') return;
+    if (currentVersion === 'v5') return;
 
-    console.log('[Setlla] Performing client cache purge v4 for live production sync...');
+    console.log('[Setlla] Performing client cache purge v5 for live production sync...');
 
     // 1. Wipe all local job listings cache completely so device fetches fresh from Supabase
     localStorage.removeItem('setlla_job_listings');
@@ -27,6 +27,10 @@ export function runClientCacheSanitization(): void {
     ['setlla_registered_users', 'deltarent_registered_users'].forEach((key) => {
       localStorage.removeItem(key);
     });
+
+    // 4. Wipe stale local bookings cache so device fetches fresh from Supabase
+    localStorage.removeItem('setlla_bookings');
+    localStorage.removeItem('deltarent_bookings');
 
     // 4. Check active user session: if the stored user is a legacy demo account or was deleted, purge session
     try {
@@ -69,7 +73,7 @@ export function runClientCacheSanitization(): void {
     if (typeof caches !== 'undefined') {
       caches.keys().then((names) => {
         names.forEach((name) => {
-          if (name !== 'setlla-pwa-v4') {
+          if (name !== 'setlla-pwa-v5') {
             console.log('[Setlla] Purging legacy SW cache:', name);
             caches.delete(name);
           }
@@ -77,8 +81,8 @@ export function runClientCacheSanitization(): void {
       }).catch(() => {});
     }
 
-    // 6. Mark client as synced to v4
-    localStorage.setItem(SYNC_VERSION_KEY, 'v4');
+    // 6. Mark client as synced to v5
+    localStorage.setItem(SYNC_VERSION_KEY, 'v5');
   } catch (err) {
     console.warn('[Setlla] Cache sanitizer notice:', err);
   }

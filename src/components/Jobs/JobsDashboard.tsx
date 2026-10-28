@@ -144,8 +144,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
                   {currentUser.fullName || 'Job Seeker Portal'}
                 </h1>
                 {isAdmin ? (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#000004] text-white text-[10px] font-bold">
-                    <Shield className="w-3 h-3 text-white" />
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#342A21] text-white text-[10px] font-bold">
                     Administrator
                   </span>
                 ) : (

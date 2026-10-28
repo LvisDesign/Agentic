@@ -60,7 +60,7 @@ import {
 } from './services/adminAuthService';
 import { getPlatformSettings } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
-import { fetchAllBookings, saveNewBooking, updateBookingStatus } from './services/bookingService';
+import { fetchAllBookings, saveNewBooking, updateBookingStatus, deleteBooking } from './services/bookingService';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from './utils/supabaseClient';
 import { broadcastRealtimeEvent, subscribeToRealtimeEvents } from './services/realtimeSync';
 import { playNotificationSound, showDeviceNotification, requestDeviceNotificationPermission } from './utils/realtimeNotifications';
@@ -425,15 +425,23 @@ export function App() {
     }
   }, [userView, currentRole]);
 
-  // Ensure Elvis is always elevated to Super Administrator with complete authority
+  // Ensure Elvis is always elevated to Super Administrator with complete authority (admin + agent + employer)
   useEffect(() => {
     if (currentUser && currentUser.id !== 'GUEST_USER' && isElvisSuperAdmin(currentUser)) {
-      if (!currentUser.isAdmin || !currentUser.isSuperAdmin || currentUser.persona !== 'admin') {
+      if (
+        !currentUser.isAdmin ||
+        !currentUser.isSuperAdmin ||
+        currentUser.persona !== 'admin' ||
+        !currentUser.isAgent
+      ) {
         const elevated: UserProfile = {
           ...currentUser,
           isAdmin: true,
           isSuperAdmin: true,
           persona: 'admin',
+          isAgent: true,
+          agencyName: currentUser.agencyName || 'Setlla Administration',
+          companyName: currentUser.companyName || 'Setlla Executive Office',
         };
         setCurrentUser(elevated);
         try {
@@ -1568,6 +1576,13 @@ export function App() {
     );
   };
 
+  // Handler: Permanently delete an inspection booking (Admin override)
+  const handleDeleteBooking = async (bookingId: string) => {
+    setBookings((prev) => prev.filter((b) => b.id !== bookingId));
+    await deleteBooking(bookingId);
+    broadcastRealtimeEvent('BOOKING_DELETED', { bookingId });
+  };
+
   // Handler: Create listing from agent onboarding form
   const handleListingCreated = (newListing: PropertyListing) => {
     setListings((prev) => [newListing, ...prev]);
@@ -1575,10 +1590,14 @@ export function App() {
 
     // Confirm and reinforce agent profile for current user upon publishing listing
     if (currentUser && !currentUser.isAgent) {
+      const isSuper = isElvisSuperAdmin(currentUser) || currentUser.isSuperAdmin || currentUser.isAdmin;
       const upgraded: UserProfile = {
         ...currentUser,
         isAgent: true,
         isVerifiedTenant: false,
+        isAdmin: isSuper ? true : currentUser.isAdmin,
+        isSuperAdmin: isSuper ? true : currentUser.isSuperAdmin,
+        persona: isSuper ? 'admin' : (currentUser.persona || 'agent'),
         agencyName: newListing.agent?.agencyName || currentUser.agencyName || currentUser.fullName,
         cacNumber: newListing.agent?.cacNumber || currentUser.cacNumber || 'VERIFIED-REG',
         agentType: 'agency',
@@ -1587,11 +1606,13 @@ export function App() {
         operatingState: newListing.state || currentUser.state || 'Delta State',
       };
       setCurrentUser(upgraded);
-      setCurrentRole('agent');
+      if (!isSuper) {
+        setCurrentRole('agent');
+        localStorage.setItem('setlla_active_role', 'agent');
+        localStorage.setItem('deltarent_active_role', 'agent');
+      }
       localStorage.setItem('setlla_user', JSON.stringify(upgraded));
       localStorage.setItem('deltarent_user', JSON.stringify(upgraded));
-      localStorage.setItem('setlla_active_role', 'agent');
-      localStorage.setItem('deltarent_active_role', 'agent');
       saveRegisteredUser(upgraded);
       saveRegisteredUserAsync(upgraded);
     }
@@ -1996,7 +2017,9 @@ export function App() {
               onDeleteListing={handleDeleteListing}
               onAcceptBooking={handleAcceptBooking}
               onRejectBooking={handleRejectBooking}
+              onDeleteBooking={handleDeleteBooking}
               onUpdateListing={handleListingUpdated}
+              onAddListing={handleListingCreated}
               onRefreshData={syncLatestData}
               onSwitchToExplore={() => {
                 setCurrentRole('tenant');

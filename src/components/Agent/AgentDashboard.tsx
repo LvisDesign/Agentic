@@ -180,6 +180,19 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]">
+          {isPlatformAdmin && (
+            <button
+              onClick={() => {
+                window.location.hash = '#/admin';
+              }}
+              className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl border border-[#E5E7EB] bg-slate-50 hover:bg-slate-100 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              title="Open central platform Super Admin Console"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#342A21]" />
+              <span>Admin Console</span>
+            </button>
+          )}
+
           {onOpenAdsPortal && (
             <button
               onClick={onOpenAdsPortal}

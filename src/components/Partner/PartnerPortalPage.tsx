@@ -567,20 +567,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               </button>
               <button
                 onClick={() => {
-                  setActiveTab('api');
-                  const el = document.getElementById('ad-creation-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                  activeTab === 'api'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21]'
-                }`}
-              >
-                REST API
-              </button>
-              <button
-                onClick={() => {
                   setActiveTab('guide');
                   const el = document.getElementById('ad-creation-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -594,6 +580,23 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Ads Guide</span>
               </button>
+              {activeAdvertiser && (
+                <button
+                  onClick={() => {
+                    setActiveTab('api');
+                    const el = document.getElementById('ad-creation-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                    activeTab === 'api'
+                      ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#342A21]'
+                  }`}
+                >
+                  <Code2 className="w-3.5 h-3.5" />
+                  <span>REST API</span>
+                </button>
+              )}
             </nav>
 
             {/* Advertiser Account Login / Dashboard trigger */}
@@ -668,18 +671,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           </button>
           <button
             onClick={() => {
-              setActiveTab('api');
-              const el = document.getElementById('ad-creation-section');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${
-              activeTab === 'api' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
-            }`}
-          >
-            REST API
-          </button>
-          <button
-            onClick={() => {
               setActiveTab('guide');
               const el = document.getElementById('ad-creation-section');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -690,6 +681,21 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           >
             Ads Guide
           </button>
+          {activeAdvertiser && (
+            <button
+              onClick={() => {
+                setActiveTab('api');
+                const el = document.getElementById('ad-creation-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs flex items-center gap-1 ${
+                activeTab === 'api' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
+              }`}
+            >
+              <Code2 className="w-3 h-3" />
+              <span>REST API</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -932,14 +938,17 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             <div className="pt-4 border-t border-[#E5E7EB] flex flex-col sm:flex-row items-center gap-3">
               <button
                 onClick={() => {
-                  setActiveTab('api');
-                  const el = document.getElementById('ad-creation-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  if (activeAdvertiser) {
+                    setViewMode('advertiser-dashboard');
+                  } else {
+                    setAuthModalInitialMode('login');
+                    setIsAuthModalOpen(true);
+                  }
                 }}
                 className="w-full sm:w-auto py-3 px-5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
               >
-                <Code2 className="w-3.5 h-3.5 text-amber-400" />
-                <span>Explore REST API Docs & Sandbox</span>
+                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                <span>{activeAdvertiser ? 'Manage REST API in Client Dashboard' : 'Client Login to Access REST API'}</span>
               </button>
 
               <button
@@ -1067,10 +1076,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#342A21]/10 mb-8">
           <div>
             <h3 className="font-display text-2xl text-[#342A21] font-normal">
-              Explore Formats, Ad Rates & API Tools
+              Explore Formats, Ad Rates & Guidelines
             </h3>
             <p className="text-xs text-[#70798C] mt-0.5">
-              Select a section below to configure self-serve packages, inspect placements, or test the REST API.
+              Select a section below to configure self-serve packages, inspect placements, or review the advertising guide.
             </p>
           </div>
 
@@ -1096,16 +1105,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               Showcase
             </button>
             <button
-              onClick={() => setActiveTab('api')}
-              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
-                activeTab === 'api'
-                  ? 'bg-[#342A21] text-white shadow-xs'
-                  : 'text-[#70798C] hover:text-[#342A21]'
-              }`}
-            >
-              REST API & Sandbox
-            </button>
-            <button
               onClick={() => setActiveTab('guide')}
               className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
                 activeTab === 'guide'
@@ -1116,6 +1115,19 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               <BookOpen className="w-3.5 h-3.5" />
               <span>Ads Guide</span>
             </button>
+            {activeAdvertiser && (
+              <button
+                onClick={() => setActiveTab('api')}
+                className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
+                  activeTab === 'api'
+                    ? 'bg-[#342A21] text-white shadow-xs'
+                    : 'text-[#70798C] hover:text-[#342A21]'
+                }`}
+              >
+                <Code2 className="w-3.5 h-3.5" />
+                <span>REST API Sandbox</span>
+              </button>
+            )}
           </div>
         </div>
         {/* ========================================================================= */}
@@ -1990,6 +2002,39 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
         {/* TAB 3: ENTERPRISE PROGRAMMATIC REST API & DEVELOPER GATEWAY               */}
         {/* ========================================================================= */}
         {activeTab === 'api' && (
+          !activeAdvertiser ? (
+            <div className="max-w-xl mx-auto p-8 sm:p-12 rounded-3xl bg-white border border-[#342A21]/15 text-center space-y-4 shadow-subtle animate-fade-in my-8">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center mx-auto border border-amber-200">
+                <Lock className="w-6 h-6 text-amber-800" />
+              </div>
+              <h3 className="font-display text-2xl text-[#342A21] font-normal">
+                Enterprise REST API Restricted
+              </h3>
+              <p className="text-xs text-[#70798C] leading-relaxed max-w-md mx-auto">
+                Programmatic campaign injection, private API keys, and ingestion endpoints are strictly reserved for verified client accounts. Please sign in or register your business to access your credentials.
+              </p>
+              <div className="flex items-center justify-center gap-2.5 pt-2">
+                <button
+                  onClick={() => {
+                    setAuthModalInitialMode('login');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  Client Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthModalInitialMode('signup');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="py-2.5 px-4 rounded-xl border border-[#342A21]/20 bg-white hover:bg-[#F6F3EF] text-[#342A21] text-xs font-bold transition-all cursor-pointer"
+                >
+                  Register Business
+                </button>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-8 animate-fade-in">
             <div className="text-center max-w-xl mx-auto space-y-1">
               <span className="text-xs uppercase tracking-widest font-semibold text-[#70798C]">Method 3: Automation</span>
@@ -2315,6 +2360,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               )}
             </div>
           </div>
+          )
         )}
       </main>
 

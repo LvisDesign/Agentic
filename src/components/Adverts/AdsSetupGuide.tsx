@@ -774,7 +774,7 @@ print("Campaign Data:", response.json())`;
                   </li>
                   <li className="flex items-start gap-1.5">
                     <span className="font-bold text-[#342A21]">4.</span>
-                    <span><strong>Broadcast:</strong> Click "Approve & Broadcast" in Super Admin Console to deploy immediately.</span>
+                    <span><strong>Broadcast:</strong> Click "Approve & Broadcast" in Super Admin Dashboard to deploy immediately.</span>
                   </li>
                 </ul>
               </div>

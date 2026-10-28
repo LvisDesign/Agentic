@@ -100,6 +100,7 @@ import { getRegisteredUsers, fetchRegisteredUsersFromDb, adminUpdateUser, delete
 import { subscribeToRealtimeEvents } from '../../services/realtimeSync';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
+import { CreateListingModal } from '../Agent/CreateListingModal';
 
 interface SuperAdminDashboardProps {
   currentUser: UserProfile;
@@ -113,7 +114,9 @@ interface SuperAdminDashboardProps {
   onDeleteListing: (listingId: string) => void;
   onAcceptBooking: (bookingId: string) => void;
   onRejectBooking: (bookingId: string) => void;
+  onDeleteBooking?: (bookingId: string) => void;
   onUpdateListing?: (listing: PropertyListing) => void;
+  onAddListing?: (listing: PropertyListing) => void;
   onSwitchToExplore: () => void;
   onSwitchToAgent?: () => void;
   onSwitchToTenant?: () => void;
@@ -147,7 +150,9 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   onDeleteListing,
   onAcceptBooking,
   onRejectBooking,
+  onDeleteBooking,
   onUpdateListing,
+  onAddListing,
   onSwitchToExplore,
   onSwitchToAgent,
   onSwitchToTenant,
@@ -161,6 +166,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [globalSearch, setGlobalSearch] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCreateListingModalOpen, setIsCreateListingModalOpen] = useState(false);
 
   // Sponsored Adverts State
   const [localAdverts, setLocalAdverts] = useState<AdvertStory[]>(() => {
@@ -674,7 +680,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const totalInspectionFeesCollected = useMemo(() => {
     return bookings
       .filter((b) => b.status === 'CONFIRMED_UNLOCKED')
-      .reduce((sum, b) => sum + (b.inspectionFeeAmount || 2500), 0);
+      .reduce((sum, b) => sum + (Number(b.inspectionFeeAmount) || 0), 0);
+  }, [bookings]);
+
+  const escrowPassesCount = useMemo(() => {
+    return bookings.filter(
+      (b) => b.status === 'CONFIRMED_UNLOCKED' && (Number(b.inspectionFeeAmount) || 0) > 0
+    ).length;
   }, [bookings]);
 
   const confirmedPassesCount = bookings.filter((b) => b.status === 'CONFIRMED_UNLOCKED').length;
@@ -682,7 +694,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const queuedCount = bookings.filter((b) => b.status === 'QUEUED').length;
 
   const totalJobListingFees = useMemo(() => {
-    return jobsList.reduce((sum, j) => sum + (j.listingFeePaid || 2000), 0);
+    return jobsList.reduce((sum, j) => sum + (Number(j.listingFeePaid) || 0), 0);
   }, [jobsList]);
 
   // Filtered Agents
@@ -993,11 +1005,11 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-[#000004] tracking-tight break-words">
-                  Super Admin Console
+                  Super Admin Dashboard
                 </h1>
               </div>
               <p className="text-xs sm:text-sm text-[#70798C] mt-1 flex flex-wrap items-center gap-2">
-                <span>Direct oversight across rentals, verified agents, tenants, and inspection escrows.</span>
+                <span>Direct operational command & oversight across rentals, jobs, verified agents, employers, and inspection escrows.</span>
               </p>
             </div>
           </div>
@@ -1027,7 +1039,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               <button
                 onClick={onSignOut}
                 className="py-2.5 px-3.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                title="Sign out of Super Admin Console"
+                title="Sign out of Super Admin Dashboard"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Sign Out</span>
@@ -1263,7 +1275,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 {formatNaira(totalInspectionFeesCollected)}
               </div>
               <div className="mt-2 flex items-center gap-1.5 text-[11px] text-[#70798C]">
-                <span className="font-bold text-emerald-600">{confirmedPassesCount} Unlocked Passes</span>
+                <span className="font-bold text-emerald-600">{escrowPassesCount} Unlocked Passes</span>
               </div>
             </div>
 
@@ -1489,8 +1501,17 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               ))}
             </div>
 
-            <div className="text-xs text-[#70798C]">
-              Showing <strong className="text-[#000004]">{filteredListings.length}</strong> listings
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                onClick={() => setIsCreateListingModalOpen(true)}
+                className="py-1.5 px-3.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5 text-amber-300" />
+                <span>Add New Property</span>
+              </button>
+              <div className="text-xs text-[#70798C]">
+                Showing <strong className="text-[#000004]">{filteredListings.length}</strong> listings
+              </div>
             </div>
           </div>
 
@@ -1581,7 +1602,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                             <span className="font-bold text-xs">
                               {listing.inspectionSlots?.reduce((acc, s) => acc + (s.bookedCount || 0), 0) || 0} booked
                             </span>
-                            <p className="text-[10px] text-[#70798C]">Fee: ₦{listing.inspectionFee || 2500}</p>
+                            <p className="text-[10px] text-[#70798C]">Fee: {listing.inspectionFee ? formatNaira(listing.inspectionFee) : '₦0 (Free)'}</p>
                           </td>
 
                           {/* Status */}
@@ -1820,11 +1841,45 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                                     },
                                   });
                                 }}
-                                className="py-1 px-2 rounded-lg border border-[#E5E7EB] bg-white hover:bg-red-50 text-[#70798C] hover:text-red-600 text-xs font-semibold transition-colors cursor-pointer"
+                                className="py-1 px-2 rounded-lg border border-[#E5E7EB] bg-white hover:bg-amber-50 text-[#70798C] hover:text-amber-700 text-xs font-semibold transition-colors cursor-pointer"
                                 title="Cancel Booking"
                               >
                                 <XCircle className="w-3.5 h-3.5" />
                               </button>
+
+                              {onDeleteBooking && (
+                                <button
+                                  onClick={() => {
+                                    openConfirmDialog({
+                                      title: 'Permanently Delete Booking?',
+                                      message: `Are you sure you want to permanently delete booking #${booking.id}? This will remove it from all records and cloud storage.`,
+                                      itemTitle: `Applicant: ${booking.applicantName} (${booking.applicantPhone})`,
+                                      itemSubtitle: `Slot: ${booking.slotTimeWindow || 'Scheduled inspection'}`,
+                                      badge: 'DELETE BOOKING',
+                                      confirmText: 'Yes, Delete Permanently',
+                                      cancelText: 'Keep Booking',
+                                      variant: 'danger',
+                                      onConfirm: () => {
+                                        onDeleteBooking(booking.id);
+                                        recordAuditLog(
+                                          'BOOKING_DELETED_BY_ADMIN',
+                                          'booking',
+                                          booking.id,
+                                          `Booking ${booking.id}`,
+                                          currentUser.fullName,
+                                          `Super Admin permanently deleted booking #${booking.id}.`
+                                        );
+                                        showToast(`Booking #${booking.id} permanently deleted.`);
+                                        setConfirmModalState(null);
+                                      },
+                                    });
+                                  }}
+                                  className="py-1 px-2 rounded-lg border border-[#E5E7EB] bg-white hover:bg-red-50 text-[#70798C] hover:text-red-600 text-xs font-semibold transition-colors cursor-pointer"
+                                  title="Permanently Delete Booking Record"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -2505,7 +2560,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               <div className="text-2xl font-display font-black text-[#000004] mt-1">
                 {formatNaira(totalInspectionFeesCollected)}
               </div>
-              <p className="text-[11px] text-[#70798C] mt-1">From {confirmedPassesCount} physical inspection passes</p>
+              <p className="text-[11px] text-[#70798C] mt-1">From {escrowPassesCount} physical inspection passes</p>
             </div>
 
             <div className="bg-white rounded-2xl p-5 border border-[#E5E7EB] shadow-xs">
@@ -3529,6 +3584,30 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             }
           }}
           onCancel={() => setConfirmModalState(null)}
+        />
+      )}
+
+      {/* Admin Property Listing Creation Modal (Agent/Lister capability) */}
+      {isCreateListingModalOpen && (
+        <CreateListingModal
+          isOpen={isCreateListingModalOpen}
+          currentUser={currentUser}
+          onClose={() => setIsCreateListingModalOpen(false)}
+          onListingCreated={(newListing) => {
+            if (onAddListing) {
+              onAddListing(newListing);
+            }
+            recordAuditLog(
+              'ADMIN_LISTING_CREATED',
+              'listing',
+              newListing.id,
+              newListing.title,
+              currentUser.fullName,
+              'Super Admin published a new verified property listing directly to live feed.'
+            );
+            showToast(`Property "${newListing.title}" published live across Setlla!`);
+            setIsCreateListingModalOpen(false);
+          }}
         />
       )}
     </div>

@@ -130,3 +130,26 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
     }
   } catch (e) {}
 }
+
+/**
+ * Permanently deletes an inspection booking from Supabase and local storage
+ */
+export async function deleteBooking(bookingId: string): Promise<void> {
+  const client = getSupabaseClient();
+  if (isSupabaseConfigured() && client) {
+    try {
+      await client.from('bookings').delete().eq('id', bookingId);
+    } catch (err) {
+      console.warn('[Setlla Supabase] Failed deleting booking from cloud:', err);
+    }
+  }
+
+  try {
+    const saved = getLocalSavedBookings();
+    if (saved) {
+      const existing: BookingRecord[] = JSON.parse(saved);
+      const updated = existing.filter((b) => b.id !== bookingId);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    }
+  } catch (e) {}
+}

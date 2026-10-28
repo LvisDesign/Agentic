@@ -226,6 +226,19 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
 
           {/* Right: Primary Action Buttons */}
           <div className="flex items-center gap-2.5 flex-wrap">
+            {(currentUser.isAdmin || currentUser.isSuperAdmin) && (
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.hash = '#/admin';
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-[#E5E7EB] bg-slate-50 hover:bg-slate-100 text-[#000004] text-xs font-bold transition-all shadow-xs cursor-pointer"
+                title="Open central platform Super Admin Console"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#342A21]" />
+                <span>Admin Console</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setIsPostJobModalOpen(true)}
