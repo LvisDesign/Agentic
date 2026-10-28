@@ -33,6 +33,7 @@ import { FALLBACK_PROPERTY_IMAGES } from './utils/mediaStorage';
 import { UserDashboard } from './components/User/UserDashboard';
 import { BecomeAgentModal } from './components/User/BecomeAgentModal';
 import { SignupModal } from './components/User/SignupModal';
+import { getPendingEmailOTP, clearPendingEmailOTP } from './services/emailVerificationService';
 import { MyPassesModal } from './components/Pass/MyPassesModal';
 import { NotificationsModal } from './components/Notifications/NotificationsModal';
 import { UserProfileModal } from './components/Profile/UserProfileModal';
@@ -1914,17 +1915,45 @@ export function App() {
       }
     };
 
+    const handleEmailSession = async (email?: string | null) => {
+      if (!email) return;
+      const clean = normalizeEmail(email);
+
+      // Check if this email matches an active pending signup verification
+      const pending = getPendingEmailOTP();
+      if (pending && normalizeEmail(pending.email) === clean && pending.pendingUser) {
+        console.log('[App] Auto-activating pending user from email link confirmation:', clean);
+        const user = pending.pendingUser;
+        user.isEmailVerified = true;
+        saveRegisteredUser(user, { allowReRegistration: true });
+        saveRegisteredUserAsync(user, { allowReRegistration: true });
+        clearPendingEmailOTP();
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+        localStorage.setItem('setlla_auth', 'true');
+        localStorage.setItem('setlla_user', JSON.stringify(user));
+        if (user.isAgent) {
+          setCurrentRole('agent');
+          setUserView('feed');
+          window.location.hash = '#/agent';
+        }
+        return;
+      }
+
+      await authorizeSuperAdminFromEmail(email);
+    };
+
     // 1. Check existing session on load (handles instant token parse from email link redirect)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email) {
-        authorizeSuperAdminFromEmail(session.user.email);
+        handleEmailSession(session.user.email);
       }
     }).catch(() => {});
 
     // 2. Subscribe to auth state changes (handles magic link click while app is open or loading)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user?.email) {
-        authorizeSuperAdminFromEmail(session.user.email);
+        handleEmailSession(session.user.email);
       }
     });
 
@@ -1935,7 +1964,7 @@ export function App() {
       if (accessToken) {
         supabase.auth.getUser(accessToken).then(({ data: { user } }) => {
           if (user?.email) {
-            authorizeSuperAdminFromEmail(user.email);
+            handleEmailSession(user.email);
           }
         }).catch(() => {});
       }

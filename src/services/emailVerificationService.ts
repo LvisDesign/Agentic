@@ -93,19 +93,34 @@ export async function sendEmailOTP(
 
   // Best-effort Supabase Auth OTP delivery via Hostinger custom SMTP (Non-blocking background dispatch)
   if (isSupabaseConfigured()) {
+    const redirectUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}${window.location.pathname}#/verify-email`
+      : undefined;
+
     // Fire-and-forget in background so user UI transitions to OTP input immediately with 0 delay!
     supabase.auth
       .signInWithOtp({
         email: cleanEmail,
         options: {
+          emailRedirectTo: redirectUrl,
           shouldCreateUser: true,
         },
       })
       .then((res) => {
         if (res.error) {
-          console.warn('[Setlla Email Service] Background Supabase OTP notice:', res.error.message || res.error);
+          console.warn('[Setlla Email Service] Background Supabase signInWithOtp notice:', res.error.message || res.error);
+          // Fallback to resend signup confirmation if signInWithOtp was throttled
+          supabase.auth
+            .resend({
+              type: 'signup',
+              email: cleanEmail,
+              options: {
+                emailRedirectTo: redirectUrl,
+              },
+            })
+            .catch(() => {});
         } else {
-          console.log('[Setlla Email Service] Background Supabase OTP dispatched successfully.');
+          console.log('[Setlla Email Service] Background Supabase OTP dispatched successfully to', cleanEmail);
         }
       })
       .catch((err) => {

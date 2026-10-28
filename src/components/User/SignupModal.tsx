@@ -49,8 +49,10 @@ import {
   findUserByCredentialAsync,
   saveRegisteredUser, 
   saveRegisteredUserAsync,
+  normalizeEmail,
   DuplicateCheckResult 
 } from '../../utils/userRegistry';
+import { supabase, isSupabaseConfigured } from '../../utils/supabaseClient';
 import { 
   sendEmailOTP, 
   verifyEmailOTP, 
@@ -746,6 +748,63 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
+  // Instant Magic Link Listener:
+  // If the user clicks "Confirm email address" in their email, Supabase emits SIGNED_IN.
+  // We automatically detect this in real-time, mark the account verified, and log them in!
+  useEffect(() => {
+    if (authMode !== 'verify_email' || !otpEmail || !isSupabaseConfigured()) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const sessionEmail = session?.user?.email ? normalizeEmail(session.user.email) : '';
+      const targetEmail = normalizeEmail(otpEmail);
+
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && sessionEmail && sessionEmail === targetEmail) {
+        console.log('[SignupModal] Detected instant email confirmation for:', sessionEmail);
+        setIsVerifyingOtp(true);
+        try {
+          const user = otpPendingUser;
+          if (user) {
+            user.isEmailVerified = true;
+            await saveRegisteredUserAsync(user, { allowReRegistration: true });
+
+            try {
+              confetti({
+                particleCount: 75,
+                spread: 60,
+                origin: { y: 0.6 },
+                colors: ['#342A21', '#10B981', '#FCF9F5', '#000004']
+              });
+            } catch (_) {}
+
+            const targetRoom: 'rentals' | 'jobs' =
+              (user.persona === 'job_seeker' || user.persona === 'employer') ? 'jobs' : 'rentals';
+
+            setSuccessMessage({
+              title: `Email Verified! Welcome, ${user.fullName}`,
+              subtitle: user.isAgent ? 'Your Agent portal is now active. Loading...' : 'Your Employer portal is active. Loading...'
+            });
+            setIsSuccess(true);
+
+            setTimeout(() => {
+              onUpdateUser(user, user.isAgent ? 'agent' : 'seeker', targetRoom);
+              setIsSuccess(false);
+              setIsVerifyingOtp(false);
+              onClose();
+            }, 1200);
+          }
+        } catch (err) {
+          console.error('[SignupModal] Activation error after email link click:', err);
+        } finally {
+          setIsVerifyingOtp(false);
+        }
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [authMode, otpEmail, otpPendingUser, onUpdateUser, onClose]);
+
   // --- Password Recovery Handlers ---
   const handleSendForgotPasswordOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1432,9 +1491,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         ))}
                       </div>
 
-
                       <p className="text-[11px] text-[#70798C] text-center">
-                        Code expires in 10 minutes. Check your inbox or spam folder.
+                        Enter the 6-digit code from your email, or tap the confirmation link in the email to activate instantly.
                       </p>
                     </div>
 
