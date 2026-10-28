@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supa
 import { PropertyListing, ListingAvailability } from '../types/marketplace';
 import { INITIAL_LISTINGS } from '../data/mockListings';
 import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO, getBlobFromIDB, uploadMediaToSupabaseStorage } from '../utils/mediaStorage';
+import { unrecordDeletedUserId } from '../utils/userRegistry';
 
 const LOCAL_STORAGE_KEY = 'setlla_listings';
 const LEGACY_STORAGE_KEY = 'deltarent_listings';
@@ -409,6 +410,27 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
         console.error('[Setlla Supabase] Error saving listing to database:', error);
       } else {
         console.log('[Setlla Supabase] Listing saved to cloud successfully:', sanitized.id);
+      }
+
+      // Guarantee the listing agent is captured in platform_users
+      if (sanitized.agent && sanitized.agent.id) {
+        unrecordDeletedUserId(sanitized.agent.id);
+        Promise.resolve(
+          client.from('platform_users').upsert({
+            id: sanitized.agent.id,
+            full_name: sanitized.agent.fullName || 'Verified Agent',
+            phone: sanitized.agent.phone || '',
+            whatsapp: sanitized.agent.whatsapp || sanitized.agent.phone || '',
+            agency_name: sanitized.agent.agencyName || sanitized.agent.fullName,
+            cac_number: sanitized.agent.cacNumber || 'VERIFIED-REG',
+            is_agent: true,
+            persona: 'lister',
+            city: sanitized.city || 'Asaba',
+            state: sanitized.state || 'Delta State',
+            kyc_status: sanitized.agent.isVerified ? 'verified' : 'pending',
+            created_at: sanitized.createdAt || new Date().toISOString(),
+          }, { onConflict: 'id' })
+        ).catch(() => {});
       }
     } catch (err) {
       console.warn('[Setlla Supabase] Network exception saving listing:', err);

@@ -19,7 +19,8 @@ import {
   mapDbToUserProfile,
   normalizePhoneNumber,
   normalizeEmail,
-  getDeletedUserIds
+  getDeletedUserIds,
+  unrecordDeletedUserId
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
@@ -1641,33 +1642,45 @@ export function App() {
     saveNewListing(newListing);
 
     // Confirm and reinforce agent profile for current user upon publishing listing
-    if (currentUser && !currentUser.isAgent) {
-      const isSuper = isElvisSuperAdmin(currentUser) || currentUser.isSuperAdmin || currentUser.isAdmin;
-      const upgraded: UserProfile = {
-        ...currentUser,
-        isAgent: true,
-        isVerifiedTenant: false,
-        isAdmin: isSuper ? true : currentUser.isAdmin,
-        isSuperAdmin: isSuper ? true : currentUser.isSuperAdmin,
-        persona: isSuper ? 'admin' : (currentUser.persona || 'agent'),
-        agencyName: newListing.agent?.agencyName || currentUser.agencyName || currentUser.fullName,
-        cacNumber: newListing.agent?.cacNumber || currentUser.cacNumber || 'VERIFIED-REG',
-        agentType: 'agency',
-        phone: newListing.agent?.phone || currentUser.phone,
-        operatingCity: newListing.city || currentUser.city || 'Asaba',
-        operatingState: newListing.state || currentUser.state || 'Delta State',
-      };
-      setCurrentUser(upgraded);
-      if (!isSuper) {
-        setCurrentRole('agent');
-        localStorage.setItem('setlla_active_role', 'agent');
-        localStorage.setItem('deltarent_active_role', 'agent');
-      }
-      localStorage.setItem('setlla_user', JSON.stringify(upgraded));
-      localStorage.setItem('deltarent_user', JSON.stringify(upgraded));
-      saveRegisteredUser(upgraded);
-      saveRegisteredUserAsync(upgraded);
+    const isSuper = isElvisSuperAdmin(currentUser) || currentUser.isSuperAdmin || currentUser.isAdmin;
+    const upgraded: UserProfile = {
+      ...currentUser,
+      isAgent: true,
+      isVerifiedTenant: false,
+      isAdmin: isSuper ? true : currentUser.isAdmin,
+      isSuperAdmin: isSuper ? true : currentUser.isSuperAdmin,
+      persona: isSuper ? 'admin' : (currentUser.persona === 'admin' ? 'admin' : 'agent'),
+      agencyName: newListing.agent?.agencyName || currentUser.agencyName || currentUser.fullName,
+      cacNumber: newListing.agent?.cacNumber || currentUser.cacNumber || 'VERIFIED-REG',
+      agentType: 'agency',
+      phone: newListing.agent?.phone || currentUser.phone,
+      operatingCity: newListing.city || currentUser.city || 'Asaba',
+      operatingState: newListing.state || currentUser.state || 'Delta State',
+    };
+    setCurrentUser(upgraded);
+    if (!isSuper) {
+      setCurrentRole('agent');
+      localStorage.setItem('setlla_active_role', 'agent');
+      localStorage.setItem('deltarent_active_role', 'agent');
     }
+    localStorage.setItem('setlla_user', JSON.stringify(upgraded));
+    localStorage.setItem('deltarent_user', JSON.stringify(upgraded));
+
+    // Clear any tombstone so the agent is 100% visible on Super Admin console
+    if (newListing.agent?.id) {
+      unrecordDeletedUserId(newListing.agent.id);
+    }
+    if (upgraded.id) {
+      unrecordDeletedUserId(upgraded.id);
+    }
+
+    saveRegisteredUser(upgraded);
+    saveRegisteredUserAsync(upgraded);
+
+    // Broadcast user registered/updated so admin console captures agent immediately
+    broadcastRealtimeEvent('USER_REGISTERED', {
+      user: upgraded,
+    });
 
     broadcastRealtimeEvent('LISTING_CREATED', {
       listing: newListing,

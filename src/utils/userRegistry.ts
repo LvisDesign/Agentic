@@ -373,9 +373,10 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
     const client = getSupabaseClient();
     if (!client) return localUsers;
 
-    const [usersRes, advertisersRes] = await Promise.all([
+    const [usersRes, advertisersRes, listingsRes] = await Promise.all([
       client.from('platform_users').select('*').order('created_at', { ascending: false }),
       Promise.resolve(client.from('advertisers').select('*').order('created_at', { ascending: false })).catch(() => ({ data: null, error: null })),
+      Promise.resolve(client.from('listings').select('id, title, city, state, agent, availability_status, created_at').in('availability_status', ['Available', 'Under Inspection'])).catch(() => ({ data: null, error: null })),
     ]);
 
     const data = usersRes.data;
@@ -386,7 +387,10 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
       const dbUsersMap = new Map<string, UserProfile>();
 
       const addOrMergeToDbMap = (user: UserProfile) => {
-        if (!user || !user.id || deletedIds.has(user.id)) return;
+        if (!user || !user.id) return;
+        // Self-heal: ensure live database users are never blocked by any stale local tombstone
+        unrecordDeletedUserId(user.id);
+
         const isAdmin = Boolean(
           user.isAdmin || 
           user.isSuperAdmin || 
@@ -420,6 +424,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         dbUsersMap.set(resolved.id, resolved);
       };
 
+      // 1. Add all registered users from central platform_users
       data.forEach((row) => {
         const u = mapDbToUserProfile(row);
         if (u) {
@@ -427,10 +432,10 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         }
       });
 
-      // Merge registered advertisers into unified user registry
+      // 2. Merge registered advertisers into unified user registry
       if (advertisersRes && 'data' in advertisersRes && Array.isArray(advertisersRes.data)) {
         advertisersRes.data.forEach((adv: any) => {
-          if (!adv || !adv.id || deletedIds.has(adv.id)) return;
+          if (!adv || !adv.id) return;
           const advUser: UserProfile = {
             id: adv.id,
             fullName: adv.contact_name || adv.company_name || 'Advertiser Partner',
@@ -448,6 +453,71 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
             agencyName: adv.company_name,
           };
           addOrMergeToDbMap(advUser);
+        });
+      }
+
+      // 3. FAILSAFE: Ensure any agent who has an active published listing is ALWAYS captured
+      if (listingsRes && 'data' in listingsRes && Array.isArray(listingsRes.data)) {
+        listingsRes.data.forEach((listing: any) => {
+          const ag = listing.agent;
+          if (ag && (ag.id || ag.phone)) {
+            const agentId = ag.id || (ag.phone ? `DT-AGT-${normalizePhoneNumber(ag.phone).slice(-4)}` : `DT-AGT-${Date.now()}`);
+            const agentPhoneNorm = ag.phone ? normalizePhoneNumber(ag.phone) : '';
+            
+            let found = false;
+            for (const existingUser of dbUsersMap.values()) {
+              const existingPhoneNorm = existingUser.phone ? normalizePhoneNumber(existingUser.phone) : '';
+              if (
+                existingUser.id === agentId ||
+                (agentPhoneNorm && existingPhoneNorm && agentPhoneNorm === existingPhoneNorm)
+              ) {
+                found = true;
+                existingUser.isAgent = true;
+                if (!existingUser.persona || existingUser.persona === 'tenant') {
+                  existingUser.persona = 'lister';
+                }
+                if (ag.agencyName && !existingUser.agencyName) existingUser.agencyName = ag.agencyName;
+                if (ag.cacNumber && !existingUser.cacNumber) existingUser.cacNumber = ag.cacNumber;
+                break;
+              }
+            }
+
+            if (!found) {
+              const activeAgentUser: UserProfile = {
+                id: agentId,
+                fullName: ag.fullName || ag.name || 'Verified Agent',
+                phone: ag.phone || '',
+                whatsapp: ag.whatsapp || ag.phone || '',
+                agencyName: ag.agencyName || ag.fullName || 'Agency',
+                cacNumber: ag.cacNumber || 'VERIFIED-REG',
+                isAgent: true,
+                persona: 'lister',
+                state: listing.state || 'Delta State',
+                city: listing.city || 'Asaba',
+                kycStatus: ag.isVerified ? 'verified' : 'pending',
+                isVerifiedTenant: false,
+                savedListingIds: [],
+                createdAt: listing.created_at || new Date().toISOString(),
+              };
+              addOrMergeToDbMap(activeAgentUser);
+              Promise.resolve(
+                client.from('platform_users').upsert({
+                  id: activeAgentUser.id,
+                  full_name: activeAgentUser.fullName,
+                  phone: activeAgentUser.phone,
+                  whatsapp: activeAgentUser.whatsapp,
+                  agency_name: activeAgentUser.agencyName,
+                  cac_number: activeAgentUser.cacNumber,
+                  is_agent: true,
+                  persona: 'lister',
+                  city: activeAgentUser.city,
+                  state: activeAgentUser.state,
+                  kyc_status: activeAgentUser.kycStatus,
+                  created_at: activeAgentUser.createdAt,
+                }, { onConflict: 'id' })
+              ).catch(() => {});
+            }
+          }
         });
       }
 
