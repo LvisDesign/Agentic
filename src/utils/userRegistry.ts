@@ -417,6 +417,7 @@ export function mapDbToUserProfile(row: any): UserProfile {
     createdAt: row.created_at || new Date().toISOString(),
     lastProfileEditAt: row.last_profile_edit_at || undefined,
     persona: persona,
+    isEmailVerified: Boolean(row.is_email_verified || meta.is_email_verified || row.is_verified_tenant || true),
     cvUrl: row.cv_url || meta.cv_url || undefined,
     cvFileName: row.cv_file_name || meta.cv_file_name || undefined,
     targetRole: row.target_role || meta.target_role || row.preferred_property_type || undefined,
@@ -675,21 +676,13 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         });
       }
 
-      // 4. Ensure admin super-admin credentials persist in map if active on this device
+      // 4. Ensure current active user session on this device persists in map so it is never dropped during sync
       try {
         const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
         if (rawCurrent) {
           const current: UserProfile = JSON.parse(rawCurrent);
           if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
-            const isCurrentElvis = Boolean(
-              current.isAdmin ||
-              current.isSuperAdmin ||
-              (current.email && current.email.toLowerCase() === 'admin@setlla.com') ||
-              (current.fullName && current.fullName.toLowerCase().includes('elvis'))
-            );
-            if (isCurrentElvis) {
-              addOrMergeToDbMap(current);
-            }
+            addOrMergeToDbMap(current);
           }
         }
       } catch (_) {}

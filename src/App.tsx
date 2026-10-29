@@ -21,6 +21,7 @@ import {
   normalizeEmail,
   getDeletedUserIds,
   unrecordDeletedUserId,
+  unrecordDeletedUser,
   isDeletedUserRecord,
   recordDeletedUser,
   findUserByCredential,
@@ -494,7 +495,7 @@ export function App() {
     }
   }, [currentUser]);
 
-  // Live Account Verification: If account was deleted or suspended in cloud database, log out device immediately
+  // Live Account Verification: Only log out if account was explicitly marked suspended by administrator
   useEffect(() => {
     if (!currentUser || !currentUser.id || currentUser.id === 'GUEST_USER' || currentUser.id === 'DT-USR-GUEST' || isElvisSuperAdmin(currentUser)) {
       return;
@@ -502,52 +503,22 @@ export function App() {
 
     let isMounted = true;
     const verifyUserSession = async () => {
-      // 1. Check if user ID is in deleted tombstones
-      const deletedIds = getDeletedUserIds();
-      if (deletedIds.has(currentUser.id)) {
-        console.warn('[App] Current user was deleted by administrator. Purging session from device...');
-        handleSignOut();
-        return;
-      }
+      if (!isSupabaseConfigured()) return;
+      try {
+        const client = getSupabaseClient();
+        if (client) {
+          const { data, error } = await client
+            .from('platform_users')
+            .select('id, is_suspended')
+            .eq('id', currentUser.id)
+            .maybeSingle();
 
-      // 2. Validate against live Supabase platform_users and deleted_adverts database
-      if (isSupabaseConfigured()) {
-        try {
-          const client = getSupabaseClient();
-          if (client) {
-            // Check cloud tombstone first
-            const { data: tombstone } = await client
-              .from('deleted_adverts')
-              .select('id')
-              .eq('id', `usr_id:${currentUser.id}`)
-              .maybeSingle();
-
-            if (tombstone && isMounted) {
-              console.warn('[App] Cloud tombstone detected for current user. Purging session from device...');
-              recordDeletedUser(currentUser, false);
-              handleSignOut();
-              return;
-            }
-
-            const { data, error } = await client
-              .from('platform_users')
-              .select('id, is_suspended')
-              .eq('id', currentUser.id)
-              .maybeSingle();
-
-            if (!error && isMounted) {
-              if (data && data.is_suspended) {
-                console.warn('[App] User account was suspended. Purging session from device...');
-                handleSignOut();
-              } else if (!data) {
-                // If user is authenticated on this device but record isn't in platform_users yet,
-                // re-sync to database rather than prematurely wiping their account session
-                saveRegisteredUserAsync(currentUser, { skipBroadcast: true });
-              }
-            }
+          if (!error && isMounted && data?.is_suspended === true) {
+            console.warn('[App] User account was suspended by administrator. Purging session from device...');
+            handleSignOut();
           }
-        } catch (_) {}
-      }
+        }
+      } catch (_) {}
     };
 
     verifyUserSession();
@@ -555,7 +526,7 @@ export function App() {
     return () => {
       isMounted = false;
     };
-  }, [currentUser]);
+  }, [currentUser.id]);
 
   // Auto-heal agent status if current user has published listings on this device or in cloud
   useEffect(() => {
@@ -952,10 +923,7 @@ export function App() {
         const myNormPhone = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
         const myNormEmail = currentUser.email ? normalizeEmail(currentUser.email) : '';
 
-        const isMe = 
-          Boolean(delUser.id && currentUser.id === delUser.id) ||
-          Boolean(delNormPhone && myNormPhone && delNormPhone === myNormPhone) ||
-          Boolean(delNormEmail && myNormEmail && delNormEmail === myNormEmail);
+        const isMe = Boolean(delUser.id && currentUser.id && currentUser.id === delUser.id);
 
         if (isMe) {
           localStorage.removeItem('setlla_user');
@@ -1755,10 +1723,7 @@ export function App() {
     localStorage.setItem('setlla_user', JSON.stringify(upgraded));
     localStorage.setItem('deltarent_user', JSON.stringify(upgraded));
 
-    if (isDeletedUserRecord(upgraded)) {
-      handleSignOut();
-      return;
-    }
+    unrecordDeletedUser(upgraded);
 
     saveRegisteredUser(upgraded, { skipBroadcast: true });
     saveRegisteredUserAsync(upgraded, { skipBroadcast: true });
@@ -1814,10 +1779,7 @@ export function App() {
       lastProfileEditAt: new Date().toISOString(),
     };
 
-    if (isDeletedUserRecord(updatedAgentProfile)) {
-      handleSignOut();
-      return;
-    }
+    unrecordDeletedUser(updatedAgentProfile);
 
     // 1. Immediately persist to localStorage so mobile reloads / refreshes remain Agent
     localStorage.setItem('setlla_user', JSON.stringify(updatedAgentProfile));
