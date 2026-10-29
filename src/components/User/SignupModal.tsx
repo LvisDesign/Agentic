@@ -865,6 +865,49 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     };
   }, [authMode, otpEmail, otpPendingUser, onUpdateUser, onClose]);
 
+  // Auto-Paste on App Resume / Tab Focus:
+  // When a user copies the code from Gmail and switches back to Setlla,
+  // we automatically read the clipboard and populate all boxes instantly!
+  useEffect(() => {
+    if (authMode !== 'verify_email') return;
+
+    const checkClipboardAutoPaste = async () => {
+      try {
+        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          const cleaned = (text || '').trim();
+          // If clipboard contains 6 or 8 pure digits, auto-fill it!
+          if (/^\d{6}$/.test(cleaned) || /^\d{8}$/.test(cleaned)) {
+            applyPastedCode(cleaned);
+          }
+        }
+      } catch (_) {
+        // Browser requires explicit gesture; fallback cleanly to manual/button paste
+      }
+    };
+
+    const handleFocus = () => {
+      checkClipboardAutoPaste();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkClipboardAutoPaste();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Initial check on mount
+    checkClipboardAutoPaste();
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [authMode]);
+
   // --- Password Recovery Handlers ---
   const handleSendForgotPasswordOtp = async (e: React.FormEvent) => {
     e.preventDefault();
