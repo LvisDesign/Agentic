@@ -348,8 +348,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
-  if (!isOpen || (isAuthenticated && authMode !== 'verify_email' && !isSuccess && !showPostSignupPrompt)) return null;
-
   // Handle phone changes to sync WhatsApp if checked
   const handleAgentPhoneChange = (val: string) => {
     setAgentPhone(val);
@@ -772,7 +770,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   // If the user clicks "Confirm email address" in their email, Supabase emits SIGNED_IN.
   // We automatically detect this in real-time, mark the account verified, and log them in!
   useEffect(() => {
-    if (authMode !== 'verify_email' || !otpEmail || !isSupabaseConfigured()) return;
+    if (!isOpen || authMode !== 'verify_email' || !otpEmail || !isSupabaseConfigured()) return;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const sessionEmail = session?.user?.email ? normalizeEmail(session.user.email) : '';
@@ -831,13 +829,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     return () => {
       subscription.unsubscribe();
     };
-  }, [authMode, otpEmail, otpPendingUser, onUpdateUser, onClose]);
+  }, [isOpen, authMode, otpEmail, otpPendingUser, onUpdateUser, onClose]);
 
   // Auto-Paste on App Resume / Tab Focus:
   // When a user copies the code from Gmail and switches back to Setlla,
   // we automatically read the clipboard and populate all boxes instantly!
   useEffect(() => {
-    if (authMode !== 'verify_email') return;
+    if (!isOpen || authMode !== 'verify_email') return;
 
     const checkClipboardAutoPaste = async () => {
       try {
@@ -874,7 +872,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [authMode]);
+  }, [isOpen, authMode]);
 
   // --- Password Recovery Handlers ---
   const handleSendForgotPasswordOtp = async (e: React.FormEvent) => {
@@ -1025,6 +1023,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   const isTenantOptionalOpen = showOptionalTenantFields || Boolean(seekerEmail);
   const isAgentOptionalOpen = showOptionalAgentFields || Boolean(agentCac);
+
+  if (!isOpen || (isAuthenticated && authMode !== 'verify_email' && !isSuccess && !showPostSignupPrompt)) {
+    return null;
+  }
 
   return (
     <ModalPortal>
