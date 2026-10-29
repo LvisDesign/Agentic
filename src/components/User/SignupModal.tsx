@@ -31,6 +31,7 @@ import {
   EyeOff,
   ShieldCheck,
   RefreshCw,
+  Clipboard,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { DeltaCity, UserProfile, UserRole } from '../../types/marketplace';
@@ -680,25 +681,53 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
-  // --- OTP Input & Verification Handlers (Supports both 6-digit & 8-digit OTPs) ---
+  // --- OTP Input & Verification Handlers (Supports both 6-digit & 8-digit OTPs + Instant Paste) ---
+  const applyPastedCode = (rawText: string) => {
+    const cleaned = (rawText || '').replace(/\D/g, '');
+    if (!cleaned) return;
+    const chars = cleaned.slice(0, 8).split('');
+    const newDigits = Array(8).fill('');
+    chars.forEach((c, idx) => {
+      if (idx < 8) newDigits[idx] = c;
+    });
+    setOtpDigits(newDigits);
+    if (otpError) setOtpError(null);
+    const nextIdx = Math.min(chars.length, 7);
+    const nextInput = document.getElementById(`otp-box-${nextIdx}`);
+    if (nextInput) nextInput.focus();
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData ? e.clipboardData.getData('text') : '';
+    if (pasted) {
+      applyPastedCode(pasted);
+    }
+  };
+
+  const handlePasteFromClipboard = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+          applyPastedCode(text);
+          return;
+        }
+      }
+    } catch (_) {}
+    const firstInput = document.getElementById('otp-box-0');
+    if (firstInput) firstInput.focus();
+  };
+
   const handleDigitChange = (index: number, value: string) => {
     const cleaned = value.replace(/\D/g, '');
     if (cleaned.length > 1) {
-      const chars = cleaned.slice(0, 8).split('');
-      const newDigits = Array(8).fill('');
-      chars.forEach((c, idx) => {
-        if (idx < 8) newDigits[idx] = c;
-      });
-      setOtpDigits(newDigits);
-      if (otpError) setOtpError(null);
-      const nextIdx = Math.min(chars.length, 7);
-      const nextInput = document.getElementById(`otp-box-${nextIdx}`);
-      if (nextInput) nextInput.focus();
+      applyPastedCode(cleaned);
       return;
     }
 
     const newDigits = [...otpDigits];
-    newDigits[index] = cleaned;
+    newDigits[index] = cleaned.slice(-1);
     setOtpDigits(newDigits);
     if (otpError) setOtpError(null);
 
@@ -1503,9 +1532,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             id={`otp-box-${idx}`}
                             type="text"
                             inputMode="numeric"
-                            maxLength={1}
+                            autoComplete="one-time-code"
                             autoFocus={idx === 0}
                             value={digit}
+                            onPaste={handlePaste}
                             onChange={(e) => handleDigitChange(idx, e.target.value)}
                             onKeyDown={(e) => handleDigitKeyDown(idx, e)}
                             className="w-8 h-11 sm:w-10 sm:h-12 text-center text-base sm:text-lg font-black rounded-lg sm:rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] text-[#000004] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/20 focus:border-[#F95700] transition-all"
@@ -1513,7 +1543,19 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         ))}
                       </div>
 
-                      <p className="text-[11px] text-[#70798C] text-center">
+                      <div className="flex items-center justify-center gap-2 pt-0.5">
+                        <button
+                          type="button"
+                          onClick={handlePasteFromClipboard}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#F4F5F7] hover:bg-[#E5E7EB] active:scale-95 text-[#000004] text-[11px] font-bold transition-all cursor-pointer shadow-2xs border border-[#E5E7EB]"
+                          title="Paste code directly from clipboard"
+                        >
+                          <Clipboard className="w-3.5 h-3.5 text-[#F95700]" />
+                          <span>Paste code from clipboard</span>
+                        </button>
+                      </div>
+
+                      <p className="text-[11px] text-[#70798C] text-center pt-0.5">
                         Enter the code from your email (6 or 8 digits), or tap the confirmation link to activate instantly.
                       </p>
                     </div>
