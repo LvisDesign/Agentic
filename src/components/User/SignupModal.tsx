@@ -165,7 +165,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   // Email OTP Verification State (Agents, Employers, Password Recovery)
   const [otpEmail, setOtpEmail] = useState('');
-  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '', '', '']);
   const [otpPurpose, setOtpPurpose] = useState<'agent_signup' | 'employer_signup' | 'forgot_password'>('agent_signup');
   const [otpPendingUser, setOtpPendingUser] = useState<UserProfile | null>(null);
   const [otpResendSeconds, setOtpResendSeconds] = useState(0);
@@ -470,7 +470,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           setOtpEmail(seekerEmail.trim());
           setOtpPurpose('employer_signup');
           setOtpPendingUser(updated);
-          setOtpDigits(['', '', '', '', '', '']);
+          setOtpDigits(['', '', '', '', '', '', '', '']);
           setOtpResendSeconds(60);
           setOtpError(null);
           setAuthMode('verify_email');
@@ -634,7 +634,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           setOtpEmail(agentEmail.trim());
           setOtpPurpose('agent_signup');
           setOtpPendingUser(updated);
-          setOtpDigits(['', '', '', '', '', '']);
+          setOtpDigits(['', '', '', '', '', '', '', '']);
           setOtpResendSeconds(60);
           setOtpError(null);
           setAuthMode('verify_email');
@@ -680,18 +680,18 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
-  // --- OTP Input & Verification Handlers ---
+  // --- OTP Input & Verification Handlers (Supports both 6-digit & 8-digit OTPs) ---
   const handleDigitChange = (index: number, value: string) => {
     const cleaned = value.replace(/\D/g, '');
     if (cleaned.length > 1) {
-      const chars = cleaned.slice(0, 6).split('');
-      const newDigits = [...otpDigits];
+      const chars = cleaned.slice(0, 8).split('');
+      const newDigits = Array(8).fill('');
       chars.forEach((c, idx) => {
-        if (idx < 6) newDigits[idx] = c;
+        if (idx < 8) newDigits[idx] = c;
       });
       setOtpDigits(newDigits);
       if (otpError) setOtpError(null);
-      const nextIdx = Math.min(chars.length, 5);
+      const nextIdx = Math.min(chars.length, 7);
       const nextInput = document.getElementById(`otp-box-${nextIdx}`);
       if (nextInput) nextInput.focus();
       return;
@@ -702,7 +702,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     setOtpDigits(newDigits);
     if (otpError) setOtpError(null);
 
-    if (cleaned && index < 5) {
+    if (cleaned && index < 7) {
       const nextInput = document.getElementById(`otp-box-${index + 1}`);
       if (nextInput) nextInput.focus();
     }
@@ -730,7 +730,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     if (e) e.preventDefault();
     const code = otpDigits.join('').trim();
     if (code.length < 6) {
-      setOtpError('Please enter the full 6-digit code sent to your email.');
+      setOtpError('Please enter the verification code sent to your email.');
       return;
     }
 
@@ -849,7 +849,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       const res = await sendEmailOTP(forgotPasswordEmail.trim(), 'forgot_password');
       setOtpEmail(forgotPasswordEmail.trim());
       setOtpPurpose('forgot_password');
-      setOtpDigits(['', '', '', '', '', '']);
+      setOtpDigits(['', '', '', '', '', '', '', '']);
       setOtpResendSeconds(60);
       setOtpError(null);
       setAuthMode('verify_email');
@@ -1494,9 +1494,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                     <div className="space-y-2">
                       <label className="block text-xs font-semibold text-[#70798C] text-center">
-                        Enter 6-digit confirmation code
+                        Enter verification code
                       </label>
-                      <div className="flex items-center justify-center gap-2 sm:gap-2.5 my-2">
+                      <div className="flex items-center justify-center gap-1 sm:gap-2 my-2">
                         {otpDigits.map((digit, idx) => (
                           <input
                             key={idx}
@@ -1508,20 +1508,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             value={digit}
                             onChange={(e) => handleDigitChange(idx, e.target.value)}
                             onKeyDown={(e) => handleDigitKeyDown(idx, e)}
-                            className="w-10 h-12 sm:w-11 sm:h-13 text-center text-lg sm:text-xl font-black rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] text-[#000004] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/20 focus:border-[#F95700] transition-all"
+                            className="w-8 h-11 sm:w-10 sm:h-12 text-center text-base sm:text-lg font-black rounded-lg sm:rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] text-[#000004] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/20 focus:border-[#F95700] transition-all"
                           />
                         ))}
                       </div>
 
                       <p className="text-[11px] text-[#70798C] text-center">
-                        Enter the 6-digit code from your email, or tap the confirmation link in the email to activate instantly.
+                        Enter the code from your email (6 or 8 digits), or tap the confirmation link to activate instantly.
                       </p>
                     </div>
 
                     <div className="pt-2 space-y-2.5">
                       <button
                         type="submit"
-                        disabled={isVerifyingOtp || otpDigits.join('').length < 6}
+                        disabled={isVerifyingOtp || (otpDigits.filter(Boolean).length !== 6 && otpDigits.filter(Boolean).length !== 8)}
                         className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
                       >
                         {isVerifyingOtp ? (
