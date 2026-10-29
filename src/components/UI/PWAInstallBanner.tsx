@@ -11,7 +11,15 @@ import {
   MoreVertical,
   ExternalLink
 } from 'lucide-react';
-import { isIOS, isStandalone, usePWA, subscribePrompt, BeforeInstallPromptEvent } from '../../utils/pwa';
+import { 
+  isIOS, 
+  isStandalone, 
+  isAppInstalled, 
+  checkDeviceHasAppInstalled, 
+  usePWA, 
+  subscribePrompt, 
+  BeforeInstallPromptEvent 
+} from '../../utils/pwa';
 import { ModalPortal } from './ModalPortal';
 import { UserProfile } from '../../types/marketplace';
 
@@ -36,8 +44,8 @@ const isSnoozed = (): boolean => {
   }
 };
 
-export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser }) => {
-  const { isStandalone: hookStandalone, updateAvailable, applyUpdate } = usePWA();
+export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser: _currentUser }) => {
+  const { isStandalone: hookStandalone, isInstalled: hookInstalled, updateAvailable, applyUpdate } = usePWA();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
@@ -57,7 +65,7 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
     setShowAndroidModal(false);
   };
 
-  // Hide permanently on successful installation
+  // Hide permanently on successful installation (365-day persistent suppression)
   const handleInstallSuccess = () => {
     try {
       const expiryTime = new Date().getTime() + 365 * 24 * 60 * 60 * 1000;
@@ -72,16 +80,23 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
   };
 
   useEffect(() => {
-    // 1. If currently running inside standalone PWA mode, never show install prompt
-    if (isStandalone() || hookStandalone) {
+    // 1. If currently running inside standalone PWA mode OR app is already installed on device, NEVER show install prompt
+    if (isStandalone() || hookStandalone || isAppInstalled() || hookInstalled) {
       setIsVisible(false);
       return;
     }
 
+    // 2. Query device installation state asynchronously (e.g. Chrome/Android getInstalledRelatedApps)
+    checkDeviceHasAppInstalled().then((installed) => {
+      if (installed) {
+        setIsVisible(false);
+      }
+    });
+
     const ios = isIOS();
     setIsIOSDevice(ios);
 
-    // 2. Listen to deferred native beforeinstallprompt event
+    // 3. Listen to deferred native beforeinstallprompt event
     const unsubPrompt = subscribePrompt((prompt) => {
       if (prompt) {
         setDeferredPrompt(prompt);
@@ -100,19 +115,21 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // 3. Trigger prompt popup:
-    // - Immediately on landing for new users (explore page)
-    // - Also for all users who already signed up (currentUser present)
+    // 4. Trigger prompt popup strictly if NOT already installed and NOT snoozed
     const timer = setTimeout(() => {
-      // Don't show if already in standalone app
-      if (isStandalone()) return;
-
-      // If snoozed within last 24h, check if this is an active signed-up user
-      // Signed-up users always get priority to have the app installed
-      const snoozed = isSnoozed();
-      if (!snoozed || Boolean(currentUser)) {
-        setIsVisible(true);
+      // Don't show if already installed on device or in standalone mode
+      if (isStandalone() || hookStandalone || isAppInstalled() || hookInstalled) {
+        setIsVisible(false);
+        return;
       }
+
+      // Don't show if snoozed
+      if (isSnoozed()) {
+        setIsVisible(false);
+        return;
+      }
+
+      setIsVisible(true);
     }, 1200);
 
     return () => {
@@ -121,13 +138,15 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [hookStandalone, currentUser]);
+  }, [hookStandalone, hookInstalled]);
 
   const handleInstallClick = async () => {
     // 1. Immediately dismiss the bottom banner popup off the user's screen
     setIsVisible(false);
     try {
       localStorage.setItem('setlla_pwa_installed', 'true');
+      const expiryTime = new Date().getTime() + 365 * 24 * 60 * 60 * 1000;
+      localStorage.setItem(STORAGE_KEY, expiryTime.toString());
     } catch (_) {}
 
     // 2. iOS Safari device -> Open iOS 2-step setup guide
@@ -157,8 +176,8 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
     setShowAndroidModal(true);
   };
 
-  // If running standalone and no update, render nothing
-  if (isStandalone() || hookStandalone) {
+  // If running standalone or app is already installed on device, and no update, render nothing
+  if (isStandalone() || hookStandalone || isAppInstalled() || hookInstalled) {
     if (!updateAvailable) return null;
   }
 
@@ -197,7 +216,7 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
       )}
 
       {/* Primary Floating PWA Install Notification Card */}
-      {isVisible && !isStandalone() && !hookStandalone && (
+      {isVisible && !isStandalone() && !hookStandalone && !isAppInstalled() && !hookInstalled && (
         <aside
           aria-label="PWA Installation Prompt"
           className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-[99] animate-slide-up"

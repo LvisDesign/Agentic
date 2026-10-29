@@ -48,20 +48,43 @@ export function recordDeletedJobId(jobId: string): void {
 }
 
 /**
+ * Detects whether a job is a dummy demo/mock/test vacancy.
+ * Strips out test entries (e.g., "Test", "Test Co", "job-demo-*", "mock-*", etc.)
+ */
+export const isDemoOrTestJob = (j: any): boolean => {
+  if (!j) return true;
+  const id = String(j.id || '').toLowerCase().trim();
+  const title = String(j.title || '').toLowerCase().trim();
+  const company = String(j.companyName || j.company_name || '').toLowerCase().trim();
+  const summary = String(j.summary || '').toLowerCase().trim();
+  const desc = String(j.description || '').toLowerCase().trim();
+
+  return Boolean(
+    id.startsWith('job-asaba-') ||
+    id.startsWith('job-warri-') ||
+    id.startsWith('job-sapele-') ||
+    id.startsWith('job-demo-') ||
+    id.startsWith('demo-') ||
+    id.startsWith('mock-') ||
+    id.includes('test') ||
+    title === 'test' ||
+    title === 'test job' ||
+    title === 'demo' ||
+    title.startsWith('test ') ||
+    company === 'test' ||
+    company === 'test co' ||
+    company.includes('test co') ||
+    company === 'demo' ||
+    summary === 'summary' ||
+    (summary === 'test' && desc === 'test')
+  );
+};
+
+/**
  * Loads all available job listings.
  */
 export async function getAllJobs(): Promise<JobListing[]> {
   const deletedIds = getDeletedJobIds();
-  const isDemoJob = (id?: string) =>
-    Boolean(
-      id &&
-        (id.startsWith('job-asaba-') ||
-          id.startsWith('job-warri-') ||
-          id.startsWith('job-sapele-') ||
-          id.startsWith('job-demo-') ||
-          id.startsWith('demo-') ||
-          id.startsWith('mock-'))
-    );
 
   let localJobs: JobListing[] = [];
   try {
@@ -69,7 +92,7 @@ export async function getAllJobs(): Promise<JobListing[]> {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        localJobs = parsed.filter((j) => j && j.id && !deletedIds.has(j.id) && !isDemoJob(j.id));
+        localJobs = parsed.filter((j) => j && j.id && !deletedIds.has(j.id) && !isDemoOrTestJob(j));
       }
     }
   } catch (_) {}
@@ -87,7 +110,7 @@ export async function getAllJobs(): Promise<JobListing[]> {
         const { data, error } = await client.from('job_listings').select('*');
         if (!error && Array.isArray(data)) {
           const cloudJobs: JobListing[] = data
-            .filter((d: any) => d && d.id && !deletedIds.has(d.id) && !isDemoJob(d.id))
+            .filter((d: any) => d && d.id && !deletedIds.has(d.id) && !isDemoOrTestJob(d))
             .map((d: any) => ({
               id: d.id,
               title: d.title,

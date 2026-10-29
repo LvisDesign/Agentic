@@ -4,16 +4,16 @@
  * mobile or desktop browsers during previous visits is thoroughly purged on startup.
  */
 
-const SYNC_VERSION_KEY = 'setlla_live_sync_v5';
+const SYNC_VERSION_KEY = 'setlla_live_sync_v6';
 
 export function runClientCacheSanitization(): void {
   if (typeof window === 'undefined') return;
 
   try {
     const currentVersion = localStorage.getItem(SYNC_VERSION_KEY);
-    if (currentVersion === 'v5') return;
+    if (currentVersion === 'v6') return;
 
-    console.log('[Setlla] Performing client cache purge v5 for live production sync...');
+    console.log('[Setlla] Performing client cache purge v6 for live production sync...');
 
     // 1. Wipe all local job listings cache completely so device fetches fresh from Supabase
     localStorage.removeItem('setlla_job_listings');
@@ -73,7 +73,7 @@ export function runClientCacheSanitization(): void {
     if (typeof caches !== 'undefined') {
       caches.keys().then((names) => {
         names.forEach((name) => {
-          if (name !== 'setlla-pwa-v5') {
+          if (name !== 'setlla-pwa-v6') {
             console.log('[Setlla] Purging legacy SW cache:', name);
             caches.delete(name);
           }
@@ -81,8 +81,8 @@ export function runClientCacheSanitization(): void {
       }).catch(() => {});
     }
 
-    // 6. Mark client as synced to v5
-    localStorage.setItem(SYNC_VERSION_KEY, 'v5');
+    // 6. Mark client as synced to v6
+    localStorage.setItem(SYNC_VERSION_KEY, 'v6');
   } catch (err) {
     console.warn('[Setlla] Cache sanitizer notice:', err);
   }

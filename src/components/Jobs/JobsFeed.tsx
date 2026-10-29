@@ -28,7 +28,8 @@ import {
   getAllJobs, 
   hasUserApplied, 
   injectNativeBillboardAds, 
-  JobsFeedItem 
+  JobsFeedItem,
+  isDemoOrTestJob 
 } from '../../services/jobService';
 import { CustomDropdown } from '../UI/CustomDropdown';
 
@@ -115,6 +116,9 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
   // Filter jobs based on search query, city, and role type
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
+      // Exclude any test or demo postings
+      if (isDemoOrTestJob(job)) return false;
+
       // Search text (title, company, description, category, skills)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
