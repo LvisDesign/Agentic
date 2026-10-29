@@ -2105,6 +2105,7 @@ export function App() {
 
   // Handler: Update current user from signup/login modal
   const handleUpdateUser = (updatedUser: UserProfile, role?: UserRole, targetRoom?: 'rentals' | 'jobs') => {
+    unrecordDeletedUser(updatedUser);
     saveRegisteredUser(updatedUser, { allowReRegistration: true });
     saveRegisteredUserAsync(updatedUser, { allowReRegistration: true });
     broadcastRealtimeEvent('USER_REGISTERED', { user: updatedUser });

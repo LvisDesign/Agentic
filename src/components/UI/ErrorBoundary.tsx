@@ -8,31 +8,52 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  errorInfo: ErrorInfo | null;
   showDetails: boolean;
+  isPurging: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
+    errorInfo: null,
     showDetails: false,
+    isPurging: false,
   };
 
-  public static getDerivedStateFromError(error: Error): State {
+  public static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error, showDetails: false };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[Setlla ErrorBoundary] Uncaught runtime error:', error, errorInfo);
+    this.setState({ errorInfo });
   }
 
-  private handleReload = () => {
+  private purgeCachesAndReload = async (targetHash: string = '#/explore') => {
+    this.setState({ isPurging: true });
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((r) => r.unregister()));
+      }
+    } catch (_) {}
+
+    window.location.hash = targetHash;
     window.location.reload();
   };
 
+  private handleReload = () => {
+    this.purgeCachesAndReload(window.location.hash || '#/explore');
+  };
+
   private handleGoHome = () => {
-    window.location.hash = '#/explore';
-    window.location.reload();
+    this.purgeCachesAndReload('#/explore');
   };
 
   private toggleDetails = () => {
@@ -47,7 +68,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="min-h-screen w-full bg-[#FAF8F5] flex flex-col items-center justify-center p-6 text-center">
-          <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl border border-[#E5E7EB] flex flex-col items-center">
+          <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl border border-[#E5E7EB] flex flex-col items-center animate-fade-in">
             <img
               src="/images/setlla-logo.png"
               alt="Setlla"
@@ -78,14 +99,16 @@ export class ErrorBoundary extends Component<Props, State> {
               <button
                 type="button"
                 onClick={this.handleReload}
-                className="flex-1 py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                disabled={this.state.isPurging}
+                className="flex-1 py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
               >
-                Reload App
+                {this.state.isPurging ? 'Purging Cache...' : 'Reload App'}
               </button>
               <button
                 type="button"
                 onClick={this.handleGoHome}
-                className="flex-1 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#000004] font-bold text-xs transition-all active:scale-[0.99] cursor-pointer border border-[#E5E7EB]"
+                disabled={this.state.isPurging}
+                className="flex-1 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#000004] font-bold text-xs transition-all active:scale-[0.99] cursor-pointer border border-[#E5E7EB] disabled:opacity-50"
               >
                 Go to Explore
               </button>
@@ -101,10 +124,19 @@ export class ErrorBoundary extends Component<Props, State> {
                   {this.state.showDetails ? 'Hide technical details' : 'View technical details'}
                 </button>
                 {this.state.showDetails && (
-                  <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[10px] font-mono text-slate-800 break-words max-h-36 overflow-y-auto">
+                  <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[10px] font-mono text-slate-800 break-words max-h-48 overflow-y-auto">
                     <p className="font-bold text-red-600 mb-1">{this.state.error.name}: {this.state.error.message}</p>
+                    {this.state.errorInfo?.componentStack && (
+                      <div className="mt-2 border-t border-slate-200 pt-1 text-slate-600">
+                        <p className="font-bold text-slate-700">Component Stack:</p>
+                        <pre className="text-[9px] text-slate-500 whitespace-pre-wrap">{this.state.errorInfo.componentStack}</pre>
+                      </div>
+                    )}
                     {this.state.error.stack && (
-                      <pre className="text-[9px] text-slate-500 whitespace-pre-wrap">{this.state.error.stack}</pre>
+                      <div className="mt-2 border-t border-slate-200 pt-1">
+                        <p className="font-bold text-slate-700">Error Stack:</p>
+                        <pre className="text-[9px] text-slate-500 whitespace-pre-wrap">{this.state.error.stack}</pre>
+                      </div>
                     )}
                   </div>
                 )}
@@ -118,4 +150,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-

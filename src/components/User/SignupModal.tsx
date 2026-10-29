@@ -51,6 +51,7 @@ import {
   saveRegisteredUser, 
   saveRegisteredUserAsync,
   normalizeEmail,
+  unrecordDeletedUser,
   DuplicateCheckResult 
 } from '../../utils/userRegistry';
 import { supabase, isSupabaseConfigured } from '../../utils/supabaseClient';
@@ -58,6 +59,7 @@ import {
   sendEmailOTP, 
   verifyEmailOTP, 
   resetUserPassword,
+  getPendingEmailOTP,
   EmailOTPPurpose
 } from '../../services/emailVerificationService';
 import { isElvisSuperAdmin } from '../../services/adminAuthService';
@@ -721,11 +723,56 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       }
 
       // Signup verified
-      const user = res.user || otpPendingUser;
+      let user = res.user || otpPendingUser;
+      if (!user) {
+        const pending = getPendingEmailOTP();
+        if (pending?.pendingUser) {
+          user = pending.pendingUser;
+        }
+      }
+      if (!user) {
+        const cleanTargetEmail = (otpEmail || (activeRoleTab === 'agent' ? agentEmail : seekerEmail)).trim();
+        const existing = findUserByCredential(cleanTargetEmail);
+        if (existing) {
+          user = existing;
+        }
+      }
+      if (!user) {
+        const name = (activeRoleTab === 'agent' ? agentFullName : seekerFullName).trim() || 'New Member';
+        const phone = (activeRoleTab === 'agent' ? agentPhone : seekerPhone).trim();
+        const email = (otpEmail || (activeRoleTab === 'agent' ? agentEmail : seekerEmail)).trim();
+        const persona = selectedPersona || (activeRoleTab === 'agent' ? 'lister' : 'tenant');
+        user = {
+          id: `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
+          fullName: name,
+          phone,
+          email,
+          persona,
+          state: activeRoleTab === 'agent' ? agentState : seekerState,
+          city: 'Asaba',
+          operatingCity: 'Asaba',
+          isAgent: activeRoleTab === 'agent',
+          kycStatus: 'verified',
+          isVerifiedTenant: persona === 'tenant',
+          savedListingIds: [],
+          createdAt: new Date().toISOString(),
+          isEmailVerified: true,
+        };
+      }
+
       if (user) {
         user.isEmailVerified = true;
+        unrecordDeletedUser(user);
         saveRegisteredUser(user, { allowReRegistration: true });
-        await saveRegisteredUserAsync(user, { allowReRegistration: true });
+        saveRegisteredUserAsync(user, { allowReRegistration: true }).catch(() => {});
+
+        // Commit immediately to local storage so session can never be lost
+        try {
+          localStorage.setItem('setlla_auth', 'true');
+          localStorage.setItem('setlla_user', JSON.stringify(user));
+          localStorage.setItem('setlla_active_role', user.isAgent ? 'agent' : 'tenant');
+          sessionStorage.setItem('setlla_guest_skipped', 'true');
+        } catch (_) {}
 
         try {
           confetti({
@@ -747,6 +794,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           ? 'Agent portal'
           : 'Employer portal';
 
+        // Call onUpdateUser IMMEDIATELY so parent Header updates right away!
+        onUpdateUser(user, user.isAgent ? 'agent' : 'seeker', targetRoom);
+
         setSuccessMessage({
           title: `Email Verified! Welcome, ${user.fullName}`,
           subtitle: `Your ${roleTitle} is active. Loading...`
@@ -754,7 +804,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         setIsSuccess(true);
 
         setTimeout(() => {
-          onUpdateUser(user, user.isAgent ? 'agent' : 'seeker', targetRoom);
           setIsSuccess(false);
           setIsVerifyingOtp(false);
           onClose();
@@ -780,10 +829,49 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         console.log('[SignupModal] Detected instant email confirmation for:', sessionEmail);
         setIsVerifyingOtp(true);
         try {
-          const user = otpPendingUser;
+          let user = otpPendingUser;
+          if (!user) {
+            const pending = getPendingEmailOTP();
+            if (pending?.pendingUser) user = pending.pendingUser;
+          }
+          if (!user) {
+            const existing = findUserByCredential(sessionEmail);
+            if (existing) user = existing;
+          }
+          if (!user) {
+            const name = (activeRoleTab === 'agent' ? agentFullName : seekerFullName).trim() || 'New Member';
+            const phone = (activeRoleTab === 'agent' ? agentPhone : seekerPhone).trim();
+            const persona = selectedPersona || (activeRoleTab === 'agent' ? 'lister' : 'tenant');
+            user = {
+              id: `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
+              fullName: name,
+              phone,
+              email: sessionEmail,
+              persona,
+              state: activeRoleTab === 'agent' ? agentState : seekerState,
+              city: 'Asaba',
+              operatingCity: 'Asaba',
+              isAgent: activeRoleTab === 'agent',
+              kycStatus: 'verified',
+              isVerifiedTenant: persona === 'tenant',
+              savedListingIds: [],
+              createdAt: new Date().toISOString(),
+              isEmailVerified: true,
+            };
+          }
+
           if (user) {
             user.isEmailVerified = true;
-            await saveRegisteredUserAsync(user, { allowReRegistration: true });
+            unrecordDeletedUser(user);
+            saveRegisteredUser(user, { allowReRegistration: true });
+            saveRegisteredUserAsync(user, { allowReRegistration: true }).catch(() => {});
+
+            try {
+              localStorage.setItem('setlla_auth', 'true');
+              localStorage.setItem('setlla_user', JSON.stringify(user));
+              localStorage.setItem('setlla_active_role', user.isAgent ? 'agent' : 'tenant');
+              sessionStorage.setItem('setlla_guest_skipped', 'true');
+            } catch (_) {}
 
             try {
               confetti({
@@ -805,6 +893,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
               ? 'Agent portal'
               : 'Employer portal';
 
+            // Call onUpdateUser IMMEDIATELY!
+            onUpdateUser(user, user.isAgent ? 'agent' : 'seeker', targetRoom);
+
             setSuccessMessage({
               title: `Email Verified! Welcome, ${user.fullName}`,
               subtitle: `Your ${roleTitle} is active. Loading...`
@@ -812,7 +903,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             setIsSuccess(true);
 
             setTimeout(() => {
-              onUpdateUser(user, user.isAgent ? 'agent' : 'seeker', targetRoom);
               setIsSuccess(false);
               setIsVerifyingOtp(false);
               onClose();
