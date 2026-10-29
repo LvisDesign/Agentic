@@ -259,6 +259,8 @@ export interface CloudinaryConfig {
 
 const CLOUDINARY_CLOUD_NAME_KEY = 'setlla_cloudinary_cloud_name';
 const CLOUDINARY_PRESET_KEY = 'setlla_cloudinary_preset';
+const DEFAULT_CLOUDINARY_CLOUD_NAME = 'ewdqtpoi';
+const DEFAULT_CLOUDINARY_PRESET = 'setlla_media';
 
 export function getCloudinaryConfig(): CloudinaryConfig {
   const localCloudName = typeof window !== 'undefined' ? localStorage.getItem(CLOUDINARY_CLOUD_NAME_KEY) || '' : '';
@@ -267,8 +269,8 @@ export function getCloudinaryConfig(): CloudinaryConfig {
   const envCloudName = ((import.meta as any).env?.VITE_CLOUDINARY_CLOUD_NAME || '').trim();
   const envPreset = ((import.meta as any).env?.VITE_CLOUDINARY_UPLOAD_PRESET || '').trim();
 
-  const cloudName = localCloudName || envCloudName;
-  const uploadPreset = localPreset || envPreset;
+  const cloudName = localCloudName || envCloudName || DEFAULT_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = localPreset || envPreset || DEFAULT_CLOUDINARY_PRESET;
 
   return {
     cloudName,
