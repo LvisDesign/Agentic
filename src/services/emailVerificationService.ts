@@ -89,6 +89,11 @@ export async function sendEmailOTP(
     localStorage.setItem(PENDING_EMAIL_OTP_KEY, JSON.stringify(record));
   }
 
+  // Pre-save pending registration with isEmailVerified: false so cross-browser email link activation works seamlessly
+  if (pendingUser) {
+    saveRegisteredUserAsync({ ...pendingUser, isEmailVerified: false }, { allowReRegistration: true, skipBroadcast: true }).catch(() => {});
+  }
+
   // Best-effort Supabase Auth OTP delivery via Hostinger custom SMTP (Non-blocking background dispatch)
   if (isSupabaseConfigured()) {
     const redirectUrl = typeof window !== 'undefined'

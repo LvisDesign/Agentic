@@ -2043,17 +2043,39 @@ export function App() {
       }
     });
 
-    // 3. Fallback: Parse URL hash if direct fragment redirect occurs (#access_token=...)
-    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
-      const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, ''));
-      const accessToken = hashParams.get('access_token');
-      if (accessToken) {
-        supabase.auth.getUser(accessToken).then(({ data: { user } }) => {
-          if (user?.email) {
-            handleEmailSession(user.email);
-          }
-        }).catch(() => {});
-      }
+    // 3. Fallback: Parse URL parameters or hash for email confirmation / magic link redirects
+    if (typeof window !== 'undefined') {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, ''));
+
+        const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash');
+        const authType = (searchParams.get('type') || hashParams.get('type') || 'signup') as any;
+        const code = searchParams.get('code') || hashParams.get('code');
+        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+
+        if (tokenHash) {
+          supabase.auth.verifyOtp({ token_hash: tokenHash, type: authType }).then(({ data, error }) => {
+            if (!error && data?.user?.email) {
+              handleEmailSession(data.user.email);
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+          }).catch(() => {});
+        } else if (code) {
+          supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+            if (!error && data?.user?.email) {
+              handleEmailSession(data.user.email);
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }
+          }).catch(() => {});
+        } else if (accessToken) {
+          supabase.auth.getUser(accessToken).then(({ data: { user } }) => {
+            if (user?.email) {
+              handleEmailSession(user.email);
+            }
+          }).catch(() => {});
+        }
+      } catch (_) {}
     }
 
     return () => {
