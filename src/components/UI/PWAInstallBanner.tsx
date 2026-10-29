@@ -124,13 +124,19 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
   }, [hookStandalone, currentUser]);
 
   const handleInstallClick = async () => {
-    // 1. iOS Safari device -> Open iOS 2-step setup guide
+    // 1. Immediately dismiss the bottom banner popup off the user's screen
+    setIsVisible(false);
+    try {
+      localStorage.setItem('setlla_pwa_installed', 'true');
+    } catch (_) {}
+
+    // 2. iOS Safari device -> Open iOS 2-step setup guide
     if (isIOSDevice) {
       setShowIOSModal(true);
       return;
     }
 
-    // 2. Android / Desktop with native prompt ready -> Trigger 1-tap browser dialogue
+    // 3. Android / Desktop with native prompt ready -> Trigger 1-tap browser dialogue
     if (deferredPrompt) {
       try {
         await deferredPrompt.prompt();
@@ -147,7 +153,7 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
       }
     }
 
-    // 3. Android / Other browser where beforeinstallprompt was not captured -> Open Android/Chrome guide
+    // 4. Android / Other browser where beforeinstallprompt was not captured -> Open Android/Chrome guide
     setShowAndroidModal(true);
   };
 
@@ -324,7 +330,10 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
 
               <button
                 type="button"
-                onClick={() => setShowIOSModal(false)}
+                onClick={() => {
+                  setShowIOSModal(false);
+                  handleInstallSuccess();
+                }}
                 className="w-full py-3 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-md"
               >
                 <Check className="w-3.5 h-3.5" />
@@ -401,7 +410,10 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser 
 
               <button
                 type="button"
-                onClick={() => setShowAndroidModal(false)}
+                onClick={() => {
+                  setShowAndroidModal(false);
+                  handleInstallSuccess();
+                }}
                 className="w-full py-3 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-md"
               >
                 <Check className="w-3.5 h-3.5" />

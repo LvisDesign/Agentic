@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability, PlatformSettings } from './types/marketplace';
 import { Header } from './components/Header';
-import { setAppBadge, clearAppBadge, autoEnableNotifications } from './utils/pwa';
+import { setAppBadge, clearAppBadge, autoEnableNotifications, isStandalone } from './utils/pwa';
 import { 
   saveRegisteredUser, 
   saveRegisteredUserAsync, 
@@ -22,7 +22,9 @@ import {
   getDeletedUserIds,
   unrecordDeletedUserId,
   isDeletedUserRecord,
-  recordDeletedUser
+  recordDeletedUser,
+  findUserByCredential,
+  findUserByCredentialAsync
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
@@ -310,33 +312,51 @@ export function App() {
     return getActiveAdminUser();
   });
 
-  // User Authentication State (Persisted in localStorage)
+  // User Authentication State (Persisted in localStorage & restored for existing installed users)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
     if (hash.includes('admin')) {
       return isSuperAdminAuthenticated();
     }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
-    if (isAuth) {
-      const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (
-            parsed.id === 'DT-USR-8492' ||
-            parsed.id === 'DT-AGT-9012' ||
-            parsed.email === 'chinedu.okafor@gmail.com' ||
-            isDeletedUserRecord(parsed)
-          ) {
-            localStorage.removeItem('setlla_auth');
-            localStorage.removeItem('deltarent_auth');
-            localStorage.removeItem('setlla_user');
-            localStorage.removeItem('deltarent_user');
-            return false;
-          }
-        } catch (e) {}
-      }
+    const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    if (isAuth && saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (
+          parsed.id === 'DT-USR-8492' ||
+          parsed.id === 'DT-AGT-9012' ||
+          parsed.email === 'chinedu.okafor@gmail.com' ||
+          isDeletedUserRecord(parsed)
+        ) {
+          localStorage.removeItem('setlla_auth');
+          localStorage.removeItem('deltarent_auth');
+          localStorage.removeItem('setlla_user');
+          localStorage.removeItem('deltarent_user');
+          return false;
+        }
+      } catch (e) {}
+      return true;
     }
+
+    // Auto-restore session for existing registered user on device
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (
+          parsed &&
+          parsed.id &&
+          parsed.id !== 'GUEST_USER' &&
+          parsed.id !== 'DT-USR-GUEST' &&
+          (parsed.phone || parsed.email) &&
+          !isDeletedUserRecord(parsed)
+        ) {
+          localStorage.setItem('setlla_auth', 'true');
+          return true;
+        }
+      } catch (_) {}
+    }
+
     return isAuth;
   });
 
@@ -347,7 +367,7 @@ export function App() {
     }
     const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
     const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
-    if (isAuth && saved) {
+    if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (
@@ -368,7 +388,9 @@ export function App() {
             persona: 'admin',
           };
         }
-        return parsed;
+        if (parsed && parsed.id && parsed.id !== 'GUEST_USER' && parsed.id !== 'DT-USR-GUEST') {
+          return parsed;
+        }
       } catch (e) {
         // fallback
       }
@@ -1312,7 +1334,22 @@ export function App() {
   const [pendingBookingListing, setPendingBookingListing] = useState<PropertyListing | null>(null);
   const [signupNotice, setSignupNotice] = useState<{ title: string; message: string } | null>(null);
   const [signupInitialRole, setSignupInitialRole] = useState<'seeker' | 'agent'>('seeker');
-  const [signupInitialMode, setSignupInitialMode] = useState<'signup' | 'login'>('signup');
+  const [signupInitialMode, setSignupInitialMode] = useState<'signup' | 'login'>(() => {
+    if (typeof window === 'undefined') return 'signup';
+    try {
+      const isInstalled = isStandalone() || localStorage.getItem('setlla_pwa_installed') === 'true';
+      const hasExistingUsers = Boolean(
+        localStorage.getItem('setlla_registered_users') ||
+        localStorage.getItem('setlla_user') ||
+        localStorage.getItem('setlla_last_email') ||
+        localStorage.getItem('setlla_last_phone')
+      );
+      if (isInstalled || hasExistingUsers) {
+        return 'login';
+      }
+    } catch (_) {}
+    return 'signup';
+  });
 
   // Sponsored adverts state - Loaded live from adService (Supabase + active partner campaigns)
   const [adverts, setAdverts] = useState<AdvertStory[]>(() => {
@@ -1815,12 +1852,22 @@ export function App() {
   const handleOpenBooking = (listing: PropertyListing) => {
     if (!isAuthenticated) {
       setPendingBookingListing(listing);
+      const isKnown = isStandalone() || 
+        localStorage.getItem('setlla_pwa_installed') === 'true' || 
+        Boolean(
+          localStorage.getItem('setlla_registered_users') || 
+          localStorage.getItem('setlla_user') || 
+          localStorage.getItem('setlla_last_email') || 
+          localStorage.getItem('setlla_last_phone')
+        );
       setSignupNotice({
-        title: 'Sign Up Required to Book Inspection',
-        message: `Create a free account or sign in to book your inspection slot for "${listing.title}". It takes less than 30 seconds!`,
+        title: isKnown ? 'Sign In to Book Inspection' : 'Sign Up Required to Book Inspection',
+        message: isKnown
+          ? `Please sign in to your Setlla account to book your inspection slot for "${listing.title}".`
+          : `Create a free account or sign in to book your inspection slot for "${listing.title}". It takes less than 30 seconds!`,
       });
       setSignupInitialRole('seeker');
-      setSignupInitialMode('signup');
+      setSignupInitialMode(isKnown ? 'login' : 'signup');
       setIsSignupOpen(true);
       return;
     }
@@ -1829,9 +1876,17 @@ export function App() {
 
   const handleOpenSignup = () => {
     if (isAuthenticated || isAdminAuthenticated || currentRole === 'admin') return;
+    const isKnown = isStandalone() || 
+      localStorage.getItem('setlla_pwa_installed') === 'true' || 
+      Boolean(
+        localStorage.getItem('setlla_registered_users') || 
+        localStorage.getItem('setlla_user') || 
+        localStorage.getItem('setlla_last_email') || 
+        localStorage.getItem('setlla_last_phone')
+      );
     setSignupNotice(null);
     setSignupInitialRole('seeker');
-    setSignupInitialMode('signup');
+    setSignupInitialMode(isKnown ? 'login' : 'signup');
     setIsSignupOpen(true);
   };
 
@@ -1845,9 +1900,17 @@ export function App() {
 
   const handleOpenAgentSignup = () => {
     if (isAuthenticated || isAdminAuthenticated || currentRole === 'admin') return;
+    const isKnown = isStandalone() || 
+      localStorage.getItem('setlla_pwa_installed') === 'true' || 
+      Boolean(
+        localStorage.getItem('setlla_registered_users') || 
+        localStorage.getItem('setlla_user') || 
+        localStorage.getItem('setlla_last_email') || 
+        localStorage.getItem('setlla_last_phone')
+      );
     setSignupNotice(null);
     setSignupInitialRole('agent');
-    setSignupInitialMode('signup');
+    setSignupInitialMode(isKnown ? 'login' : 'signup');
     setIsSignupOpen(true);
   };
 
@@ -1920,7 +1983,7 @@ export function App() {
       if (!email) return;
       const clean = normalizeEmail(email);
 
-      // Check if this email matches an active pending signup verification
+      // 1. Check if this email matches an active pending signup verification
       const pending = getPendingEmailOTP();
       if (pending && normalizeEmail(pending.email) === clean && pending.pendingUser) {
         console.log('[App] Auto-activating pending user from email link confirmation:', clean);
@@ -1933,12 +1996,36 @@ export function App() {
         setIsAuthenticated(true);
         localStorage.setItem('setlla_auth', 'true');
         localStorage.setItem('setlla_user', JSON.stringify(user));
+        setIsSignupOpen(false);
+        setSignupNotice(null);
         if (user.isAgent) {
           setCurrentRole('agent');
           setUserView('feed');
           window.location.hash = '#/agent';
         }
         return;
+      }
+
+      // 2. Check if an existing registered user matches this email in local or cloud database
+      try {
+        const existingUser = findUserByCredential(clean) || (await findUserByCredentialAsync(clean));
+        if (existingUser && !isDeletedUserRecord(existingUser)) {
+          console.log('[App] Auto-logging in existing registered user from session:', clean);
+          setCurrentUser(existingUser);
+          setIsAuthenticated(true);
+          localStorage.setItem('setlla_auth', 'true');
+          localStorage.setItem('setlla_user', JSON.stringify(existingUser));
+          setIsSignupOpen(false);
+          setSignupNotice(null);
+          if (existingUser.isAgent) {
+            setCurrentRole('agent');
+            setUserView('feed');
+            window.location.hash = '#/agent';
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn('[App] Error resolving existing user from email session:', err);
       }
 
       await authorizeSuperAdminFromEmail(email);

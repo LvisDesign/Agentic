@@ -408,18 +408,16 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       return;
     }
 
-    // All users except tenants must provide compulsory email and password
-    if (selectedPersona !== 'tenant') {
-      if (!seekerEmail.trim()) {
-        setSignupError('Please enter your email address to continue.');
-        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
-      if (!seekerPassword.trim() || seekerPassword.trim().length < 6) {
-        setSignupError('Please create a secure password (minimum 6 characters).');
-        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
+    // Compulsory email and password for all accounts (tenants, job seekers, and employers)
+    if (!seekerEmail.trim()) {
+      setSignupError('Please enter your email address to continue.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (!seekerPassword.trim() || seekerPassword.trim().length < 6) {
+      setSignupError('Please create a secure password (minimum 6 characters).');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
 
     setIsSubmittingSeeker(true);
@@ -451,8 +449,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         id: `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
         fullName: seekerFullName.trim(),
         phone: seekerPhone.trim(),
-        email: seekerEmail.trim() || undefined,
-        password: selectedPersona !== 'tenant' ? seekerPassword.trim() : (seekerPassword.trim() || undefined),
+        email: seekerEmail.trim().toLowerCase(),
+        password: seekerPassword.trim(),
         state: seekerState,
         city: resolvedCity,
         preferredPropertyType: 'Bedseater',
@@ -2068,11 +2066,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <label className="text-xs font-semibold text-[#70798C]">
                               Email Address
                             </label>
-                            {selectedPersona === 'job_seeker' ? (
-                              <span className="text-[10px] text-[#70798C]">Required for job alerts</span>
-                            ) : (
-                              <span className="text-[10px] text-[#70798C] font-normal">(Optional)</span>
-                            )}
+                            <span className="text-[10px] text-[#70798C] font-medium">Required</span>
                           </div>
                           <div className="relative">
                             <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
@@ -2082,11 +2076,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             }`} />
                             <input
                               type="email"
-                              required={selectedPersona === 'job_seeker'}
+                              required
                               autoComplete="email"
                               inputMode="email"
                               spellCheck={false}
-                              placeholder={selectedPersona === 'job_seeker' ? 'e.g. name@domain.com' : 'name@email.com'}
+                              placeholder="name@email.com"
                               value={seekerEmail}
                               onChange={(e) => {
                                 setSeekerEmail(e.target.value);
@@ -2108,44 +2102,42 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           )}
                         </div>
 
-                        {/* Password - for Job Seekers */}
-                        {selectedPersona === 'job_seeker' && (
-                          <div>
-                            <div className="flex items-center justify-between mb-1">
-                              <label className="text-xs font-semibold text-[#70798C]">
-                                Create Password
-                              </label>
-                              <span className="text-[10px] text-[#70798C]">
-                                Min. 6 characters
-                              </span>
-                            </div>
-                            <div className="relative">
-                              <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                              <input
-                                type={showSeekerPassword ? 'text' : 'password'}
-                                required
-                                minLength={6}
-                                autoComplete="new-password"
-                                placeholder="Create password (min 6 characters)"
-                                value={seekerPassword}
-                                onChange={(e) => {
-                                  setSeekerPassword(e.target.value);
-                                  if (signupError) setSignupError(null);
-                                }}
-                                className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowSeekerPassword(!showSeekerPassword)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
-                                tabIndex={-1}
-                                title={showSeekerPassword ? "Hide password" : "Show password"}
-                              >
-                                {showSeekerPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            </div>
+                        {/* Password - Mandatory for all personas */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-[#70798C]">
+                              Create Password
+                            </label>
+                            <span className="text-[10px] text-[#70798C]">
+                              Min. 6 characters
+                            </span>
                           </div>
-                        )}
+                          <div className="relative">
+                            <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type={showSeekerPassword ? 'text' : 'password'}
+                              required
+                              minLength={6}
+                              autoComplete="new-password"
+                              placeholder="Create password (min 6 characters)"
+                              value={seekerPassword}
+                              onChange={(e) => {
+                                setSeekerPassword(e.target.value);
+                                if (signupError) setSignupError(null);
+                              }}
+                              className="w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowSeekerPassword(!showSeekerPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                              tabIndex={-1}
+                              title={showSeekerPassword ? "Hide password" : "Show password"}
+                            >
+                              {showSeekerPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
 
                         {/* Step 2 Back & Submit Buttons */}
                         <div className="pt-2 flex items-center gap-2">
