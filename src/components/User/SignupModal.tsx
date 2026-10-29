@@ -57,7 +57,8 @@ import { supabase, isSupabaseConfigured } from '../../utils/supabaseClient';
 import { 
   sendEmailOTP, 
   verifyEmailOTP, 
-  resetUserPassword 
+  resetUserPassword,
+  EmailOTPPurpose
 } from '../../services/emailVerificationService';
 import { isElvisSuperAdmin } from '../../services/adminAuthService';
 
@@ -167,7 +168,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   // Email OTP Verification State (Agents, Employers, Password Recovery)
   const [otpEmail, setOtpEmail] = useState('');
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '', '', '']);
-  const [otpPurpose, setOtpPurpose] = useState<'agent_signup' | 'employer_signup' | 'forgot_password'>('agent_signup');
+  const [otpPurpose, setOtpPurpose] = useState<EmailOTPPurpose>('agent_signup');
   const [otpPendingUser, setOtpPendingUser] = useState<UserProfile | null>(null);
   const [otpResendSeconds, setOtpResendSeconds] = useState(0);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -347,7 +348,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
-  if (!isOpen || isAuthenticated) return null;
+  if (!isOpen || (isAuthenticated && authMode !== 'verify_email' && !isSuccess && !showPostSignupPrompt)) return null;
 
   // Handle phone changes to sync WhatsApp if checked
   const handleAgentPhoneChange = (val: string) => {
@@ -459,55 +460,31 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         persona: resolvedPersona,
         savedListingIds: [],
         createdAt: new Date().toISOString(),
-        isEmailVerified: resolvedPersona === 'employer' ? false : true,
+        isEmailVerified: false,
       };
 
-      // If employer, enforce email verification before activating
-      if (resolvedPersona === 'employer' && seekerEmail.trim()) {
-        try {
-          const otpRes = await sendEmailOTP(seekerEmail.trim(), 'employer_signup', updated);
-          setOtpEmail(seekerEmail.trim());
-          setOtpPurpose('employer_signup');
-          setOtpPendingUser(updated);
-          setOtpDigits(['', '', '', '', '', '', '', '']);
-          setOtpResendSeconds(60);
-          setOtpError(null);
-          setAuthMode('verify_email');
-          setIsSubmittingSeeker(false);
-          return;
-        } catch (err: any) {
-          console.warn('[SignupModal] Employer email verification dispatch notice:', err);
-        }
-      }
+      const otpPurpose: EmailOTPPurpose =
+        resolvedPersona === 'tenant' ? 'tenant_signup' :
+        resolvedPersona === 'employer' ? 'employer_signup' :
+        'job_seeker_signup';
 
-      // Save immediately to local storage AND Supabase platform_users database with confirmation
-      await saveRegisteredUserAsync(updated, { allowReRegistration: true });
-
-      const targetRoom: 'rentals' | 'jobs' = 
-        (resolvedPersona === 'job_seeker' || resolvedPersona === 'employer') ? 'jobs' : 'rentals';
-
-      // Immediately authenticate user into platform session so they never get locked out
-      onUpdateUser(updated, 'seeker', targetRoom);
-
-      if (isStandalone || isInstalled) {
-        setSuccessMessage({
-          title: `Welcome, ${seekerFullName.trim()}!`,
-          subtitle: targetRoom === 'jobs'
-            ? `Your career profile is active. Redirecting to Setlla Jobs...`
-            : `Your tenant profile is active for ${seekerState}. Inspection bookings are now unlocked!`,
-        });
-        setIsSuccess(true);
-
-        setTimeout(() => {
-          setIsSuccess(false);
-          setIsSubmittingSeeker(false);
-          onClose();
-        }, 1000);
-      } else {
-        // Trigger post-signup "Welcome & Add App" step!
-        setPendingRegistration({ user: updated, role: 'seeker' });
-        setShowPostSignupPrompt(true);
+      // Send OTP to email and transition to verify_email screen for ALL signups
+      try {
+        await sendEmailOTP(seekerEmail.trim(), otpPurpose, updated);
+        setOtpEmail(seekerEmail.trim());
+        setOtpPurpose(otpPurpose);
+        setOtpPendingUser(updated);
+        setOtpDigits(['', '', '', '', '', '', '', '']);
+        setOtpResendSeconds(60);
+        setOtpError(null);
+        setAuthMode('verify_email');
         setIsSubmittingSeeker(false);
+        return;
+      } catch (err: any) {
+        console.error('[SignupModal] Email verification dispatch failed:', err);
+        setSignupError(err.message || 'Failed to dispatch verification code. Please check your email.');
+        setIsSubmittingSeeker(false);
+        return;
       }
     } catch (err: any) {
       console.error('[SignupModal] Seeker registration error:', err);
@@ -626,51 +603,24 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         isEmailVerified: false,
       };
 
-      // Enforce email verification for Agents
-      if (agentEmail.trim()) {
-        try {
-          const otpRes = await sendEmailOTP(agentEmail.trim(), 'agent_signup', updated);
-          setOtpEmail(agentEmail.trim());
-          setOtpPurpose('agent_signup');
-          setOtpPendingUser(updated);
-          setOtpDigits(['', '', '', '', '', '', '', '']);
-          setOtpResendSeconds(60);
-          setOtpError(null);
-          setAuthMode('verify_email');
-          setIsSubmittingAgent(false);
-          return;
-        } catch (err: any) {
-          console.warn('[SignupModal] Agent email verification dispatch notice:', err);
-        }
-      }
-
-      // Save immediately to local storage AND Supabase platform_users database with confirmation
-      await saveRegisteredUserAsync(updated, { allowReRegistration: true });
-
-      const targetRoom: 'rentals' | 'jobs' = resolvedPersona === 'employer' ? 'jobs' : 'rentals';
-
-      // Immediately authenticate user into platform session so they never get locked out
-      onUpdateUser(updated, 'agent', targetRoom);
-
-      if (isStandalone || isInstalled) {
-        setSuccessMessage({
-          title: `Welcome, ${agentFullName.trim()}!`,
-          subtitle: targetRoom === 'jobs'
-            ? `${agencyName.trim()} is now registered. Redirecting to Setlla Jobs...`
-            : `${agencyName.trim()} is now registered. Redirecting to your Agent Listing Portal...`,
-        });
-        setIsSuccess(true);
-
-        setTimeout(() => {
-          setIsSuccess(false);
-          setIsSubmittingAgent(false);
-          onClose();
-        }, 1000);
-      } else {
-        // Trigger post-signup "Welcome & Add App" step!
-        setPendingRegistration({ user: updated, role: 'agent' });
-        setShowPostSignupPrompt(true);
+      // Enforce email verification for Agents and Employers
+      const otpPurpose: EmailOTPPurpose = resolvedPersona === 'employer' ? 'employer_signup' : 'agent_signup';
+      try {
+        await sendEmailOTP(agentEmail.trim(), otpPurpose, updated);
+        setOtpEmail(agentEmail.trim());
+        setOtpPurpose(otpPurpose);
+        setOtpPendingUser(updated);
+        setOtpDigits(['', '', '', '', '', '', '', '']);
+        setOtpResendSeconds(60);
+        setOtpError(null);
+        setAuthMode('verify_email');
         setIsSubmittingAgent(false);
+        return;
+      } catch (err: any) {
+        console.error('[SignupModal] Agent verification dispatch failed:', err);
+        setSignupError(err.message || 'Failed to dispatch verification code. Please check your email.');
+        setIsSubmittingAgent(false);
+        return;
       }
     } catch (err: any) {
       console.error('[SignupModal] Agent registration error:', err);
@@ -787,9 +737,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         const targetRoom: 'rentals' | 'jobs' =
           (user.persona === 'job_seeker' || user.persona === 'employer') ? 'jobs' : 'rentals';
 
+        const roleTitle = user.persona === 'tenant'
+          ? 'Tenant profile'
+          : user.persona === 'job_seeker'
+          ? 'Career profile'
+          : user.isAgent
+          ? 'Agent portal'
+          : 'Employer portal';
+
         setSuccessMessage({
           title: `Email Verified! Welcome, ${user.fullName}`,
-          subtitle: user.isAgent ? 'Your Agent portal is now active. Loading...' : 'Your Employer portal is active. Loading...'
+          subtitle: `Your ${roleTitle} is active. Loading...`
         });
         setIsSuccess(true);
 
@@ -837,9 +795,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
             const targetRoom: 'rentals' | 'jobs' =
               (user.persona === 'job_seeker' || user.persona === 'employer') ? 'jobs' : 'rentals';
 
+            const roleTitle = user.persona === 'tenant'
+              ? 'Tenant profile'
+              : user.persona === 'job_seeker'
+              ? 'Career profile'
+              : user.isAgent
+              ? 'Agent portal'
+              : 'Employer portal';
+
             setSuccessMessage({
               title: `Email Verified! Welcome, ${user.fullName}`,
-              subtitle: user.isAgent ? 'Your Agent portal is now active. Loading...' : 'Your Employer portal is active. Loading...'
+              subtitle: `Your ${roleTitle} is active. Loading...`
             });
             setIsSuccess(true);
 
@@ -1193,7 +1159,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
               <p className="text-xs text-white/70 leading-relaxed">
                 {authMode === 'verify_email'
-                  ? 'We send a 6-digit confirmation code to safeguard your partner credentials.'
+                  ? 'We send a 6-digit confirmation code to activate and safeguard your Setlla account.'
                   : authMode === 'forgot_password' || authMode === 'reset_password'
                   ? 'Securely restore access to your account and continue managing your listings or applications.'
                   : authMode === 'signup' && activeRoleTab === 'agent'

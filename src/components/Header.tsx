@@ -314,18 +314,20 @@ export const Header: React.FC<HeaderProps> = ({
                   <div className="w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-full bg-[#342A21] text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center shrink-0">
                     {currentUser.fullName
                       ? currentUser.fullName
-                          .split(' ')
+                          .trim()
+                          .split(/\s+/)
+                          .filter(Boolean)
                           .map((n) => n[0])
                           .join('')
                           .slice(0, 2)
-                          .toUpperCase()
+                          .toUpperCase() || 'U'
                       : 'U'}
                   </div>
                 )}
 
                 {/* Desktop Label */}
                 <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
-                  {currentUser.fullName ? currentUser.fullName.split(' ')[0] : 'Profile'}
+                  {currentUser.fullName ? currentUser.fullName.trim().split(/\s+/)[0] : 'Profile'}
                 </span>
 
                 {/* Mobile Tooltip */}

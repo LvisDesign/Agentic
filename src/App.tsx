@@ -2122,6 +2122,7 @@ export function App() {
     saveRegisteredUser(updatedUser, { allowReRegistration: true });
     setCurrentUser(updatedUser);
     setIsAuthenticated(true);
+    setIsSignupOpen(false);
     localStorage.setItem('setlla_auth', 'true');
     localStorage.setItem('setlla_user', JSON.stringify(updatedUser));
     setSignupNotice(null);

@@ -101,11 +101,15 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               />
             ) : isAuthenticated ? (
               currentUser.fullName
-                .split(' ')
-                .map((n) => n[0])
-                .join('')
-                .slice(0, 2)
-                .toUpperCase()
+                ? currentUser.fullName
+                    .trim()
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .map((n) => n[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase() || 'U'
+                : 'U'
             ) : (
               'GU'
             )}

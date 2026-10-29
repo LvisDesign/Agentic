@@ -9,7 +9,7 @@ import {
 
 const PENDING_EMAIL_OTP_KEY = 'setlla_pending_email_otp';
 
-export type EmailOTPPurpose = 'agent_signup' | 'employer_signup' | 'forgot_password';
+export type EmailOTPPurpose = 'agent_signup' | 'employer_signup' | 'forgot_password' | 'signup' | 'tenant_signup' | 'job_seeker_signup';
 
 export interface PendingEmailOTPRecord {
   email: string;
@@ -43,12 +43,10 @@ export function clearPendingEmailOTP(): void {
 
 /**
  * Checks whether an account role requires email verification.
- * Compulsory for Agents (Property Listers) and Employers.
+ * Compulsory for ALL accounts: Tenants, Agents, Employers, and Job Seekers.
  */
-export function isEmailVerificationRequired(persona?: string, isAgent?: boolean): boolean {
-  if (isAgent) return true;
-  if (persona === 'employer' || persona === 'lister') return true;
-  return false;
+export function isEmailVerificationRequired(_persona?: string, _isAgent?: boolean): boolean {
+  return true;
 }
 
 /**
@@ -207,8 +205,14 @@ export async function verifyEmailOTP(
   const purpose = record.purpose;
   let verifiedUser = record.pendingUser;
 
-  // If this was an agent or employer registration, finalize and activate their account
-  if (purpose === 'agent_signup' || purpose === 'employer_signup') {
+  // If this was any signup registration, finalize and activate their account
+  if (
+    purpose === 'agent_signup' ||
+    purpose === 'employer_signup' ||
+    purpose === 'signup' ||
+    purpose === 'tenant_signup' ||
+    purpose === 'job_seeker_signup'
+  ) {
     if (verifiedUser) {
       verifiedUser.isEmailVerified = true;
       await saveRegisteredUserAsync(verifiedUser, { allowReRegistration: true });

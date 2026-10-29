@@ -890,7 +890,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-2xl bg-slate-100 text-[#000004] flex items-center justify-center font-bold text-xs shrink-0 border border-[#E5E7EB] relative">
-                            {user.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                            {(user.fullName || '').trim().split(/\s+/).filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}
                             {isVerified && (
                               <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[9px] border-2 border-white">
                                 ✓
@@ -1218,7 +1218,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-12 h-12 rounded-2xl bg-slate-100 text-[#000004] flex items-center justify-center font-bold text-sm shrink-0 border border-[#E5E7EB] relative">
-                        {user.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        {(user.fullName || '').trim().split(/\s+/).filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}
                         {isVerified && (
                           <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 text-white rounded-full flex items-center justify-center text-[9px] border-2 border-white">
                             ✓
