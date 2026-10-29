@@ -690,8 +690,7 @@ export function App() {
             (currentUser.phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(currentUser.phone))
         );
         if (matched) {
-          if (matched.isSuspended) {
-            console.warn('[App] User account was suspended. Purging session from device...');
+          if (matched.isSuspended && !isElvisSuperAdmin(currentUser)) {
             handleSignOut();
             return;
           }

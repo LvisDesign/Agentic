@@ -678,7 +678,6 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     // 1. Cross-device Realtime event listener for live registrations/updates
     const unsub = subscribeToRealtimeEvents((event) => {
       if (event.type === 'USER_REGISTERED' || event.type === 'USER_UPDATED') {
-        if (event.user && isDeletedUserRecord(event.user)) return;
         refreshAdminData();
       } else if (event.type === 'USER_DELETED' && event.user) {
         const delUser = event.user;

@@ -236,14 +236,21 @@ export function ensureZombiePurgeMigration(): void {
 }
 
 /**
- * Checks whether an account record matches any deleted ID tombstone.
+ * Checks whether an account record matches any deleted ID, phone, or email tombstone.
  */
 export function isDeletedUserRecord(user: { id?: string; phone?: string; email?: string }): boolean {
   if (!user) return false;
-  const cleanId = user.id ? user.id.trim() : '';
-  if (cleanId) {
-    const deletedIds = getDeletedUserIds();
-    if (deletedIds.has(cleanId)) return true;
+  const deletedIds = getDeletedUserIds();
+  if (user.id && deletedIds.has(user.id.trim())) return true;
+  const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
+  if (normPhone) {
+    const deletedPhones = getDeletedPhones();
+    if (deletedPhones.has(normPhone)) return true;
+  }
+  const normEmail = user.email ? normalizeEmail(user.email) : '';
+  if (normEmail) {
+    const deletedEmails = getDeletedEmails();
+    if (deletedEmails.has(normEmail)) return true;
   }
   return false;
 }
@@ -259,7 +266,7 @@ export function getRegisteredUsers(): UserProfile[] {
   const usersMap = new Map<string, UserProfile>();
 
   const addOrMergeUser = (user: UserProfile) => {
-    if (!user || !user.id) return;
+    if (!user || !user.id || isDeletedUserRecord(user)) return;
     const isAdmin = Boolean(
       user.isAdmin || 
       user.isSuperAdmin || 
@@ -576,7 +583,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         dbUsersMap.set(resolved.id, resolved);
       };
 
-      // 1. Add all registered users from central platform_users
+      // 1. Add all registered users from central platform_users (Supabase is single source of truth)
       data.forEach((row) => {
         const u = mapDbToUserProfile(row);
         if (!u) return;
@@ -587,6 +594,10 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
       if (advertisersRes && 'data' in advertisersRes && Array.isArray(advertisersRes.data)) {
         advertisersRes.data.forEach((adv: any) => {
           if (!adv || !adv.id) return;
+          if (isDeletedUserRecord({ id: adv.id, phone: adv.phone, email: adv.email })) {
+            Promise.resolve(client.from('advertisers').delete().eq('id', adv.id)).catch(() => {});
+            return;
+          }
           const advUser: UserProfile = {
             id: adv.id,
             fullName: adv.contact_name || adv.company_name || 'Advertiser Partner',
@@ -717,7 +728,7 @@ export function saveRegisteredUser(
 ): void {
   if (typeof window === 'undefined' || !user) return;
 
-  // An active profile registration or update unblocks this user across tombstones
+  // Always unrecord any stale tombstone when saving a valid user
   unrecordDeletedUser(user);
 
   const allUsers = getRegisteredUsers();
@@ -798,7 +809,8 @@ export async function saveRegisteredUserAsync(
   user: UserProfile,
   options?: SaveRegisteredUserOptions
 ): Promise<boolean> {
-  // An active profile registration or update unblocks this user across tombstones
+  if (!user) return false;
+  // Always unrecord any stale deletion tombstone when saving a valid user
   unrecordDeletedUser(user);
 
   saveRegisteredUser(user, { ...options, skipCloudSync: true });
