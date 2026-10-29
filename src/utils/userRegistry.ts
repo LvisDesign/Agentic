@@ -212,15 +212,12 @@ export function unrecordDeletedUserId(id: string): void {
   unrecordDeletedUser({ id });
 }
 
-const ZOMBIE_PURGE_MIGRATION_KEY = 'setlla_purged_zombie_1350_v1';
+const ZOMBIE_PURGE_MIGRATION_KEY = 'setlla_cleared_legacy_blacklist_v2';
 let zombieMigrationChecked = false;
 
 /**
- * One-time migration on every client device/browser that guarantees the recurring
- * deleted zombie account (DT-AGT-1350 / Augustine / 08094444363 / utiobaro@gmail.com)
- * is recorded in local and cloud tombstones and purged from stale local sessions.
- * Because it runs once per browser, if this user ever explicitly signs up again in the future
- * via SignupModal (allowReRegistration: true), their new registration will succeed cleanly.
+ * Migration to clean up any legacy hardcoded phone/email blacklists from browser local storage.
+ * Ensures genuine users are never blocked or purged by stale client-side tombstones.
  */
 export function ensureZombiePurgeMigration(): void {
   if (typeof window === 'undefined' || zombieMigrationChecked) return;
@@ -229,73 +226,24 @@ export function ensureZombiePurgeMigration(): void {
     if (localStorage.getItem(ZOMBIE_PURGE_MIGRATION_KEY) === 'true') return;
     localStorage.setItem(ZOMBIE_PURGE_MIGRATION_KEY, 'true');
 
-    recordDeletedUser(
-      {
-        id: 'DT-AGT-1350',
-        phone: '08094444363',
-        email: 'utiobaro@gmail.com',
-      },
-      true
-    );
-
-    // Purge any stale localStorage session for DT-AGT-1350
-    const activeRaw = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
-    if (activeRaw) {
-      const parsed = JSON.parse(activeRaw);
-      if (
-        parsed &&
-        (parsed.id === 'DT-AGT-1350' ||
-          normalizePhoneNumber(parsed.phone || '') === '08094444363' ||
-          normalizeEmail(parsed.email) === 'utiobaro@gmail.com')
-      ) {
-        localStorage.removeItem('setlla_user');
-        localStorage.removeItem('deltarent_user');
-        localStorage.removeItem('setlla_auth');
-        localStorage.removeItem('deltarent_auth');
-      }
-    }
-
-    // Purge from local registered users cache
-    const regRaw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (regRaw) {
-      const arr = JSON.parse(regRaw);
-      if (Array.isArray(arr)) {
-        const cleaned = arr.filter(
-          (u: any) =>
-            u &&
-            u.id !== 'DT-AGT-1350' &&
-            normalizePhoneNumber(u.phone || '') !== '08094444363' &&
-            normalizeEmail(u.email) !== 'utiobaro@gmail.com'
-        );
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
-      }
-    }
+    // Unblock any previously hardcoded test numbers/emails
+    unrecordDeletedUser({
+      id: 'DT-AGT-1350',
+      phone: '08094444363',
+      email: 'utiobaro@gmail.com',
+    });
   } catch (_) {}
 }
 
 /**
- * Checks whether an account record matches any deleted ID, phone, or email tombstone.
+ * Checks whether an account record matches any deleted ID tombstone.
  */
 export function isDeletedUserRecord(user: { id?: string; phone?: string; email?: string }): boolean {
   if (!user) return false;
-  ensureZombiePurgeMigration();
-  const deletedIds = getDeletedUserIds();
-  if (user.id && deletedIds.has(user.id.trim())) return true;
-  const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
-  if (normPhone) {
-    const deletedPhones = getDeletedPhones();
-    if (deletedPhones.has(normPhone)) return true;
-    const last10 = normPhone.slice(-10);
-    if (last10.length === 10) {
-      for (const dp of deletedPhones) {
-        if (dp.slice(-10) === last10) return true;
-      }
-    }
-  }
-  const normEmail = user.email ? normalizeEmail(user.email) : '';
-  if (normEmail) {
-    const deletedEmails = getDeletedEmails();
-    if (deletedEmails.has(normEmail)) return true;
+  const cleanId = user.id ? user.id.trim() : '';
+  if (cleanId) {
+    const deletedIds = getDeletedUserIds();
+    if (deletedIds.has(cleanId)) return true;
   }
   return false;
 }
@@ -311,7 +259,7 @@ export function getRegisteredUsers(): UserProfile[] {
   const usersMap = new Map<string, UserProfile>();
 
   const addOrMergeUser = (user: UserProfile) => {
-    if (!user || !user.id || isDeletedUserRecord(user)) return;
+    if (!user || !user.id) return;
     const isAdmin = Boolean(
       user.isAdmin || 
       user.isSuperAdmin || 
@@ -594,7 +542,6 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
 
       const addOrMergeToDbMap = (user: UserProfile) => {
         if (!user || !user.id) return;
-        if (isDeletedUserRecord(user)) return;
 
         const isAdmin = Boolean(
           user.isAdmin || 
@@ -629,16 +576,10 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         dbUsersMap.set(resolved.id, resolved);
       };
 
-      // 1. Add all registered users from central platform_users (and auto-purge any zombie row matching a tombstone)
+      // 1. Add all registered users from central platform_users
       data.forEach((row) => {
         const u = mapDbToUserProfile(row);
         if (!u) return;
-        if (isDeletedUserRecord(u)) {
-          if (row.id) {
-            Promise.resolve(client.from('platform_users').delete().eq('id', row.id)).catch(() => {});
-          }
-          return;
-        }
         addOrMergeToDbMap(u);
       });
 
@@ -646,10 +587,6 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
       if (advertisersRes && 'data' in advertisersRes && Array.isArray(advertisersRes.data)) {
         advertisersRes.data.forEach((adv: any) => {
           if (!adv || !adv.id) return;
-          if (isDeletedUserRecord({ id: adv.id, phone: adv.phone, email: adv.email })) {
-            Promise.resolve(client.from('advertisers').delete().eq('id', adv.id)).catch(() => {});
-            return;
-          }
           const advUser: UserProfile = {
             id: adv.id,
             fullName: adv.contact_name || adv.company_name || 'Advertiser Partner',
@@ -727,27 +664,20 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         });
       }
 
-      // 4. Validate local active session user: if deleted in cloud/local tombstones, purge session immediately
+      // 4. Ensure admin super-admin credentials persist in map if active on this device
       try {
         const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
         if (rawCurrent) {
           const current: UserProfile = JSON.parse(rawCurrent);
           if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
-            if (isDeletedUserRecord(current)) {
-              localStorage.removeItem('setlla_user');
-              localStorage.removeItem('deltarent_user');
-              localStorage.removeItem('setlla_auth');
-              localStorage.removeItem('deltarent_auth');
-            } else {
-              const isCurrentElvis = Boolean(
-                current.isAdmin ||
-                current.isSuperAdmin ||
-                (current.email && current.email.toLowerCase() === 'admin@setlla.com') ||
-                (current.fullName && current.fullName.toLowerCase().includes('elvis'))
-              );
-              if (isCurrentElvis) {
-                addOrMergeToDbMap(current);
-              }
+            const isCurrentElvis = Boolean(
+              current.isAdmin ||
+              current.isSuperAdmin ||
+              (current.email && current.email.toLowerCase() === 'admin@setlla.com') ||
+              (current.fullName && current.fullName.toLowerCase().includes('elvis'))
+            );
+            if (isCurrentElvis) {
+              addOrMergeToDbMap(current);
             }
           }
         }
@@ -787,12 +717,8 @@ export function saveRegisteredUser(
 ): void {
   if (typeof window === 'undefined' || !user) return;
 
-  if (options?.allowReRegistration) {
-    unrecordDeletedUser(user);
-  } else if (isDeletedUserRecord(user)) {
-    console.warn('[UserRegistry] Blocked saveRegisteredUser for deleted account:', user.id, user.phone, user.email);
-    return;
-  }
+  // An active profile registration or update unblocks this user across tombstones
+  unrecordDeletedUser(user);
 
   const allUsers = getRegisteredUsers();
   const existingIndex = allUsers.findIndex(
@@ -829,10 +755,6 @@ export function saveRegisteredUser(
       const dbRow = mapUserProfileToDb(user);
       Promise.resolve(client.from('platform_users').upsert(dbRow, { onConflict: 'id' }))
         .then(async (res: any) => {
-          if (isDeletedUserRecord(user)) {
-            Promise.resolve(client.from('platform_users').delete().eq('id', user.id)).catch(() => {});
-            return;
-          }
           if (res?.error) {
             console.warn('[UserRegistry] Full upsert notice, falling back to verified columns:', res.error.message);
             const safeCoreRow: Record<string, any> = {};
@@ -842,12 +764,12 @@ export function saveRegisteredUser(
               }
             });
             const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
-            if (!retryRes?.error && !options?.skipBroadcast && !isDeletedUserRecord(user)) {
+            if (!retryRes?.error && !options?.skipBroadcast) {
               broadcastRealtimeEvent('USER_REGISTERED', { user });
             } else if (retryRes?.error) {
               console.warn('[UserRegistry] Supabase platform_users retry error:', retryRes.error.message);
             }
-          } else if (!options?.skipBroadcast && !isDeletedUserRecord(user)) {
+          } else if (!options?.skipBroadcast) {
             broadcastRealtimeEvent('USER_REGISTERED', { user });
           }
         })
@@ -876,12 +798,8 @@ export async function saveRegisteredUserAsync(
   user: UserProfile,
   options?: SaveRegisteredUserOptions
 ): Promise<boolean> {
-  if (options?.allowReRegistration) {
-    unrecordDeletedUser(user);
-  } else if (isDeletedUserRecord(user)) {
-    console.warn('[UserRegistry] Blocked saveRegisteredUserAsync for deleted account:', user.id, user.phone, user.email);
-    return false;
-  }
+  // An active profile registration or update unblocks this user across tombstones
+  unrecordDeletedUser(user);
 
   saveRegisteredUser(user, { ...options, skipCloudSync: true });
   if (!isSupabaseConfigured() || options?.skipCloudSync) return true;
@@ -892,10 +810,6 @@ export async function saveRegisteredUserAsync(
       if (!client) return true;
       const dbRow = mapUserProfileToDb(user);
       const { error } = await client.from('platform_users').upsert(dbRow, { onConflict: 'id' });
-      if (isDeletedUserRecord(user)) {
-        await client.from('platform_users').delete().eq('id', user.id);
-        return false;
-      }
       if (!error) {
         if (!options?.skipBroadcast) {
           broadcastRealtimeEvent('USER_REGISTERED', { user });
@@ -911,7 +825,7 @@ export async function saveRegisteredUserAsync(
         });
         const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
         if (!retryRes.error) {
-          if (!options?.skipBroadcast && !isDeletedUserRecord(user)) {
+          if (!options?.skipBroadcast) {
             broadcastRealtimeEvent('USER_REGISTERED', { user });
           }
           return true;

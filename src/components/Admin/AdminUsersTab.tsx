@@ -184,7 +184,7 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
     let suspendedCount = 0;
     let cvCount = 0;
 
-    const activeUsers = registeredUsers.filter((u) => !isDeletedUserRecord(u));
+    const activeUsers = registeredUsers;
     activeUsers.forEach((u) => {
       const p = getUserPersona(u);
       if (p === 'agent' || p === 'admin') agents++;
@@ -219,7 +219,6 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   // Filtered Users List
   const filteredUsers = useMemo(() => {
     return registeredUsers.filter((u) => {
-      if (isDeletedUserRecord(u)) return false;
       const p = getUserPersona(u);
 
       // Persona Filter (Admin has upper-level authority across agents and employers)

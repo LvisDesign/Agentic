@@ -326,8 +326,7 @@ export function App() {
         if (
           parsed.id === 'DT-USR-8492' ||
           parsed.id === 'DT-AGT-9012' ||
-          parsed.email === 'chinedu.okafor@gmail.com' ||
-          isDeletedUserRecord(parsed)
+          parsed.email === 'chinedu.okafor@gmail.com'
         ) {
           localStorage.removeItem('setlla_auth');
           localStorage.removeItem('deltarent_auth');
@@ -348,8 +347,7 @@ export function App() {
           parsed.id &&
           parsed.id !== 'GUEST_USER' &&
           parsed.id !== 'DT-USR-GUEST' &&
-          (parsed.phone || parsed.email) &&
-          !isDeletedUserRecord(parsed)
+          (parsed.phone || parsed.email)
         ) {
           localStorage.setItem('setlla_auth', 'true');
           return true;
@@ -373,8 +371,7 @@ export function App() {
         if (
           parsed.id === 'DT-USR-8492' ||
           parsed.id === 'DT-AGT-9012' ||
-          parsed.email === 'chinedu.okafor@gmail.com' ||
-          isDeletedUserRecord(parsed)
+          parsed.email === 'chinedu.okafor@gmail.com'
         ) {
           return GUEST_USER;
         }
@@ -505,9 +502,9 @@ export function App() {
 
     let isMounted = true;
     const verifyUserSession = async () => {
-      // 1. Check if user ID, phone, or email is in deleted tombstones
+      // 1. Check if user ID is in deleted tombstones
       const deletedIds = getDeletedUserIds();
-      if (deletedIds.has(currentUser.id) || isDeletedUserRecord(currentUser)) {
+      if (deletedIds.has(currentUser.id)) {
         console.warn('[App] Current user was deleted by administrator. Purging session from device...');
         handleSignOut();
         return;
@@ -687,16 +684,17 @@ export function App() {
       }
       // Keep active session in sync with central platform_users database
       if (fetchedUsers && currentUser.id && currentUser.id !== 'GUEST_USER' && currentUser.id !== 'DT-USR-GUEST') {
-        if (!isElvisSuperAdmin(currentUser) && isDeletedUserRecord(currentUser)) {
-          handleSignOut();
-          return;
-        }
         const matched = fetchedUsers.find(
           (u) =>
             u.id === currentUser.id ||
             (currentUser.phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(currentUser.phone))
         );
-        if (matched && !isDeletedUserRecord(matched)) {
+        if (matched) {
+          if (matched.isSuspended) {
+            console.warn('[App] User account was suspended. Purging session from device...');
+            handleSignOut();
+            return;
+          }
           const isAdmin = Boolean(
             matched.isAdmin || 
             matched.isSuperAdmin || 

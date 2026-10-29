@@ -725,7 +725,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       if (user) {
         user.isEmailVerified = true;
         saveRegisteredUser(user, { allowReRegistration: true });
-        saveRegisteredUserAsync(user, { allowReRegistration: true });
+        await saveRegisteredUserAsync(user, { allowReRegistration: true });
 
         try {
           confetti({

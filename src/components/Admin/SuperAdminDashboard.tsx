@@ -635,12 +635,12 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     try {
       const users = await fetchRegisteredUsersFromDb();
       if (Array.isArray(users)) {
-        setRegisteredUsers(users.filter((u) => !isDeletedUserRecord(u)));
+        setRegisteredUsers(users);
       } else {
-        setRegisteredUsers(getRegisteredUsers().filter((u) => !isDeletedUserRecord(u)));
+        setRegisteredUsers(getRegisteredUsers());
       }
     } catch (_) {
-      setRegisteredUsers(getRegisteredUsers().filter((u) => !isDeletedUserRecord(u)));
+      setRegisteredUsers(getRegisteredUsers());
     }
 
     // 5. Trigger parent synchronizer (syncs cloud listings, bookings, adverts, user profiles)
@@ -698,7 +698,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     const interval = setInterval(() => {
       fetchRegisteredUsersFromDb().then((users) => {
         if (Array.isArray(users)) {
-          setRegisteredUsers(users.filter((u) => !isDeletedUserRecord(u)));
+          setRegisteredUsers(users);
         }
       });
     }, 12000);
