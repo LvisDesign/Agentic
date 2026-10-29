@@ -53,6 +53,7 @@ import { PushNotificationBanner, PushNotificationData } from './components/Notif
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
 import { SuperAdminDashboard } from './components/Admin/SuperAdminDashboard';
 import { CustomConfirmModal } from './components/UI/CustomConfirmModal';
+import { PWAInstallBanner } from './components/UI/PWAInstallBanner';
 import { AdminAuthPortal } from './components/Admin/AdminAuthPortal';
 import { 
   isSuperAdminAuthenticated, 
@@ -2519,6 +2520,9 @@ export function App() {
           onCancel={() => setPlatformAlertModal(null)}
         />
       )}
+
+      {/* Global PWA Install & Add-to-Home-Screen Prompt (New Visitors on Explore & All Signed-up Users) */}
+      <PWAInstallBanner currentUser={currentUser} />
     </div>
   );
 }
