@@ -725,6 +725,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       // Signup verified
       const user = res.user || otpPendingUser;
       if (user) {
+        user.isEmailVerified = true;
+        saveRegisteredUser(user, { allowReRegistration: true });
+        saveRegisteredUserAsync(user, { allowReRegistration: true });
+
         try {
           confetti({
             particleCount: 75,

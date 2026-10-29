@@ -8,16 +8,18 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  showDetails: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
+    showDetails: false,
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, showDetails: false };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -31,6 +33,10 @@ export class ErrorBoundary extends Component<Props, State> {
   private handleGoHome = () => {
     window.location.hash = '#/explore';
     window.location.reload();
+  };
+
+  private toggleDetails = () => {
+    this.setState((prev) => ({ showDetails: !prev.showDetails }));
   };
 
   public render() {
@@ -68,7 +74,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-xs text-[#70798C] mb-6 leading-relaxed">
               We encountered a temporary display issue. Your account data and progress remain safe.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <div className="flex flex-col sm:flex-row gap-3 w-full mb-4">
               <button
                 type="button"
                 onClick={this.handleReload}
@@ -84,6 +90,26 @@ export class ErrorBoundary extends Component<Props, State> {
                 Go to Explore
               </button>
             </div>
+
+            {this.state.error && (
+              <div className="w-full text-left pt-2 border-t border-[#E5E7EB]">
+                <button
+                  type="button"
+                  onClick={this.toggleDetails}
+                  className="text-[11px] text-[#70798C] hover:text-[#000004] underline cursor-pointer"
+                >
+                  {this.state.showDetails ? 'Hide technical details' : 'View technical details'}
+                </button>
+                {this.state.showDetails && (
+                  <div className="mt-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-[10px] font-mono text-slate-800 break-words max-h-36 overflow-y-auto">
+                    <p className="font-bold text-red-600 mb-1">{this.state.error.name}: {this.state.error.message}</p>
+                    {this.state.error.stack && (
+                      <pre className="text-[9px] text-slate-500 whitespace-pre-wrap">{this.state.error.stack}</pre>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       );
@@ -92,3 +118,4 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+

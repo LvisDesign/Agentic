@@ -539,12 +539,13 @@ export function App() {
               .maybeSingle();
 
             if (!error && isMounted) {
-              if (!data) {
-                console.warn('[App] User record was deleted from database. Purging session from device...');
-                handleSignOut();
-              } else if (data.is_suspended) {
+              if (data && data.is_suspended) {
                 console.warn('[App] User account was suspended. Purging session from device...');
                 handleSignOut();
+              } else if (!data) {
+                // If user is authenticated on this device but record isn't in platform_users yet,
+                // re-sync to database rather than prematurely wiping their account session
+                saveRegisteredUserAsync(currentUser, { skipBroadcast: true });
               }
             }
           }
