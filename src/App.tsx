@@ -1969,7 +1969,11 @@ export function App() {
       // 2. Check if an existing registered user matches this email in local or cloud database
       try {
         const existingUser = findUserByCredential(clean) || (await findUserByCredentialAsync(clean));
-        if (existingUser && !isDeletedUserRecord(existingUser)) {
+        if (existingUser) {
+          unrecordDeletedUser(existingUser);
+          existingUser.isEmailVerified = true;
+          saveRegisteredUser(existingUser, { allowReRegistration: true });
+          saveRegisteredUserAsync(existingUser, { allowReRegistration: true });
           console.log('[App] Auto-logging in existing registered user from session:', clean);
           setCurrentUser(existingUser);
           setIsAuthenticated(true);
@@ -2102,6 +2106,8 @@ export function App() {
   // Handler: Update current user from signup/login modal
   const handleUpdateUser = (updatedUser: UserProfile, role?: UserRole, targetRoom?: 'rentals' | 'jobs') => {
     saveRegisteredUser(updatedUser, { allowReRegistration: true });
+    saveRegisteredUserAsync(updatedUser, { allowReRegistration: true });
+    broadcastRealtimeEvent('USER_REGISTERED', { user: updatedUser });
     setCurrentUser(updatedUser);
     setIsAuthenticated(true);
     setIsSignupOpen(false);

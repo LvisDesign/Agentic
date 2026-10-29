@@ -240,6 +240,22 @@ export function ensureZombiePurgeMigration(): void {
  */
 export function isDeletedUserRecord(user: { id?: string; phone?: string; email?: string }): boolean {
   if (!user) return false;
+
+  // An active user session on this device is NEVER considered deleted
+  try {
+    const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    if (rawCurrent) {
+      const current = JSON.parse(rawCurrent);
+      if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
+        const isCurrent = 
+          Boolean(user.id && current.id && user.id === current.id) ||
+          Boolean(user.email && current.email && normalizeEmail(user.email) === normalizeEmail(current.email)) ||
+          Boolean(user.phone && current.phone && normalizePhoneNumber(user.phone) === normalizePhoneNumber(current.phone));
+        if (isCurrent) return false;
+      }
+    }
+  } catch (_) {}
+
   const deletedIds = getDeletedUserIds();
   if (user.id && deletedIds.has(user.id.trim())) return true;
   const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
@@ -327,6 +343,7 @@ export function getRegisteredUsers(): UserProfile[] {
     if (rawCurrent) {
       const current: UserProfile = JSON.parse(rawCurrent);
       if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
+        unrecordDeletedUser(current);
         addOrMergeUser(current);
       }
     }
@@ -529,14 +546,28 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
 
     // 0. Synchronize cloud deletion tombstones into local tombstone sets before processing rows
     if (cloudTombstonesRes && 'data' in cloudTombstonesRes && Array.isArray(cloudTombstonesRes.data)) {
+      const activeUser = (() => {
+        try {
+          const raw = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+          if (raw) return JSON.parse(raw);
+        } catch (_) {}
+        return null;
+      })();
+      const activeId = activeUser?.id || '';
+      const activePhone = activeUser?.phone ? normalizePhoneNumber(activeUser.phone) : '';
+      const activeEmail = activeUser?.email ? normalizeEmail(activeUser.email) : '';
+
       cloudTombstonesRes.data.forEach((t: any) => {
         const rawId = typeof t?.id === 'string' ? t.id : '';
         if (rawId.startsWith('usr_id:')) {
-          recordDeletedUser({ id: rawId.slice(7) }, false);
+          const id = rawId.slice(7);
+          if (!activeId || id !== activeId) recordDeletedUser({ id }, false);
         } else if (rawId.startsWith('usr_phone:')) {
-          recordDeletedUser({ phone: rawId.slice(10) }, false);
+          const phone = rawId.slice(10);
+          if (!activePhone || phone !== activePhone) recordDeletedUser({ phone }, false);
         } else if (rawId.startsWith('usr_email:')) {
-          recordDeletedUser({ email: rawId.slice(10) }, false);
+          const email = rawId.slice(10);
+          if (!activeEmail || email !== activeEmail) recordDeletedUser({ email }, false);
         }
       });
     }
@@ -588,6 +619,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
       data.forEach((row) => {
         const u = mapDbToUserProfile(row);
         if (!u) return;
+        unrecordDeletedUser(u);
         addOrMergeToDbMap(u);
       });
 
@@ -682,6 +714,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         if (rawCurrent) {
           const current: UserProfile = JSON.parse(rawCurrent);
           if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
+            unrecordDeletedUser(current);
             addOrMergeToDbMap(current);
           }
         }
