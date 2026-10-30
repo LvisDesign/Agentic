@@ -10,12 +10,14 @@ import {
   Copy, 
   Check, 
   ShieldCheck, 
-  Loader2 
+  Loader2,
+  AlertCircle 
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatNaira } from '../../utils/formatters';
 import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
 import { ModalPortal } from '../UI/ModalPortal';
+import { isPaystackConfigured, getPaystackPublicKey, launchPaystackCheckout } from '../../utils/paystack';
 
 const BANK_OPTIONS: DropdownOption[] = [
   { value: 'GTBank', label: 'Guaranty Trust Bank (*737*)', subtitle: 'GTCO Instant USSD' },
@@ -63,6 +65,10 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const isConfigured = isPaystackConfigured();
+  const publicKey = getPaystackPublicKey();
+  const isTestMode = publicKey.startsWith('pk_test_');
+
   if (!isOpen) return null;
 
   const handleCopyAccount = () => {
@@ -70,7 +76,6 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
     setCopiedAccount(true);
     setTimeout(() => setCopiedAccount(false), 2000);
   };
-
 
   const handleSimulatePayment = (method: 'Card' | 'Bank Transfer' | 'USSD') => {
     setIsProcessing(true);
@@ -97,6 +102,49 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
     }, 1400);
   };
 
+  const handleInitiatePayment = async (method: 'Card' | 'Bank Transfer' | 'USSD') => {
+    setIsProcessing(true);
+    setErrorMsg('');
+
+    if (isConfigured) {
+      const launched = await launchPaystackCheckout({
+        email: applicantEmail || 'customer@setlla.com',
+        amountNaira: amount,
+        applicantName,
+        applicantPhone,
+        purposeTitle: purposeTitle || 'Setlla Campaign Sponsorship',
+        merchantName: merchantName || 'Setlla',
+        onSuccess: (paymentReference, resolvedMethod) => {
+          setIsProcessing(false);
+          try {
+            confetti({
+              particleCount: 80,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ['#342A21', '#10B981', '#FCF9F5', '#000004'],
+            });
+          } catch (err) {}
+          onSuccess(paymentReference, resolvedMethod || method);
+        },
+        onClose: () => {
+          setIsProcessing(false);
+        },
+        onError: (err) => {
+          setIsProcessing(false);
+          setErrorMsg(typeof err === 'string' ? err : err.message || 'Payment initiation failed.');
+        },
+      });
+
+      if (!launched) {
+        setIsProcessing(false);
+      }
+      return;
+    }
+
+    // Fallback: If not configured with a live/test key, use simulated payment
+    handleSimulatePayment(method);
+  };
+
   return (
     <ModalPortal>
       <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -115,6 +163,15 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
                 <span>Secured by</span>
                 <span className="font-semibold text-white">paystack</span>
                 <Lock className="w-3 h-3 text-[#00C3F7]" />
+                {isConfigured ? (
+                  <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 uppercase">
+                    {isTestMode ? 'Test Mode' : 'Live Gateway'}
+                  </span>
+                ) : (
+                  <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30">
+                    Demo Mode
+                  </span>
+                )}
               </div>
               <div className="text-[11px] text-white/50 truncate max-w-[200px]">
                 {merchantName || (agentName ? `Setlla • ${agentName}` : 'Setlla Ad Sponsorship')}
@@ -135,6 +192,13 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
           <span className="truncate max-w-[200px]">{applicantEmail || 'partner@setlla.com'}</span>
           <span className="font-medium text-[#342A21]">{purposeTitle || 'Advert Placement Sponsorship'}</span>
         </div>
+
+        {!isConfigured && (
+          <div className="bg-amber-50/80 px-4 py-1.5 border-b border-amber-100 flex items-center justify-between text-[11px] text-amber-800">
+            <span>Simulation Mode Active</span>
+            <span className="text-[10px] text-amber-700">Add Paystack Key for live charges</span>
+          </div>
+        )}
 
         {/* Payment Methods Nav */}
         <div className="flex border-b border-[#E5E7EB] bg-white">
@@ -302,20 +366,30 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
             </div>
           )}
 
+          {/* Error Banner */}
+          {errorMsg && (
+            <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+              <div className="flex-1">
+                <span className="font-semibold">Payment Error:</span> {errorMsg}
+              </div>
+            </div>
+          )}
+
           {/* Action Button */}
           <div className="mt-5 pt-3 border-t border-[#E5E7EB] space-y-2">
             <button
               onClick={() => {
                 const method = activeTab === 'card' ? 'Card' : activeTab === 'bank' ? 'Bank Transfer' : 'USSD';
-                handleSimulatePayment(method);
+                handleInitiatePayment(method);
               }}
               disabled={isProcessing}
-              className="w-full py-3 px-4 rounded-lg bg-[#00C3F7] hover:bg-[#00a8d4] text-[#0D233A] font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50"
+              className="w-full py-3 px-4 rounded-lg bg-[#00C3F7] hover:bg-[#00a8d4] text-[#0D233A] font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 cursor-pointer"
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-[#0D233A]" />
-                  <span>Settling with Paystack NIBSS...</span>
+                  <span>{isConfigured ? 'Opening Paystack Checkout...' : 'Settling with Paystack NIBSS...'}</span>
                 </>
               ) : (
                 <>
