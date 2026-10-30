@@ -21,6 +21,8 @@ import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { processUploadedFile } from '../../utils/mediaStorage';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { ModalPortal } from '../UI/ModalPortal';
+import { getAdPricing } from '../../services/adminService';
+import { formatNaira } from '../../utils/formatters';
 
 interface PartnerAdSubmissionModalProps {
   isOpen: boolean;
@@ -104,13 +106,15 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
 
   if (!isOpen) return null;
 
+  const adPricing = getAdPricing();
+
   const TIERS = [
     {
       id: 'starter' as const,
       name: 'Starter Spotlight',
       durationDays: 7,
-      price: '₦15,000',
-      budgetAmount: 15000,
+      price: formatNaira(adPricing.starter),
+      budgetAmount: adPricing.starter,
       badge: '7-Day Plan',
       features: ['Feed Stories Tray Rotation', 'Click & WhatsApp Lead Routing', 'Basic Impression Analytics'],
     },
@@ -118,8 +122,8 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
       id: 'growth' as const,
       name: 'Growth Partner',
       durationDays: 30,
-      price: '₦45,000',
-      budgetAmount: 45000,
+      price: formatNaira(adPricing.growth),
+      budgetAmount: adPricing.growth,
       badge: 'Most Popular',
       popular: true,
       features: [
@@ -133,8 +137,8 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
       id: 'corporate' as const,
       name: 'Corporate Leader',
       durationDays: 90,
-      price: '₦120,000',
-      budgetAmount: 120000,
+      price: formatNaira(adPricing.corporate),
+      budgetAmount: adPricing.corporate,
       badge: '90 Days VIP',
       features: [
         'Permanent Top Feed Placement',

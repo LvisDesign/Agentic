@@ -48,6 +48,8 @@ import { AdvertStory } from '../../data/mockAdverts';
 import { UserProfile } from '../../types/marketplace';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
+import { getAdPricing } from '../../services/adminService';
+import { formatNaira } from '../../utils/formatters';
 import { AdvertiserUser, getActiveAdvertiser, logoutAdvertiser } from '../../services/advertiserAuthService';
 import { isSuperAdminAuthenticated } from '../../services/adminAuthService';
 import { AdvertiserAuthModal } from '../Advertiser/AdvertiserAuthModal';
@@ -213,13 +215,15 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
+  const adPricing = getAdPricing();
+
   const TIERS = [
     {
       id: 'starter' as const,
       name: 'Starter Spotlight',
       durationDays: 7,
-      price: '₦15,000',
-      budgetAmount: 15000,
+      price: formatNaira(adPricing.starter),
+      budgetAmount: adPricing.starter,
       description: 'Ideal for shortlet promos, flash discounts, or weekend property launches.',
       badge: '7-Day Plan',
       features: [
@@ -233,8 +237,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       id: 'growth' as const,
       name: 'Growth Partner',
       durationDays: 30,
-      price: '₦45,000',
-      budgetAmount: 45000,
+      price: formatNaira(adPricing.growth),
+      budgetAmount: adPricing.growth,
       popular: true,
       description: 'Recommended for corporate agencies, solar installers, and interior furnishers.',
       badge: 'Most Popular · 30 Days',
@@ -250,8 +254,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       id: 'corporate' as const,
       name: 'Corporate Leader',
       durationDays: 90,
-      price: '₦120,000',
-      budgetAmount: 120000,
+      price: formatNaira(adPricing.corporate),
+      budgetAmount: adPricing.corporate,
       description: 'Built for enterprise developers, financial institutions, and major brands.',
       badge: 'Quarterly VIP · 90 Days',
       features: [

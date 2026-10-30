@@ -12,6 +12,11 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   emergencyAnnouncement: 'Delta State real estate regulatory compliance active. All inspection fees protected by Setlla Escrow.',
   emergencyAnnouncementActive: false,
   autoApproveVerifiedAgentListings: true,
+  adPricingStarter: 15000,
+  adPricingGrowth: 45000,
+  adPricingCorporate: 120000,
+  adPricingFeedWeekly: 5000,
+  adPricingFeedMonthly: 15000,
 };
 
 export const INITIAL_AUDIT_LOGS: AdminAuditLog[] = [
@@ -44,12 +49,33 @@ export function getPlatformSettings(): PlatformSettings {
 }
 
 /**
+ * Returns dynamic ad pricing rates set by Super Admin (with sensible defaults)
+ */
+export function getAdPricing(): {
+  starter: number;
+  growth: number;
+  corporate: number;
+  feedWeekly: number;
+  feedMonthly: number;
+} {
+  const settings = getPlatformSettings();
+  return {
+    starter: Number(settings.adPricingStarter) > 0 ? Number(settings.adPricingStarter) : 15000,
+    growth: Number(settings.adPricingGrowth) > 0 ? Number(settings.adPricingGrowth) : 45000,
+    corporate: Number(settings.adPricingCorporate) > 0 ? Number(settings.adPricingCorporate) : 120000,
+    feedWeekly: Number(settings.adPricingFeedWeekly) > 0 ? Number(settings.adPricingFeedWeekly) : 5000,
+    feedMonthly: Number(settings.adPricingFeedMonthly) > 0 ? Number(settings.adPricingFeedMonthly) : 15000,
+  };
+}
+
+/**
  * Saves updated platform settings.
  */
 export function savePlatformSettings(settings: PlatformSettings): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    window.dispatchEvent(new CustomEvent('setlla:platform_settings_updated', { detail: settings }));
   } catch (err) {
     console.error('[AdminService] Failed to save settings:', err);
   }

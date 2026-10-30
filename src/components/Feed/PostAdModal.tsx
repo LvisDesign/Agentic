@@ -22,6 +22,7 @@ import { PaystackModal } from '../Booking/PaystackModal';
 import { CustomDropdown } from '../UI/CustomDropdown';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { ModalPortal } from '../UI/ModalPortal';
+import { getAdPricing } from '../../services/adminService';
 
 interface PostAdModalProps {
   isOpen: boolean;
@@ -56,7 +57,8 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
 
   if (!isOpen) return null;
 
-  const advertCost = selectedPlan === 'weekly' ? 5000 : 15000;
+  const adPricing = getAdPricing();
+  const advertCost = selectedPlan === 'weekly' ? adPricing.feedWeekly : adPricing.feedMonthly;
 
   const handleMediaFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -195,7 +197,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-[#000004] text-xs">7-Day Story</span>
-                    <span className="text-[10px] font-semibold text-[#342A21]">₦5,000</span>
+                    <span className="text-[10px] font-semibold text-[#342A21]">{formatNaira(adPricing.feedWeekly)}</span>
                   </div>
                   <p className="text-[10px] text-[#70798C] mt-1">
                     Featured story tray spot for 1 week
@@ -213,7 +215,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-[#000004] text-xs">30-Day Top</span>
-                    <span className="text-[10px] font-semibold text-emerald-600">₦15,000</span>
+                    <span className="text-[10px] font-semibold text-emerald-600">{formatNaira(adPricing.feedMonthly)}</span>
                   </div>
                   <p className="text-[10px] text-[#70798C] mt-1">
                     Top placement with featured ring

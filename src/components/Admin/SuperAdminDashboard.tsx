@@ -201,6 +201,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [isAdsGuideOpen, setIsAdsGuideOpen] = useState(false);
   const [editingAdvert, setEditingAdvert] = useState<AdvertStory | null>(null);
   const [isCreateAdvertOpen, setIsCreateAdvertOpen] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [advertForm, setAdvertForm] = useState<Partial<AdvertStory>>({
     headline: '',
     advertiserName: '',
@@ -1057,9 +1058,25 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       'platform_settings',
       'Platform Configuration',
       currentUser.fullName,
-      `Fee: ₦${platformSettings.defaultInspectionFee}, Queue: ${platformSettings.maxQueueLimitPerSlot}, Banner: ${platformSettings.emergencyAnnouncementActive ? 'Active' : 'Off'}`
+      `Fee: ₦${platformSettings.defaultInspectionFee}, Queue: ${platformSettings.maxQueueLimitPerSlot}, Starter: ₦${platformSettings.adPricingStarter ?? 15000}, Growth: ₦${platformSettings.adPricingGrowth ?? 45000}, Corporate: ₦${platformSettings.adPricingCorporate ?? 120000}, Feed 7d: ₦${platformSettings.adPricingFeedWeekly ?? 5000}, Feed 30d: ₦${platformSettings.adPricingFeedMonthly ?? 15000}`
     );
-    showToast('Platform settings saved successfully.');
+    showToast('Platform settings and ad prices saved successfully.');
+  };
+
+  // Action: Save Ad Pricing Modal
+  const handleSaveAdPricingModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    savePlatformSettings(platformSettings);
+    recordAuditLog(
+      'SETTINGS_UPDATED',
+      'system',
+      'ad_pricing',
+      'Ad Campaign Pricing Rates',
+      currentUser.fullName,
+      `Starter: ₦${platformSettings.adPricingStarter ?? 15000}, Growth: ₦${platformSettings.adPricingGrowth ?? 45000}, Corporate: ₦${platformSettings.adPricingCorporate ?? 120000}, Feed 7d: ₦${platformSettings.adPricingFeedWeekly ?? 5000}, Feed 30d: ₦${platformSettings.adPricingFeedMonthly ?? 15000}`
+    );
+    showToast('Ad campaign pricing updated successfully.');
+    setIsPricingModalOpen(false);
   };
 
   // Action: Export Backup
@@ -2077,6 +2094,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               </button>
 
               <button
+                onClick={() => setIsPricingModalOpen(true)}
+                className="py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-950 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                title="Configure and update pricing for all Ad Campaign Tiers"
+              >
+                <Tag className="w-4 h-4 text-amber-700" />
+                <span>Set Ad Prices</span>
+              </button>
+
+              <button
                 onClick={handleOpenCreateAdvert}
                 className="py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
               >
@@ -2084,6 +2110,44 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                 <span>Create New Advert</span>
               </button>
             </div>
+          </div>
+
+          {/* Ad Pricing Quick-Rates Banner */}
+          <div className="bg-gradient-to-r from-[#FCF9F5] via-amber-50/40 to-[#FCF9F5] border border-amber-200/80 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-300 text-amber-900 flex items-center justify-center shrink-0">
+                <Tag className="w-5 h-5 text-amber-700" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-display font-bold text-sm text-[#000004]">
+                    Active Ad Campaign Pricing Rates
+                  </h4>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 uppercase">
+                    Paystack
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#70798C] mt-1 font-mono">
+                  <span>Starter (7d): <strong className="text-[#000004]">{formatNaira(platformSettings.adPricingStarter ?? 15000)}</strong></span>
+                  <span>•</span>
+                  <span>Growth (30d): <strong className="text-emerald-700 font-bold">{formatNaira(platformSettings.adPricingGrowth ?? 45000)}</strong></span>
+                  <span>•</span>
+                  <span>Corporate (90d): <strong className="text-purple-700 font-bold">{formatNaira(platformSettings.adPricingCorporate ?? 120000)}</strong></span>
+                  <span>•</span>
+                  <span>Feed 7d: <strong className="text-[#000004]">{formatNaira(platformSettings.adPricingFeedWeekly ?? 5000)}</strong></span>
+                  <span>•</span>
+                  <span>Feed 30d: <strong className="text-[#000004]">{formatNaira(platformSettings.adPricingFeedMonthly ?? 15000)}</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsPricingModalOpen(true)}
+              className="py-2 px-3.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              <Tag className="w-3.5 h-3.5 text-amber-400" />
+              <span>Change Ad Prices</span>
+            </button>
           </div>
 
           {/* Pending Submissions Review Queue (Method 2 & 3 Submissions) */}
@@ -2817,6 +2881,146 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
               <p className="text-[11px] text-[#70798C]">
                 Prevents rental scams by capping how many tenants can queue for a single inspection time window.
               </p>
+            </div>
+
+            {/* Ad Campaign & Brand Sponsorship Pricing */}
+            <div className="pt-5 border-t border-[#E5E7EB] space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="font-display font-bold text-sm text-[#000004] flex items-center gap-2">
+                    <Megaphone className="w-4 h-4 text-amber-600" />
+                    <span>Ad Campaign & Brand Sponsorship Pricing</span>
+                  </h4>
+                  <p className="text-[11px] text-[#70798C] mt-0.5">
+                    Sets the rates charged across Paystack when partners, brands, and listers sponsor ads.
+                  </p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 self-start sm:self-auto">
+                  Paystack Dynamic Rates
+                </span>
+              </div>
+
+              {/* 3 Main Brand Tier Rates */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Starter Spotlight */}
+                <div className="p-3.5 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#000004]">Starter Spotlight</span>
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100/70 px-1.5 py-0.5 rounded">7 Days</span>
+                  </div>
+                  <div className="text-[10px] text-[#70798C]">Feed Stories tray rotation</div>
+                  <div className="relative mt-2">
+                    <span className="absolute left-3 top-2.5 text-xs font-bold text-[#70798C]">₦</span>
+                    <input
+                      type="number"
+                      step="500"
+                      min="500"
+                      value={platformSettings.adPricingStarter ?? 15000}
+                      onChange={(e) =>
+                        setPlatformSettings({ ...platformSettings, adPricingStarter: Math.max(0, Number(e.target.value)) })
+                      }
+                      className="w-full pl-7 pr-3 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                    />
+                  </div>
+                </div>
+
+                {/* Growth Partner */}
+                <div className="p-3.5 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#000004]">Growth Partner</span>
+                    <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100/70 px-1.5 py-0.5 rounded">30 Days</span>
+                  </div>
+                  <div className="text-[10px] text-[#70798C]">Stories + Desktop pinned banner</div>
+                  <div className="relative mt-2">
+                    <span className="absolute left-3 top-2.5 text-xs font-bold text-[#70798C]">₦</span>
+                    <input
+                      type="number"
+                      step="500"
+                      min="500"
+                      value={platformSettings.adPricingGrowth ?? 45000}
+                      onChange={(e) =>
+                        setPlatformSettings({ ...platformSettings, adPricingGrowth: Math.max(0, Number(e.target.value)) })
+                      }
+                      className="w-full pl-7 pr-3 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                    />
+                  </div>
+                </div>
+
+                {/* Corporate Leader */}
+                <div className="p-3.5 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#000004]">Corporate Leader</span>
+                    <span className="text-[10px] font-bold text-purple-800 bg-purple-100/70 px-1.5 py-0.5 rounded">90 Days</span>
+                  </div>
+                  <div className="text-[10px] text-[#70798C]">Permanent VIP feed broadcast</div>
+                  <div className="relative mt-2">
+                    <span className="absolute left-3 top-2.5 text-xs font-bold text-[#70798C]">₦</span>
+                    <input
+                      type="number"
+                      step="1000"
+                      min="1000"
+                      value={platformSettings.adPricingCorporate ?? 120000}
+                      onChange={(e) =>
+                        setPlatformSettings({ ...platformSettings, adPricingCorporate: Math.max(0, Number(e.target.value)) })
+                      }
+                      className="w-full pl-7 pr-3 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Feed Sponsored Listing Rates (Lister / Quick Post) */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                <div className="text-xs font-bold text-[#000004] flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-slate-700" />
+                  <span>Feed Quick Sponsored Listing (Listers & Agents)</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="text-[#70798C]">7-Day Story Placement</span>
+                      <span className="font-mono text-emerald-700 font-bold">
+                        {formatNaira(platformSettings.adPricingFeedWeekly ?? 5000)}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-xs font-bold text-[#70798C]">₦</span>
+                      <input
+                        type="number"
+                        step="500"
+                        min="500"
+                        value={platformSettings.adPricingFeedWeekly ?? 5000}
+                        onChange={(e) =>
+                          setPlatformSettings({ ...platformSettings, adPricingFeedWeekly: Math.max(0, Number(e.target.value)) })
+                        }
+                        className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-slate-300"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="text-[#70798C]">30-Day Top Placement</span>
+                      <span className="font-mono text-emerald-700 font-bold">
+                        {formatNaira(platformSettings.adPricingFeedMonthly ?? 15000)}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-xs font-bold text-[#70798C]">₦</span>
+                      <input
+                        type="number"
+                        step="500"
+                        min="500"
+                        value={platformSettings.adPricingFeedMonthly ?? 15000}
+                        onChange={(e) =>
+                          setPlatformSettings({ ...platformSettings, adPricingFeedMonthly: Math.max(0, Number(e.target.value)) })
+                        }
+                        className="w-full pl-7 pr-3 py-1.5 rounded-lg border border-[#E5E7EB] text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-slate-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Save Button */}
@@ -3765,6 +3969,178 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
           }}
           onCancel={() => setConfirmModalState(null)}
         />
+      )}
+
+      {/* Super Admin Ad Campaign Pricing Modal */}
+      {isPricingModalOpen && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+            <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-scale-up">
+              <div className="flex items-start justify-between gap-3 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
+                    <Tag className="w-5 h-5 text-amber-700" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-lg text-[#000004]">
+                      Configure Ad Campaign Prices
+                    </h3>
+                    <p className="text-xs text-[#70798C]">
+                      Set the official prices charged through Paystack across all ad tiers.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsPricingModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveAdPricingModal} className="space-y-4">
+                {/* Brand / Partner Campaign Tiers */}
+                <div className="space-y-3">
+                  <div className="text-xs font-bold text-[#000004] uppercase tracking-wider flex items-center justify-between">
+                    <span>Partner & Brand Sponsorship Tiers</span>
+                    <span className="text-[10px] text-amber-700 lowercase">live paystack checkout</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Starter Spotlight */}
+                    <div className="p-3 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-[#000004]">Starter (7d)</span>
+                        <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-1 py-0.5 rounded">7 Days</span>
+                      </div>
+                      <div className="relative mt-2">
+                        <span className="absolute left-3 top-2.5 text-xs font-bold text-[#70798C]">₦</span>
+                        <input
+                          type="number"
+                          step="500"
+                          min="500"
+                          value={platformSettings.adPricingStarter ?? 15000}
+                          onChange={(e) =>
+                            setPlatformSettings({ ...platformSettings, adPricingStarter: Math.max(0, Number(e.target.value)) })
+                          }
+                          className="w-full pl-7 pr-2.5 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Growth Partner */}
+                    <div className="p-3 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-[#000004]">Growth (30d)</span>
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1 py-0.5 rounded">30 Days</span>
+                      </div>
+                      <div className="relative mt-2">
+                        <span className="absolute left-3 top-2.5 text-xs font-bold text-[#70798C]">₦</span>
+                        <input
+                          type="number"
+                          step="500"
+                          min="500"
+                          value={platformSettings.adPricingGrowth ?? 45000}
+                          onChange={(e) =>
+                            setPlatformSettings({ ...platformSettings, adPricingGrowth: Math.max(0, Number(e.target.value)) })
+                          }
+                          className="w-full pl-7 pr-2.5 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Corporate Leader */}
+                    <div className="p-3 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-[#000004]">VIP (90d)</span>
+                        <span className="text-[10px] font-bold text-purple-800 bg-purple-100 px-1 py-0.5 rounded">90 Days</span>
+                      </div>
+                      <div className="relative mt-2">
+                        <span className="absolute left-3 top-2.5 text-xs font-bold text-[#70798C]">₦</span>
+                        <input
+                          type="number"
+                          step="1000"
+                          min="1000"
+                          value={platformSettings.adPricingCorporate ?? 120000}
+                          onChange={(e) =>
+                            setPlatformSettings({ ...platformSettings, adPricingCorporate: Math.max(0, Number(e.target.value)) })
+                          }
+                          className="w-full pl-7 pr-2.5 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Feed Sponsored Listing Rates */}
+                <div className="space-y-3 pt-2">
+                  <div className="text-xs font-bold text-[#000004] uppercase tracking-wider">
+                    Community Feed Sponsored Listings
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-[#70798C]">7-Day Story Post</span>
+                        <span className="font-mono text-emerald-700 font-bold">{formatNaira(platformSettings.adPricingFeedWeekly ?? 5000)}</span>
+                      </div>
+                      <div className="relative mt-1.5">
+                        <span className="absolute left-3 top-2.5 text-xs font-bold text-[#70798C]">₦</span>
+                        <input
+                          type="number"
+                          step="500"
+                          min="500"
+                          value={platformSettings.adPricingFeedWeekly ?? 5000}
+                          onChange={(e) =>
+                            setPlatformSettings({ ...platformSettings, adPricingFeedWeekly: Math.max(0, Number(e.target.value)) })
+                          }
+                          className="w-full pl-7 pr-2.5 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-slate-300"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium text-[#70798C]">30-Day Top Post</span>
+                        <span className="font-mono text-emerald-700 font-bold">{formatNaira(platformSettings.adPricingFeedMonthly ?? 15000)}</span>
+                      </div>
+                      <div className="relative mt-1.5">
+                        <span className="absolute left-3 top-2.5 text-xs font-bold text-[#70798C]">₦</span>
+                        <input
+                          type="number"
+                          step="500"
+                          min="500"
+                          value={platformSettings.adPricingFeedMonthly ?? 15000}
+                          onChange={(e) =>
+                            setPlatformSettings({ ...platformSettings, adPricingFeedMonthly: Math.max(0, Number(e.target.value)) })
+                          }
+                          className="w-full pl-7 pr-2.5 py-2 rounded-xl border border-[#E5E7EB] bg-white text-xs font-mono font-bold text-[#000004] focus:outline-none focus:ring-2 focus:ring-slate-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setIsPricingModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#000004] hover:bg-[#1f2937] text-white shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span>Save Ad Prices</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </ModalPortal>
       )}
 
       {/* Admin Property Listing Creation Modal (Agent/Lister capability) */}
