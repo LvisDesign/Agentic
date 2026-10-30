@@ -1646,6 +1646,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         ))}
                       </div>
 
+                      <p className="text-center text-[11px] text-[#70798C]">
+                        Enter the 6-digit code above, or tap the <strong className="text-[#000004]">Confirm email address</strong> link in your email to verify instantly.
+                      </p>
+
                       <div className="flex items-center justify-center gap-2 pt-0.5">
                         <button
                           type="button"
