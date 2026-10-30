@@ -131,10 +131,7 @@ export async function getAllJobs(): Promise<JobListing[]> {
               requirements: Array.isArray(d.requirements) ? d.requirements : [],
               benefits: Array.isArray(d.benefits) ? d.benefits : [],
               category: d.category || 'General',
-              isFeatured: Boolean(d.is_featured),
-              status: d.status || 'active',
-              lastConfirmedAt: d.last_confirmed_at || d.lastConfirmedAt || d.created_at,
-              takenAt: d.taken_at || d.takenAt,
+              isFeatured: Boolean(d.is_featured)
             }));
 
           localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(cloudJobs));
@@ -394,6 +391,7 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
     salaryRange: params.salaryRange.trim() || 'Negotiable',
     postedDate: 'Just now',
     createdAt: new Date().toISOString(),
+    lastConfirmedAt: new Date().toISOString(),
     summary: params.summary.trim(),
     description: params.description.trim(),
     responsibilities: params.responsibilities.filter(Boolean),
@@ -533,60 +531,22 @@ export async function getEmployerJobs(user?: UserProfile | null): Promise<JobLis
 
 /**
  * Toggles a job vacancy between active and closed.
+ * If closed, records takenAt timestamp to initiate 24-hour cleanup countdown.
+ * If reactivated, resets lastConfirmedAt to now.
  */
-export async function toggleJobStatus(jobId: string, newStatus: 'active' | 'closed'): Promise<void> {
-  const now = new Date().toISOString();
+export async function toggleJobStatus(jobId: string, newStatus: 'active' | 'closed' | 'expired'): Promise<void> {
   const all = await getAllJobs();
-  const updated = all.map((j) => (
-    j.id === jobId 
-      ? { 
-          ...j, 
-          status: newStatus,
-          ...(newStatus === 'closed' ? { takenAt: now } : { lastConfirmedAt: now })
-        } 
-      : j
-  ));
-  try {
-    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
-  } catch (_) {}
-
-  if (isSupabaseConfigured()) {
-    try {
-      const client = getSupabaseClient();
-      if (client) {
-        await client
-          .from('job_listings')
-          .update({ 
-            status: newStatus,
-            ...(newStatus === 'closed' ? { taken_at: now } : { last_confirmed_at: now })
-          })
-          .eq('id', jobId);
-      }
-    } catch (e) {
-      console.warn('[JobService] Cloud toggle status notice:', e);
-    }
-  }
-}
-
-/**
- * Confirms job vacancy availability / freshness proof-of-life timestamp.
- * Resets 48h check countdown and re-activates listing on live feeds.
- */
-export async function confirmJobFreshness(jobId: string): Promise<JobListing | null> {
   const now = new Date().toISOString();
-  const all = await getAllJobs();
-  let updatedJob: JobListing | null = null;
-
   const updated = all.map((j) => {
-    if (j.id === jobId) {
-      updatedJob = {
-        ...j,
-        status: 'active' as const,
-        lastConfirmedAt: now,
-      };
-      return updatedJob;
+    if (j.id !== jobId) return j;
+    const modified: JobListing = { ...j, status: newStatus };
+    if (newStatus === 'closed') {
+      modified.takenAt = now;
+    } else if (newStatus === 'active') {
+      modified.lastConfirmedAt = now;
+      modified.takenAt = undefined;
     }
-    return j;
+    return modified;
   });
 
   try {
@@ -597,20 +557,46 @@ export async function confirmJobFreshness(jobId: string): Promise<JobListing | n
     try {
       const client = getSupabaseClient();
       if (client) {
-        await client
-          .from('job_listings')
-          .update({ 
-            status: 'active',
-            last_confirmed_at: now 
-          })
-          .eq('id', jobId);
+        const updatePayload: Record<string, any> = { status: newStatus };
+        if (newStatus === 'closed') updatePayload.taken_at = now;
+        if (newStatus === 'active') {
+          updatePayload.last_confirmed_at = now;
+          updatePayload.taken_at = null;
+        }
+        await client.from('job_listings').update(updatePayload).eq('id', jobId);
       }
-    } catch (e) {
-      console.warn('[JobService] Cloud confirm job freshness notice:', e);
-    }
+    } catch (_) {}
   }
+}
 
-  return updatedJob;
+/**
+ * Confirms job vacancy availability / proof-of-life heartbeat
+ */
+export async function confirmJobFreshness(jobId: string): Promise<void> {
+  const all = await getAllJobs();
+  const now = new Date().toISOString();
+  const updated = all.map((j) =>
+    j.id === jobId
+      ? { ...j, lastConfirmedAt: now, status: 'active' as const, takenAt: undefined }
+      : j
+  );
+
+  try {
+    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (_) {}
+
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        await client.from('job_listings').update({
+          last_confirmed_at: now,
+          status: 'active',
+          taken_at: null
+        }).eq('id', jobId);
+      }
+    } catch (_) {}
+  }
 }
 
 /**

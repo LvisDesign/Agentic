@@ -29,12 +29,9 @@ import {
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
-import { 
-  isListingVisibleOnPublicFeed, 
-  getListingLifecycleState 
-} from './utils/listingLifecycle';
 import { FilterBar } from './components/Feed/FilterBar';
 import { matchesLocation } from './utils/locationMatcher';
+import { isListingVisibleInPublicFeed, getListingLifecycleInfo } from './utils/listingLifecycle';
 import { AgentDashboard } from './components/Agent/AgentDashboard';
 import { FALLBACK_PROPERTY_IMAGES } from './utils/mediaStorage';
 import { UserDashboard } from './components/User/UserDashboard';
@@ -1439,12 +1436,11 @@ export function App() {
     }
   };
 
-  // Smart Location & Word-Similarity Filter Logic with Setlla 48h-Check / 72h-Lifecycle Filter
+  // Smart Location & Word-Similarity Filter Logic with 48h-Check / 72h-Lifecycle Engine
   const filteredListings = useMemo(() => {
-    const now = Date.now();
     const list = listings.filter((item) => {
-      // 1. Setlla 72-Hour Freshness Guarantee & 24-Hour Taken Grace Check
-      if (!isListingVisibleOnPublicFeed(item, now)) {
+      // 1. Lifecycle verification: hide listings older than 72h without confirmation, or taken > 24h
+      if (!isListingVisibleInPublicFeed(item)) {
         return false;
       }
       // 2. Dynamic location matching (checks state, city, neighborhood, address)
@@ -1460,19 +1456,16 @@ export function App() {
       return true;
     });
 
-    // 3. 48-Hour Proof-of-Life Demotion: verified fresh (<48h) listings rank highest
+    // 3. Freshness Ranking: verified fresh (< 48h) listings rank above those nearing the 72h check
     return list.sort((a, b) => {
-      const aState = getListingLifecycleState(a, now);
-      const bState = getListingLifecycleState(b, now);
-
-      // Taken listings stay at the bottom of the feed during their 24h showcase
-      if (aState === 'taken_grace' && bState !== 'taken_grace') return 1;
-      if (aState !== 'taken_grace' && bState === 'taken_grace') return -1;
-
-      // Active fresh (<48h) rank before due_for_check (48h-72h)
-      if (aState === 'active' && bState !== 'active') return -1;
-      if (aState !== 'active' && bState === 'active') return 1;
-
+      const aInfo = getListingLifecycleInfo(a);
+      const bInfo = getListingLifecycleInfo(b);
+      // Available properties rank above taken/grace ones
+      if (aInfo.stage !== 'taken_grace' && bInfo.stage === 'taken_grace') return -1;
+      if (aInfo.stage === 'taken_grace' && bInfo.stage !== 'taken_grace') return 1;
+      // Fresh (<48h) ranks above needs_confirmation (48h-72h)
+      if (aInfo.stage === 'fresh' && bInfo.stage === 'needs_confirmation') return -1;
+      if (aInfo.stage === 'needs_confirmation' && bInfo.stage === 'fresh') return 1;
       return 0;
     });
   }, [listings, selectedCity, selectedState, selectedType, maxRent]);
@@ -1481,21 +1474,21 @@ export function App() {
   const handleUpdateListingAvailability = (listingId: string, status: ListingAvailability) => {
     const now = new Date().toISOString();
     setListings((prev) =>
-      prev.map((item) => (
-        item.id === listingId 
-          ? { 
-              ...item, 
-              availabilityStatus: status,
-              ...(status === 'Rented Out' ? { takenAt: now } : {}),
-              ...(status === 'Available' ? { lastConfirmedAt: now } : {})
-            } 
-          : item
-      ))
+      prev.map((item) => {
+        if (item.id !== listingId) return item;
+        return {
+          ...item,
+          availabilityStatus: status,
+          takenAt: status === 'Rented Out' ? now : undefined,
+          lastConfirmedAt: status === 'Available' ? now : item.lastConfirmedAt,
+          isArchived: false,
+        };
+      })
     );
     updateAvailability(listingId, status);
   };
 
-  // Handler: Refresh 48-hour proof-of-life heartbeat (Extends for another 48 hours)
+  // Handler: Refresh 48-hour proof-of-life heartbeat
   const handleConfirmListingFreshness = (listingId: string) => {
     const now = new Date().toISOString();
     setListings((prev) =>
@@ -1503,8 +1496,9 @@ export function App() {
         item.id === listingId
           ? { 
               ...item, 
-              lastConfirmedAt: now, 
-              availabilityStatus: 'Available' as ListingAvailability,
+              lastConfirmedAt: now,
+              availabilityStatus: 'Available',
+              takenAt: undefined,
               isArchived: false,
             }
           : item
@@ -2024,17 +2018,12 @@ export function App() {
     if (typeof window !== 'undefined') {
       try {
         const searchParams = new URLSearchParams(window.location.search);
-        const extractParam = (name: string): string | null => {
-          if (searchParams.get(name)) return searchParams.get(name);
-          const rawHash = window.location.hash || '';
-          const match = rawHash.match(new RegExp(`[#&?]${name}=([^&]+)`));
-          return match && match[1] ? decodeURIComponent(match[1]) : null;
-        };
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, ''));
 
-        const tokenHash = extractParam('token_hash');
-        const authType = (extractParam('type') || 'signup') as any;
-        const code = extractParam('code');
-        const accessToken = extractParam('access_token');
+        const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash');
+        const authType = (searchParams.get('type') || hashParams.get('type') || 'signup') as any;
+        const code = searchParams.get('code') || hashParams.get('code');
+        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
 
         if (tokenHash) {
           supabase.auth.verifyOtp({ token_hash: tokenHash, type: authType }).then(({ data, error }) => {
@@ -2486,7 +2475,7 @@ export function App() {
         listings={listings}
         currentUser={currentUser}
         onOpenBookingModal={handleOpenBooking}
-        onConfirmFreshness={handleConfirmListingFreshness}
+        onConfirmListingFreshness={handleConfirmListingFreshness}
         onUpdateAvailability={handleUpdateListingAvailability}
       />
 

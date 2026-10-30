@@ -23,8 +23,7 @@ import {
   CreditCard,
   ChevronRight,
   RotateCcw,
-  Radio,
-  X
+  Radio
 } from 'lucide-react';
 import { JobListing, JobApplication } from '../../types/jobs';
 import { UserProfile } from '../../types/marketplace';
@@ -36,12 +35,7 @@ import {
   updateApplicationReviewStatus,
   sponsorJobListing 
 } from '../../services/jobService';
-import { 
-  getListingLifecycleState, 
-  getRemainingHoursUntilExpire, 
-  getRemainingHoursUntilTakenPurge,
-  SETLLA_FRESHNESS_POLICY 
-} from '../../utils/listingLifecycle';
+import { getListingLifecycleInfo } from '../../utils/listingLifecycle';
 import { PostJobModal } from './PostJobModal';
 import { JobDetailsSheet } from './JobDetailsSheet';
 import { PaystackModal } from '../Booking/PaystackModal';
@@ -75,10 +69,9 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'needs_check' | 'expired' | 'closed'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
   const [selectedJobFilterForApps, setSelectedJobFilterForApps] = useState<string>('all');
   const [appStatusFilter, setAppStatusFilter] = useState<string>('all');
-  const [dismissedPolicy, setDismissedPolicy] = useState(false);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -133,12 +126,13 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
     showToast(`Job status changed to ${nextStatus}.`);
   };
 
-  const handleConfirmJobFreshness = async (job: JobListing) => {
-    const updated = await confirmJobFreshness(job.id);
-    if (updated) {
-      setJobs((prev) => prev.map((j) => (j.id === job.id ? updated : j)));
-      showToast(`🎉 Vacancy "${job.title}" confirmed still open! Reset for 48 hours.`);
-    }
+  const handleConfirmFreshness = async (job: JobListing) => {
+    await confirmJobFreshness(job.id);
+    const now = new Date().toISOString();
+    setJobs((prev) =>
+      prev.map((j) => (j.id === job.id ? { ...j, lastConfirmedAt: now, status: 'active', takenAt: undefined } : j))
+    );
+    showToast('Job vacancy availability confirmed! Retained live on Setlla Jobs.');
   };
 
   const handleUpdateAppStatus = (appId: string, newStatus: 'submitted' | 'reviewed' | 'shortlisted' | 'rejected') => {
@@ -163,12 +157,8 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
     }
   };
 
-  // KPIs & Lifecycle Counts
-  const now = Date.now();
-  const activeJobsCount = jobs.filter((j) => getListingLifecycleState(j, now) === 'active').length;
-  const needsCheckJobsCount = jobs.filter((j) => getListingLifecycleState(j, now) === 'due_for_check').length;
-  const expiredJobsCount = jobs.filter((j) => getListingLifecycleState(j, now) === 'expired').length;
-  const closedJobsCount = jobs.filter((j) => j.status === 'closed' || getListingLifecycleState(j, now) === 'taken_grace' || getListingLifecycleState(j, now) === 'taken_purged').length;
+  // KPIs
+  const activeJobsCount = jobs.filter((j) => j.status !== 'closed').length;
   const totalApplicantsCount = applications.length;
   const shortlistedCount = applications.filter((a) => a.status === 'shortlisted').length;
   const totalInvestment = jobs.reduce((acc, j) => acc + (j.listingFeePaid !== undefined ? j.listingFeePaid : (j.isFeatured ? 2000 : 0)), 0);
@@ -176,12 +166,11 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
   // Filtered jobs
   const filteredJobs = useMemo(() => {
     return jobs.filter((j) => {
-      const state = getListingLifecycleState(j, now);
-      if (statusFilter === 'active' && state !== 'active') return false;
-      if (statusFilter === 'needs_check' && state !== 'due_for_check') return false;
-      if (statusFilter === 'expired' && state !== 'expired') return false;
-      if (statusFilter === 'closed' && (j.status !== 'closed' && state !== 'taken_grace' && state !== 'taken_purged')) return false;
-
+      if (statusFilter !== 'all') {
+        const isActive = j.status !== 'closed';
+        if (statusFilter === 'active' && !isActive) return false;
+        if (statusFilter === 'closed' && isActive) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         return (
@@ -193,7 +182,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
       }
       return true;
     });
-  }, [jobs, statusFilter, searchQuery, now]);
+  }, [jobs, statusFilter, searchQuery]);
 
   // Filtered applications
   const filteredApplications = useMemo(() => {
@@ -388,54 +377,8 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
         {/* TAB 1: MY LISTED JOBS */}
         {activeTab === 'listings' && (
           <div className="space-y-4">
-            {/* Pinned 72-Hour Freshness Policy Notice */}
-            {!dismissedPolicy && (
-              <div className="bg-gradient-to-r from-[#FCF9F5] via-amber-50/50 to-[#FCF9F5] border border-amber-200/90 rounded-2xl p-4 shadow-2xs relative">
-                <button
-                  type="button"
-                  onClick={() => setDismissedPolicy(true)}
-                  className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/80 hover:bg-white text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer transition-colors"
-                  title="Dismiss notice"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-                <div className="flex items-start gap-3 pr-6">
-                  <div className="w-8 h-8 rounded-xl bg-[#342A21] text-amber-300 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
-                    <Clock className="w-4 h-4" />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-xs sm:text-sm text-[#000004]">
-                        {SETLLA_FRESHNESS_POLICY.title}
-                      </h4>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-amber-100 text-amber-900 border border-amber-300">
-                        Employer Notice
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-[#70798C] leading-relaxed">
-                      {SETLLA_FRESHNESS_POLICY.shortSummary}
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1.5 text-[10px]">
-                      <div className="bg-white/90 p-2 rounded-lg border border-amber-200/70">
-                        <span className="font-bold text-[#000004] block">48h Confirmation</span>
-                        <span className="text-[#70798C]">1-tap keeps vacancy live for another 48 hours.</span>
-                      </div>
-                      <div className="bg-white/90 p-2 rounded-lg border border-amber-200/70">
-                        <span className="font-bold text-[#000004] block">72h Auto-Delist</span>
-                        <span className="text-[#70798C]">Delisted from job feed until relisted.</span>
-                      </div>
-                      <div className="bg-white/90 p-2 rounded-lg border border-amber-200/70">
-                        <span className="font-bold text-[#000004] block">24h Closed Showcase</span>
-                        <span className="text-[#70798C]">Filled roles displayed 24h as proof.</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Search and Status Filters */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="relative w-full sm:w-80">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#70798C]" />
                 <input
@@ -447,30 +390,19 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0">
-                {[
-                  { id: 'all', label: 'All', count: jobs.length },
-                  { id: 'active', label: 'Live & Fresh', count: activeJobsCount },
-                  { id: 'needs_check', label: 'Needs Check 48h', count: needsCheckJobsCount },
-                  { id: 'expired', label: 'Delisted 72h', count: expiredJobsCount },
-                  { id: 'closed', label: 'Closed', count: closedJobsCount },
-                ].map((st) => (
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                {(['all', 'active', 'closed'] as const).map((st) => (
                   <button
-                    key={st.id}
+                    key={st}
                     type="button"
-                    onClick={() => setStatusFilter(st.id as any)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border whitespace-nowrap flex items-center gap-1.5 ${
-                      statusFilter === st.id
-                        ? 'bg-[#000004] text-white border-[#000004] shadow-2xs'
+                    onClick={() => setStatusFilter(st)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-colors cursor-pointer border ${
+                      statusFilter === st
+                        ? 'bg-[#000004] text-white border-[#000004]'
                         : 'bg-white text-[#70798C] border-[#E5E7EB] hover:bg-slate-50'
                     }`}
                   >
-                    <span>{st.label}</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-                      statusFilter === st.id ? 'bg-white/20 text-white' : 'bg-[#F4F5F7] text-[#70798C]'
-                    }`}>
-                      {st.count}
-                    </span>
+                    {st === 'all' ? 'All Roles' : st}
                   </button>
                 ))}
               </div>
@@ -504,13 +436,18 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                 {filteredJobs.map((job) => {
                   const jobApps = applications.filter((a) => a.jobId === job.id);
                   const isClosed = job.status === 'closed';
-                  const lifecycle = getListingLifecycleState(job, now);
-                  const remainingHours = getRemainingHoursUntilExpire(job, now);
+                  const lifecycle = getListingLifecycleInfo(job);
 
                   return (
                     <div
                       key={job.id}
-                      className="bg-white rounded-2xl sm:rounded-3xl border border-[#E5E7EB] p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-3"
+                      className={`bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-3 ${
+                        lifecycle.stage === 'expired'
+                          ? 'border-rose-300 ring-1 ring-rose-200 bg-rose-50/10'
+                          : lifecycle.stage === 'needs_confirmation'
+                          ? 'border-amber-300 ring-1 ring-amber-200 bg-amber-50/10'
+                          : 'border-[#E5E7EB]'
+                      }`}
                     >
                       {/* Top Row: Title, Company, Status Badge */}
                       <div className="flex items-start justify-between gap-3">
@@ -527,16 +464,14 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-[#000004] border border-[#E5E7EB]">
                                 {job.roleType}
                               </span>
-                              {lifecycle === 'due_for_check' && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
-                                  <Clock className="w-3 h-3 text-amber-700" />
-                                  <span>Needs 48h Check ({remainingHours}h left)</span>
+                              {lifecycle.stage === 'expired' && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                  Delisted (72h)
                                 </span>
                               )}
-                              {lifecycle === 'expired' && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200 flex items-center gap-1">
-                                  <AlertCircle className="w-3 h-3 text-rose-600" />
-                                  <span>Delisted (72h Inactive)</span>
+                              {lifecycle.stage === 'needs_confirmation' && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
+                                  Needs Check ({Math.ceil(lifecycle.hoursUntilDelist)}h left)
                                 </span>
                               )}
                             </div>
@@ -598,6 +533,57 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                         </div>
                       </div>
 
+                      {/* 48-Hour Availability Check & 72-Hour Lifecycle Engine */}
+                      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] p-2.5 rounded-xl border transition-colors ${
+                        lifecycle.stage === 'expired'
+                          ? 'bg-rose-50 border-rose-200 text-rose-900'
+                          : lifecycle.stage === 'needs_confirmation'
+                          ? 'bg-amber-50 border-amber-200 text-amber-900'
+                          : lifecycle.stage === 'taken_grace'
+                          ? 'bg-slate-50 border-slate-200 text-slate-800'
+                          : 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                      }`}>
+                        {lifecycle.stage === 'expired' ? (
+                          <span className="font-semibold flex items-center gap-1 text-rose-800">
+                            <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                            Delisted from public job seekers feed (72h expired without confirmation)
+                          </span>
+                        ) : lifecycle.stage === 'needs_confirmation' ? (
+                          <span className="font-semibold flex items-center gap-1 text-amber-800">
+                            <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0 animate-spin-slow" />
+                            48h Check: Is this role still open? ({Math.ceil(lifecycle.hoursUntilDelist)}h until auto-delist)
+                          </span>
+                        ) : lifecycle.stage === 'taken_grace' ? (
+                          <span className="font-medium flex items-center gap-1 text-slate-700">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                            Closed role ({Math.ceil(lifecycle.hoursUntilTakenCleanup || 24)}h display left before auto-delete)
+                          </span>
+                        ) : (
+                          <span className="font-medium flex items-center gap-1 text-emerald-800">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            Live on Setlla Jobs ({Math.ceil(48 - lifecycle.hoursSinceConfirmed)}h until availability check)
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmFreshness(job)}
+                          className={`w-full sm:w-auto text-center px-3 py-1.5 sm:py-1 rounded-lg font-bold text-[10px] transition-all cursor-pointer shadow-2xs whitespace-nowrap active:scale-95 ${
+                            lifecycle.stage === 'expired'
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                              : lifecycle.stage === 'needs_confirmation'
+                              ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                              : 'bg-[#000004] hover:bg-[#1f2937] text-white'
+                          }`}
+                        >
+                          {lifecycle.stage === 'expired'
+                            ? 'Relist & Renew (1-Tap)'
+                            : lifecycle.stage === 'needs_confirmation'
+                            ? '✓ Yes, Still Open'
+                            : 'Confirm Still Open'}
+                        </button>
+                      </div>
+
                       {/* Bottom Row: Actions */}
                       <div className="flex items-center justify-between pt-1 border-t border-[#E5E7EB] gap-2 flex-wrap">
                         {/* Applicants Counter with link to view */}
@@ -635,22 +621,6 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                           >
                             <Share2 className="w-3.5 h-3.5" />
                           </button>
-
-                          {(lifecycle === 'due_for_check' || lifecycle === 'expired') && (
-                            <button
-                              type="button"
-                              onClick={() => handleConfirmJobFreshness(job)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 text-white ${
-                                lifecycle === 'expired'
-                                  ? 'bg-rose-600 hover:bg-rose-700'
-                                  : 'bg-amber-600 hover:bg-amber-700'
-                              }`}
-                              title={lifecycle === 'expired' ? 'Relist vacancy on Setlla Jobs' : 'Confirm this role is still vacant to extend for 48 hours'}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>{lifecycle === 'expired' ? 'Relist Vacancy' : 'Confirm Still Open (+48h)'}</span>
-                            </button>
-                          )}
 
                           <button
                             type="button"

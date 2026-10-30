@@ -76,7 +76,7 @@ export function runClientCacheSanitization(): void {
     if (typeof caches !== 'undefined') {
       caches.keys().then((names) => {
         names.forEach((name) => {
-          if (name !== 'setlla-pwa-v8') {
+          if (name !== 'setlla-pwa-v9') {
             console.log('[Setlla] Purging legacy SW cache:', name);
             caches.delete(name);
           }

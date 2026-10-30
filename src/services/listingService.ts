@@ -319,7 +319,6 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
               createdAt: row.created_at || row.createdAt || new Date().toISOString(),
               availabilityStatus: row.availability_status || row.availabilityStatus || 'Available',
               lastConfirmedAt: row.last_confirmed_at || row.lastConfirmedAt,
-              takenAt: row.taken_at || row.takenAt,
             };
             return sanitizeListingMedia(item, idx);
           });
@@ -451,15 +450,17 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
  * Updates listing availability status in Supabase and locally
  */
 export async function updateAvailability(listingId: string, status: ListingAvailability): Promise<void> {
+  const client = getSupabaseClient();
   const now = new Date().toISOString();
   const updatePayload: Record<string, any> = { availability_status: status };
+
   if (status === 'Rented Out') {
     updatePayload.taken_at = now;
   } else if (status === 'Available') {
     updatePayload.last_confirmed_at = now;
+    updatePayload.taken_at = null;
   }
 
-  const client = getSupabaseClient();
   if (isSupabaseConfigured() && client) {
     try {
       await client
@@ -475,16 +476,20 @@ export async function updateAvailability(listingId: string, status: ListingAvail
     const saved = getLocalSavedListings();
     if (saved) {
       const existing: PropertyListing[] = JSON.parse(saved);
-      const updated = existing.map((item) =>
-        item.id === listingId
-          ? { 
-              ...item, 
-              availabilityStatus: status,
-              ...(status === 'Rented Out' ? { takenAt: now } : {}),
-              ...(status === 'Available' ? { lastConfirmedAt: now } : {}),
-            } 
-          : item
-      );
+      const updated = existing.map((item) => {
+        if (item.id !== listingId) return item;
+        const modified: PropertyListing = {
+          ...item,
+          availabilityStatus: status,
+        };
+        if (status === 'Rented Out') {
+          modified.takenAt = now;
+        } else if (status === 'Available') {
+          modified.lastConfirmedAt = now;
+          modified.takenAt = undefined;
+        }
+        return modified;
+      });
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     }
   } catch (e) {}
@@ -501,7 +506,11 @@ export async function confirmFreshness(listingId: string): Promise<void> {
     try {
       await client
         .from('listings')
-        .update({ last_confirmed_at: now, availability_status: 'Available' })
+        .update({ 
+          last_confirmed_at: now, 
+          availability_status: 'Available',
+          taken_at: null 
+        })
         .eq('id', listingId);
     } catch (err) {
       console.warn('[Setlla Supabase] Failed confirming freshness:', err);
@@ -514,7 +523,12 @@ export async function confirmFreshness(listingId: string): Promise<void> {
       const existing: PropertyListing[] = JSON.parse(saved);
       const updated = existing.map((item) =>
         item.id === listingId
-          ? { ...item, lastConfirmedAt: now, availabilityStatus: 'Available' as ListingAvailability }
+          ? { 
+              ...item, 
+              lastConfirmedAt: now, 
+              availabilityStatus: 'Available' as ListingAvailability,
+              takenAt: undefined 
+            }
           : item
       );
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));

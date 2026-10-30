@@ -31,7 +31,7 @@ import {
   JobsFeedItem,
   isDemoOrTestJob 
 } from '../../services/jobService';
-import { isListingVisibleOnPublicFeed } from '../../utils/listingLifecycle';
+import { isListingVisibleInPublicFeed } from '../../utils/listingLifecycle';
 import { CustomDropdown } from '../UI/CustomDropdown';
 
 interface JobsFeedProps {
@@ -114,15 +114,14 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
     }
   };
 
-  // Filter jobs based on search query, city, and role type with 72h Freshness & 24h Closed purge check
+  // Filter jobs based on search query, city, and role type with 72h-lifecycle enforcement
   const filteredJobs = useMemo(() => {
-    const now = Date.now();
     return jobs.filter((job) => {
       // Exclude any test or demo postings
       if (isDemoOrTestJob(job)) return false;
 
-      // Setlla 72-Hour Freshness Guarantee & 24-Hour Taken/Closed Grace Check
-      if (!isListingVisibleOnPublicFeed(job, now)) return false;
+      // 72-Hour Lifecycle: hide closed jobs > 24h, and active jobs unconfirmed > 72h
+      if (!isListingVisibleInPublicFeed(job)) return false;
 
       // Search text (title, company, description, category, skills)
       if (searchQuery.trim()) {

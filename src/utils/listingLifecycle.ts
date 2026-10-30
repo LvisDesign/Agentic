@@ -1,157 +1,170 @@
 /**
- * Setlla Listing Lifecycle & Freshness Guarantee Service
+ * Setlla Listing Lifecycle & Proof-of-Life Verification Engine
  * 
  * Rules:
- * 1. 48-Hour Check: After 48 hours without confirmation, a lister gets a check notification
- *    to confirm if the listing is still available.
- * 2. 72-Hour Auto-Delist: If the lister does not confirm by 72 hours, the listing is automatically
- *    delisted from the public feed (status = 'Expired'). The lister can renew/relist it in 1 tap.
- * 3. 24-Hour Taken Grace Period: When a listing is marked 'Rented Out' or 'closed', it is showcased
- *    on the platform for 24 hours as social proof, then automatically purged from the public feed.
+ * 1. 48-Hour Availability Check: After 48 hours from listing (or last confirmation),
+ *    the lister receives an availability verification prompt.
+ * 2. 72-Hour Auto-Delist: If the lister does not confirm availability by 72 hours,
+ *    the listing is safely delisted from the public feed (preserved in agent dashboard for 1-tap renewal).
+ * 3. 24-Hour Taken Cleanup: Listings marked as "Rented Out" or "Closed" remain visible for 24 hours
+ *    as market proof of completed deals, and are then automatically purged.
  */
 
-export const LIFECYCLE_HOURS_CHECK = 48;
-export const LIFECYCLE_HOURS_EXPIRE = 72;
-export const LIFECYCLE_HOURS_TAKEN_PURGE = 24;
+export const FRESHNESS_CHECK_HOURS = 48;
+export const LISTING_MAX_ACTIVE_HOURS = 72;
+export const TAKEN_CLEANUP_HOURS = 24;
 
-export const MS_IN_HOUR = 60 * 60 * 1000;
-
-export type ListingLifecycleState = 
-  | 'active'          // Within 0 - 48 hours: Fresh & live
-  | 'due_for_check'    // Between 48 - 72 hours: Needs lister confirmation
-  | 'expired'         // >= 72 hours without confirmation: Delisted from public feed
-  | 'taken_grace'     // Marked taken/rented within last 24 hours: Displayed as social proof
-  | 'taken_purged'    // Marked taken/rented > 24 hours: Hidden permanently from feed
-  | 'archived'
+export type LifecycleStage = 
+  | 'fresh'
+  | 'needs_confirmation'
+  | 'expired'
+  | 'taken_grace'
+  | 'taken_expired'
   | 'deleted';
 
-export interface LifecycleItem {
-  id?: string;
-  createdAt?: string;
+export interface ListingLifecycleInfo {
+  stage: LifecycleStage;
+  hoursSinceConfirmed: number;
+  hoursUntilDelist: number;
+  hoursSinceTaken?: number;
+  hoursUntilTakenCleanup?: number;
+  isPubliclyVisible: boolean;
+  needsListerCheck: boolean;
+  statusBadgeText: string;
+  statusBadgeVariant: 'fresh' | 'warning' | 'expired' | 'taken';
+}
+
+interface CommonListingRecord {
+  id: string;
+  createdAt: string;
   lastConfirmedAt?: string;
   takenAt?: string;
-  closedAt?: string;
   availabilityStatus?: string;
   status?: string;
   isArchived?: boolean;
 }
 
 /**
- * Returns the effective last active/confirmed timestamp in epoch ms.
+ * Computes exact lifecycle status, time windows, and visibility for any rental or job listing
  */
-export function getLastConfirmedTimestamp(item: LifecycleItem): number {
-  if (item.lastConfirmedAt) {
-    const t = new Date(item.lastConfirmedAt).getTime();
-    if (!isNaN(t) && t > 0) return t;
-  }
-  if (item.createdAt) {
-    const t = new Date(item.createdAt).getTime();
-    if (!isNaN(t) && t > 0) return t;
-  }
-  return Date.now();
-}
-
-/**
- * Returns the timestamp when the listing was marked taken/rented/closed.
- */
-export function getTakenTimestamp(item: LifecycleItem): number | null {
-  const raw = item.takenAt || item.closedAt;
-  if (raw) {
-    const t = new Date(raw).getTime();
-    if (!isNaN(t) && t > 0) return t;
-  }
-  return null;
-}
-
-/**
- * Calculates the current lifecycle state of any rental or job listing.
- */
-export function getListingLifecycleState(item: LifecycleItem, now: number = Date.now()): ListingLifecycleState {
-  if (!item) return 'deleted';
-
-  // Explicit Deleted / Archived status
-  if (item.availabilityStatus === 'Deleted' || item.status === 'deleted') {
-    return 'deleted';
-  }
-  if (item.isArchived) {
-    return 'archived';
+export function getListingLifecycleInfo(item: CommonListingRecord, nowMs: number = Date.now()): ListingLifecycleInfo {
+  if (!item) {
+    return {
+      stage: 'deleted',
+      hoursSinceConfirmed: 0,
+      hoursUntilDelist: 0,
+      isPubliclyVisible: false,
+      needsListerCheck: false,
+      statusBadgeText: 'Deleted',
+      statusBadgeVariant: 'expired'
+    };
   }
 
-  // Taken / Rented Out / Closed Vacancies
+  // Explicit deletion or archival
+  if (item.availabilityStatus === 'Deleted' || item.isArchived) {
+    return {
+      stage: 'deleted',
+      hoursSinceConfirmed: 999,
+      hoursUntilDelist: 0,
+      isPubliclyVisible: false,
+      needsListerCheck: false,
+      statusBadgeText: 'Archived / Deleted',
+      statusBadgeVariant: 'expired'
+    };
+  }
+
   const isTaken = item.availabilityStatus === 'Rented Out' || item.status === 'closed';
+
   if (isTaken) {
-    const takenTime = getTakenTimestamp(item);
-    if (!takenTime) {
-      // If takenAt timestamp was not recorded yet, consider it in grace period
-      return 'taken_grace';
+    const rawTakenTime = item.takenAt || item.lastConfirmedAt || item.createdAt;
+    const takenTimeMs = rawTakenTime ? new Date(rawTakenTime).getTime() : nowMs;
+    const safeTakenMs = isNaN(takenTimeMs) ? nowMs : takenTimeMs;
+    const hoursSinceTaken = Math.max(0, (nowMs - safeTakenMs) / (1000 * 60 * 60));
+    const hoursUntilTakenCleanup = Math.max(0, TAKEN_CLEANUP_HOURS - hoursSinceTaken);
+
+    if (hoursSinceTaken >= TAKEN_CLEANUP_HOURS) {
+      return {
+        stage: 'taken_expired',
+        hoursSinceConfirmed: 999,
+        hoursUntilDelist: 0,
+        hoursSinceTaken,
+        hoursUntilTakenCleanup: 0,
+        isPubliclyVisible: false,
+        needsListerCheck: false,
+        statusBadgeText: 'Auto-Deleted (Completed)',
+        statusBadgeVariant: 'taken'
+      };
     }
-    const elapsedTaken = now - takenTime;
-    if (elapsedTaken >= LIFECYCLE_HOURS_TAKEN_PURGE * MS_IN_HOUR) {
-      return 'taken_purged';
-    }
-    return 'taken_grace';
+
+    return {
+      stage: 'taken_grace',
+      hoursSinceConfirmed: 0,
+      hoursUntilDelist: 0,
+      hoursSinceTaken,
+      hoursUntilTakenCleanup,
+      isPubliclyVisible: true,
+      needsListerCheck: false,
+      statusBadgeText: `Taken (${Math.ceil(hoursUntilTakenCleanup)}h display left)`,
+      statusBadgeVariant: 'taken'
+    };
   }
 
-  // Explicit Expired status
-  if (item.availabilityStatus === 'Expired' || item.status === 'expired') {
-    return 'expired';
+  // Active / Available listing
+  const rawConfirmedTime = item.lastConfirmedAt || item.createdAt;
+  const confirmedTimeMs = rawConfirmedTime ? new Date(rawConfirmedTime).getTime() : nowMs;
+  const safeConfirmedMs = isNaN(confirmedTimeMs) ? nowMs : confirmedTimeMs;
+  const hoursSinceConfirmed = Math.max(0, (nowMs - safeConfirmedMs) / (1000 * 60 * 60));
+  const hoursUntilDelist = Math.max(0, LISTING_MAX_ACTIVE_HOURS - hoursSinceConfirmed);
+
+  if (hoursSinceConfirmed >= LISTING_MAX_ACTIVE_HOURS) {
+    return {
+      stage: 'expired',
+      hoursSinceConfirmed,
+      hoursUntilDelist: 0,
+      isPubliclyVisible: false,
+      needsListerCheck: false,
+      statusBadgeText: 'Delisted (72h expired)',
+      statusBadgeVariant: 'expired'
+    };
   }
 
-  // Calculate elapsed time from last confirmation or listing date
-  const lastActive = getLastConfirmedTimestamp(item);
-  const elapsed = now - lastActive;
-
-  if (elapsed >= LIFECYCLE_HOURS_EXPIRE * MS_IN_HOUR) {
-    return 'expired';
+  if (hoursSinceConfirmed >= FRESHNESS_CHECK_HOURS) {
+    const remainingHours = Math.ceil(hoursUntilDelist);
+    return {
+      stage: 'needs_confirmation',
+      hoursSinceConfirmed,
+      hoursUntilDelist,
+      isPubliclyVisible: true,
+      needsListerCheck: true,
+      statusBadgeText: `Confirm Available (${remainingHours}h left)`,
+      statusBadgeVariant: 'warning'
+    };
   }
 
-  if (elapsed >= LIFECYCLE_HOURS_CHECK * MS_IN_HOUR) {
-    return 'due_for_check';
-  }
-
-  return 'active';
+  const hoursUntilCheck = Math.ceil(FRESHNESS_CHECK_HOURS - hoursSinceConfirmed);
+  return {
+    stage: 'fresh',
+    hoursSinceConfirmed,
+    hoursUntilDelist,
+    isPubliclyVisible: true,
+    needsListerCheck: false,
+    statusBadgeText: `Verified Active (${hoursUntilCheck}h until check)`,
+    statusBadgeVariant: 'fresh'
+  };
 }
 
 /**
- * Checks whether the listing should be shown on the public continuous feed.
+ * Fast boolean check for whether a listing should render in the public search/explore feeds
  */
-export function isListingVisibleOnPublicFeed(item: LifecycleItem, now: number = Date.now()): boolean {
-  const state = getListingLifecycleState(item, now);
-  // Only active, due_for_check, and taken listings within their 24h grace period are visible
-  return state === 'active' || state === 'due_for_check' || state === 'taken_grace';
+export function isListingVisibleInPublicFeed(item: CommonListingRecord, nowMs: number = Date.now()): boolean {
+  const info = getListingLifecycleInfo(item, nowMs);
+  return info.isPubliclyVisible;
 }
 
 /**
- * Returns remaining hours until 72h auto-delist occurs.
+ * Filter a list of listings to only those currently active in public feeds
  */
-export function getRemainingHoursUntilExpire(item: LifecycleItem, now: number = Date.now()): number {
-  const lastActive = getLastConfirmedTimestamp(item);
-  const totalAllowed = LIFECYCLE_HOURS_EXPIRE * MS_IN_HOUR;
-  const remainingMs = totalAllowed - (now - lastActive);
-  return Math.max(0, Math.ceil(remainingMs / MS_IN_HOUR));
+export function filterPublicActiveListings<T extends CommonListingRecord>(listings: T[], nowMs: number = Date.now()): T[] {
+  if (!Array.isArray(listings)) return [];
+  return listings.filter((item) => isListingVisibleInPublicFeed(item, nowMs));
 }
-
-/**
- * Returns remaining hours until the 24h taken purge occurs.
- */
-export function getRemainingHoursUntilTakenPurge(item: LifecycleItem, now: number = Date.now()): number {
-  const takenTime = getTakenTimestamp(item);
-  if (!takenTime) return LIFECYCLE_HOURS_TAKEN_PURGE;
-  const totalAllowed = LIFECYCLE_HOURS_TAKEN_PURGE * MS_IN_HOUR;
-  const remainingMs = totalAllowed - (now - takenTime);
-  return Math.max(0, Math.ceil(remainingMs / MS_IN_HOUR));
-}
-
-/**
- * Pinned Policy Information for listers
- */
-export const SETLLA_FRESHNESS_POLICY = {
-  title: 'Setlla 72-Hour Freshness Guarantee',
-  shortSummary: 'To prevent ghost listings and maintain 100% verified availability, listings require confirmation every 48 hours.',
-  fullDescription: 
-    'All rental properties and job vacancies on Setlla remain active for 72 hours. ' +
-    'After 48 hours, you will receive an availability check notification. ' +
-    'Confirming availability extends the listing for another 48 hours. ' +
-    'If unconfirmed at 72 hours, the listing is delisted from public search until renewed in 1 tap. ' +
-    'Listings marked "Rented Out" or "Closed" remain visible for 24 hours as social proof, then are automatically purged.',
-};
