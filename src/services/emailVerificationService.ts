@@ -97,7 +97,7 @@ export async function sendEmailOTP(
   // Best-effort Supabase Auth OTP delivery via Hostinger custom SMTP (Non-blocking background dispatch)
   if (isSupabaseConfigured()) {
     const redirectUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname}#/verify-email`
+      ? `${window.location.origin}${window.location.pathname}`
       : undefined;
 
     // Fire-and-forget in background so user UI transitions to OTP input immediately with 0 delay!

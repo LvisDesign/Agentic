@@ -31,7 +31,9 @@ export interface JobListing {
   posterId?: string;
   posterEmail?: string;
   posterName?: string;
-  status?: 'active' | 'closed' | 'paused';
+  status?: 'active' | 'closed' | 'paused' | 'expired';
+  lastConfirmedAt?: string;
+  takenAt?: string;
   paymentReference?: string;
   listingFeePaid?: number;
   viewsCount?: number;

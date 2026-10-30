@@ -319,6 +319,7 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
               createdAt: row.created_at || row.createdAt || new Date().toISOString(),
               availabilityStatus: row.availability_status || row.availabilityStatus || 'Available',
               lastConfirmedAt: row.last_confirmed_at || row.lastConfirmedAt,
+              takenAt: row.taken_at || row.takenAt,
             };
             return sanitizeListingMedia(item, idx);
           });
@@ -450,12 +451,20 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
  * Updates listing availability status in Supabase and locally
  */
 export async function updateAvailability(listingId: string, status: ListingAvailability): Promise<void> {
+  const now = new Date().toISOString();
+  const updatePayload: Record<string, any> = { availability_status: status };
+  if (status === 'Rented Out') {
+    updatePayload.taken_at = now;
+  } else if (status === 'Available') {
+    updatePayload.last_confirmed_at = now;
+  }
+
   const client = getSupabaseClient();
   if (isSupabaseConfigured() && client) {
     try {
       await client
         .from('listings')
-        .update({ availability_status: status })
+        .update(updatePayload)
         .eq('id', listingId);
     } catch (err) {
       console.warn('[Setlla Supabase] Failed updating availability:', err);
@@ -467,7 +476,14 @@ export async function updateAvailability(listingId: string, status: ListingAvail
     if (saved) {
       const existing: PropertyListing[] = JSON.parse(saved);
       const updated = existing.map((item) =>
-        item.id === listingId ? { ...item, availabilityStatus: status } : item
+        item.id === listingId
+          ? { 
+              ...item, 
+              availabilityStatus: status,
+              ...(status === 'Rented Out' ? { takenAt: now } : {}),
+              ...(status === 'Available' ? { lastConfirmedAt: now } : {}),
+            } 
+          : item
       );
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     }

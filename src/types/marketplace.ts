@@ -102,7 +102,7 @@ export interface InspectionSlot {
   waitlistCount: number;
 }
 
-export type ListingAvailability = 'Available' | 'Under Inspection' | 'Rented Out' | 'Deleted';
+export type ListingAvailability = 'Available' | 'Under Inspection' | 'Rented Out' | 'Expired' | 'Deleted';
 
 export type BookingStatus = 
   | 'IDLE'
@@ -182,6 +182,7 @@ export interface PropertyListing {
   createdAt: string;
   availabilityStatus?: ListingAvailability;
   lastConfirmedAt?: string;
+  takenAt?: string;
   isArchived?: boolean;
   isFeatured?: boolean;
   isFlagged?: boolean;

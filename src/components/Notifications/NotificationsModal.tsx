@@ -16,13 +16,14 @@ import {
   FileText,
   Building2
 } from 'lucide-react';
-import { BookingRecord, PropertyListing, UserProfile } from '../../types/marketplace';
+import { BookingRecord, PropertyListing, UserProfile, ListingAvailability } from '../../types/marketplace';
 import { getSavedApplications } from '../../services/jobService';
 import { JobApplication } from '../../types/jobs';
 import { formatNigerianPhone, getWhatsAppUrl } from '../../utils/formatters';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { InspectionPassCard } from '../Pass/InspectionPassCard';
 import { ModalPortal } from '../UI/ModalPortal';
+import { getListingLifecycleState, SETLLA_FRESHNESS_POLICY, getRemainingHoursUntilExpire } from '../../utils/listingLifecycle';
 
 export interface NotificationsModalProps {
   isOpen: boolean;
@@ -32,6 +33,8 @@ export interface NotificationsModalProps {
   currentUser?: UserProfile;
   onOpenBookingModal?: (listing: PropertyListing) => void;
   onSelectJob?: (jobId: string) => void;
+  onConfirmFreshness?: (listingId: string) => void;
+  onUpdateAvailability?: (listingId: string, status: ListingAvailability) => void;
   initialTab?: 'all' | 'inspections' | 'jobs' | 'adverts';
 }
 
@@ -43,6 +46,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   currentUser,
   onOpenBookingModal,
   onSelectJob,
+  onConfirmFreshness,
+  onUpdateAvailability,
   initialTab = 'all',
 }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'inspections' | 'jobs' | 'adverts'>(initialTab);
@@ -64,10 +69,27 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     }
   }, [currentUser]);
 
+  const [dismissedPolicy, setDismissedPolicy] = useState(false);
+
+  // Listings belonging to current user that need availability confirmation or relist
+  const listerCheckAlerts = useMemo(() => {
+    if (!currentUser) return [];
+    const now = Date.now();
+    return listings.filter((l) => {
+      const isOwner = (currentUser.id && l.agent?.id === currentUser.id) ||
+                      (currentUser.phone && l.agent?.phone === currentUser.phone) ||
+                      (currentUser.isAgent);
+      if (!isOwner) return false;
+      const state = getListingLifecycleState(l, now);
+      return state === 'due_for_check' || state === 'expired';
+    });
+  }, [listings, currentUser]);
+
   // Aggregate counts
   const inspectionsCount = bookings.length;
   const jobsCount = jobApplications.length;
-  const totalCount = inspectionsCount + jobsCount;
+  const listerAlertsCount = listerCheckAlerts.length;
+  const totalCount = inspectionsCount + jobsCount + listerAlertsCount;
 
   if (!isOpen) return null;
 
@@ -179,6 +201,129 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 listing={selectedPassBooking.listing}
                 onClose={() => setSelectedPassBooking(null)}
               />
+            </div>
+          )}
+
+          {/* Pinned 72-Hour Freshness Policy Notice */}
+          {!selectedPassBooking && !dismissedPolicy && (
+            <div className="bg-gradient-to-r from-[#FCF9F5] via-amber-50/50 to-[#FCF9F5] border border-amber-200/90 rounded-2xl p-4 shadow-2xs relative">
+              <button
+                type="button"
+                onClick={() => setDismissedPolicy(true)}
+                className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/80 hover:bg-white text-slate-400 hover:text-slate-700 flex items-center justify-center cursor-pointer transition-colors"
+                title="Dismiss notice"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <div className="flex items-start gap-3 pr-6">
+                <div className="w-8 h-8 rounded-xl bg-[#342A21] text-amber-300 flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-xs sm:text-sm text-[#000004]">
+                      {SETLLA_FRESHNESS_POLICY.title}
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-amber-100 text-amber-900 border border-amber-300">
+                      Platform Policy
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#70798C] leading-relaxed">
+                    {SETLLA_FRESHNESS_POLICY.shortSummary}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1.5 text-[10px]">
+                    <div className="bg-white/90 p-2 rounded-lg border border-amber-200/70">
+                      <span className="font-bold text-[#000004] block">48h Check</span>
+                      <span className="text-[#70798C]">1-tap confirm keeps it live for 48h more.</span>
+                    </div>
+                    <div className="bg-white/90 p-2 rounded-lg border border-amber-200/70">
+                      <span className="font-bold text-[#000004] block">72h Auto-Delist</span>
+                      <span className="text-[#70798C]">Delisted from public feed until relisted.</span>
+                    </div>
+                    <div className="bg-white/90 p-2 rounded-lg border border-amber-200/70">
+                      <span className="font-bold text-[#000004] block">24h Taken Purge</span>
+                      <span className="text-[#70798C]">Rented units displayed 24h as proof.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Lister Availability Check Alerts */}
+          {!selectedPassBooking && listerCheckAlerts.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-1.5 px-1 pt-1">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">
+                  Action Required: Confirm Availability ({listerCheckAlerts.length})
+                </span>
+              </div>
+              {listerCheckAlerts.map((listing) => {
+                const now = Date.now();
+                const state = getListingLifecycleState(listing, now);
+                const remainingHours = getRemainingHoursUntilExpire(listing, now);
+                const firstImg = listing.media?.[0]?.url || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=150&q=80';
+                const rentVal = listing.fees?.baseRent ? `₦${listing.fees.baseRent.toLocaleString()}/yr` : '';
+
+                return (
+                  <div 
+                    key={`lister-alert-${listing.id}`}
+                    className={`p-3.5 rounded-2xl border transition-all ${
+                      state === 'expired'
+                        ? 'bg-rose-50/40 border-rose-200'
+                        : 'bg-amber-50/40 border-amber-200'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img 
+                          src={firstImg} 
+                          alt={listing.title}
+                          className="w-12 h-12 rounded-xl object-cover shrink-0 border border-black/10" 
+                        />
+                        <div className="min-w-0">
+                          <h5 className="font-bold text-xs text-[#000004] truncate">
+                            {listing.title}
+                          </h5>
+                          <p className="text-[11px] text-[#70798C] truncate">
+                            {listing.neighborhood || listing.city}, {listing.state} {rentVal ? `• ${rentVal}` : ''}
+                          </p>
+                          <span className={`inline-block mt-0.5 text-[10px] font-bold ${
+                            state === 'expired' ? 'text-rose-700' : 'text-amber-700'
+                          }`}>
+                            {state === 'expired'
+                              ? 'Delisted from feed (inactive > 72h)'
+                              : `Needs 48h check (${remainingHours}h left before delist)`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                        {onConfirmFreshness && (
+                          <button
+                            type="button"
+                            onClick={() => onConfirmFreshness(listing.id)}
+                            className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>{state === 'expired' ? 'Renew & Relist' : 'Still Available (+48h)'}</span>
+                          </button>
+                        )}
+                        {onUpdateAvailability && state !== 'expired' && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateAvailability(listing.id, 'Rented Out')}
+                            className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-[#70798C] hover:text-[#000004] font-bold text-xs border border-[#E5E7EB] transition-colors cursor-pointer"
+                          >
+                            Mark Rented
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 

@@ -29,6 +29,10 @@ import {
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
+import { 
+  isListingVisibleOnPublicFeed, 
+  getListingLifecycleState 
+} from './utils/listingLifecycle';
 import { FilterBar } from './components/Feed/FilterBar';
 import { matchesLocation } from './utils/locationMatcher';
 import { AgentDashboard } from './components/Agent/AgentDashboard';
@@ -1435,19 +1439,12 @@ export function App() {
     }
   };
 
-  // Helper: Check if listing freshness is unconfirmed (> 48 hours)
-  const isFreshnessUnconfirmed = (lastConfirmedAt?: string) => {
-    if (!lastConfirmedAt) return true;
-    const confirmedTime = new Date(lastConfirmedAt).getTime();
-    const now = new Date('2026-10-19T23:24:27+01:00').getTime();
-    return (now - confirmedTime) > 48 * 60 * 60 * 1000;
-  };
-
-  // Smart Location & Word-Similarity Filter Logic with 48-Hour Proof-of-Life Ranking
+  // Smart Location & Word-Similarity Filter Logic with Setlla 48h-Check / 72h-Lifecycle Filter
   const filteredListings = useMemo(() => {
+    const now = Date.now();
     const list = listings.filter((item) => {
-      // 1. Auto-archive: hide rented out, deleted, or archived listings from public feed
-      if (item.isArchived || item.availabilityStatus === 'Deleted') {
+      // 1. Setlla 72-Hour Freshness Guarantee & 24-Hour Taken Grace Check
+      if (!isListingVisibleOnPublicFeed(item, now)) {
         return false;
       }
       // 2. Dynamic location matching (checks state, city, neighborhood, address)
@@ -1463,39 +1460,53 @@ export function App() {
       return true;
     });
 
-    // 3. 48-Hour Proof-of-Life Demotion: listings with unconfirmed freshness are demoted down the feed order
+    // 3. 48-Hour Proof-of-Life Demotion: verified fresh (<48h) listings rank highest
     return list.sort((a, b) => {
-      const aUnconfirmed = isFreshnessUnconfirmed(a.lastConfirmedAt);
-      const bUnconfirmed = isFreshnessUnconfirmed(b.lastConfirmedAt);
-      if (aUnconfirmed && !bUnconfirmed) return 1;
-      if (!aUnconfirmed && bUnconfirmed) return -1;
+      const aState = getListingLifecycleState(a, now);
+      const bState = getListingLifecycleState(b, now);
+
+      // Taken listings stay at the bottom of the feed during their 24h showcase
+      if (aState === 'taken_grace' && bState !== 'taken_grace') return 1;
+      if (aState !== 'taken_grace' && bState === 'taken_grace') return -1;
+
+      // Active fresh (<48h) rank before due_for_check (48h-72h)
+      if (aState === 'active' && bState !== 'active') return -1;
+      if (aState !== 'active' && bState === 'active') return 1;
+
       return 0;
     });
   }, [listings, selectedCity, selectedState, selectedType, maxRent]);
 
   // Handler: Update listing availability status (Available, Under Inspection, Rented Out)
   const handleUpdateListingAvailability = (listingId: string, status: ListingAvailability) => {
+    const now = new Date().toISOString();
     setListings((prev) =>
-      prev.map((item) => (item.id === listingId ? { ...item, availabilityStatus: status } : item))
+      prev.map((item) => (
+        item.id === listingId 
+          ? { 
+              ...item, 
+              availabilityStatus: status,
+              ...(status === 'Rented Out' ? { takenAt: now } : {}),
+              ...(status === 'Available' ? { lastConfirmedAt: now } : {})
+            } 
+          : item
+      ))
     );
     updateAvailability(listingId, status);
-
-    // If marked as Rented Out, auto-archive/hide from public feed within 3 seconds
-    if (status === 'Rented Out') {
-      setTimeout(() => {
-        setListings((prev) =>
-          prev.map((item) => (item.id === listingId ? { ...item, isArchived: true } : item))
-        );
-      }, 3000);
-    }
   };
 
-  // Handler: Refresh 48-hour proof-of-life heartbeat
+  // Handler: Refresh 48-hour proof-of-life heartbeat (Extends for another 48 hours)
   const handleConfirmListingFreshness = (listingId: string) => {
+    const now = new Date().toISOString();
     setListings((prev) =>
       prev.map((item) =>
         item.id === listingId
-          ? { ...item, lastConfirmedAt: new Date().toISOString() }
+          ? { 
+              ...item, 
+              lastConfirmedAt: now, 
+              availabilityStatus: 'Available' as ListingAvailability,
+              isArchived: false,
+            }
           : item
       )
     );
@@ -2013,12 +2024,17 @@ export function App() {
     if (typeof window !== 'undefined') {
       try {
         const searchParams = new URLSearchParams(window.location.search);
-        const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, ''));
+        const extractParam = (name: string): string | null => {
+          if (searchParams.get(name)) return searchParams.get(name);
+          const rawHash = window.location.hash || '';
+          const match = rawHash.match(new RegExp(`[#&?]${name}=([^&]+)`));
+          return match && match[1] ? decodeURIComponent(match[1]) : null;
+        };
 
-        const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash');
-        const authType = (searchParams.get('type') || hashParams.get('type') || 'signup') as any;
-        const code = searchParams.get('code') || hashParams.get('code');
-        const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+        const tokenHash = extractParam('token_hash');
+        const authType = (extractParam('type') || 'signup') as any;
+        const code = extractParam('code');
+        const accessToken = extractParam('access_token');
 
         if (tokenHash) {
           supabase.auth.verifyOtp({ token_hash: tokenHash, type: authType }).then(({ data, error }) => {
@@ -2470,6 +2486,8 @@ export function App() {
         listings={listings}
         currentUser={currentUser}
         onOpenBookingModal={handleOpenBooking}
+        onConfirmFreshness={handleConfirmListingFreshness}
+        onUpdateAvailability={handleUpdateListingAvailability}
       />
 
       <UserProfileModal
