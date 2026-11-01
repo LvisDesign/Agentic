@@ -1595,32 +1595,6 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                             className="w-full px-4 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-mono text-[#000004] focus:outline-none focus:border-[#342A21] focus:ring-1 focus:ring-[#342A21]"
                           />
 
-                          {/* Presets */}
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[11px] text-[#70798C]">Sample Presets:</span>
-                            <button
-                              type="button"
-                              onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80')}
-                              className="text-[11px] px-2.5 py-1 rounded-lg bg-[#FCF9F5] hover:bg-[#F6F3EF] border border-[#E5E7EB] text-[#342A21] font-medium transition-colors cursor-pointer"
-                            >
-                              Modern Penthouse
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1080&q=80')}
-                              className="text-[11px] px-2.5 py-1 rounded-lg bg-[#FCF9F5] hover:bg-[#F6F3EF] border border-[#E5E7EB] text-[#342A21] font-medium transition-colors cursor-pointer"
-                            >
-                              Luxury Estate
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1080&q=80')}
-                              className="text-[11px] px-2.5 py-1 rounded-lg bg-[#FCF9F5] hover:bg-[#F6F3EF] border border-[#E5E7EB] text-[#342A21] font-medium transition-colors cursor-pointer"
-                            >
-                              Solar Power
-                            </button>
-                          </div>
-
                           {/* URL Preview */}
                           {mediaUrl && (
                             <div className="p-3 rounded-xl bg-white border border-[#E5E7EB] flex items-center gap-3">

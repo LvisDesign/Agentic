@@ -186,51 +186,112 @@ export async function purgeSystemDemoAdverts(): Promise<void> {
 const DEFAULT_PARTNER_KEYS: PartnerApiKey[] = [];
 
 /**
- * Normalizes an advert database row to the frontend AdvertStory model
+ * Checks if a given media URL is a known placeholder or stock demo image.
  */
-export const mapDbToAdvert = (row: any): AdvertStory => ({
-  id: row.id,
-  title: row.title || row.headline?.slice(0, 20) || 'Featured Ad',
-  advertiserName: row.advertiser_name || row.advertiserName || 'Partner',
-  advertiserHandle: row.advertiser_handle || row.advertiserHandle,
-  avatarUrl: row.avatar_url || row.avatarUrl,
-  category: row.category || 'Promo',
-  badgeText: row.badge_text || row.badgeText || 'SPONSORED',
-  thumbnailUrl: row.thumbnail_url || row.thumbnailUrl || row.media_url || row.mediaUrl,
-  mediaUrl: row.media_url || row.mediaUrl,
-  mediaType: row.media_type || row.mediaType || 'image',
-  headline: row.headline,
-  description: row.description || '',
-  location: row.location || 'Delta State',
-  price: row.price,
-  ctaText: row.cta_text || row.ctaText || 'Learn More',
-  websiteUrl: row.website_url || row.websiteUrl,
-  actionType: row.action_type || row.actionType || 'website',
-  whatsappNumber: row.whatsapp_number || row.whatsappNumber,
-  phone: row.phone,
-  isVerified: Boolean(row.is_verified ?? row.isVerified),
-  propertyId: row.property_id || row.propertyId,
-  status: row.status || 'active',
-  submissionSource: row.submission_source || row.submissionSource || 'admin',
-  partnerEmail: row.partner_email || row.partnerEmail,
-  packageTier: row.package_tier || row.packageTier || 'growth',
-  budgetAmount: Number(row.budget_amount ?? row.budgetAmount ?? 0),
-  startDate: row.start_date || row.startDate,
-  endDate: row.end_date || row.endDate,
-  impressionsCount: Number(row.impressions_count ?? row.impressionsCount ?? 0),
-  clicksCount: Number(row.clicks_count ?? row.clicksCount ?? 0),
-  likesCount: Number(row.likes_count ?? row.likesCount ?? 0),
-  commentsCount: Number(row.comments_count ?? row.commentsCount ?? 0),
-  sharesCount: Number(row.shares_count ?? row.sharesCount ?? 0),
-  apiKeyRef: row.api_key_ref || row.apiKeyRef,
-  createdAt: row.created_at || row.createdAt,
-  hasPendingChanges: Boolean(row.has_pending_changes ?? row.hasPendingChanges ?? false),
-  pendingChanges: typeof row.pending_changes === 'string' ? JSON.parse(row.pending_changes) : (row.pending_changes || row.pendingChanges || undefined),
-  changesReviewStatus: row.changes_review_status || row.changesReviewStatus || null,
-  changesRejectionReason: row.changes_rejection_reason || row.changesRejectionReason || undefined,
-  rejectionReason: row.rejection_reason || row.rejectionReason || undefined,
-  rejectedAt: row.rejected_at || row.rejectedAt || undefined,
-});
+export const isDemoMediaUrl = (url?: string): boolean => {
+  if (!url) return false;
+  return (
+    url.includes('asaba_gra_exterior.jpg') ||
+    url.includes('unsplash.com') ||
+    url.includes('images.unsplash.com') ||
+    url.includes('photo-1560518883-ce09059eeffa') ||
+    url.includes('photo-1545324418-cc1a3fa10c00') ||
+    url.includes('photo-1512917774080-9991f1c4c750') ||
+    url.includes('photo-1509391365360-2e959784a276') ||
+    url.includes('photo-1600585154340-be6161a56a0c') ||
+    url.includes('placeholder')
+  );
+};
+
+/**
+ * Checks if a given URL is a video asset (MP4, WebM, MOV, or Cloudinary/Storage video stream).
+ */
+export const isVideoMediaUrl = (url?: string): boolean => {
+  if (!url) return false;
+  const clean = url.split('?')[0].toLowerCase();
+  return (
+    clean.endsWith('.mp4') ||
+    clean.endsWith('.webm') ||
+    clean.endsWith('.mov') ||
+    clean.endsWith('.ogg') ||
+    clean.endsWith('.m4v') ||
+    url.includes('/video/upload/') ||
+    url.includes('resource_type=video')
+  );
+};
+
+/**
+ * Normalizes an advert database row to the frontend AdvertStory model.
+ * Strictly guarantees that only the exact content uploaded by the lister/partner is rendered.
+ * Demo/mock images are automatically stripped.
+ */
+export const mapDbToAdvert = (row: any): AdvertStory => {
+  const rawMediaUrl = row.media_url || row.mediaUrl || '';
+  const rawThumbnailUrl = row.thumbnail_url || row.thumbnailUrl || '';
+  const rawAvatarUrl = row.avatar_url || row.avatarUrl || '';
+
+  // Cleanse any demo/placeholder URLs so lister content is strictly preserved
+  const mediaUrl = isDemoMediaUrl(rawMediaUrl) ? '' : rawMediaUrl;
+  let thumbnailUrl = isDemoMediaUrl(rawThumbnailUrl) ? '' : rawThumbnailUrl;
+  const avatarUrl = isDemoMediaUrl(rawAvatarUrl) ? undefined : rawAvatarUrl;
+
+  // Fallback to mediaUrl if thumbnailUrl was a demo image or not provided
+  if (!thumbnailUrl && mediaUrl) {
+    thumbnailUrl = mediaUrl;
+  }
+
+  const isVideo =
+    (row.media_type || row.mediaType) === 'video' ||
+    isVideoMediaUrl(mediaUrl) ||
+    isVideoMediaUrl(thumbnailUrl);
+
+  return {
+    id: row.id,
+    title: row.title || row.headline?.slice(0, 20) || 'Featured Ad',
+    advertiserName: row.advertiser_name || row.advertiserName || 'Partner',
+    advertiserHandle: row.advertiser_handle || row.advertiserHandle,
+    avatarUrl,
+    category: row.category || 'Promo',
+    badgeText: row.badge_text || row.badgeText || 'SPONSORED',
+    thumbnailUrl,
+    mediaUrl,
+    mediaType: isVideo ? 'video' : 'image',
+    headline: row.headline,
+    description: row.description || '',
+    location: row.location || 'Delta State',
+    price: row.price,
+    ctaText: row.cta_text || row.ctaText || 'Learn More',
+    websiteUrl: row.website_url || row.websiteUrl,
+    actionType: row.action_type || row.actionType || 'website',
+    whatsappNumber: row.whatsapp_number || row.whatsappNumber,
+    phone: row.phone,
+    isVerified: Boolean(row.is_verified ?? row.isVerified),
+    propertyId: row.property_id || row.propertyId,
+    status: row.status || 'active',
+    submissionSource: row.submission_source || row.submissionSource || 'admin',
+    partnerEmail: row.partner_email || row.partnerEmail,
+    packageTier: row.package_tier || row.packageTier || 'growth',
+    budgetAmount: Number(row.budget_amount ?? row.budgetAmount ?? 0),
+    startDate: row.start_date || row.startDate,
+    endDate: row.end_date || row.endDate,
+    impressionsCount: Number(row.impressions_count ?? row.impressionsCount ?? 0),
+    clicksCount: Number(row.clicks_count ?? row.clicksCount ?? 0),
+    likesCount: Number(row.likes_count ?? row.likesCount ?? 0),
+    commentsCount: Number(row.comments_count ?? row.commentsCount ?? 0),
+    sharesCount: Number(row.shares_count ?? row.sharesCount ?? 0),
+    apiKeyRef: row.api_key_ref || row.apiKeyRef,
+    createdAt: row.created_at || row.createdAt,
+    hasPendingChanges: Boolean(row.has_pending_changes ?? row.hasPendingChanges ?? false),
+    pendingChanges:
+      typeof row.pending_changes === 'string'
+        ? JSON.parse(row.pending_changes)
+        : (row.pending_changes || row.pendingChanges || undefined),
+    changesReviewStatus: row.changes_review_status || row.changesReviewStatus || null,
+    changesRejectionReason: row.changes_rejection_reason || row.changesRejectionReason || undefined,
+    rejectionReason: row.rejection_reason || row.rejectionReason || undefined,
+    rejectedAt: row.rejected_at || row.rejectedAt || undefined,
+  };
+};
 
 /**
  * Normalizes an AdvertStory to DB snake_case columns
@@ -332,9 +393,11 @@ export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
       try {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          list = parsed.filter(
-            (ad: AdvertStory) => ad && ad.id && !deletedIds.has(ad.id) && ad.status !== 'deleted'
-          );
+          list = parsed
+            .map(mapDbToAdvert)
+            .filter(
+              (ad: AdvertStory) => ad && ad.id && !deletedIds.has(ad.id) && ad.status !== 'deleted'
+            );
         }
       } catch {
         list = [];
@@ -722,7 +785,7 @@ export const submitPartnerAdvert = async (payload: PartnerSubmissionPayload): Pr
     badgeText: payload.packageTier === 'corporate' ? 'PREMIUM PARTNER' : 'SPONSORED',
     thumbnailUrl: payload.mediaUrl,
     mediaUrl: payload.mediaUrl,
-    mediaType: payload.mediaType,
+    mediaType: payload.mediaType || (isVideoMediaUrl(payload.mediaUrl) ? 'video' : 'image'),
     description: payload.description,
     location: payload.location || 'Nationwide',
     price: payload.price,
@@ -807,7 +870,7 @@ export const pushProgrammaticAdvert = async (
     badgeText: 'SPONSORED',
     thumbnailUrl: payload.mediaUrl,
     mediaUrl: payload.mediaUrl,
-    mediaType: payload.mediaType || 'image',
+    mediaType: payload.mediaType || (isVideoMediaUrl(payload.mediaUrl) ? 'video' : 'image'),
     description: payload.description || '',
     location: payload.location || 'Delta State',
     price: payload.price,

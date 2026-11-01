@@ -594,31 +594,6 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                       placeholder="https://... image or video URL (9:16 or 16:9)"
                       className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] font-mono focus:outline-none focus:border-[#342A21]"
                     />
-
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] text-[#70798C]">Sample Presets:</span>
-                      <button
-                        type="button"
-                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80')}
-                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                      >
-                        Penthouse
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1080&q=80')}
-                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                      >
-                        Estate Villa
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1080&q=80')}
-                        className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                      >
-                        Solar Power
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>

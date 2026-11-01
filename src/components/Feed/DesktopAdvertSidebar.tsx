@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus, ChevronRight, Play, Megaphone } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
+import { isVideoMediaUrl } from '../../services/adService';
 
 interface DesktopAdvertSidebarProps {
   adverts: AdvertStory[];
@@ -78,13 +79,25 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
                   : 'border-black/10 hover:border-black/30'
               }`}
             >
-              {/* Full-bleed background image */}
-              <img
-                src={ad.thumbnailUrl}
-                alt={ad.title}
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                loading="lazy"
-              />
+              {/* Full-bleed background media: Exact video or image uploaded by lister/partner */}
+              {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
+                <video
+                  src={ad.mediaUrl}
+                  poster={ad.thumbnailUrl && ad.thumbnailUrl !== ad.mediaUrl ? ad.thumbnailUrl : undefined}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 pointer-events-none"
+                />
+              ) : (
+                <img
+                  src={ad.mediaUrl || ad.thumbnailUrl}
+                  alt={ad.title}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  loading="lazy"
+                />
+              )}
 
               {/* Gradient overlays: subtle vignette at top, deep cinematic fade at bottom */}
               <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/40 to-transparent pointer-events-none" />

@@ -881,15 +881,23 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                       )}
 
                       <div className="flex items-start gap-3 sm:gap-4">
-                        <img
-                          src={ad.thumbnailUrl || ad.mediaUrl}
-                          alt={ad.headline}
-                          className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-[#E5E7EB] shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80';
-                          }}
-                        />
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-900 border border-[#E5E7EB] shrink-0 flex items-center justify-center">
+                          {ad.mediaType === 'video' || (ad.mediaUrl && /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(ad.mediaUrl)) ? (
+                            <video
+                              src={ad.mediaUrl}
+                              poster={ad.thumbnailUrl && ad.thumbnailUrl !== ad.mediaUrl ? ad.thumbnailUrl : undefined}
+                              className="w-full h-full object-cover"
+                              muted
+                              playsInline
+                            />
+                          ) : (
+                            <img
+                              src={ad.thumbnailUrl || ad.mediaUrl}
+                              alt={ad.headline}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
 
                         <div className="min-w-0 flex-1 space-y-1">
                           <div className="flex items-center justify-between gap-2">
@@ -1605,39 +1613,6 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                         placeholder="https://... direct image or MP4 URL"
                         className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-mono text-[#000004] focus:outline-none focus:border-[#342A21]"
                       />
-
-                      {/* Sample Presets */}
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="text-[10px] text-[#70798C]">Sample Presets:</span>
-                        <button
-                          type="button"
-                          onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1080&q=80', 'image')}
-                          className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                        >
-                          Modern Penthouse
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1080&q=80', 'image')}
-                          className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                        >
-                          Luxury Estate
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1080&q=80', 'image')}
-                          className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                        >
-                          Solar Power
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleMediaPreset('https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1080&q=80', 'image')}
-                          className="text-[10px] px-2 py-0.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] hover:bg-[#F6F3EF] text-[#342A21] font-medium cursor-pointer"
-                        >
-                          Interior Design
-                        </button>
-                      </div>
 
                       {/* URL Preview */}
                       {mediaUrl && (

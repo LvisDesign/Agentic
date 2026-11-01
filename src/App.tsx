@@ -43,7 +43,7 @@ import { NotificationsModal } from './components/Notifications/NotificationsModa
 import { UserProfileModal } from './components/Profile/UserProfileModal';
 import { InspectionBookingModal } from './components/Booking/InspectionBookingModal';
 import { AdvertStory } from './data/mockAdverts';
-import { loadAllAdverts, saveAdvert, removeAdvert, subscribeToAdvertChanges, getDeletedAdvertIds, SYSTEM_DEMO_ADVERT_IDS } from './services/adService';
+import { loadAllAdverts, saveAdvert, removeAdvert, subscribeToAdvertChanges, getDeletedAdvertIds, SYSTEM_DEMO_ADVERT_IDS, mapDbToAdvert } from './services/adService';
 import { PostAdModal } from './components/Feed/PostAdModal';
 import { PartnerAdSubmissionModal } from './components/Adverts/PartnerAdSubmissionModal';
 import { PartnerPortalPage } from './components/Partner/PartnerPortalPage';
@@ -1339,10 +1339,12 @@ export function App() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          // Strictly filter out any deleted or system demo ads
-          return parsed.filter(
-            (a: AdvertStory) => a && a.id && !deletedIds.has(a.id) && !SYSTEM_DEMO_ADVERT_IDS.has(a.id) && a.status !== 'deleted'
-          );
+          // Strictly filter out any deleted or system demo ads and sanitize stored demo images
+          return parsed
+            .map(mapDbToAdvert)
+            .filter(
+              (a: AdvertStory) => a && a.id && !deletedIds.has(a.id) && !SYSTEM_DEMO_ADVERT_IDS.has(a.id) && a.status !== 'deleted'
+            );
         }
       } catch (e) {}
     }

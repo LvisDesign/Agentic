@@ -23,6 +23,8 @@ import { CustomDropdown } from '../UI/CustomDropdown';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { ModalPortal } from '../UI/ModalPortal';
 import { getAdPricing } from '../../services/adminService';
+import { processUploadedFile } from '../../utils/mediaStorage';
+import { isVideoMediaUrl } from '../../services/adService';
 
 interface PostAdModalProps {
   isOpen: boolean;
@@ -46,11 +48,14 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   const [actionType, setActionType] = useState<'contact' | 'website'>('contact');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [selectedPlan, setSelectedPlan] = useState<'weekly' | 'monthly'>('weekly');
-  const [uploadedMedia, setUploadedMedia] = useState<{ url: string; type: 'image' | 'video'; name: string }>({
-    url: '/images/properties/asaba_gra_exterior.jpg',
-    type: 'image',
-    name: 'asaba_gra_exterior.jpg',
-  });
+  const [uploadedMedia, setUploadedMedia] = useState<{
+    url: string;
+    type: 'image' | 'video';
+    name: string;
+    poster?: string;
+  } | null>(null);
+  const [isProcessingMedia, setIsProcessingMedia] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
   const [showPaystackModal, setShowPaystackModal] = useState(false);
   const [paymentRef, setPaymentRef] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
@@ -60,20 +65,39 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   const adPricing = getAdPricing();
   const advertCost = selectedPlan === 'weekly' ? adPricing.feedWeekly : adPricing.feedMonthly;
 
-  const handleMediaFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setMediaError(null);
+    setIsProcessingMedia(true);
     const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov|ogg|m4v)$/i.test(file.name);
-    const url = URL.createObjectURL(file);
-    setUploadedMedia({
-      url,
-      type: isVideo ? 'video' : 'image',
-      name: file.name,
-    });
+    try {
+      const processed = await processUploadedFile(file, 0);
+      setUploadedMedia({
+        url: processed.url,
+        type: processed.type,
+        name: file.name,
+        poster: processed.poster,
+      });
+    } catch (err) {
+      console.warn('Failed processing media via CDN, falling back to local stream', err);
+      const url = URL.createObjectURL(file);
+      setUploadedMedia({
+        url,
+        type: isVideo ? 'video' : 'image',
+        name: file.name,
+      });
+    } finally {
+      setIsProcessingMedia(false);
+    }
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!uploadedMedia || !uploadedMedia.url) {
+      setMediaError('Please upload an image or video for your advert.');
+      return;
+    }
     // Prompt Paystack Payment Gateway for Advert Sponsorship
     setShowPaystackModal(true);
   };
@@ -82,15 +106,19 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     setShowPaystackModal(false);
     setPaymentRef(ref);
 
+    const mediaType = uploadedMedia?.type || 'image';
+    const mediaUrl = uploadedMedia?.url || '';
+    const thumbnailUrl = uploadedMedia?.poster || mediaUrl;
+
     const newAd: AdvertStory = {
       id: `ad-user-${Date.now()}`,
       title: headline.slice(0, 14) || `${city} Rental`,
       advertiserName: advertiserName || 'Partner',
       category: 'Property',
       badgeText: selectedPlan === 'monthly' ? 'TOP AD' : 'SPONSORED',
-      thumbnailUrl: uploadedMedia.type === 'video' ? '/images/properties/asaba_gra_exterior.jpg' : uploadedMedia.url,
-      mediaUrl: uploadedMedia.url,
-      mediaType: uploadedMedia.type,
+      thumbnailUrl,
+      mediaUrl,
+      mediaType,
       headline: headline || `Premium Rental in ${neighborhood || city}`,
       description: description || `Newly listed property in ${neighborhood}, ${city}. Contact partner directly on WhatsApp.`,
       location: `${neighborhood ? `${neighborhood}, ` : ''}${city}`,
@@ -323,50 +351,60 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <div className="w-20 h-20 rounded-xl border border-[#E5E7EB] overflow-hidden bg-slate-900 shrink-0 relative flex items-center justify-center shadow-xs">
-                    {uploadedMedia.type === 'video' ? (
-                      <>
-                        <video
-                          src={uploadedMedia.url}
-                          className="w-full h-full object-cover"
-                          muted
-                          autoPlay
-                          loop
-                          playsInline
-                        />
-                        <span className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
-                          <Film className="w-5 h-5 text-amber-300 drop-shadow" />
-                        </span>
-                        <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
-                          VIDEO
-                        </span>
-                      </>
+                  <div className="w-20 h-20 rounded-xl border border-[#E5E7EB] overflow-hidden bg-slate-100 shrink-0 relative flex items-center justify-center shadow-xs">
+                    {uploadedMedia ? (
+                      uploadedMedia.type === 'video' ? (
+                        <>
+                          <video
+                            src={uploadedMedia.url}
+                            className="w-full h-full object-cover"
+                            muted
+                            autoPlay
+                            loop
+                            playsInline
+                          />
+                          <span className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
+                            <Film className="w-5 h-5 text-amber-300 drop-shadow" />
+                          </span>
+                          <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
+                            VIDEO
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <img src={uploadedMedia.url} alt="preview" className="w-full h-full object-cover" />
+                          <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
+                            PHOTO
+                          </span>
+                        </>
+                      )
                     ) : (
-                      <>
-                        <img src={uploadedMedia.url} alt="preview" className="w-full h-full object-cover" />
-                        <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[8px] font-bold px-1 rounded">
-                          PHOTO
-                        </span>
-                      </>
+                      <Upload className="w-6 h-6 text-[#70798C]" />
                     )}
                   </div>
 
                   <div className="flex-1 flex flex-col gap-1.5">
                     <label className="cursor-pointer py-2 px-3 rounded-lg border border-[#342A21]/30 hover:border-[#342A21] bg-white text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors">
                       <Upload className="w-3.5 h-3.5 text-[#342A21]" />
-                      <span>{uploadedMedia.type === 'video' ? 'Change Video or Photo' : 'Upload Video or Photo'}</span>
+                      <span>{isProcessingMedia ? 'Uploading media...' : uploadedMedia ? (uploadedMedia.type === 'video' ? 'Change Video' : 'Change Photo') : 'Select Video or Photo'}</span>
                       <input
                         type="file"
                         accept="image/*,video/*"
                         onChange={handleMediaFile}
+                        disabled={isProcessingMedia}
                         className="hidden"
                       />
                     </label>
                     <p className="text-[11px] text-[#70798C] leading-snug">
-                      {uploadedMedia.type === 'video' 
-                        ? `🎬 Video attached (${uploadedMedia.name})` 
-                        : '📷 Photo attached. Walkthrough videos convert 3x more tenants!'}
+                      {uploadedMedia 
+                        ? (uploadedMedia.type === 'video' 
+                          ? `🎬 Video attached (${uploadedMedia.name})` 
+                          : `📷 Photo attached (${uploadedMedia.name})`)
+                        : 'Upload your exact rental photo or walkthrough video (MP4/WebM/JPG/PNG)'}
                     </p>
+                    {mediaError && (
+                      <p className="text-[11px] text-rose-600 font-semibold">{mediaError}</p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -74,7 +74,9 @@ import {
   removeAdvert, 
   loadAllAdverts,
   getDeletedAdvertIds,
-  SYSTEM_DEMO_ADVERT_IDS
+  SYSTEM_DEMO_ADVERT_IDS,
+  isVideoMediaUrl,
+  isDemoMediaUrl
 } from '../../services/adService';
 import { 
   PropertyListing, 
@@ -208,7 +210,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     advertiserHandle: '',
     category: 'Property',
     badgeText: 'Featured',
-    mediaUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+    mediaUrl: '',
     location: 'Asaba, Delta State',
     price: '',
     description: '',
@@ -359,7 +361,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       advertiserHandle: '',
       category: 'Property',
       badgeText: 'Featured',
-      mediaUrl: '/images/properties/asaba_gra_exterior.jpg',
+      mediaUrl: '',
       location: 'Asaba, Delta State',
       price: '',
       description: '',
@@ -386,18 +388,24 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       return;
     }
 
+    const mediaUrl = advertForm.mediaUrl?.trim() || '';
+    const isVideo =
+      advertForm.mediaType === 'video' ||
+      isVideoMediaUrl(mediaUrl) ||
+      isVideoMediaUrl(advertForm.thumbnailUrl);
+
     const adToSave: AdvertStory = {
       id: editingAdvert ? editingAdvert.id : `ad-${Date.now()}`,
       title: advertForm.headline?.trim() || 'Sponsored Advert',
       headline: advertForm.headline?.trim() || '',
       advertiserName: advertForm.advertiserName?.trim() || 'Setlla Sponsor',
       advertiserHandle: advertForm.advertiserHandle?.trim() || advertForm.advertiserName?.toLowerCase().replace(/\s+/g, '_') || 'sponsor',
-      avatarUrl: advertForm.avatarUrl || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=150&q=80',
+      avatarUrl: isDemoMediaUrl(advertForm.avatarUrl) ? undefined : advertForm.avatarUrl?.trim(),
       category: advertForm.category || 'Property',
       badgeText: advertForm.badgeText?.trim() || 'Featured',
-      thumbnailUrl: advertForm.mediaUrl || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400&q=80',
-      mediaUrl: advertForm.mediaUrl || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-      mediaType: 'image',
+      thumbnailUrl: (!isDemoMediaUrl(advertForm.thumbnailUrl) && advertForm.thumbnailUrl?.trim()) || mediaUrl,
+      mediaUrl,
+      mediaType: isVideo ? 'video' : 'image',
       location: advertForm.location?.trim() || 'Delta State',
       price: advertForm.price?.trim() || undefined,
       description: advertForm.description?.trim() || '',
@@ -2472,17 +2480,30 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                     className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow group"
                   >
                     <div>
-                      {/* Media Preview Thumbnail */}
-                      <div className="relative h-44 w-full bg-slate-900 overflow-hidden">
-                        <img
-                          src={ad.mediaUrl || ad.thumbnailUrl}
-                          alt={ad.headline}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=600&q=80';
-                          }}
-                        />
+                      {/* Media Preview Thumbnail: Exact video or image uploaded by lister/partner */}
+                      <div className="relative h-44 w-full bg-slate-900 overflow-hidden flex items-center justify-center">
+                        {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
+                          <video
+                            src={ad.mediaUrl}
+                            poster={ad.thumbnailUrl && ad.thumbnailUrl !== ad.mediaUrl ? ad.thumbnailUrl : undefined}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                            muted
+                            playsInline
+                            autoPlay
+                            loop
+                          />
+                        ) : ad.mediaUrl || ad.thumbnailUrl ? (
+                          <img
+                            src={ad.mediaUrl || ad.thumbnailUrl}
+                            alt={ad.headline}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 gap-1.5 p-4 text-center">
+                            <Megaphone className="w-6 h-6 text-slate-400" />
+                            <span className="text-[11px] font-medium text-slate-400">No media attached</span>
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
 
                         {/* Top Badges */}
@@ -3871,15 +3892,17 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
             {/* Campaign Summary Pill */}
             <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
-              <img
-                src={decliningAd.thumbnailUrl || decliningAd.mediaUrl}
-                alt={decliningAd.headline}
-                className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80';
-                }}
-              />
+              <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shrink-0 flex items-center justify-center">
+                {decliningAd.mediaType === 'video' || isVideoMediaUrl(decliningAd.mediaUrl) ? (
+                  <video src={decliningAd.mediaUrl} className="w-full h-full object-cover" muted playsInline />
+                ) : (
+                  <img
+                    src={decliningAd.thumbnailUrl || decliningAd.mediaUrl}
+                    alt={decliningAd.headline}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
               <div className="min-w-0 flex-1">
                 <span className="font-bold text-xs text-[#000004] block truncate">{decliningAd.headline}</span>
                 <span className="text-[11px] text-[#70798C] block truncate">

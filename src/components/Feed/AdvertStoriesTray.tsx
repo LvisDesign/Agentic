@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
+import { isVideoMediaUrl } from '../../services/adService';
 
 interface AdvertStoriesTrayProps {
   adverts: AdvertStory[];
@@ -67,13 +68,23 @@ export const AdvertStoriesTray: React.FC<AdvertStoriesTrayProps> = ({
               </div>
 
               {/* Right Side: Product / Property Visual with "Ad" Pill Badge */}
-              <div className="w-[100px] sm:w-[108px] h-full shrink-0 relative rounded-xl overflow-hidden bg-black/5">
-                <img
-                  src={ad.thumbnailUrl || ad.mediaUrl}
-                  alt={ad.title}
-                  className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                />
+              <div className="w-[100px] sm:w-[108px] h-full shrink-0 relative rounded-xl overflow-hidden bg-black/5 flex items-center justify-center">
+                {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
+                  <video
+                    src={ad.mediaUrl}
+                    poster={ad.thumbnailUrl && ad.thumbnailUrl !== ad.mediaUrl ? ad.thumbnailUrl : undefined}
+                    className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <img
+                    src={ad.thumbnailUrl || ad.mediaUrl}
+                    alt={ad.title}
+                    className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                )}
 
                 {/* "Ad" Pill Badge in bottom-right corner (Direct match to reference image) */}
                 <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-full bg-black/45 backdrop-blur-xs text-[9px] font-semibold text-white/95 shadow-xs pointer-events-none">

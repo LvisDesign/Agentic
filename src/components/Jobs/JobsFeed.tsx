@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { JobListing } from '../../types/jobs';
 import { AdvertStory } from '../../data/mockAdverts';
+import { isVideoMediaUrl } from '../../services/adService';
 import { UserProfile } from '../../types/marketplace';
 import { JobListingCard } from './JobListingCard';
 import { JobDetailsSheet } from './JobDetailsSheet';
@@ -454,13 +455,23 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
                 onClick={() => onSelectAdvert(adverts[0])}
                 className="mt-3 cursor-pointer select-none space-y-2.5"
               >
-                <div className="w-full h-[140px] rounded-2xl overflow-hidden relative bg-black/10">
-                  <img
-                    src={adverts[0].thumbnailUrl || adverts[0].mediaUrl}
-                    alt={adverts[0].title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
+                <div className="w-full h-[140px] rounded-2xl overflow-hidden relative bg-black/10 flex items-center justify-center">
+                  {adverts[0].mediaType === 'video' || isVideoMediaUrl(adverts[0].mediaUrl) ? (
+                    <video
+                      src={adverts[0].mediaUrl}
+                      poster={adverts[0].thumbnailUrl && adverts[0].thumbnailUrl !== adverts[0].mediaUrl ? adverts[0].thumbnailUrl : undefined}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                      muted
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      src={adverts[0].thumbnailUrl || adverts[0].mediaUrl}
+                      alt={adverts[0].title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
                   <span className="absolute bottom-2 left-2 text-[10px] font-bold text-white bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded-md border border-white/20">
                     {adverts[0].badgeText || adverts[0].category}

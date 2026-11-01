@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertStory, getAdvertCtaConfig } from '../../data/mockAdverts';
+import { isVideoMediaUrl } from '../../services/adService';
 import { PropertyListing } from '../../types/marketplace';
 
 interface InFeedSponsoredCarouselProps {
@@ -498,7 +499,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                     onClick={(e) => handleCTA(e, ad)}
                     className="mt-2.5 rounded-xl overflow-hidden aspect-video bg-slate-900 border border-[#E5E7EB] relative group/media cursor-pointer flex items-center justify-center"
                   >
-                    {ad.mediaType === 'video' ? (
+                    {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
                       <InFeedSponsoredVideo mediaUrl={ad.mediaUrl} />
                     ) : (
                       <img

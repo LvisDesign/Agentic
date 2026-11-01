@@ -7,6 +7,7 @@ import {
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertStory } from '../../data/mockAdverts';
 import { ModalPortal } from '../UI/ModalPortal';
+import { isVideoMediaUrl } from '../../services/adService';
 
 interface AdvertStoryModalProps {
   isOpen: boolean;
@@ -164,12 +165,13 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
           </button>
         </div>
 
-        {/* 3. Media Viewport (Image / Video) */}
+        {/* 3. Media Viewport (Image / Video: exact lister/partner content) */}
         <div className="relative w-full h-full bg-slate-900 overflow-hidden flex items-center justify-center">
-          {activeAd.mediaType === 'video' ? (
+          {activeAd.mediaType === 'video' || isVideoMediaUrl(activeAd.mediaUrl) ? (
             <video
               key={activeAd.mediaUrl}
               src={activeAd.mediaUrl}
+              poster={activeAd.thumbnailUrl && activeAd.thumbnailUrl !== activeAd.mediaUrl ? activeAd.thumbnailUrl : undefined}
               className="w-full h-full object-cover"
               autoPlay
               muted
@@ -178,7 +180,7 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
             />
           ) : (
             <img
-              src={activeAd.mediaUrl}
+              src={activeAd.mediaUrl || activeAd.thumbnailUrl}
               alt={activeAd.headline}
               className="w-full h-full object-cover"
             />
