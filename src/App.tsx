@@ -490,7 +490,6 @@ export function App() {
         try {
           localStorage.setItem('setlla_user', JSON.stringify(elevated));
           localStorage.setItem('deltarent_user', JSON.stringify(elevated));
-          localStorage.setItem('setlla_admin_auth', 'true');
         } catch (_) {}
       }
     }

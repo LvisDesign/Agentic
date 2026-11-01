@@ -29,22 +29,18 @@ export interface AdminOTPRecord {
 
 /**
  * Checks if a user is the Master Super Administrator Elvis.
+ * Strictly verifies against official admin email, system admin ID, or confirmed admin profile.
  */
 export function isElvisSuperAdmin(user?: UserProfile | AdminCredential | null): boolean {
   if (!user) return false;
-  const name = (user.fullName || '').trim().toLowerCase();
-  const phone = (user.phone || '').replace(/\D/g, '');
   const email = ((user as any).email || '').trim().toLowerCase();
+  const phone = (user.phone || '').replace(/\D/g, '');
   const id = ((user as any).id || '').toLowerCase();
   return (
     email === OFFICIAL_ADMIN_EMAIL.toLowerCase() ||
     email === 'admin@setlla.com' ||
-    name === 'elvis' ||
-    name.startsWith('elvis ') ||
-    name.includes('elvis') ||
-    phone.endsWith('9077056351') ||
-    phone.endsWith('7056351') ||
-    id === 'dt-admin-elvis'
+    id === 'dt-admin-elvis' ||
+    (phone.endsWith('9077056351') && Boolean((user as any).isAdmin || (user as any).isSuperAdmin))
   );
 }
 
@@ -654,74 +650,59 @@ export async function loginAdminWithPassword(
 export async function verifyAdminSessionWithSupabase(): Promise<UserProfile | null> {
   if (typeof window === 'undefined') return null;
 
-  // If local active admin is already Elvis, preserve Elvis and avoid unneeded switches
-  const currentActive = getActiveAdminUser();
-  if (isElvisSuperAdmin(currentActive)) {
-    return currentActive;
-  }
-
   if (!isSupabaseConfigured()) {
-    return isSuperAdminAuthenticated() ? currentActive : null;
+    return isSuperAdminAuthenticated() ? getActiveAdminUser() : null;
   }
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
-      if (isSuperAdminAuthenticated()) {
-        return currentActive;
-      }
+    if (!session?.user?.email) {
       return null;
     }
 
+    const sessionEmail = session.user.email.toLowerCase().trim();
+    const isOfficialEmail = sessionEmail === OFFICIAL_ADMIN_EMAIL.toLowerCase() || sessionEmail === 'admin@setlla.com';
+
+    // Verify whether this specific session user has administrator privileges in Supabase database
     const { data: profile, error } = await supabase
       .from('platform_users')
       .select('*')
       .eq('id', session.user.id)
       .maybeSingle();
 
-    if (error || !profile || (!profile.is_admin && !profile.is_super_admin)) {
-      if (isSuperAdminAuthenticated() && isElvisSuperAdmin(currentActive)) {
-        return currentActive;
-      }
+    const isDatabaseAdmin = Boolean(profile && (profile.is_admin || profile.is_super_admin) && !profile.is_suspended);
+
+    // If the authenticated session is neither the official admin email nor an elevated database admin, reject!
+    if (!isOfficialEmail && !isDatabaseAdmin) {
+      logoutAdminSession();
+      return null;
+    }
+
+    if (profile?.is_suspended) {
       logoutAdminSession();
       await supabase.auth.signOut().catch(() => {});
       return null;
     }
 
-    if (profile.is_suspended) {
-      logoutAdminSession();
-      await supabase.auth.signOut().catch(() => {});
-      return null;
-    }
-
-    // If local active admin is Elvis, never overwrite with a non-Elvis profile
-    if (isElvisSuperAdmin(currentActive)) {
+    const currentActive = getActiveAdminUser();
+    if (currentActive && isElvisSuperAdmin(currentActive)) {
       return currentActive;
     }
 
-    // If the fetched profile is not Elvis, but an Elvis account exists in user registry, keep Elvis!
-    const registeredUsers = getRegisteredUsers();
-    const elvisRegistered = registeredUsers.find((u) => isElvisSuperAdmin(u));
-    if (elvisRegistered) {
-      localStorage.setItem(ADMIN_AUTH_KEY, 'true');
-      localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(elvisRegistered));
-      return elvisRegistered;
-    }
-
     const adminProfile: UserProfile = {
-      id: profile.id,
-      fullName: profile.full_name || 'Elvis',
-      email: profile.email || session.user.email || OFFICIAL_ADMIN_EMAIL,
-      phone: profile.phone || '0907 705 6351',
-      state: profile.state || 'Delta State',
-      city: profile.city || 'Asaba',
+      id: profile?.id || session.user.id,
+      fullName: profile?.full_name || 'Elvis',
+      email: profile?.email || session.user.email || OFFICIAL_ADMIN_EMAIL,
+      phone: profile?.phone || '0907 705 6351',
+      state: profile?.state || 'Delta State',
+      city: profile?.city || 'Asaba',
       isVerifiedTenant: false,
       isAgent: false,
       isAdmin: true,
-      isSuperAdmin: Boolean(profile.is_super_admin),
+      isSuperAdmin: true,
       isDemoAdmin: false,
       savedListingIds: [],
-      createdAt: profile.created_at || new Date().toISOString(),
+      createdAt: profile?.created_at || new Date().toISOString(),
     };
 
     localStorage.setItem(ADMIN_AUTH_KEY, 'true');
@@ -729,7 +710,7 @@ export async function verifyAdminSessionWithSupabase(): Promise<UserProfile | nu
     return adminProfile;
   } catch (e) {
     console.warn('[AdminAuthService] Session verification error:', e);
-    return isSuperAdminAuthenticated() ? getActiveAdminUser() : null;
+    return null;
   }
 }
 

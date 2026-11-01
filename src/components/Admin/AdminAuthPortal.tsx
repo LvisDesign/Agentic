@@ -69,60 +69,6 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     return () => clearInterval(interval);
   }, [step, resendCooldown]);
 
-  // Listen for Supabase email confirmation link clicks while Admin portal is open
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-
-    const checkAndAuth = async (confirmedEmail?: string | null) => {
-      const activeAdminEmail = (email.trim() || confirmedEmail || OFFICIAL_ADMIN_EMAIL).toLowerCase();
-      const existing = await findAdminAccount(activeAdminEmail);
-      if (!existing && mode === 'login') return;
-
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
-
-      const adminProfile: UserProfile = {
-        id: (existing as any)?.id || 'DT-ADMIN-001',
-        fullName: fullName.trim() || (existing as any)?.fullName || 'Platform Administrator',
-        email: activeAdminEmail,
-        phone: phone.trim() || (existing as any)?.phone || '0800 000 0001',
-        state: (existing as any)?.state || 'Delta State',
-        city: (existing as any)?.city || 'Asaba',
-        isVerifiedTenant: false,
-        isAgent: false,
-        isAdmin: true,
-        isSuperAdmin: true,
-        savedListingIds: [],
-        createdAt: (existing as any)?.createdAt || new Date().toISOString(),
-      };
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('setlla_admin_auth', 'true');
-        localStorage.setItem('setlla_admin_user', JSON.stringify(adminProfile));
-        localStorage.removeItem('setlla_admin_accounts');
-      }
-
-      onSuccess(adminProfile);
-    };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email) checkAndAuth(session.user.email);
-    }).catch(() => {});
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user?.email) {
-        checkAndAuth(session.user.email);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [fullName, phone, email, mode, onSuccess]);
-
   // Handle Direct Password Login via Supabase Auth & platform_users
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
