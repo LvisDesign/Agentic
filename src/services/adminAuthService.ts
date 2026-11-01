@@ -7,6 +7,32 @@ const ADMIN_AUTH_KEY = 'setlla_admin_auth';
 const ADMIN_USER_KEY = 'setlla_admin_user';
 const ADMIN_CREDENTIALS_KEY = 'setlla_admin_accounts';
 const ADMIN_PENDING_OTP_KEY = 'setlla_admin_pending_otp';
+const ADMIN_LAST_ACTIVITY_KEY = 'setlla_admin_last_activity';
+const ADMIN_EXPIRED_NOTICE_KEY = 'setlla_admin_expired_notice';
+
+// Industry standard: 60 minutes inactivity limit with 5-minute warning
+export const ADMIN_INACTIVITY_LIMIT_MS = 60 * 60 * 1000;
+export const ADMIN_INACTIVITY_WARNING_MS = 55 * 60 * 1000;
+
+export function getAndClearAdminExpiredNotice(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const notice = sessionStorage.getItem(ADMIN_EXPIRED_NOTICE_KEY) || localStorage.getItem(ADMIN_EXPIRED_NOTICE_KEY);
+    if (notice) {
+      sessionStorage.removeItem(ADMIN_EXPIRED_NOTICE_KEY);
+      localStorage.removeItem(ADMIN_EXPIRED_NOTICE_KEY);
+      return notice;
+    }
+  } catch (_) {}
+  return null;
+}
+
+export function setAdminExpiredNotice(msg: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(ADMIN_EXPIRED_NOTICE_KEY, msg);
+  } catch (_) {}
+}
 
 export const OFFICIAL_ADMIN_EMAIL = 'admin@setlla.com';
 
@@ -142,11 +168,62 @@ export function removeAdminCredential(email?: string, phone?: string): void {
 }
 
 /**
+ * Updates the last recorded activity timestamp for the Super Admin session.
+ */
+export function updateAdminLastActivity(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(ADMIN_LAST_ACTIVITY_KEY, Date.now().toString());
+  } catch (_) {}
+}
+
+/**
+ * Retrieves the timestamp of the last recorded Super Admin activity.
+ */
+export function getAdminLastActivity(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const val = localStorage.getItem(ADMIN_LAST_ACTIVITY_KEY);
+    return val ? parseInt(val, 10) || 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Checks if the Super Admin session has expired due to 60 minutes of inactivity.
+ */
+export function isAdminSessionExpired(): boolean {
+  if (typeof window === 'undefined') return false;
+  const isAuth = localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
+  if (!isAuth) return false;
+
+  const lastActivity = getAdminLastActivity();
+  if (!lastActivity) {
+    updateAdminLastActivity();
+    return false;
+  }
+
+  const idleTime = Date.now() - lastActivity;
+  return idleTime >= ADMIN_INACTIVITY_LIMIT_MS;
+}
+
+/**
  * Checks if the current session has an authenticated Super Admin.
+ * Automatically logs out and returns false if the session has expired due to 60 minutes of inactivity.
  */
 export function isSuperAdminAuthenticated(): boolean {
   if (typeof window === 'undefined') return false;
-  return localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
+  const isAuth = localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
+  if (!isAuth) return false;
+
+  if (isAdminSessionExpired()) {
+    setAdminExpiredNotice('Your administrator session expired due to 1 hour of inactivity. Please log in to continue.');
+    logoutAdminSession();
+    return false;
+  }
+
+  return true;
 }
 
 /**
@@ -524,6 +601,7 @@ export function completeAdminRegistration(
   if (typeof window !== 'undefined') {
     localStorage.setItem(ADMIN_AUTH_KEY, 'true');
     localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(newAdmin));
+    updateAdminLastActivity();
   }
 
   // 5. Record audit log
@@ -622,6 +700,7 @@ export async function loginAdminWithPassword(
     if (typeof window !== 'undefined') {
       localStorage.setItem(ADMIN_AUTH_KEY, 'true');
       localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(adminProfile));
+      updateAdminLastActivity();
     }
 
     recordAuditLog(
@@ -707,6 +786,7 @@ export async function verifyAdminSessionWithSupabase(): Promise<UserProfile | nu
 
     localStorage.setItem(ADMIN_AUTH_KEY, 'true');
     localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(adminProfile));
+    updateAdminLastActivity();
     return adminProfile;
   } catch (e) {
     console.warn('[AdminAuthService] Session verification error:', e);
@@ -733,6 +813,7 @@ export function logoutAdminSession(): void {
   localStorage.removeItem(ADMIN_AUTH_KEY);
   localStorage.removeItem(ADMIN_USER_KEY);
   localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
+  localStorage.removeItem(ADMIN_LAST_ACTIVITY_KEY);
 
   if (isSupabaseConfigured()) {
     try {

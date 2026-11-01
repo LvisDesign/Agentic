@@ -59,6 +59,7 @@ import { SuperAdminDashboard } from './components/Admin/SuperAdminDashboard';
 import { CustomConfirmModal } from './components/UI/CustomConfirmModal';
 import { PWAInstallBanner } from './components/UI/PWAInstallBanner';
 import { AdminAuthPortal } from './components/Admin/AdminAuthPortal';
+import { Clock } from 'lucide-react';
 import { 
   isSuperAdminAuthenticated, 
   getActiveAdminUser, 
@@ -66,7 +67,13 @@ import {
   DEFAULT_SUPER_ADMIN_USER,
   OFFICIAL_ADMIN_EMAIL,
   verifyAdminSessionWithSupabase,
-  isElvisSuperAdmin
+  isElvisSuperAdmin,
+  ADMIN_INACTIVITY_LIMIT_MS,
+  ADMIN_INACTIVITY_WARNING_MS,
+  updateAdminLastActivity,
+  getAdminLastActivity,
+  isAdminSessionExpired,
+  getAndClearAdminExpiredNotice
 } from './services/adminAuthService';
 import { getPlatformSettings } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
@@ -313,6 +320,11 @@ export function App() {
   const [activeAdminUser, setActiveAdminUser] = useState<UserProfile | null>(() => {
     return getActiveAdminUser();
   });
+
+  const [adminExpiredNotice, setAdminExpiredNotice] = useState<string | null>(() => {
+    return getAndClearAdminExpiredNotice();
+  });
+  const [adminIdleWarning, setAdminIdleWarning] = useState<boolean>(false);
 
   // User Authentication State (Persisted in localStorage & restored for existing installed users)
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -1900,7 +1912,83 @@ export function App() {
     setActiveAdminUser(admin);
     setCurrentUser(admin);
     setCurrentRole('admin');
+    setAdminExpiredNotice(null);
+    setAdminIdleWarning(false);
+    updateAdminLastActivity();
   }, []);
+
+  // Super Admin 60-Minute Inactivity Watchdog & Auto-Logout
+  useEffect(() => {
+    if (!isAdminAuthenticated) {
+      setAdminIdleWarning(false);
+      return;
+    }
+
+    // 1. Throttled Activity Tracking on user interactions
+    let lastRecorded = Date.now();
+    const handleAdminInteraction = () => {
+      const now = Date.now();
+      // Throttle updates to local storage once every 10 seconds
+      if (now - lastRecorded >= 10000) {
+        lastRecorded = now;
+        updateAdminLastActivity();
+      }
+      setAdminIdleWarning(false);
+    };
+
+    const interactionEvents: (keyof WindowEventMap)[] = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+    interactionEvents.forEach((evt) => {
+      window.addEventListener(evt, handleAdminInteraction, { passive: true });
+    });
+
+    // 2. Inactivity check function
+    const checkAdminInactivity = () => {
+      if (isAdminSessionExpired()) {
+        logoutAdminSession();
+        setIsAdminAuthenticated(false);
+        setActiveAdminUser(null);
+        setAdminIdleWarning(false);
+        setAdminExpiredNotice('Your administrator session expired due to 1 hour of inactivity. Please log in to continue.');
+        return;
+      }
+
+      if (currentRole === 'admin') {
+        const lastActivity = getAdminLastActivity();
+        if (lastActivity && Date.now() - lastActivity >= ADMIN_INACTIVITY_WARNING_MS) {
+          setAdminIdleWarning(true);
+        } else {
+          setAdminIdleWarning(false);
+        }
+      } else {
+        setAdminIdleWarning(false);
+      }
+    };
+
+    // Run check immediately on mount or state change
+    checkAdminInactivity();
+
+    // 3. Periodic watchdog interval (every 15 seconds)
+    const intervalId = setInterval(checkAdminInactivity, 15000);
+
+    // 4. Cold resume & tab return listeners (when waking phone, switching back to browser tab)
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        checkAdminInactivity();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('focus', handleVisibilityOrFocus);
+
+    return () => {
+      interactionEvents.forEach((evt) => {
+        window.removeEventListener(evt, handleAdminInteraction);
+      });
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+    };
+  }, [isAdminAuthenticated, currentRole]);
 
   // Listen for Supabase email confirmation link clicks (e.g. #access_token=... or session callbacks)
   useEffect(() => {
@@ -2234,7 +2322,30 @@ export function App() {
       ) : currentRole === 'admin' ? (
         /* Super Admin Control Center or Admin Authentication Portal */
         isAdminAuthenticated ? (
-          <main className="flex-1 w-full">
+          <main className="flex-1 w-full relative">
+            {adminIdleWarning && (
+              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] bg-[#000004]/95 text-white backdrop-blur-md border border-[#F95700]/60 p-3.5 sm:p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-3 animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-[#F95700]/20 flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4 text-[#F95700]" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-white">Admin Session Expiring</div>
+                    <div className="text-[11px] text-white/70">Idle for 55 minutes. Expiring in ~5 minutes. Tap to stay signed in.</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateAdminLastActivity();
+                    setAdminIdleWarning(false);
+                  }}
+                  className="px-3 py-1.5 bg-[#F95700] hover:bg-[#E65100] text-white text-xs font-bold rounded-lg shrink-0 cursor-pointer transition-colors shadow-sm"
+                >
+                  Stay Active
+                </button>
+              </div>
+            )}
             <SuperAdminDashboard
               currentUser={activeAdminUser || currentUser}
               listings={listings}
@@ -2271,7 +2382,9 @@ export function App() {
           <main className="flex-1 w-full">
             <AdminAuthPortal
               onSuccess={handleAdminAuthSuccess}
+              expiredNotice={adminExpiredNotice}
               onSwitchToExplore={() => {
+                setAdminExpiredNotice(null);
                 setCurrentRole('tenant');
                 setUserView('feed');
               }}

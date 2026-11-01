@@ -12,7 +12,8 @@ import {
   Globe,
   Eye,
   EyeOff,
-  Key
+  Key,
+  Clock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { UserProfile } from '../../types/marketplace';
@@ -22,7 +23,8 @@ import {
   verifyAdminOTP,
   findAdminAccount,
   completeAdminRegistration,
-  loginAdminWithPassword
+  loginAdminWithPassword,
+  updateAdminLastActivity
 } from '../../services/adminAuthService';
 import { recordAuditLog } from '../../services/adminService';
 import { supabase, isSupabaseConfigured } from '../../utils/supabaseClient';
@@ -31,12 +33,14 @@ interface AdminAuthPortalProps {
   onSuccess: (adminUser: UserProfile) => void;
   onSwitchToExplore: () => void;
   initialMode?: 'login' | 'create-account';
+  expiredNotice?: string | null;
 }
 
 export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   onSuccess,
   onSwitchToExplore,
   initialMode = 'login',
+  expiredNotice,
 }) => {
   const [mode, setMode] = useState<'login' | 'create-account'>(initialMode);
   const [step, setStep] = useState<'form' | 'otp'>('form');
@@ -310,6 +314,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
         if (typeof window !== 'undefined') {
           localStorage.setItem('setlla_admin_auth', 'true');
           localStorage.setItem('setlla_admin_user', JSON.stringify(adminProfile));
+          updateAdminLastActivity();
         }
 
         recordAuditLog(
@@ -383,6 +388,14 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
                 <span className="hidden sm:inline">Explore Feed</span>
               </button>
             </div>
+
+            {/* Session Expiration Notice */}
+            {expiredNotice && (
+              <div className="mb-3.5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2.5 animate-fade-in shadow-xs">
+                <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span className="font-semibold leading-relaxed">{expiredNotice}</span>
+              </div>
+            )}
 
             {/* Title & Subtitle */}
             <div className="mb-3">
