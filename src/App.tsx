@@ -139,7 +139,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   const savedRole = (localStorage.getItem('setlla_active_role') || localStorage.getItem('deltarent_active_role')) as UserRole | null;
   const savedView = (localStorage.getItem('setlla_active_view') || localStorage.getItem('deltarent_active_view')) as ('dashboard' | 'feed' | 'partner') | null;
 
-  // 1. Explicit Routing (e.g. #/partner, ?view=partner, #/admin, #/agent, #/dashboard, #/explore, #/inspections)
+  // 1. Direct route deep-links (partner / admin)
   if (
     hash.includes('partner') || 
     hash.includes('advertise') || 
@@ -155,10 +155,8 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   if (hash.includes('admin')) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
-  // Explore / Feed takes strict precedence: User refreshing on Explore must stay on Explore Feed!
-  if (hash.includes('explore') || hash.includes('feed') || hash === '#/jobs' || hash === '#jobs') {
-    return { role: 'tenant', view: 'feed', openPasses: false };
-  }
+
+  // 2. Explicit Dashboard URL Deep Links (e.g. #/agent, #/jobs/agent, #/dashboard, #/jobs/dashboard)
   if (hash.includes('agent') || hash.includes('employer')) {
     if (isUserAgent) {
       return { role: 'agent', view: 'dashboard', openPasses: false };
@@ -171,35 +169,38 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     return { role: 'tenant', view: 'dashboard', openPasses: false };
   }
   if (hash.includes('inspections') || hash.includes('passes')) {
-    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
+    return { role: isUserAgent ? 'agent' : 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
   }
 
-  // 2. LocalStorage Persistence (Preserves active page across normal F5 / page reloads)
+  // 3. Explicit Explore / Feed URL Deep Links (STRICT: Refreshing on Explore must NEVER redirect to dashboard)
+  if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals') || hash === '#/jobs' || hash === '#jobs') {
+    return { role: isUserAgent ? 'agent' : (savedRole || 'tenant'), view: 'feed', openPasses: false };
+  }
+
+  // 4. Session Persistence across page reloads
   if (savedRole === 'admin') {
     if (isSuperAdminAuthenticated() && (hash.includes('admin') || pathname.includes('/admin'))) {
       return { role: 'admin', view: 'feed', openPasses: false };
     }
     return { role: 'tenant', view: 'feed', openPasses: false };
   }
-  // If user was viewing the continuous feed on reload, preserve explore feed view!
+
+  // If user was explicitly on feed before reload, guarantee they stay on feed!
   if (savedView === 'feed') {
-    return { role: 'tenant', view: 'feed', openPasses: false };
-  }
-  if (savedRole === 'agent' && isUserAgent) {
-    return { role: 'agent', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
-  }
-  if (savedRole === 'seeker' || savedRole === 'tenant') {
-    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
+    return { role: isUserAgent ? 'agent' : (savedRole || 'tenant'), view: 'feed', openPasses: false };
   }
 
-  // 3. Fallback defaults:
-  if (isUserAdmin && isSuperAdminAuthenticated() && (hash.includes('admin') || pathname.includes('/admin'))) {
-    return { role: 'admin', view: 'feed', openPasses: false };
+  // If user was on dashboard and hash didn't reset to explore/root, preserve dashboard
+  if (savedView === 'dashboard' && (hash.includes('agent') || hash.includes('dashboard'))) {
+    if (savedRole === 'agent' && isUserAgent) {
+      return { role: 'agent', view: 'dashboard', openPasses: false };
+    }
+    return { role: 'tenant', view: 'dashboard', openPasses: false };
   }
-  if (isUserAgent) {
-    return { role: 'agent', view: 'feed', openPasses: false };
-  }
-  return { role: 'tenant', view: 'feed', openPasses: false };
+
+  // 5. Default Fallback for all normal visits, root '/', empty hash, '#', etc.:
+  // The default landing page of Setlla is ALWAYS the continuous Explore Feed!
+  return { role: isUserAgent ? 'agent' : (savedRole || 'tenant'), view: 'feed', openPasses: false };
 }
 
 export function App() {
@@ -481,14 +482,12 @@ export function App() {
         ? '#/partner'
         : currentRole === 'admin'
         ? '#/admin'
-        : room === 'jobs'
-        ? (userView === 'feed' ? '#/jobs' : currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
-        : userView === 'feed'
-        ? '#/explore'
-        : currentRole === 'agent'
-        ? '#/agent'
         : userView === 'dashboard'
-        ? '#/dashboard'
+        ? (room === 'jobs'
+            ? ((currentRole === 'agent' || currentUser.isAgent) ? '#/jobs/agent' : '#/jobs/dashboard')
+            : ((currentRole === 'agent' || currentUser.isAgent) ? '#/agent' : '#/dashboard'))
+        : room === 'jobs'
+        ? '#/jobs'
         : '#/explore';
 
       if (window.location.hash !== targetHash) {
@@ -607,20 +606,18 @@ export function App() {
       ? '#/partner'
       : currentRole === 'admin'
       ? '#/admin'
-      : activeRoom === 'jobs'
-      ? (userView === 'feed' ? '#/jobs' : currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
-      : userView === 'feed'
-      ? '#/explore'
-      : currentRole === 'agent'
-      ? '#/agent'
       : userView === 'dashboard'
-      ? '#/dashboard'
+      ? (activeRoom === 'jobs'
+          ? ((currentRole === 'agent' || currentUser.isAgent) ? '#/jobs/agent' : '#/jobs/dashboard')
+          : ((currentRole === 'agent' || currentUser.isAgent) ? '#/agent' : '#/dashboard'))
+      : activeRoom === 'jobs'
+      ? '#/jobs'
       : '#/explore';
 
     if (window.location.hash !== targetHash) {
       history.replaceState(null, '', targetHash);
     }
-  }, [currentRole, userView, activeRoom]);
+  }, [currentRole, userView, activeRoom, currentUser.isAgent]);
 
   // 2. Support browser Back/Forward navigation seamlessly via hashchange
   useEffect(() => {
@@ -630,12 +627,12 @@ export function App() {
         setActiveRoom('jobs');
         if (hash.includes('agent') || hash.includes('employer')) {
           setCurrentRole('agent');
+          setUserView('dashboard');
         } else if (hash.includes('dashboard')) {
           setCurrentRole('tenant');
           setUserView('dashboard');
         } else {
           // #/jobs or #/jobs/explore
-          setCurrentRole('tenant');
           setUserView('feed');
         }
       } else if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser')) {
@@ -643,24 +640,28 @@ export function App() {
       } else if (hash.includes('admin')) {
         setCurrentRole('admin');
         setUserView('feed');
-      } else if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals')) {
+      } else if (hash.includes('agent') || hash.includes('employer')) {
         setActiveRoom('rentals');
-        setCurrentRole('tenant');
-        setUserView('feed');
-      } else if (hash.includes('agent')) {
-        setActiveRoom('rentals');
-        setCurrentRole('agent');
-        setUserView('dashboard');
+        if (currentUser.isAgent) {
+          setCurrentRole('agent');
+          setUserView('dashboard');
+        } else {
+          setUserView('feed');
+        }
       } else if (hash.includes('dashboard')) {
         setActiveRoom('rentals');
         if (currentUser.isAgent) {
           setCurrentRole('agent');
         } else {
           setCurrentRole('tenant');
-          setUserView('dashboard');
         }
+        setUserView('dashboard');
       } else if (hash.includes('inspections') || hash.includes('passes')) {
         setIsMyPassesOpen(true);
+      } else {
+        // Any other route (#/explore, #/feed, #/rentals, #/, #, or empty): Explore Feed
+        setActiveRoom('rentals');
+        setUserView('feed');
       }
     };
 
@@ -2573,7 +2574,7 @@ export function App() {
               />
             </main>
           )
-        ) : currentUser.isAgent ? (
+        ) : (currentUser.isAgent || currentRole === 'agent') ? (
           /* If the user is an agent, their dashboard is the Agent Dashboard */
           <main className="flex-1 w-full">
             <AgentDashboard
@@ -2588,11 +2589,9 @@ export function App() {
               onUpdateAvailability={handleUpdateListingAvailability}
               onConfirmFreshness={handleConfirmListingFreshness}
               onSwitchToSeeker={() => {
-                setCurrentRole('tenant');
                 setUserView('feed');
               }}
               onSwitchToTenant={() => {
-                setCurrentRole('tenant');
                 setUserView('feed');
               }}
               onOpenAdsPortal={handleOpenAdsPortal}
@@ -2623,63 +2622,23 @@ export function App() {
           </main>
         )
       ) : activeRoom === 'jobs' ? (
-        (currentRole === 'agent' || (currentUser.isAgent && userView !== 'feed')) ? (
-          /* Setlla Job Agent & Employer Portal */
-          <main className="flex-1 w-full pt-16">
-            <JobAgentDashboard
-              currentUser={currentUser}
-              onSwitchToFeed={() => {
-                setCurrentRole('tenant');
-                setUserView('feed');
-              }}
-              onSwitchToRentals={() => handleRoomChange('rentals')}
-              isAuthenticated={isAuthenticated}
-            />
-          </main>
-        ) : (
-          /* Setlla Jobs Continuous Feed */
-          <main className="flex-1 w-full h-[calc(100dvh-4rem)] mt-16 flex flex-col overflow-hidden bg-[#FCF9F5]">
-            <JobsFeed
-              currentUser={currentUser}
-              adverts={activePublicAdverts}
-              onSelectAdvert={handleSelectAdvert}
-              onTriggerSignup={handleOpenSignup}
-              isAuthenticated={isAuthenticated}
-              onOpenPostAd={() => setIsPostAdOpen(true)}
-              onOpenEmployerPortal={() => {
-                setCurrentRole('agent');
-                setUserView('dashboard');
-              }}
-            />
-          </main>
-        )
-      ) : (currentRole === 'agent' && userView !== 'feed') ? (
-        /* Agent Mode Portal */
-        <main className="flex-1 w-full">
-          <AgentDashboard
+        /* Setlla Jobs Continuous Feed */
+        <main className="flex-1 w-full h-[calc(100dvh-4rem)] mt-16 flex flex-col overflow-hidden bg-[#FCF9F5]">
+          <JobsFeed
             currentUser={currentUser}
-            listings={listings}
-            bookings={bookings}
-            onAcceptBooking={handleAcceptBooking}
-            onRejectBooking={handleRejectBooking}
-            onListingCreated={handleListingCreated}
-            onListingUpdated={handleListingUpdated}
-            onDeleteListing={handleDeleteListing}
-            onUpdateAvailability={handleUpdateListingAvailability}
-            onConfirmFreshness={handleConfirmListingFreshness}
-            onSwitchToSeeker={() => {
-              setCurrentRole('tenant');
-              setUserView('feed');
+            adverts={activePublicAdverts}
+            onSelectAdvert={handleSelectAdvert}
+            onTriggerSignup={handleOpenSignup}
+            isAuthenticated={isAuthenticated}
+            onOpenPostAd={() => setIsPostAdOpen(true)}
+            onOpenEmployerPortal={() => {
+              setCurrentRole('agent');
+              setUserView('dashboard');
             }}
-            onSwitchToTenant={() => {
-              setCurrentRole('tenant');
-              setUserView('feed');
-            }}
-            onOpenAdsPortal={handleOpenAdsPortal}
           />
         </main>
       ) : (
-          /* Tenant Snap Feed View */
+          /* Public Continuous Explore Feed View: Active for all users when userView is 'feed' */
           <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">
             {/* Snap-Feed Filter Bar with Squared Rounded-Edges Adverts Tray */}
             <FilterBar
