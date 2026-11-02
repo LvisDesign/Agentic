@@ -173,27 +173,28 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => {
                 if (isSuperAdmin) {
                   onChangeRole('agent');
+                  onChangeUserView('dashboard');
                 } else {
                   onChangeRole('tenant');
                   onChangeUserView('dashboard');
                 }
               }}
               className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-                (isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard')))
+                userView === 'dashboard' && (isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || currentRole === 'seeker' || currentRole === 'tenant'))
                   ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
                   : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
               }`}
               aria-label={isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'User Dashboard'}
               title={isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'User Dashboard'}
             >
-              <LayoutDashboard className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard'))) ? 'text-white' : ''}`} />
+              <LayoutDashboard className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${userView === 'dashboard' && (isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || currentRole === 'seeker' || currentRole === 'tenant')) ? 'text-white' : ''}`} />
               
               {/* Desktop Label */}
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
                 {isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'My Dashboard'}
               </span>
 
-              {(isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard'))) && (
+              {userView === 'dashboard' && (isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || currentRole === 'seeker' || currentRole === 'tenant')) && (
                 <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
               )}
 
@@ -211,21 +212,21 @@ export const Header: React.FC<HeaderProps> = ({
               onChangeUserView('feed');
             }}
             className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-              ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')
+              userView === 'feed' || (!isAuthenticated && userView !== 'dashboard')
                 ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
             }`}
             aria-label="Explore"
             title="Explore"
           >
-            <Compass className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')) ? 'text-white' : ''}`} />
+            <Compass className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(userView === 'feed' || (!isAuthenticated && userView !== 'dashboard')) ? 'text-white' : ''}`} />
             
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
               Explore
             </span>
 
-            {(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')) && (
+            {(userView === 'feed' || (!isAuthenticated && userView !== 'dashboard')) && (
               <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
             )}
 
@@ -240,20 +241,21 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => {
                 onChangeRole('agent');
+                onChangeUserView('dashboard');
               }}
               className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-                currentRole === 'agent'
+                currentRole === 'agent' && userView === 'dashboard'
                   ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
                   : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
               }`}
               aria-label={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
               title={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
             >
-              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-amber-300' : 'text-[#70798C]'}`} />
+              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' && userView === 'dashboard' ? 'text-amber-300' : 'text-[#70798C]'}`} />
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
                 {activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
               </span>
-              {currentRole === 'agent' && (
+              {currentRole === 'agent' && userView === 'dashboard' && (
                 <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
               )}
             </button>

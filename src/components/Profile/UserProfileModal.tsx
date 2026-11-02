@@ -46,6 +46,7 @@ interface UserProfileModalProps {
   onClose: () => void;
   currentRole: UserRole;
   onChangeRole: (role: UserRole) => void;
+  onChangeUserView?: (view: 'dashboard' | 'feed' | 'partner') => void;
   activeBookings: BookingRecord[];
   onOpenMyPasses: () => void;
   currentUser: UserProfile;
@@ -62,6 +63,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onClose,
   currentRole,
   onChangeRole,
+  onChangeUserView,
   activeBookings,
   onOpenMyPasses,
   currentUser,
@@ -814,6 +816,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div 
               onClick={() => {
                 onChangeRole('agent');
+                onChangeUserView?.('dashboard');
                 onClose();
               }}
               className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#000004] transition-all cursor-pointer flex items-center justify-between group shadow-xs"
@@ -1062,6 +1065,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <button
                 onClick={() => {
                   onChangeRole('agent');
+                  onChangeUserView?.('dashboard');
                   onClose();
                 }}
                 className="px-3 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold transition-colors cursor-pointer shadow-xs"

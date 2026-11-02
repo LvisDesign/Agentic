@@ -157,7 +157,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   }
   // Explore / Feed takes strict precedence: User refreshing on Explore must stay on Explore Feed!
   if (hash.includes('explore') || hash.includes('feed') || hash === '#/jobs' || hash === '#jobs') {
-    return { role: (savedRole === 'agent' && isUserAgent) ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+    return { role: 'tenant', view: 'feed', openPasses: false };
   }
   if (hash.includes('agent') || hash.includes('employer')) {
     if (isUserAgent) {
@@ -183,7 +183,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   }
   // If user was viewing the continuous feed on reload, preserve explore feed view!
   if (savedView === 'feed') {
-    return { role: (savedRole === 'agent' && isUserAgent) ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+    return { role: 'tenant', view: 'feed', openPasses: false };
   }
   if (savedRole === 'agent' && isUserAgent) {
     return { role: 'agent', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
@@ -645,10 +645,12 @@ export function App() {
         setUserView('feed');
       } else if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals')) {
         setActiveRoom('rentals');
+        setCurrentRole('tenant');
         setUserView('feed');
       } else if (hash.includes('agent')) {
         setActiveRoom('rentals');
         setCurrentRole('agent');
+        setUserView('dashboard');
       } else if (hash.includes('dashboard')) {
         setActiveRoom('rentals');
         if (currentUser.isAgent) {
@@ -2611,7 +2613,10 @@ export function App() {
               onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
               onOpenSignup={handleOpenSignup}
               onSwitchToFeed={() => setUserView('feed')}
-              onSwitchToAgent={() => setCurrentRole('agent')}
+              onSwitchToAgent={() => {
+                setCurrentRole('agent');
+                setUserView('dashboard');
+              }}
               isAuthenticated={isAuthenticated}
               onOpenAdsPortal={handleOpenAdsPortal}
             />
@@ -2648,7 +2653,32 @@ export function App() {
             />
           </main>
         )
-      ) : (userView === 'feed' || currentRole === 'tenant' || currentRole === 'seeker') ? (
+      ) : (currentRole === 'agent' && userView !== 'feed') ? (
+        /* Agent Mode Portal */
+        <main className="flex-1 w-full">
+          <AgentDashboard
+            currentUser={currentUser}
+            listings={listings}
+            bookings={bookings}
+            onAcceptBooking={handleAcceptBooking}
+            onRejectBooking={handleRejectBooking}
+            onListingCreated={handleListingCreated}
+            onListingUpdated={handleListingUpdated}
+            onDeleteListing={handleDeleteListing}
+            onUpdateAvailability={handleUpdateListingAvailability}
+            onConfirmFreshness={handleConfirmListingFreshness}
+            onSwitchToSeeker={() => {
+              setCurrentRole('tenant');
+              setUserView('feed');
+            }}
+            onSwitchToTenant={() => {
+              setCurrentRole('tenant');
+              setUserView('feed');
+            }}
+            onOpenAdsPortal={handleOpenAdsPortal}
+          />
+        </main>
+      ) : (
           /* Tenant Snap Feed View */
           <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">
             {/* Snap-Feed Filter Bar with Squared Rounded-Edges Adverts Tray */}
@@ -2705,31 +2735,6 @@ export function App() {
               </div>
             </div>
           </main>
-      ) : (
-        /* Agent Mode Portal */
-        <main className="flex-1 w-full">
-          <AgentDashboard
-            currentUser={currentUser}
-            listings={listings}
-            bookings={bookings}
-            onAcceptBooking={handleAcceptBooking}
-            onRejectBooking={handleRejectBooking}
-            onListingCreated={handleListingCreated}
-            onListingUpdated={handleListingUpdated}
-            onDeleteListing={handleDeleteListing}
-            onUpdateAvailability={handleUpdateListingAvailability}
-            onConfirmFreshness={handleConfirmListingFreshness}
-            onSwitchToSeeker={() => {
-              setCurrentRole('tenant');
-              setUserView('feed');
-            }}
-            onSwitchToTenant={() => {
-              setCurrentRole('tenant');
-              setUserView('feed');
-            }}
-            onOpenAdsPortal={handleOpenAdsPortal}
-          />
-        </main>
       )}
 
       {/* 3. Global Drawers & Modals */}
@@ -2749,6 +2754,7 @@ export function App() {
         onClose={() => setIsProfileOpen(false)}
         currentRole={currentRole}
         onChangeRole={setCurrentRole}
+        onChangeUserView={setUserView}
         activeBookings={userBookings}
         onOpenMyPasses={() => setIsMyPassesOpen(true)}
         currentUser={currentUser}
