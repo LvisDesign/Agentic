@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { createPartnerApiKey, getPartnerApiKeys } from './adService';
+import { hashToken, verifyHashedToken, checkRateLimit } from '../utils/security';
 
 export interface WalletTransaction {
   id: string;
@@ -327,7 +328,7 @@ export async function loginAdvertiser(email: string, password?: string): Promise
 
 export interface AdvertiserOTPRecord {
   email: string;
-  otp: string;
+  otpHash: string;
   expiresAt: number;
   purpose: 'login' | 'signup';
   password?: string;
@@ -375,13 +376,20 @@ export async function sendAdvertiserEmailOTP(
     }
   }
 
+  // Anti-flooding rate limit: Max 4 requests per 60 seconds
+  const rl = checkRateLimit(`advertiser_otp_${cleanEmail}`, 4, 60 * 1000);
+  if (!rl.allowed) {
+    throw new Error(`Too many verification attempts. Please wait ${rl.retryAfterSeconds} seconds before requesting a new code.`);
+  }
+
   // Generate 6-digit random verification code
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+  const otpHash = await hashToken(code);
 
   const record: AdvertiserOTPRecord = {
     email: cleanEmail,
-    otp: code,
+    otpHash,
     expiresAt,
     purpose,
     password: password?.trim(),
@@ -402,7 +410,7 @@ export async function sendAdvertiserEmailOTP(
   return {
     success: true,
     message: `Verification code sent to ${cleanEmail}.`,
-    testOtp: code,
+    testOtp: '',
   };
 }
 
@@ -416,16 +424,31 @@ export async function verifyAdvertiserEmailOTP(
   const cleanEmail = email.trim().toLowerCase();
   const record = getPendingAdvertiserOTP();
 
-  const isMasterOtp = enteredOtp.trim() === '123456';
-  const matchesOtp = record && record.email === cleanEmail && record.otp === enteredOtp.trim();
-
-  if (!matchesOtp && !isMasterOtp) {
-    throw new Error('Invalid verification code. Please check your email and try again.');
+  if (!record || record.email !== cleanEmail) {
+    throw new Error('No pending verification found for this email. Please request a new code.');
   }
 
-  if (record && !isMasterOtp && Date.now() > record.expiresAt) {
+  if (Date.now() > record.expiresAt) {
     clearPendingAdvertiserOTP();
     throw new Error('Verification code has expired. Please request a new code.');
+  }
+
+  // Rate limit verification attempts: Max 5 per 60s
+  const verifyRl = checkRateLimit(`advertiser_verify_${cleanEmail}`, 5, 60 * 1000);
+  if (!verifyRl.allowed) {
+    throw new Error(`Too many incorrect attempts. Please wait ${verifyRl.retryAfterSeconds} seconds before trying again.`);
+  }
+
+  const cleanInput = enteredOtp.trim();
+  let matchesOtp = false;
+  if (record.otpHash) {
+    matchesOtp = await verifyHashedToken(cleanInput, record.otpHash);
+  } else if ((record as any).otp) {
+    matchesOtp = (record as any).otp === cleanInput;
+  }
+
+  if (!matchesOtp) {
+    throw new Error('Invalid verification code. Please check your email and try again.');
   }
 
   const savedPassword = record?.password;

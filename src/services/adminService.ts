@@ -70,9 +70,16 @@ export function getAdPricing(): {
 
 /**
  * Saves updated platform settings.
+ * Strictly guarded to prevent unauthorized tampering or defacement.
  */
 export function savePlatformSettings(settings: PlatformSettings): void {
   if (typeof window === 'undefined') return;
+  const isAuth = localStorage.getItem('setlla_admin_auth') === 'true';
+  const token = localStorage.getItem('setlla_admin_session_token');
+  if (!isAuth || !token) {
+    console.warn('[AdminService] Unauthorized attempt to modify platform settings rejected.');
+    return;
+  }
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     window.dispatchEvent(new CustomEvent('setlla:platform_settings_updated', { detail: settings }));

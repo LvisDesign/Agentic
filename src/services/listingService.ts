@@ -261,9 +261,20 @@ export async function syncLocalVideosToCloudStorage(listingsToCheck?: PropertyLi
 }
 
 /**
- * Fetches all active property listings from Supabase (or fallback to local storage)
+ * Options for querying property listings with pagination and server-side filtering
  */
-export async function fetchAllListings(): Promise<PropertyListing[]> {
+export interface FetchListingOptions {
+  limit?: number;
+  offset?: number;
+  city?: string;
+  propertyType?: string;
+}
+
+/**
+ * Fetches active property listings from Supabase (or fallback to local storage).
+ * Supports cursor pagination (.range) and server-side filters.
+ */
+export async function fetchAllListings(options?: FetchListingOptions): Promise<PropertyListing[]> {
   const client = getSupabaseClient();
   const isNonActive = (st?: string) => 
     !st || st === 'Deleted' || st === 'Archived' || st === 'Inactive' || st === 'Removed';
@@ -271,11 +282,25 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
   // If Supabase is configured, load real listings from cloud database
   if (isSupabaseConfigured() && client) {
     try {
-      // Fetch all listings from Supabase
-      const { data, error } = await client
+      // Build optimized query with optional server-side filters & range
+      let query = client
         .from('listings')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (options?.city && options.city !== 'All Cities' && options.city.trim()) {
+        query = query.ilike('city', `%${options.city.trim()}%`);
+      }
+      if (options?.propertyType && options.propertyType !== 'All Property Types' && options.propertyType.trim()) {
+        query = query.ilike('property_type', `%${options.propertyType.trim()}%`);
+      }
+      if (typeof options?.limit === 'number' && options.limit > 0) {
+        const from = options.offset || 0;
+        const to = from + options.limit - 1;
+        query = query.range(from, to);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('[Setlla Supabase Error] Could not fetch listings from Supabase:', error.message);
@@ -331,9 +356,9 @@ export async function fetchAllListings(): Promise<PropertyListing[]> {
         // Check if any real listings have local video blobs on this machine waiting to upload
         syncLocalVideosToCloudStorage(realCloudListings).catch(() => {});
 
-        // Synchronize local cache to match cloud database
+        // Synchronize local cache to match cloud database (capped to 30 most recent to prevent browser quota exhaustion)
         try {
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(realCloudListings));
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(realCloudListings.slice(0, 30)));
         } catch (e) {}
 
         return realCloudListings;
@@ -441,7 +466,7 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
   try {
     const saved = getLocalSavedListings();
     const existing: PropertyListing[] = saved ? JSON.parse(saved) : [];
-    const updated = [sanitized, ...existing.filter((item) => item.id !== sanitized.id)];
+    const updated = [sanitized, ...existing.filter((item) => item.id !== sanitized.id)].slice(0, 30);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
   } catch (e) {}
 }

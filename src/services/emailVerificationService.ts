@@ -6,6 +6,7 @@ import {
   saveRegisteredUserAsync,
   normalizeEmail,
 } from '../utils/userRegistry';
+import { hashToken, verifyHashedToken, checkRateLimit } from '../utils/security';
 
 const PENDING_EMAIL_OTP_KEY = 'setlla_pending_email_otp';
 
@@ -13,7 +14,7 @@ export type EmailOTPPurpose = 'agent_signup' | 'employer_signup' | 'forgot_passw
 
 export interface PendingEmailOTPRecord {
   email: string;
-  otp: string;
+  otpHash: string;
   purpose: EmailOTPPurpose;
   expiresAt: number;
   pendingUser?: UserProfile;
@@ -73,13 +74,20 @@ export async function sendEmailOTP(
     }
   }
 
+  // Anti-flooding rate limit: Max 4 requests per 60 seconds per email address
+  const rl = checkRateLimit(`email_otp_${cleanEmail}`, 4, 60 * 1000);
+  if (!rl.allowed) {
+    throw new Error(`Too many verification attempts. Please wait ${rl.retryAfterSeconds} seconds before requesting a new code.`);
+  }
+
   // Generate 6-digit cryptographic verification code
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+  const otpHash = await hashToken(code);
 
   const record: PendingEmailOTPRecord = {
     email: cleanEmail,
-    otp: code,
+    otpHash,
     purpose,
     expiresAt,
     pendingUser,
@@ -114,7 +122,7 @@ export async function sendEmailOTP(
   return {
     success: true,
     message: `A 6-digit verification code was sent to ${cleanEmail}.`,
-    testOtp: code,
+    testOtp: '',
     expiresAt,
   };
 }
@@ -140,10 +148,22 @@ export async function verifyEmailOTP(
     throw new Error('Verification code has expired. Please request a new code.');
   }
 
-  const isMasterOtp = enteredCode.trim() === '123456';
-  let matches = record.otp === enteredCode.trim() || isMasterOtp;
+  // Rate-limit verification guessing: Max 5 attempts per 60 seconds
+  const verifyRl = checkRateLimit(`email_verify_attempt_${cleanEmail}`, 5, 60 * 1000);
+  if (!verifyRl.allowed) {
+    throw new Error(`Too many incorrect attempts. Please wait ${verifyRl.retryAfterSeconds} seconds before trying again.`);
+  }
 
-  // If local code doesn't match, verify against Supabase Auth OTP (code sent via Hostinger SMTP)
+  // Securely verify against the stored cryptographic SHA-256 hash or backward-compatible plaintext
+  const cleanInput = enteredCode.trim();
+  let matches = false;
+  if (record.otpHash) {
+    matches = await verifyHashedToken(cleanInput, record.otpHash);
+  } else if ((record as any).otp) {
+    matches = (record as any).otp === cleanInput;
+  }
+
+  // If local hash doesn't match, verify against Supabase Auth OTP (code sent via Hostinger SMTP)
   if (!matches && isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase.auth.verifyOtp({

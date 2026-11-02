@@ -1,5 +1,6 @@
 import { AdvertStory, AdvertPendingChanges } from '../data/mockAdverts';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
+import { isSuperAdminAuthenticated } from './adminAuthService';
 
 export interface PartnerApiKey {
   id: string;
@@ -376,9 +377,11 @@ export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
           .map(mapDbToAdvert)
           .filter((ad) => ad && ad.id && !deletedIds.has(ad.id) && ad.status !== 'deleted');
 
-        // Immediately update localStorage with the clean cloud list
+        // Immediately update localStorage with the clean cloud list (capped to 30 to protect browser quota)
         if (typeof window !== 'undefined') {
-          localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list));
+          try {
+            localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list.slice(0, 30)));
+          } catch (_) {}
         }
       }
     } catch (err) {
@@ -405,9 +408,11 @@ export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
     }
   }
 
-  // 4. Update localStorage with sanitized list (no demo ads, no deleted ads)
+  // 4. Update localStorage with sanitized list (capped to 30 to prevent QuotaExceeded errors)
   if (typeof window !== 'undefined') {
-    localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list));
+    try {
+      localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list.slice(0, 30)));
+    } catch (_) {}
   }
 
   // Check and flag expired campaigns
@@ -904,8 +909,16 @@ export const pushProgrammaticAdvert = async (
 /**
  * PARTNER API KEYS MANAGEMENT
  */
+/**
+ * Retrieves all registered partner API keys.
+ * Strictly restricted to verified Super Administrators to prevent key exfiltration.
+ */
 export const getPartnerApiKeys = (): PartnerApiKey[] => {
   if (typeof window === 'undefined') return [];
+  if (!isSuperAdminAuthenticated()) {
+    console.warn('[AdService] Unauthorized attempt to access partner API keys blocked.');
+    return [];
+  }
   const raw = localStorage.getItem(API_KEYS_STORAGE_KEY);
   if (!raw) return [];
   try {

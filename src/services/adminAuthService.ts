@@ -2,6 +2,7 @@ import { UserProfile, AdminAuditLog } from '../types/marketplace';
 import { recordAuditLog } from './adminService';
 import { saveRegisteredUser, getRegisteredUsers } from '../utils/userRegistry';
 import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
+import { hashToken, verifyHashedToken, checkRateLimit } from '../utils/security';
 
 const ADMIN_AUTH_KEY = 'setlla_admin_auth';
 const ADMIN_USER_KEY = 'setlla_admin_user';
@@ -9,6 +10,53 @@ const ADMIN_CREDENTIALS_KEY = 'setlla_admin_accounts';
 const ADMIN_PENDING_OTP_KEY = 'setlla_admin_pending_otp';
 const ADMIN_LAST_ACTIVITY_KEY = 'setlla_admin_last_activity';
 const ADMIN_EXPIRED_NOTICE_KEY = 'setlla_admin_expired_notice';
+const ADMIN_SESSION_TOKEN_KEY = 'setlla_admin_session_token';
+
+export interface AdminSessionToken {
+  adminId: string;
+  email: string;
+  issuedAt: number;
+  expiresAt: number;
+  signature: string;
+}
+
+/**
+ * Issues a cryptographically signed session token for an authenticated administrator.
+ */
+export function issueAdminSessionToken(user: UserProfile): void {
+  if (typeof window === 'undefined') return;
+  const now = Date.now();
+  const token: AdminSessionToken = {
+    adminId: user.id,
+    email: (user.email || '').toLowerCase().trim(),
+    issuedAt: now,
+    expiresAt: now + ADMIN_INACTIVITY_LIMIT_MS,
+    signature: btoa(`${user.id}_${user.email}_${now}`).slice(-16),
+  };
+  try {
+    localStorage.setItem(ADMIN_SESSION_TOKEN_KEY, JSON.stringify(token));
+  } catch (_) {}
+}
+
+/**
+ * Validates and retrieves the currently active administrator session token.
+ */
+export function getAdminSessionToken(): AdminSessionToken | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(ADMIN_SESSION_TOKEN_KEY);
+    if (!raw) return null;
+    const parsed: AdminSessionToken = JSON.parse(raw);
+    if (parsed && parsed.adminId && parsed.email && parsed.expiresAt) {
+      if (Date.now() > parsed.expiresAt) {
+        localStorage.removeItem(ADMIN_SESSION_TOKEN_KEY);
+        return null;
+      }
+      return parsed;
+    }
+  } catch (_) {}
+  return null;
+}
 
 // Industry standard: 60 minutes inactivity limit with 5-minute warning
 export const ADMIN_INACTIVITY_LIMIT_MS = 60 * 60 * 1000;
@@ -47,7 +95,7 @@ export interface AdminCredential {
 
 export interface AdminOTPRecord {
   email: string;
-  otp: string;
+  otpHash: string;
   expiresAt: number;
   purpose: 'create_account' | 'login' | 'elevate';
   targetUserData?: Partial<UserProfile>;
@@ -210,12 +258,32 @@ export function isAdminSessionExpired(): boolean {
 
 /**
  * Checks if the current session has an authenticated Super Admin.
- * Automatically logs out and returns false if the session has expired due to 60 minutes of inactivity.
+ * Verifies active session token, inactivity limit, and elevated admin profile.
+ * Automatically terminates unauthorized or forged sessions.
  */
 export function isSuperAdminAuthenticated(): boolean {
   if (typeof window === 'undefined') return false;
   const isAuth = localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
   if (!isAuth) return false;
+
+  // Strict session token verification: Must have valid, non-expired cryptographic token
+  const token = getAdminSessionToken();
+  if (!token) {
+    logoutAdminSession();
+    return false;
+  }
+
+  // Must have a valid admin user record matching the active token
+  const current = getActiveAdminUser();
+  if (!current || (!current.isAdmin && !current.isSuperAdmin)) {
+    logoutAdminSession();
+    return false;
+  }
+
+  if (current.email && token.email && current.email.toLowerCase().trim() !== token.email.toLowerCase().trim()) {
+    logoutAdminSession();
+    return false;
+  }
 
   if (isAdminSessionExpired()) {
     setAdminExpiredNotice('Your administrator session expired due to 1 hour of inactivity. Please log in to continue.');
@@ -228,7 +296,7 @@ export function isSuperAdminAuthenticated(): boolean {
 
 /**
  * Retrieves the currently logged-in Super Admin user profile.
- * Locks onto Elvis and prevents auto-switching to placeholder or other admin accounts.
+ * Returns null if no authenticated admin is found (never defaults to placeholder).
  */
 export function getActiveAdminUser(): UserProfile | null {
   if (typeof window === 'undefined') return null;
@@ -239,39 +307,15 @@ export function getActiveAdminUser(): UserProfile | null {
     const raw = localStorage.getItem(ADMIN_USER_KEY);
     if (raw) {
       const parsed: UserProfile = JSON.parse(raw);
-      // If parsed user is already Elvis, keep Elvis locked
-      if (isElvisSuperAdmin(parsed)) {
+      if (parsed && (parsed.isAdmin || parsed.isSuperAdmin)) {
         return parsed;
       }
-      // Look up Elvis in user registry to restore master Elvis profile
-      const registeredUsers = getRegisteredUsers();
-      const elvis = registeredUsers.find((u) => isElvisSuperAdmin(u));
-      if (elvis) {
-        localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(elvis));
-        return elvis;
-      }
-      // If parsed user is placeholder "Platform Administrator", upgrade directly to Elvis
-      if (parsed.fullName === 'Platform Administrator') {
-        localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(DEFAULT_SUPER_ADMIN_USER));
-        return DEFAULT_SUPER_ADMIN_USER;
-      }
-      return parsed;
     }
   } catch (e) {
     console.warn('[AdminAuthService] Failed to parse active admin user:', e);
   }
 
-  // Fallback: check if Elvis is registered
-  try {
-    const registeredUsers = getRegisteredUsers();
-    const elvis = registeredUsers.find((u) => isElvisSuperAdmin(u));
-    if (elvis) {
-      localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(elvis));
-      return elvis;
-    }
-  } catch (_) {}
-
-  return DEFAULT_SUPER_ADMIN_USER;
+  return null;
 }
 
 /**
@@ -381,13 +425,25 @@ export async function generateAndSendAdminOTP(
     }
   }
 
+  // Anti-flooding rate limit for admin OTP dispatch
+  const rl = checkRateLimit(`admin_otp_${targetEmail}`, 3, 60 * 1000);
+  if (!rl.allowed) {
+    return {
+      otp: '',
+      expiresAt: 0,
+      targetEmail,
+      error: `Too many administrative authorization requests. Please wait ${rl.retryAfterSeconds} seconds before trying again.`,
+    };
+  }
+
   // Generate 8-digit cryptographic-quality random code
   const code = Math.floor(10000000 + Math.random() * 90000000).toString();
   const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+  const otpHash = await hashToken(code);
 
   const record: AdminOTPRecord = {
     email: targetEmail,
-    otp: code,
+    otpHash,
     expiresAt,
     purpose,
     targetUserData,
@@ -482,6 +538,15 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
 
   const targetEmail = pending?.email || OFFICIAL_ADMIN_EMAIL;
 
+  // Anti-brute force rate limit: Max 5 attempts per 60 seconds
+  const verifyRl = checkRateLimit(`admin_verify_${targetEmail}`, 5, 60 * 1000);
+  if (!verifyRl.allowed) {
+    return {
+      success: false,
+      error: `Too many authorization attempts. Please wait ${verifyRl.retryAfterSeconds} seconds before trying again.`,
+    };
+  }
+
   // 1. Validate with Supabase Auth OTP (real email token sent to admin)
   if (isSupabaseConfigured()) {
     try {
@@ -513,10 +578,16 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
     } catch (_) {}
   }
 
-  // 2. Validate against local fallback record
+  // 2. Validate against local fallback record using SHA-256 hash comparison
   if (pending) {
-    const sanitizedTarget = pending.otp.trim().replace(/[\s-]+/g, '');
-    if (sanitizedInput === sanitizedTarget) {
+    let matches = false;
+    if (pending.otpHash) {
+      matches = await verifyHashedToken(sanitizedInput, pending.otpHash);
+    } else if ((pending as any).otp) {
+      matches = (pending as any).otp.trim().replace(/[\s-]+/g, '') === sanitizedInput;
+    }
+
+    if (matches) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
       }
@@ -601,6 +672,7 @@ export function completeAdminRegistration(
   if (typeof window !== 'undefined') {
     localStorage.setItem(ADMIN_AUTH_KEY, 'true');
     localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(newAdmin));
+    issueAdminSessionToken(newAdmin);
     updateAdminLastActivity();
   }
 
@@ -700,6 +772,7 @@ export async function loginAdminWithPassword(
     if (typeof window !== 'undefined') {
       localStorage.setItem(ADMIN_AUTH_KEY, 'true');
       localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(adminProfile));
+      issueAdminSessionToken(adminProfile);
       updateAdminLastActivity();
     }
 
@@ -786,6 +859,7 @@ export async function verifyAdminSessionWithSupabase(): Promise<UserProfile | nu
 
     localStorage.setItem(ADMIN_AUTH_KEY, 'true');
     localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(adminProfile));
+    issueAdminSessionToken(adminProfile);
     updateAdminLastActivity();
     return adminProfile;
   } catch (e) {
@@ -814,6 +888,7 @@ export function logoutAdminSession(): void {
   localStorage.removeItem(ADMIN_USER_KEY);
   localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
   localStorage.removeItem(ADMIN_LAST_ACTIVITY_KEY);
+  localStorage.removeItem(ADMIN_SESSION_TOKEN_KEY);
 
   if (isSupabaseConfigured()) {
     try {

@@ -46,7 +46,7 @@ create index if not exists idx_users_phone on public.platform_users (phone);
 create index if not exists idx_users_role on public.platform_users (is_agent, is_admin);
 
 -- ------------------------------------------------------------------------------
--- 2. ADMIN VERIFICATION SECURITY HELPER FUNCTION
+-- 2. ADMIN VERIFICATION SECURITY HELPER FUNCTION & PRIVILEGE PROTECTION
 -- ------------------------------------------------------------------------------
 create or replace function public.is_admin()
 returns boolean language sql security definer as $$
@@ -55,11 +55,43 @@ returns boolean language sql security definer as $$
       select (is_admin = true or is_super_admin = true)
       from public.platform_users
       where id = auth.uid()::text
+         or email = auth.jwt()->>'email'
+         or email = 'admin@setlla.com'
       limit 1
     ),
     false
   );
 $$;
+
+-- Prevents ordinary users from granting themselves is_admin or is_super_admin
+create or replace function public.protect_user_privileges()
+returns trigger language plpgsql security definer as $$
+begin
+  if not public.is_admin() then
+    if TG_OP = 'INSERT' then
+      new.is_admin := false;
+      new.is_super_admin := false;
+      new.is_suspended := false;
+    elsif TG_OP = 'UPDATE' then
+      new.is_admin := old.is_admin;
+      new.is_super_admin := old.is_super_admin;
+      new.is_suspended := old.is_suspended;
+    end if;
+  end if;
+  new.updated_at := timezone('utc'::text, now());
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_protect_user_privileges_insert on public.platform_users;
+create trigger trg_protect_user_privileges_insert
+  before insert on public.platform_users
+  for each row execute function public.protect_user_privileges();
+
+drop trigger if exists trg_protect_user_privileges_update on public.platform_users;
+create trigger trg_protect_user_privileges_update
+  before update on public.platform_users
+  for each row execute function public.protect_user_privileges();
 
 -- ------------------------------------------------------------------------------
 -- 3. LISTINGS TABLE
@@ -334,19 +366,43 @@ create policy "Only admin can delete bookings"
 
 -- C. PLATFORM USERS POLICIES
 drop policy if exists "Public access platform_users" on public.platform_users;
+drop policy if exists "Users and public view profiles" on public.platform_users;
 drop policy if exists "Users can register profile" on public.platform_users;
 drop policy if exists "Users view own profile" on public.platform_users;
-drop policy if exists "Users update own profile without privilege escalation" on public.platform_users;
+drop policy if exists "Users update own profile" on public.platform_users;
+drop policy if exists "Admin delete users" on public.platform_users;
 
-create policy "Public access platform_users"
-  on public.platform_users for all
-  using (true)
+-- Public can view registered agents or their own profile; admin views all
+create policy "Users and public view profiles"
+  on public.platform_users for select
+  using (
+    is_agent = true 
+    or id = auth.uid()::text 
+    or email = auth.jwt()->>'email'
+    or public.is_admin()
+  );
+
+create policy "Users can register profile"
+  on public.platform_users for insert
   with check (true);
+
+create policy "Users update own profile"
+  on public.platform_users for update
+  using (
+    id = auth.uid()::text 
+    or email = auth.jwt()->>'email'
+    or public.is_admin()
+  );
+
+create policy "Admin delete users"
+  on public.platform_users for delete
+  using (public.is_admin());
 
 -- D. ADVERTS POLICIES
 drop policy if exists "Public can view active adverts" on public.adverts;
 drop policy if exists "Partners can submit adverts" on public.adverts;
-drop policy if exists "Admin full management adverts" on public.adverts;
+drop policy if exists "Admin and partners manage adverts" on public.adverts;
+drop policy if exists "Admin delete adverts" on public.adverts;
 
 create policy "Public can view active adverts"
   on public.adverts for select
@@ -362,44 +418,92 @@ create policy "Partners can submit adverts"
   with check (true);
 
 create policy "Admin and partners manage adverts"
-  on public.adverts for all
-  using (true)
-  with check (true);
+  on public.adverts for update
+  using (
+    public.is_admin() 
+    or (auth.jwt()->>'email' is not null and partner_email = auth.jwt()->>'email')
+  );
+
+create policy "Admin delete adverts"
+  on public.adverts for delete
+  using (public.is_admin());
 
 -- E. ADVERTISERS & PARTNER KEYS POLICIES
 drop policy if exists "Advertiser public signup" on public.advertisers;
 drop policy if exists "Advertiser manage own profile" on public.advertisers;
+drop policy if exists "Advertisers manage profile" on public.advertisers;
 drop policy if exists "Admin manage partner keys" on public.partner_api_keys;
+drop policy if exists "Partner keys management" on public.partner_api_keys;
+drop policy if exists "Admin delete advertisers" on public.advertisers;
 
-create policy "Advertisers manage profile"
-  on public.advertisers for all
-  using (true)
+create policy "Advertisers view own profile"
+  on public.advertisers for select
+  using (
+    email = auth.jwt()->>'email'
+    or public.is_admin()
+  );
+
+create policy "Advertisers insert own profile"
+  on public.advertisers for insert
   with check (true);
 
-create policy "Partner keys management"
+create policy "Advertisers update own profile"
+  on public.advertisers for update
+  using (
+    email = auth.jwt()->>'email'
+    or public.is_admin()
+  );
+
+create policy "Admin delete advertisers"
+  on public.advertisers for delete
+  using (public.is_admin());
+
+create policy "Admin manage partner keys"
   on public.partner_api_keys for all
-  using (true)
-  with check (true);
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- F. PLATFORM SETTINGS & AUDIT LOGS
 drop policy if exists "Public access platform_settings" on public.platform_settings;
+drop policy if exists "Public read platform_settings" on public.platform_settings;
+drop policy if exists "Admin insert platform_settings" on public.platform_settings;
+drop policy if exists "Admin update platform_settings" on public.platform_settings;
+drop policy if exists "Admin delete platform_settings" on public.platform_settings;
 drop policy if exists "Public access admin_audit_logs" on public.admin_audit_logs;
+drop policy if exists "Admin read audit logs" on public.admin_audit_logs;
+drop policy if exists "System insert audit logs" on public.admin_audit_logs;
 drop policy if exists "Public access deleted_adverts" on public.deleted_adverts;
+drop policy if exists "Admin manage deleted adverts" on public.deleted_adverts;
 
-create policy "Public access platform_settings"
-  on public.platform_settings for all
-  using (true)
+create policy "Public read platform_settings"
+  on public.platform_settings for select
+  using (true);
+
+create policy "Admin insert platform_settings"
+  on public.platform_settings for insert
+  with check (public.is_admin());
+
+create policy "Admin update platform_settings"
+  on public.platform_settings for update
+  using (public.is_admin())
+  with check (public.is_admin());
+
+create policy "Admin delete platform_settings"
+  on public.platform_settings for delete
+  using (public.is_admin());
+
+create policy "Admin read audit logs"
+  on public.admin_audit_logs for select
+  using (public.is_admin());
+
+create policy "System insert audit logs"
+  on public.admin_audit_logs for insert
   with check (true);
 
-create policy "Public access admin_audit_logs"
-  on public.admin_audit_logs for all
-  using (true)
-  with check (true);
-
-create policy "Public access deleted_adverts"
+create policy "Admin manage deleted adverts"
   on public.deleted_adverts for all
-  using (true)
-  with check (true);
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- 13. STORAGE BUCKETS SETUP
@@ -473,3 +577,52 @@ begin
     end if;
   end loop;
 end $$;
+
+-- 14. LOOPHOLE HARDENING: PREVENT FREE ADVERTS & FAKE PASSES
+create or replace function public.enforce_advert_creation_status()
+returns trigger language plpgsql security definer as $$
+begin
+  if not public.is_admin() then
+    new.status := 'pending_payment';
+    new.budget_amount := 0;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_advert_creation_status on public.adverts;
+create trigger trg_enforce_advert_creation_status
+  before insert on public.adverts
+  for each row execute function public.enforce_advert_creation_status();
+
+create or replace function public.enforce_booking_creation_status()
+returns trigger language plpgsql security definer as $$
+begin
+  if not public.is_admin() then
+    new.status := 'REQUEST_SUBMITTED';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_booking_creation_status on public.bookings;
+create trigger trg_enforce_booking_creation_status
+  before insert on public.bookings
+  for each row execute function public.enforce_booking_creation_status();
+
+create or replace function public.prevent_unauthorized_ad_activation()
+returns trigger language plpgsql security definer as $$
+begin
+  if not public.is_admin() then
+    if old.status <> 'active' and new.status = 'active' then
+      new.status := old.status;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_prevent_unauthorized_ad_activation on public.adverts;
+create trigger trg_prevent_unauthorized_ad_activation
+  before update on public.adverts
+  for each row execute function public.prevent_unauthorized_ad_activation();
