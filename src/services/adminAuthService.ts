@@ -282,29 +282,28 @@ export async function findAdminAccount(emailInput: string): Promise<UserProfile 
   if (!emailInput || !emailInput.trim()) return null;
   const cleanEmail = emailInput.trim().toLowerCase();
 
-  // 1. Instant check for official platform admin email / Elvis
-  if (cleanEmail === OFFICIAL_ADMIN_EMAIL.toLowerCase() || cleanEmail === 'admin@setlla.com') {
-    const registeredUsers = getRegisteredUsers();
-    const elvisUser = registeredUsers.find(
-      (u) => (u.isAdmin || u.isSuperAdmin) && isElvisSuperAdmin(u)
-    );
-    return elvisUser || DEFAULT_MASTER_ADMIN;
+  // 1. Check local user registry first — if Elvis exists, prioritize Elvis
+  const registeredUsers = getRegisteredUsers();
+  const elvisUser = registeredUsers.find(
+    (u) => (u.isAdmin || u.isSuperAdmin) && isElvisSuperAdmin(u)
+  );
+  if (elvisUser && cleanEmail === OFFICIAL_ADMIN_EMAIL.toLowerCase()) {
+    return elvisUser;
   }
 
-  // 2. Check local user registry
-  const registeredUsers = getRegisteredUsers();
+  // 2. Check local admin credentials list
+  const creds = getAdminCredentials();
+  const matchedCred = creds.find((c) => c.email.toLowerCase() === cleanEmail);
+  if (matchedCred) {
+    return matchedCred;
+  }
+
+  // 3. Check other registered admins
   const matchedUser = registeredUsers.find(
     (u) => (u.isAdmin || u.isSuperAdmin) && u.email?.trim().toLowerCase() === cleanEmail
   );
   if (matchedUser) {
     return matchedUser;
-  }
-
-  // 3. Check local admin credentials list
-  const creds = getAdminCredentials();
-  const matchedCred = creds.find((c) => c.email.toLowerCase() === cleanEmail);
-  if (matchedCred) {
-    return matchedCred;
   }
 
   // 3. Check Supabase platform_users table if configured
@@ -409,8 +408,7 @@ export async function generateAndSendAdminOTP(
         ? `${window.location.origin}${window.location.pathname}#/admin`
         : undefined;
 
-      // Use a strict 4-second timeout so admin sign-in never hangs indefinitely on slow network
-      const otpPromise = supabase.auth.signInWithOtp({ 
+      const { error: otpError } = await supabase.auth.signInWithOtp({ 
         email: targetEmail,
         options: {
           emailRedirectTo: redirectUrl,
@@ -418,22 +416,30 @@ export async function generateAndSendAdminOTP(
         }
       });
 
-      const timeoutPromise = new Promise<{ error: any }>((resolve) =>
-        setTimeout(() => resolve({ error: { message: 'Timed out waiting for email gateway' } }), 4000)
-      );
-
-      const { error: otpError } = await Promise.race([otpPromise, timeoutPromise]);
-
       if (otpError) {
-        console.warn('[Setlla Admin Auth] signInWithOtp notice (proceeding with local code):', otpError);
+        console.warn('[Setlla Admin Auth] signInWithOtp notice:', otpError);
+        // Fallback to resend signup confirmation if signInWithOtp had an issue
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email: targetEmail,
+          options: {
+            emailRedirectTo: redirectUrl,
+          },
+        });
+
+        if (resendError) {
+          console.warn('[Setlla Admin Auth] resend signup error:', resendError);
+          if (otpError.status === 429 || (otpError.message && otpError.message.toLowerCase().includes('rate limit'))) {
+            sendError = 'Supabase email delivery rate limit exceeded. Please wait a moment before requesting another email.';
+          } else {
+            sendError = `Email delivery notice: ${otpError.message || resendError.message}`;
+          }
+        }
       }
     } catch (err: any) {
       console.warn('[Setlla Admin Auth] Exception sending email OTP:', err?.message || err);
     }
   }
-
-  // Developer & System diagnostics: print code to console for quick verification
-  console.info(`%c[Setlla Admin Auth] Authorization Code for ${targetEmail}: ${code} (Master PIN: 2026)`, 'color: #F95700; font-weight: bold; font-size: 13px;');
 
   // Record security audit notice
   recordAuditLog(
@@ -445,7 +451,7 @@ export async function generateAndSendAdminOTP(
     `One-time passcode dispatched to ${targetEmail} for ${purpose}. Expires in 10 minutes.`
   );
 
-  return { otp: code, expiresAt, targetEmail, error: undefined };
+  return { otp: code, expiresAt, targetEmail, error: sendError };
 }
 
 /**
@@ -475,14 +481,6 @@ export async function verifyAdminOTP(code: string): Promise<{ success: boolean; 
   const pending = getPendingAdminOTP();
 
   const targetEmail = pending?.email || OFFICIAL_ADMIN_EMAIL;
-
-  // 0. Instant verification for master administration PIN
-  if (sanitizedInput === '2026' || sanitizedInput === DEFAULT_MASTER_ADMIN.masterPin) {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(ADMIN_PENDING_OTP_KEY);
-    }
-    return { success: true, record: pending || undefined };
-  }
 
   // 1. Validate with Supabase Auth OTP (real email token sent to admin)
   if (isSupabaseConfigured()) {

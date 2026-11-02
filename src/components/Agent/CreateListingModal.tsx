@@ -17,7 +17,6 @@ import { formatNaira, formatCurrencyInput, parseCurrencyInput } from '../../util
 import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { processUploadedFile, DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
-import { isDemoAvatarUrl } from '../../utils/userRegistry';
 import { ModalPortal } from '../UI/ModalPortal';
 
 const NIGERIAN_STATE_OPTIONS: DropdownOption[] = [
@@ -396,7 +395,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         responseTime: 'Responds within 10 mins',
         phone: currentUser?.phone || '',
         whatsapp: currentUser?.whatsapp || currentUser?.phone || '',
-        avatarUrl: (currentUser?.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl)) ? currentUser.avatarUrl : undefined,
+        avatarUrl: currentUser?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
       },
       inspectionSlots: timeSlots.map((window, idx) => ({
         id: `slot-new-${idx}-${Date.now().toString().slice(-4)}`,

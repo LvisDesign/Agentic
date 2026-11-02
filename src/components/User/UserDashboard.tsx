@@ -28,7 +28,6 @@ import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { PropertyListing, BookingRecord, UserProfile } from '../../types/marketplace';
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
-import { isDemoAvatarUrl } from '../../utils/userRegistry';
 import { isElvisSuperAdmin } from '../../services/adminAuthService';
 
 interface UserDashboardProps {
@@ -94,7 +93,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       <div className="bg-white rounded-2xl p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#342A21] to-[#1f1914] text-white flex items-center justify-center font-bold text-xl shadow-xs border-2 border-white ring-2 ring-[#342A21]/20 shrink-0 overflow-hidden">
-            {isAuthenticated && currentUser.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl) ? (
+            {isAuthenticated && currentUser.avatarUrl ? (
               <img
                 src={currentUser.avatarUrl}
                 alt={currentUser.fullName}
@@ -721,26 +720,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     {/* Agent attribution banner */}
                     <div className="p-2.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] flex items-center justify-between gap-2 overflow-hidden">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        {prop.agent.avatarUrl && !isDemoAvatarUrl(prop.agent.avatarUrl) ? (
-                          <img
-                            src={prop.agent.avatarUrl}
-                            alt={prop.agent.fullName}
-                            className="w-6 h-6 rounded-full object-cover border border-[#342A21] shrink-0"
-                          />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-[#342A21] text-white text-[9px] font-bold flex items-center justify-center shrink-0 border border-[#342A21]">
-                            {prop.agent.fullName
-                              ? prop.agent.fullName
-                                  .trim()
-                                  .split(/\s+/)
-                                  .filter(Boolean)
-                                  .map((n) => n[0])
-                                  .join('')
-                                  .slice(0, 2)
-                                  .toUpperCase() || 'A'
-                              : 'A'}
-                          </div>
-                        )}
+                        <img
+                          src={prop.agent.avatarUrl}
+                          alt={prop.agent.fullName}
+                          className="w-6 h-6 rounded-full object-cover border border-[#342A21] shrink-0"
+                        />
                         <div className="text-[11px] min-w-0 flex-1 truncate">
                           <span className="font-bold text-[#000004]">{prop.agent.fullName}</span>
                           <span className="text-[#70798C] ml-1">({prop.agent.agencyName})</span>

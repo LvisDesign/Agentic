@@ -39,14 +39,12 @@ import { CustomDropdown } from '../UI/CustomDropdown';
 import { ModalPortal } from '../UI/ModalPortal';
 import { isLocalUrl } from '../../utils/environment';
 import { isSuperAdminAuthenticated, isElvisSuperAdmin } from '../../services/adminAuthService';
-import { isDemoAvatarUrl } from '../../utils/userRegistry';
 
 interface UserProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentRole: UserRole;
   onChangeRole: (role: UserRole) => void;
-  onChangeUserView?: (view: 'dashboard' | 'feed' | 'partner') => void;
   activeBookings: BookingRecord[];
   onOpenMyPasses: () => void;
   currentUser: UserProfile;
@@ -63,7 +61,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onClose,
   currentRole,
   onChangeRole,
-  onChangeUserView,
   activeBookings,
   onOpenMyPasses,
   currentUser,
@@ -321,7 +318,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   className="relative w-14 h-14 rounded-2xl overflow-hidden bg-[#342A21] text-white font-bold text-lg flex items-center justify-center shadow-xs cursor-pointer group-hover:ring-2 group-hover:ring-[#000004] transition-all"
                   title="Click to upload profile photo"
                 >
-                  {currentUser.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl) ? (
+                  {currentUser.avatarUrl ? (
                     <img
                       src={currentUser.avatarUrl}
                       alt={currentUser.fullName}
@@ -370,9 +367,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     className="text-[10px] font-bold text-[#342A21] hover:underline cursor-pointer flex items-center gap-0.5"
                   >
                     <Camera className="w-2.5 h-2.5 text-[#342A21]" />
-                    <span>{(currentUser.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl)) ? 'Change photo' : 'Upload photo'}</span>
+                    <span>{currentUser.avatarUrl ? 'Change photo' : 'Upload photo'}</span>
                   </button>
-                  {currentUser.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl) && (
+                  {currentUser.avatarUrl && (
                     <button
                       type="button"
                       onClick={handleRemoveAvatar}
@@ -816,7 +813,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div 
               onClick={() => {
                 onChangeRole('agent');
-                onChangeUserView?.('dashboard');
                 onClose();
               }}
               className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#000004] transition-all cursor-pointer flex items-center justify-between group shadow-xs"
@@ -1065,7 +1061,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <button
                 onClick={() => {
                   onChangeRole('agent');
-                  onChangeUserView?.('dashboard');
                   onClose();
                 }}
                 className="px-3 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold transition-colors cursor-pointer shadow-xs"

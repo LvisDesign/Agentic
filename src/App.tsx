@@ -25,8 +25,7 @@ import {
   isDeletedUserRecord,
   recordDeletedUser,
   findUserByCredential,
-  findUserByCredentialAsync,
-  isDemoAvatarUrl
+  findUserByCredentialAsync
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
@@ -130,7 +129,7 @@ interface InitialNavState {
  */
 function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = false): InitialNavState {
   if (typeof window === 'undefined') {
-    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+    return { role: isUserAdmin ? 'admin' : isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
   }
 
   const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
@@ -139,7 +138,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   const savedRole = (localStorage.getItem('setlla_active_role') || localStorage.getItem('deltarent_active_role')) as UserRole | null;
   const savedView = (localStorage.getItem('setlla_active_view') || localStorage.getItem('deltarent_active_view')) as ('dashboard' | 'feed' | 'partner') | null;
 
-  // 1. Direct route deep-links: Partner Portal
+  // 1. Explicit Routing (e.g. #/partner, ?view=partner, #/admin, #/agent, #/dashboard, #/explore, #/inspections)
   if (
     hash.includes('partner') || 
     hash.includes('advertise') || 
@@ -152,61 +151,49 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   ) {
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
-
-  // 2. Direct route deep-links: Admin Portal (Strictly when URL explicitly targets admin)
-  if (hash.includes('admin') || pathname.includes('/admin')) {
+  if (hash.includes('admin')) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
-
-  // 3. Explicit Explore / Feed URL (STRICT: Refreshing on Explore MUST stay on Explore feed, NEVER admin or dashboard)
-  if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals') || hash === '#/jobs' || hash === '#jobs') {
-    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
-  }
-
-  // 4. Explicit Agent Portal URL
   if (hash.includes('agent') || hash.includes('employer')) {
-    return { role: 'agent', view: 'dashboard', openPasses: false };
+    if (isUserAgent) {
+      return { role: 'agent', view: 'feed', openPasses: false };
+    }
   }
-
-  // 5. Explicit Dashboard URL
   if (hash.includes('dashboard')) {
     if (isUserAgent && !hash.includes('jobs')) {
-      return { role: 'agent', view: 'dashboard', openPasses: false };
+      return { role: 'agent', view: 'feed', openPasses: false };
     }
     return { role: 'tenant', view: 'dashboard', openPasses: false };
   }
-
-  // 6. Inspection passes
+  if (hash.includes('explore') || hash.includes('feed') || hash === '#/jobs' || hash === '#jobs') {
+    return { role: 'tenant', view: 'feed', openPasses: false };
+  }
   if (hash.includes('inspections') || hash.includes('passes')) {
-    return { role: isUserAgent ? 'agent' : 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
+    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
   }
 
-  // 7. Session Persistence across page reloads:
-  // If user was on Partner:
-  if (savedView === 'partner') {
-    return { role: 'tenant', view: 'partner', openPasses: false };
-  }
-
-  // If user was on Admin Portal:
+  // 2. LocalStorage Persistence (Preserves active page across normal F5 / page reloads)
   if (savedRole === 'admin') {
+    if (isSuperAdminAuthenticated() && (hash.includes('admin') || pathname.includes('/admin'))) {
+      return { role: 'admin', view: 'feed', openPasses: false };
+    }
+    return { role: 'tenant', view: 'feed', openPasses: false };
+  }
+  if (savedRole === 'agent' && isUserAgent) {
+    return { role: 'agent', view: 'feed', openPasses: false };
+  }
+  if (savedRole === 'seeker' || savedRole === 'tenant') {
+    return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
+  }
+
+  // 3. Fallback defaults:
+  if (isUserAdmin && isSuperAdminAuthenticated() && (hash.includes('admin') || pathname.includes('/admin'))) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
-
-  // If user was on Feed/Explore:
-  if (savedView === 'feed') {
-    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+  if (isUserAgent) {
+    return { role: 'agent', view: 'feed', openPasses: false };
   }
-
-  // If user was on Dashboard:
-  if (savedView === 'dashboard') {
-    if (savedRole === 'agent' || isUserAgent) {
-      return { role: 'agent', view: 'dashboard', openPasses: false };
-    }
-    return { role: 'tenant', view: 'dashboard', openPasses: false };
-  }
-
-  // 8. Default landing page: Continuous Explore Feed
-  return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+  return { role: 'tenant', view: 'feed', openPasses: false };
 }
 
 export function App() {
@@ -240,14 +227,8 @@ export function App() {
                 return m;
               });
 
-              const sanitizedAgent = item.agent ? {
-                ...item.agent,
-                avatarUrl: (item.agent.avatarUrl && !isDemoAvatarUrl(item.agent.avatarUrl)) ? item.agent.avatarUrl : undefined,
-              } : item.agent;
-
               return {
                 ...item,
-                agent: sanitizedAgent,
                 media: sanitizedMedia.length > 0 ? sanitizedMedia : [{
                   type: 'image' as const,
                   url: FALLBACK_PROPERTY_IMAGES[idx % FALLBACK_PROPERTY_IMAGES.length],
@@ -408,9 +389,6 @@ export function App() {
         ) {
           return GUEST_USER;
         }
-        if (parsed && parsed.avatarUrl && isDemoAvatarUrl(parsed.avatarUrl)) {
-          delete parsed.avatarUrl;
-        }
         if (isElvisSuperAdmin(parsed)) {
           return {
             ...parsed,
@@ -445,13 +423,16 @@ export function App() {
   const initialNav = useMemo(() => {
     let isAgent = false;
     let isAdmin = false;
-    const savedUser = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        isAgent = Boolean(parsed.isAgent);
-        isAdmin = Boolean(parsed.isAdmin || parsed.isSuperAdmin || isElvisSuperAdmin(parsed));
-      } catch (_) {}
+    const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
+    if (isAuth) {
+      const savedUser = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+      if (savedUser) {
+        try {
+          const parsed = JSON.parse(savedUser);
+          isAgent = Boolean(parsed.isAgent);
+          isAdmin = Boolean(parsed.isAdmin || parsed.isSuperAdmin || isElvisSuperAdmin(parsed));
+        } catch (_) {}
+      }
     }
     return resolveInitialNavState(isAgent, isAdmin);
   }, []);
@@ -485,12 +466,12 @@ export function App() {
         ? '#/partner'
         : currentRole === 'admin'
         ? '#/admin'
-        : userView === 'dashboard'
-        ? (room === 'jobs'
-            ? ((currentRole === 'agent' || currentUser.isAgent) ? '#/jobs/agent' : '#/jobs/dashboard')
-            : ((currentRole === 'agent' || currentUser.isAgent) ? '#/agent' : '#/dashboard'))
         : room === 'jobs'
-        ? '#/jobs'
+        ? (currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
+        : currentRole === 'agent'
+        ? '#/agent'
+        : userView === 'dashboard'
+        ? '#/dashboard'
         : '#/explore';
 
       if (window.location.hash !== targetHash) {
@@ -585,17 +566,15 @@ export function App() {
         operatingState: myListing.state || currentUser.state || 'Delta State',
       };
       setCurrentUser(healedAgent);
-      if (userView !== 'feed') {
-        setCurrentRole('agent');
-        localStorage.setItem('setlla_active_role', 'agent');
-        localStorage.setItem('deltarent_active_role', 'agent');
-      }
+      setCurrentRole('agent');
       localStorage.setItem('setlla_user', JSON.stringify(healedAgent));
       localStorage.setItem('deltarent_user', JSON.stringify(healedAgent));
+      localStorage.setItem('setlla_active_role', 'agent');
+      localStorage.setItem('deltarent_active_role', 'agent');
       saveRegisteredUser(healedAgent, { skipBroadcast: true });
       saveRegisteredUserAsync(healedAgent, { skipBroadcast: true });
     }
-  }, [listings, currentUser, userView]);
+  }, [listings, currentUser]);
 
   // 1. Keep active view, role & room in sync with localStorage and URL Hash on every navigation
   useEffect(() => {
@@ -609,18 +588,18 @@ export function App() {
       ? '#/partner'
       : currentRole === 'admin'
       ? '#/admin'
-      : userView === 'dashboard'
-      ? (activeRoom === 'jobs'
-          ? ((currentRole === 'agent' || currentUser.isAgent) ? '#/jobs/agent' : '#/jobs/dashboard')
-          : ((currentRole === 'agent' || currentUser.isAgent) ? '#/agent' : '#/dashboard'))
       : activeRoom === 'jobs'
-      ? '#/jobs'
+      ? (currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
+      : currentRole === 'agent'
+      ? '#/agent'
+      : userView === 'dashboard'
+      ? '#/dashboard'
       : '#/explore';
 
     if (window.location.hash !== targetHash) {
       history.replaceState(null, '', targetHash);
     }
-  }, [currentRole, userView, activeRoom, currentUser.isAgent]);
+  }, [currentRole, userView, activeRoom]);
 
   // 2. Support browser Back/Forward navigation seamlessly via hashchange
   useEffect(() => {
@@ -630,12 +609,12 @@ export function App() {
         setActiveRoom('jobs');
         if (hash.includes('agent') || hash.includes('employer')) {
           setCurrentRole('agent');
-          setUserView('dashboard');
         } else if (hash.includes('dashboard')) {
           setCurrentRole('tenant');
           setUserView('dashboard');
         } else {
           // #/jobs or #/jobs/explore
+          setCurrentRole('tenant');
           setUserView('feed');
         }
       } else if (hash.includes('partner') || hash.includes('advertise') || hash.includes('advertiser')) {
@@ -643,22 +622,22 @@ export function App() {
       } else if (hash.includes('admin')) {
         setCurrentRole('admin');
         setUserView('feed');
-      } else if (hash.includes('agent') || hash.includes('employer')) {
+      } else if (hash.includes('agent')) {
         setActiveRoom('rentals');
         setCurrentRole('agent');
-        setUserView('dashboard');
       } else if (hash.includes('dashboard')) {
         setActiveRoom('rentals');
         if (currentUser.isAgent) {
           setCurrentRole('agent');
         } else {
           setCurrentRole('tenant');
+          setUserView('dashboard');
         }
-        setUserView('dashboard');
       } else if (hash.includes('inspections') || hash.includes('passes')) {
         setIsMyPassesOpen(true);
       } else if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals')) {
         setActiveRoom('rentals');
+        setCurrentRole('tenant');
         setUserView('feed');
       }
     };
@@ -828,23 +807,14 @@ export function App() {
         setBookings((prev) => [event.booking!, ...prev.filter((b) => b.id !== event.booking!.id)]);
 
         const targetListing = event.listing || listings.find((p) => p.id === event.booking!.propertyId);
-        // Strict ownership check: Must have valid targetListing AND must be this agent's listing
-        if (!targetListing || !currentUser.isAgent) return;
+        const isMyListing = !targetListing || targetListing.agent.id === currentUser.id || targetListing.agent.phone === currentUser.phone || currentUser.isAdmin;
 
-        const isMyListing = (
-          (targetListing.agent?.id && currentUser.id && targetListing.agent.id === currentUser.id) ||
-          (currentUser.phone && targetListing.agent?.phone && normalizePhoneNumber(targetListing.agent.phone) === normalizePhoneNumber(currentUser.phone))
-        );
-        const isMe = currentUser.phone && event.booking.applicantPhone &&
-          normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(event.booking.applicantPhone);
-
-        if (isMyListing && !isMe) {
+        if (currentUser.isAgent && currentUser.phone !== event.booking.applicantPhone && isMyListing) {
           recordNotifiedAgentBookingId(event.booking.id);
-          const title = targetListing.title;
-          const timeSnippet = event.booking.slotTimeWindow ? ` (${event.booking.slotTimeWindow})` : '';
+          const title = targetListing ? targetListing.title : 'your listing';
           setPushNotification({
             title: '🔔 New Inspection Request!',
-            body: `${event.booking.applicantName || 'An applicant'} requested inspection for "${title}"${timeSnippet}.`,
+            body: `${event.booking.applicantName} requested inspection for "${title}" (${event.booking.slotTimeWindow}).`,
             type: 'inspection_request',
             listing: targetListing,
             booking: event.booking,
@@ -854,7 +824,7 @@ export function App() {
             },
           });
           showDeviceNotification('🔔 New Inspection Request!', {
-            body: `${event.booking.applicantName || 'An applicant'} requested inspection for "${title}"${timeSnippet}.`,
+            body: `${event.booking.applicantName} requested inspection for "${title}" (${event.booking.slotTimeWindow}).`,
           });
           playNotificationSound('alert');
         }
@@ -1046,47 +1016,35 @@ export function App() {
               if (payload.eventType === 'INSERT' && payload.new) {
                 const newBookingRow = payload.new as any;
                 const bookingId = newBookingRow.id;
-                const status = newBookingRow.status || 'REQUEST_SUBMITTED';
-                if (status !== 'REQUEST_SUBMITTED' && status !== 'QUEUED') return;
-
-                const propId = newBookingRow.property_id || newBookingRow.propertyId;
-                if (!propId) return;
-
-                const targetListing = listings.find((p) => p.id === propId);
-                // Strict check: DO NOT notify if targetListing does not exist or user is not agent
-                if (!targetListing || !currentUser.isAgent) return;
-
-                const isMyListing = (
-                  (targetListing.agent?.id && currentUser.id && targetListing.agent.id === currentUser.id) ||
-                  (currentUser.phone && targetListing.agent?.phone && normalizePhoneNumber(targetListing.agent.phone) === normalizePhoneNumber(currentUser.phone))
-                );
-                if (!isMyListing) return;
-
+                const applicantName = newBookingRow.applicant_name || newBookingRow.applicantName || 'Applicant';
                 const applicantPhone = newBookingRow.applicant_phone || newBookingRow.applicantPhone;
+                const propId = newBookingRow.property_id || newBookingRow.propertyId;
+                const slotTime = newBookingRow.slot_time_window || newBookingRow.slotTimeWindow || '';
+                const targetListing = listings.find((p) => p.id === propId);
+
                 const isMe = currentUser.phone && applicantPhone &&
-                  normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(applicantPhone);
-                if (isMe) return;
+                  currentUser.phone.replace(/[^0-9]/g, '').slice(-10) === applicantPhone.replace(/[^0-9]/g, '').slice(-10);
 
-                if (bookingId && !getNotifiedAgentBookingIds().has(bookingId)) {
-                  recordNotifiedAgentBookingId(bookingId);
-                  const applicantName = newBookingRow.applicant_name || newBookingRow.applicantName || 'An applicant';
-                  const slotTime = newBookingRow.slot_time_window || newBookingRow.slotTimeWindow;
-                  const timeSnippet = slotTime ? ` (${slotTime})` : '';
-                  const propTitle = targetListing.title;
+                const isMyListing = !targetListing || targetListing.agent.id === currentUser.id || targetListing.agent.phone === currentUser.phone || currentUser.isAdmin;
 
-                  setPushNotification({
-                    title: '🔔 New Inspection Request!',
-                    body: `${applicantName} booked an inspection for "${propTitle}"${timeSnippet}.`,
-                    type: 'inspection_request',
-                    actionText: 'Tap to review in Agent Portal',
-                    onAction: () => {
-                      setCurrentRole('agent');
-                    },
-                  });
-                  showDeviceNotification('🔔 New Inspection Request!', {
-                    body: `${applicantName} booked "${propTitle}"${timeSnippet}.`,
-                  });
-                  playNotificationSound('alert');
+                if (currentUser.isAgent && !isMe && isMyListing && bookingId) {
+                  if (!getNotifiedAgentBookingIds().has(bookingId)) {
+                    recordNotifiedAgentBookingId(bookingId);
+                    const propTitle = targetListing?.title || 'your listed property';
+                    setPushNotification({
+                      title: '🔔 New Inspection Request!',
+                      body: `${applicantName} booked an inspection for "${propTitle}" (${slotTime}).`,
+                      type: 'inspection_request',
+                      actionText: 'Tap to review in Agent Portal',
+                      onAction: () => {
+                        setCurrentRole('agent');
+                      },
+                    });
+                    showDeviceNotification('🔔 New Inspection Request!', {
+                      body: `${applicantName} booked "${propTitle}" (${slotTime}).`,
+                    });
+                    playNotificationSound('alert');
+                  }
                 }
               } else if (payload.eventType === 'UPDATE' && payload.new) {
                 const updatedRow = payload.new as any;
@@ -1311,53 +1269,29 @@ export function App() {
     if (!currentUser || !currentUser.isAgent) return;
 
     const notifiedAgentRequests = getNotifiedAgentBookingIds();
-    // Strictly agent's own listings (never all listings just because admin)
     const agentListingIds = new Set(
       listings
-        .filter((l) => (
-          (l.agent?.id && currentUser.id && l.agent.id === currentUser.id) ||
-          (currentUser.phone && l.agent?.phone && normalizePhoneNumber(l.agent.phone) === normalizePhoneNumber(currentUser.phone))
-        ))
+        .filter((l) => l.agent.id === currentUser.id || l.agent.phone === currentUser.phone || currentUser.isAdmin)
         .map((l) => l.id)
     );
 
-    if (agentListingIds.size === 0) return;
-
-    // Only notify for fresh, pending bookings that belong strictly to this agent's listing
-    const unnotifiedBooking = bookings.find((b) => {
-      if (!b || !b.id || notifiedAgentRequests.has(b.id)) return false;
-      if (b.status !== 'REQUEST_SUBMITTED' && b.status !== 'QUEUED') return false;
-      if (!agentListingIds.has(b.propertyId)) return false;
-      if (currentUser.phone && b.applicantPhone && normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(b.applicantPhone)) return false;
-
-      // Must belong to an actual known listing
-      const listing = listings.find((p) => p.id === b.propertyId);
-      if (!listing) return false;
-
-      // Don't fire historic notifications older than 2 hours as a fresh popup
-      if (b.createdAt) {
-        const ageHours = (Date.now() - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
-        if (ageHours > 2) {
-          recordNotifiedAgentBookingId(b.id);
-          return false;
-        }
-      }
-
-      return true;
-    });
+    const unnotifiedBooking = bookings.find(
+      (b) =>
+        (b.status === 'REQUEST_SUBMITTED' || b.status === 'QUEUED') &&
+        agentListingIds.has(b.propertyId) &&
+        !notifiedAgentRequests.has(b.id) &&
+        b.applicantPhone !== currentUser.phone
+    );
 
     if (unnotifiedBooking) {
       recordNotifiedAgentBookingId(unnotifiedBooking.id);
 
       const targetListing = listings.find((p) => p.id === unnotifiedBooking.propertyId);
-      if (!targetListing) return;
-
-      const propTitle = targetListing.title;
-      const slotTimeSnippet = unnotifiedBooking.slotTimeWindow ? ` (${unnotifiedBooking.slotTimeWindow})` : '';
+      const propTitle = targetListing?.title || 'your listing';
 
       setPushNotification({
         title: '🔔 New Inspection Request!',
-        body: `${unnotifiedBooking.applicantName || 'An applicant'} requested inspection for "${propTitle}"${slotTimeSnippet}.`,
+        body: `${unnotifiedBooking.applicantName} requested inspection for "${propTitle}" (${unnotifiedBooking.slotTimeWindow}).`,
         type: 'inspection_request',
         listing: targetListing,
         booking: unnotifiedBooking,
@@ -1369,7 +1303,7 @@ export function App() {
 
       playNotificationSound('alert');
       showDeviceNotification('🔔 New Inspection Request!', {
-        body: `${unnotifiedBooking.applicantName || 'An applicant'} requested inspection for "${propTitle}".`,
+        body: `${unnotifiedBooking.applicantName} requested inspection for "${propTitle}".`,
       });
     }
   }, [bookings, listings, currentUser]);
@@ -1779,13 +1713,6 @@ export function App() {
 
   // Handler: Create listing from agent onboarding form
   const handleListingCreated = (newListing: PropertyListing) => {
-    // Pre-record all existing bookings so no historic or unrelated requests trigger false inspection notifications upon upload
-    bookings.forEach((b) => {
-      if (b && b.id) {
-        recordNotifiedAgentBookingId(b.id);
-      }
-    });
-
     setListings((prev) => [newListing, ...prev]);
     saveNewListing(newListing);
 
@@ -1877,15 +1804,15 @@ export function App() {
     localStorage.setItem('deltarent_user', JSON.stringify(updatedAgentProfile));
     localStorage.setItem('setlla_active_role', 'agent');
     localStorage.setItem('deltarent_active_role', 'agent');
-    localStorage.setItem('setlla_active_view', 'dashboard');
-    localStorage.setItem('deltarent_active_view', 'dashboard');
+    localStorage.setItem('setlla_active_view', 'feed');
+    localStorage.setItem('deltarent_active_view', 'feed');
     localStorage.setItem('setlla_auth', 'true');
     localStorage.setItem('deltarent_auth', 'true');
 
     // 2. Update React application state
     setCurrentUser(updatedAgentProfile);
     setCurrentRole('agent');
-    setUserView('dashboard');
+    setUserView('feed');
     window.location.hash = '#/agent';
 
     // 3. Save to registry and Supabase platform_users database
@@ -2110,13 +2037,9 @@ export function App() {
       if (!email) return;
       const clean = normalizeEmail(email);
 
-      const currentHash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
-      const isAdminRoute = currentHash.includes('admin') || currentRole === 'admin';
-
       // 1. Check if this email matches an active pending signup verification
       const pending = getPendingEmailOTP();
       if (pending && normalizeEmail(pending.email) === clean && pending.pendingUser) {
-        if (isAdminRoute) return;
         console.log('[App] Auto-activating pending user from email link confirmation:', clean);
         const user = pending.pendingUser;
         user.isEmailVerified = true;
@@ -2129,8 +2052,10 @@ export function App() {
         localStorage.setItem('setlla_user', JSON.stringify(user));
         setIsSignupOpen(false);
         setSignupNotice(null);
-        if (user.isAgent && currentRole !== 'agent') {
+        if (user.isAgent) {
           setCurrentRole('agent');
+          setUserView('feed');
+          window.location.hash = '#/agent';
         }
         return;
       }
@@ -2139,22 +2064,6 @@ export function App() {
       try {
         const existingUser = findUserByCredential(clean) || (await findUserByCredentialAsync(clean));
         if (existingUser) {
-          // If on admin route, do NOT allow a non-admin session to hijack role or redirect to feed!
-          if (isAdminRoute) {
-            if (existingUser.isAdmin || existingUser.isSuperAdmin || isElvisSuperAdmin(existingUser)) {
-              unrecordDeletedUser(existingUser);
-              existingUser.isEmailVerified = true;
-              saveRegisteredUser(existingUser, { allowReRegistration: true });
-              saveRegisteredUserAsync(existingUser, { allowReRegistration: true });
-              setIsAdminAuthenticated(true);
-              setActiveAdminUser(existingUser);
-              setCurrentUser(existingUser);
-              setCurrentRole('admin');
-              updateAdminLastActivity();
-            }
-            return;
-          }
-
           unrecordDeletedUser(existingUser);
           existingUser.isEmailVerified = true;
           saveRegisteredUser(existingUser, { allowReRegistration: true });
@@ -2166,8 +2075,10 @@ export function App() {
           localStorage.setItem('setlla_user', JSON.stringify(existingUser));
           setIsSignupOpen(false);
           setSignupNotice(null);
-          if (existingUser.isAgent && currentRole !== 'agent') {
+          if (existingUser.isAgent) {
             setCurrentRole('agent');
+            setUserView('feed');
+            window.location.hash = '#/agent';
           }
           return;
         }
@@ -2277,53 +2188,13 @@ export function App() {
   };
 
   const handleUpdateAvatar = (avatarUrl: string) => {
-    const cleanAvatar = isDemoAvatarUrl(avatarUrl) ? undefined : (avatarUrl ? avatarUrl.trim() : undefined);
     const updated: UserProfile = {
       ...currentUser,
-      avatarUrl: cleanAvatar,
+      avatarUrl,
     };
     saveRegisteredUser(updated);
-    saveRegisteredUserAsync(updated).catch(() => {});
-    broadcastRealtimeEvent('USER_REGISTERED', { user: updated });
     setCurrentUser(updated);
-    try {
-      localStorage.setItem('setlla_user', JSON.stringify(updated));
-      localStorage.setItem('deltarent_user', JSON.stringify(updated));
-    } catch (_) {}
-
-    // Reflect profile picture across all user's listings immediately
-    const userPhoneNorm = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
-    setListings((prevListings) => {
-      let hasChanges = false;
-      const nextListings = prevListings.map((listing) => {
-        const isMatch = (listing.agent?.id && currentUser.id && listing.agent.id === currentUser.id) ||
-          (userPhoneNorm && listing.agent?.phone && normalizePhoneNumber(listing.agent.phone) === userPhoneNorm) ||
-          (currentUser.fullName && listing.agent?.fullName && listing.agent.fullName.trim().toLowerCase() === currentUser.fullName.trim().toLowerCase());
-
-        if (isMatch) {
-          hasChanges = true;
-          const updatedListing: PropertyListing = {
-            ...listing,
-            agent: {
-              ...listing.agent,
-              avatarUrl: cleanAvatar,
-            },
-          };
-          updateListing(updatedListing).catch(() => {});
-          broadcastRealtimeEvent('LISTING_UPDATED', { listing: updatedListing });
-          return updatedListing;
-        }
-        return listing;
-      });
-
-      if (hasChanges) {
-        try {
-          localStorage.setItem('setlla_listings', JSON.stringify(nextListings));
-          localStorage.setItem('deltarent_listings', JSON.stringify(nextListings));
-        } catch (_) {}
-      }
-      return nextListings;
-    });
+    localStorage.setItem('setlla_user', JSON.stringify(updated));
   };
 
   // Handler: Update current user from signup/login modal
@@ -2338,45 +2209,6 @@ export function App() {
     localStorage.setItem('setlla_auth', 'true');
     localStorage.setItem('setlla_user', JSON.stringify(updatedUser));
     setSignupNotice(null);
-
-    // Also propagate profile photo and agency details to all user's listings
-    const cleanAvatar = isDemoAvatarUrl(updatedUser.avatarUrl) ? undefined : (updatedUser.avatarUrl ? updatedUser.avatarUrl.trim() : undefined);
-    const userPhoneNorm = updatedUser.phone ? normalizePhoneNumber(updatedUser.phone) : '';
-    setListings((prevListings) => {
-      let hasChanges = false;
-      const nextListings = prevListings.map((listing) => {
-        const isMatch = (listing.agent?.id && updatedUser.id && listing.agent.id === updatedUser.id) ||
-          (userPhoneNorm && listing.agent?.phone && normalizePhoneNumber(listing.agent.phone) === userPhoneNorm) ||
-          (updatedUser.fullName && listing.agent?.fullName && listing.agent.fullName.trim().toLowerCase() === updatedUser.fullName.trim().toLowerCase());
-
-        if (isMatch) {
-          hasChanges = true;
-          const updatedListing: PropertyListing = {
-            ...listing,
-            agent: {
-              ...listing.agent,
-              fullName: updatedUser.fullName || listing.agent?.fullName,
-              agencyName: updatedUser.agencyName || listing.agent?.agencyName,
-              phone: updatedUser.phone || listing.agent?.phone,
-              whatsapp: updatedUser.whatsapp || updatedUser.phone || listing.agent?.whatsapp,
-              avatarUrl: cleanAvatar,
-            },
-          };
-          updateListing(updatedListing).catch(() => {});
-          broadcastRealtimeEvent('LISTING_UPDATED', { listing: updatedListing });
-          return updatedListing;
-        }
-        return listing;
-      });
-
-      if (hasChanges) {
-        try {
-          localStorage.setItem('setlla_listings', JSON.stringify(nextListings));
-          localStorage.setItem('deltarent_listings', JSON.stringify(nextListings));
-        } catch (_) {}
-      }
-      return nextListings;
-    });
 
     if (updatedUser.savedListingIds) {
       setSavedPropertyIds(updatedUser.savedListingIds);
@@ -2415,7 +2247,7 @@ export function App() {
 
   // Determine root container layout:
   // Feed view is viewport-locked for continuous momentum feeds (both Rentals and Setlla Jobs) so desktop ad sidebars stay static while feeds scroll
-  const isFeedView = (activeRoom === 'rentals' || activeRoom === 'jobs') && userView === 'feed';
+  const isFeedView = (activeRoom === 'rentals' || activeRoom === 'jobs') && (currentRole === 'tenant' || currentRole === 'seeker') && userView === 'feed';
 
   return (
     <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#342A21]/15 selection:text-[#342A21] ${
@@ -2588,7 +2420,7 @@ export function App() {
               />
             </main>
           )
-        ) : (currentUser.isAgent || currentRole === 'agent') ? (
+        ) : currentUser.isAgent ? (
           /* If the user is an agent, their dashboard is the Agent Dashboard */
           <main className="flex-1 w-full">
             <AgentDashboard
@@ -2603,9 +2435,11 @@ export function App() {
               onUpdateAvailability={handleUpdateListingAvailability}
               onConfirmFreshness={handleConfirmListingFreshness}
               onSwitchToSeeker={() => {
+                setCurrentRole('tenant');
                 setUserView('feed');
               }}
               onSwitchToTenant={() => {
+                setCurrentRole('tenant');
                 setUserView('feed');
               }}
               onOpenAdsPortal={handleOpenAdsPortal}
@@ -2626,33 +2460,45 @@ export function App() {
               onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
               onOpenSignup={handleOpenSignup}
               onSwitchToFeed={() => setUserView('feed')}
-              onSwitchToAgent={() => {
-                setCurrentRole('agent');
-                setUserView('dashboard');
-              }}
+              onSwitchToAgent={() => setCurrentRole('agent')}
               isAuthenticated={isAuthenticated}
               onOpenAdsPortal={handleOpenAdsPortal}
             />
           </main>
         )
       ) : activeRoom === 'jobs' ? (
-        /* Setlla Jobs Continuous Feed */
-        <main className="flex-1 w-full h-[calc(100dvh-4rem)] mt-16 flex flex-col overflow-hidden bg-[#FCF9F5]">
-          <JobsFeed
-            currentUser={currentUser}
-            adverts={activePublicAdverts}
-            onSelectAdvert={handleSelectAdvert}
-            onTriggerSignup={handleOpenSignup}
-            isAuthenticated={isAuthenticated}
-            onOpenPostAd={() => setIsPostAdOpen(true)}
-            onOpenEmployerPortal={() => {
-              setCurrentRole('agent');
-              setUserView('dashboard');
-            }}
-          />
-        </main>
-      ) : (
-          /* Public Continuous Explore Feed View: Active for all users when userView is 'feed' */
+        (currentRole === 'agent' || (currentUser.isAgent && userView !== 'feed')) ? (
+          /* Setlla Job Agent & Employer Portal */
+          <main className="flex-1 w-full pt-16">
+            <JobAgentDashboard
+              currentUser={currentUser}
+              onSwitchToFeed={() => {
+                setCurrentRole('tenant');
+                setUserView('feed');
+              }}
+              onSwitchToRentals={() => handleRoomChange('rentals')}
+              isAuthenticated={isAuthenticated}
+            />
+          </main>
+        ) : (
+          /* Setlla Jobs Continuous Feed */
+          <main className="flex-1 w-full h-[calc(100dvh-4rem)] mt-16 flex flex-col overflow-hidden bg-[#FCF9F5]">
+            <JobsFeed
+              currentUser={currentUser}
+              adverts={activePublicAdverts}
+              onSelectAdvert={handleSelectAdvert}
+              onTriggerSignup={handleOpenSignup}
+              isAuthenticated={isAuthenticated}
+              onOpenPostAd={() => setIsPostAdOpen(true)}
+              onOpenEmployerPortal={() => {
+                setCurrentRole('agent');
+                setUserView('dashboard');
+              }}
+            />
+          </main>
+        )
+      ) : (currentRole === 'tenant' || currentRole === 'seeker' || userView === 'feed') && currentRole !== 'agent' ? (
+          /* Tenant Snap Feed View */
           <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">
             {/* Snap-Feed Filter Bar with Squared Rounded-Edges Adverts Tray */}
             <FilterBar
@@ -2708,6 +2554,31 @@ export function App() {
               </div>
             </div>
           </main>
+      ) : (
+        /* Agent Mode Portal */
+        <main className="flex-1 w-full">
+          <AgentDashboard
+            currentUser={currentUser}
+            listings={listings}
+            bookings={bookings}
+            onAcceptBooking={handleAcceptBooking}
+            onRejectBooking={handleRejectBooking}
+            onListingCreated={handleListingCreated}
+            onListingUpdated={handleListingUpdated}
+            onDeleteListing={handleDeleteListing}
+            onUpdateAvailability={handleUpdateListingAvailability}
+            onConfirmFreshness={handleConfirmListingFreshness}
+            onSwitchToSeeker={() => {
+              setCurrentRole('tenant');
+              setUserView('feed');
+            }}
+            onSwitchToTenant={() => {
+              setCurrentRole('tenant');
+              setUserView('feed');
+            }}
+            onOpenAdsPortal={handleOpenAdsPortal}
+          />
+        </main>
       )}
 
       {/* 3. Global Drawers & Modals */}
@@ -2727,7 +2598,6 @@ export function App() {
         onClose={() => setIsProfileOpen(false)}
         currentRole={currentRole}
         onChangeRole={setCurrentRole}
-        onChangeUserView={setUserView}
         activeBookings={userBookings}
         onOpenMyPasses={() => setIsMyPassesOpen(true)}
         currentUser={currentUser}

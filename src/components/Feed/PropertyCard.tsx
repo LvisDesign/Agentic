@@ -23,7 +23,6 @@ import { FeeBreakdownSheet } from './FeeBreakdownSheet';
 import { ReportListingModal } from './ReportListingModal';
 import { QueueStatusBadge } from '../Booking/QueueStatusBadge';
 import { InspectionBookingModal } from '../Booking/InspectionBookingModal';
-import { isDemoAvatarUrl } from '../../utils/userRegistry';
 import { UnlockedContactSheet } from '../Booking/UnlockedContactSheet';
 
 interface PropertyCardProps {
@@ -99,26 +98,11 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         <div className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white border-b border-[#E5E7EB] flex items-center justify-between gap-2 shrink-0">
           {/* User/Agent Profile & Name */}
           <div className="flex items-center gap-2 min-w-0">
-            {listing.agent.avatarUrl && !isDemoAvatarUrl(listing.agent.avatarUrl) ? (
-              <img
-                src={listing.agent.avatarUrl}
-                alt={listing.agent.fullName}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-[#E5E7EB] shrink-0 shadow-2xs"
-              />
-            ) : (
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#342A21] text-white text-[10px] sm:text-xs font-bold flex items-center justify-center shrink-0 border border-[#E5E7EB] shadow-2xs">
-                {listing.agent.fullName
-                  ? listing.agent.fullName
-                      .trim()
-                      .split(/\s+/)
-                      .filter(Boolean)
-                      .map((n) => n[0])
-                      .join('')
-                      .slice(0, 2)
-                      .toUpperCase() || 'A'
-                  : 'A'}
-              </div>
-            )}
+            <img
+              src={listing.agent.avatarUrl}
+              alt={listing.agent.fullName}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-[#E5E7EB] shrink-0 shadow-2xs"
+            />
             <span className="font-bold text-xs sm:text-sm text-[#000004] truncate">
               {listing.agent.fullName}
             </span>

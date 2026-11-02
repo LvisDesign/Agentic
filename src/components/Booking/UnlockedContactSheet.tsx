@@ -10,7 +10,6 @@ import {
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { PropertyListing, BookingRecord } from '../../types/marketplace';
 import { formatNigerianPhone } from '../../utils/formatters';
-import { isDemoAvatarUrl } from '../../utils/userRegistry';
 import { ModalPortal } from '../UI/ModalPortal';
 
 interface UnlockedContactSheetProps {
@@ -136,27 +135,12 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
           <div className="p-4 rounded-[12px] bg-white border border-[rgba(112,121,140,0.22)] shadow-2xs">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="relative shrink-0">
-                  {listing.agent.avatarUrl && !isDemoAvatarUrl(listing.agent.avatarUrl) ? (
-                    <img
-                      src={listing.agent.avatarUrl}
-                      alt={listing.agent.fullName}
-                      className="w-12 h-12 rounded-full object-cover border border-[#342A21]/20"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-[#342A21] text-white font-bold text-sm flex items-center justify-center border border-[#342A21]/20 shrink-0">
-                      {listing.agent.fullName
-                        ? listing.agent.fullName
-                            .trim()
-                            .split(/\s+/)
-                            .filter(Boolean)
-                            .map((n) => n[0])
-                            .join('')
-                            .slice(0, 2)
-                            .toUpperCase() || 'A'
-                        : 'A'}
-                    </div>
-                  )}
+                <div className="relative">
+                  <img
+                    src={listing.agent.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                    alt={listing.agent.fullName}
+                    className="w-12 h-12 rounded-full object-cover border border-[#342A21]/20"
+                  />
                 </div>
 
                 <div className="min-w-0">

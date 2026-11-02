@@ -146,7 +146,7 @@ export interface AgentProfile {
   phone: string; // Protected until unlocked!
   whatsapp: string; // Protected until unlocked!
   email?: string;
-  avatarUrl?: string;
+  avatarUrl: string;
 }
 
 export interface PropertyListing {

@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supa
 import { PropertyListing, ListingAvailability } from '../types/marketplace';
 import { INITIAL_LISTINGS } from '../data/mockListings';
 import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO, getBlobFromIDB, uploadMediaToSupabaseStorage } from '../utils/mediaStorage';
-import { unrecordDeletedUserId, isDeletedUserRecord, isDemoAvatarUrl } from '../utils/userRegistry';
+import { unrecordDeletedUserId, isDeletedUserRecord } from '../utils/userRegistry';
 
 const LOCAL_STORAGE_KEY = 'setlla_listings';
 const LEGACY_STORAGE_KEY = 'deltarent_listings';
@@ -90,14 +90,8 @@ export function sanitizeListingMedia(item: PropertyListing, index: number = 0): 
     return m;
   });
 
-  const sanitizedAgent = item.agent ? {
-    ...item.agent,
-    avatarUrl: (item.agent.avatarUrl && !isDemoAvatarUrl(item.agent.avatarUrl)) ? item.agent.avatarUrl : undefined,
-  } : item.agent;
-
   return {
     ...item,
-    agent: sanitizedAgent,
     media: sanitizedMedia.length > 0 ? sanitizedMedia : [{
       type: 'image' as const,
       url: FALLBACK_PROPERTY_IMAGES[index % FALLBACK_PROPERTY_IMAGES.length],

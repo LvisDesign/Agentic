@@ -29,7 +29,6 @@ import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 import { syncLocalListingsToCloud } from '../../services/listingService';
 import { isSupabaseConfigured } from '../../utils/supabaseClient';
 import { getListingLifecycleInfo } from '../../utils/listingLifecycle';
-import { isDemoAvatarUrl } from '../../utils/userRegistry';
 
 interface AgentDashboardProps {
   currentUser?: UserProfile;
@@ -83,7 +82,6 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   );
 
   // Active Agent Profile
-  const rawDefaultAvatar = listings[0]?.agent?.avatarUrl;
   const defaultAgent = listings[0]?.agent || {
     id: 'agent-verified',
     fullName: currentUser?.fullName || 'Verified Agent Partner',
@@ -96,7 +94,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     responseTime: 'Responds within 10 mins',
     phone: currentUser?.phone || '',
     whatsapp: currentUser?.whatsapp || currentUser?.phone || '',
-    avatarUrl: (currentUser?.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl)) ? currentUser.avatarUrl : undefined,
+    avatarUrl: currentUser?.avatarUrl || '/images/properties/asaba_gra_exterior.jpg',
   };
 
   // Filter listings and bookings for this specific agent (or show all if platform admin)
@@ -115,12 +113,6 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     ? bookings
     : bookings.filter((b) => agentListings.some((l) => l.id === b.propertyId));
 
-  const safeAvatar = (currentUser?.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl))
-    ? currentUser.avatarUrl
-    : (rawDefaultAvatar && !isDemoAvatarUrl(rawDefaultAvatar))
-    ? rawDefaultAvatar
-    : undefined;
-
   const agentProfile: AgentProfile = (currentUser?.isAgent && currentUser.fullName) ? {
     id: currentUser.id || 'agent-active',
     fullName: currentUser.fullName,
@@ -133,10 +125,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     responseTime: 'Responds within 10 mins',
     phone: currentUser.phone || '',
     whatsapp: currentUser.whatsapp || currentUser.phone || '',
-    avatarUrl: safeAvatar,
+    avatarUrl: currentUser.avatarUrl || defaultAgent.avatarUrl,
   } : {
     ...defaultAgent,
-    avatarUrl: safeAvatar,
+    avatarUrl: currentUser?.avatarUrl || defaultAgent.avatarUrl,
   };
 
   // Compute metrics from actual live data
@@ -161,26 +153,11 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
       {/* Top Banner / Agent Identity */}
       <div className="bg-white rounded-2xl p-4 sm:p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-          {agentProfile.avatarUrl && !isDemoAvatarUrl(agentProfile.avatarUrl) ? (
-            <img
-              src={agentProfile.avatarUrl}
-              alt={agentProfile.fullName}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-[#342A21] shrink-0"
-            />
-          ) : (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#342A21] text-white font-bold text-lg flex items-center justify-center border-2 border-[#342A21] shrink-0 shadow-xs">
-              {agentProfile.fullName
-                ? agentProfile.fullName
-                    .trim()
-                    .split(/\s+/)
-                    .filter(Boolean)
-                    .map((n) => n[0])
-                    .join('')
-                    .slice(0, 2)
-                    .toUpperCase() || 'A'
-                : 'A'}
-            </div>
-          )}
+          <img
+            src={agentProfile.avatarUrl}
+            alt={agentProfile.fullName}
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-[#342A21] shrink-0"
+          />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h1 className="font-display text-xl sm:text-2xl font-bold text-[#000004] truncate">

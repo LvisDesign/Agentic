@@ -17,7 +17,6 @@ import { CustomConfirmModal } from './UI/CustomConfirmModal';
 import { getActiveAdvertiser } from '../services/advertiserAuthService';
 import { getSavedApplications } from '../services/jobService';
 import { isElvisSuperAdmin } from '../services/adminAuthService';
-import { isDemoAvatarUrl } from '../utils/userRegistry';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -167,34 +166,33 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Center / Right: Squircle Navigation Island (Zero Overflow on Mobile) */}
         <div className="flex items-center gap-0.5 sm:gap-1.5 p-0.5 sm:p-1 rounded-[16px] sm:rounded-[22px] bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs shrink-0 max-w-full">
-          {/* TAB 1: User Dashboard (Based on active room) or Admin Dashboard */}
+          {/* TAB 1: User Dashboard (Based on active room) or Admin Dashboard (Directs to Agent Dashboard) */}
           {isAuthenticated && (isSuperAdmin || (currentRole !== 'agent' && !currentUser.isAgent)) && (
             <button
               onClick={() => {
                 if (isSuperAdmin) {
-                  onChangeRole('admin');
-                  window.location.hash = '#/admin';
+                  onChangeRole('agent');
                 } else {
                   onChangeRole('tenant');
                   onChangeUserView('dashboard');
                 }
               }}
               className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-                (isSuperAdmin ? currentRole === 'admin' : userView === 'dashboard')
+                (isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard')))
                   ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
                   : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
               }`}
               aria-label={isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'User Dashboard'}
               title={isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'User Dashboard'}
             >
-              <LayoutDashboard className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(isSuperAdmin ? currentRole === 'admin' : userView === 'dashboard') ? 'text-white' : ''}`} />
+              <LayoutDashboard className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard'))) ? 'text-white' : ''}`} />
               
               {/* Desktop Label */}
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
                 {isSuperAdmin ? 'Admin Dashboard' : activeRoom === 'jobs' ? 'Jobs Dashboard' : 'My Dashboard'}
               </span>
 
-              {(isSuperAdmin ? currentRole === 'admin' : userView === 'dashboard') && (
+              {(isSuperAdmin ? currentRole === 'agent' : (currentRole === 'admin' || ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'dashboard'))) && (
                 <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
               )}
 
@@ -208,27 +206,25 @@ export const Header: React.FC<HeaderProps> = ({
           {/* TAB 2: Seeker Live Snap Feed */}
           <button
             onClick={() => {
-              if (currentRole !== 'agent' && !currentUser.isAgent) {
-                onChangeRole('tenant');
-              }
+              onChangeRole('tenant');
               onChangeUserView('feed');
             }}
             className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-              userView === 'feed' || (!isAuthenticated && userView !== 'dashboard')
+              ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')
                 ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
                 : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
             }`}
             aria-label="Explore"
             title="Explore"
           >
-            <Compass className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(userView === 'feed' || (!isAuthenticated && userView !== 'dashboard')) ? 'text-white' : ''}`} />
+            <Compass className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')) ? 'text-white' : ''}`} />
             
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
               Explore
             </span>
 
-            {(userView === 'feed' || (!isAuthenticated && userView !== 'dashboard')) && (
+            {(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')) && (
               <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
             )}
 
@@ -243,21 +239,20 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => {
                 onChangeRole('agent');
-                onChangeUserView('dashboard');
               }}
               className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
-                userView === 'dashboard' && (currentRole === 'agent' || currentUser.isAgent)
+                currentRole === 'agent'
                   ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
                   : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
               }`}
               aria-label={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
               title={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
             >
-              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${userView === 'dashboard' && (currentRole === 'agent' || currentUser.isAgent) ? 'text-amber-300' : 'text-[#70798C]'}`} />
+              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-amber-300' : 'text-[#70798C]'}`} />
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
                 {activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
               </span>
-              {userView === 'dashboard' && (currentRole === 'agent' || currentUser.isAgent) && (
+              {currentRole === 'agent' && (
                 <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
               )}
             </button>
@@ -309,7 +304,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label={isSuperAdmin ? 'Admin Profile' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
               title={isSuperAdmin ? 'Admin Profile' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
             >
-                {currentUser.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl) ? (
+                {currentUser.avatarUrl ? (
                   <img
                     src={currentUser.avatarUrl}
                     alt={currentUser.fullName}
