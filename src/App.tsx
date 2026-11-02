@@ -165,9 +165,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
 
   // 4. Explicit Agent Portal URL
   if (hash.includes('agent') || hash.includes('employer')) {
-    if (isUserAgent) {
-      return { role: 'agent', view: 'dashboard', openPasses: false };
-    }
+    return { role: 'agent', view: 'dashboard', openPasses: false };
   }
 
   // 5. Explicit Dashboard URL
@@ -201,7 +199,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
 
   // If user was on Dashboard:
   if (savedView === 'dashboard') {
-    if (savedRole === 'agent' && isUserAgent) {
+    if (savedRole === 'agent' || isUserAgent) {
       return { role: 'agent', view: 'dashboard', openPasses: false };
     }
     return { role: 'tenant', view: 'dashboard', openPasses: false };
@@ -447,16 +445,13 @@ export function App() {
   const initialNav = useMemo(() => {
     let isAgent = false;
     let isAdmin = false;
-    const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
-    if (isAuth) {
-      const savedUser = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
-      if (savedUser) {
-        try {
-          const parsed = JSON.parse(savedUser);
-          isAgent = Boolean(parsed.isAgent);
-          isAdmin = Boolean(parsed.isAdmin || parsed.isSuperAdmin || isElvisSuperAdmin(parsed));
-        } catch (_) {}
-      }
+    const savedUser = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        isAgent = Boolean(parsed.isAgent);
+        isAdmin = Boolean(parsed.isAdmin || parsed.isSuperAdmin || isElvisSuperAdmin(parsed));
+      } catch (_) {}
     }
     return resolveInitialNavState(isAgent, isAdmin);
   }, []);
@@ -650,12 +645,8 @@ export function App() {
         setUserView('feed');
       } else if (hash.includes('agent') || hash.includes('employer')) {
         setActiveRoom('rentals');
-        if (currentUser.isAgent) {
-          setCurrentRole('agent');
-          setUserView('dashboard');
-        } else {
-          setUserView('feed');
-        }
+        setCurrentRole('agent');
+        setUserView('dashboard');
       } else if (hash.includes('dashboard')) {
         setActiveRoom('rentals');
         if (currentUser.isAgent) {
@@ -666,8 +657,7 @@ export function App() {
         setUserView('dashboard');
       } else if (hash.includes('inspections') || hash.includes('passes')) {
         setIsMyPassesOpen(true);
-      } else {
-        // Any other route (#/explore, #/feed, #/rentals, #/, #, or empty): Explore Feed
+      } else if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals')) {
         setActiveRoom('rentals');
         setUserView('feed');
       }
@@ -1887,15 +1877,15 @@ export function App() {
     localStorage.setItem('deltarent_user', JSON.stringify(updatedAgentProfile));
     localStorage.setItem('setlla_active_role', 'agent');
     localStorage.setItem('deltarent_active_role', 'agent');
-    localStorage.setItem('setlla_active_view', 'feed');
-    localStorage.setItem('deltarent_active_view', 'feed');
+    localStorage.setItem('setlla_active_view', 'dashboard');
+    localStorage.setItem('deltarent_active_view', 'dashboard');
     localStorage.setItem('setlla_auth', 'true');
     localStorage.setItem('deltarent_auth', 'true');
 
     // 2. Update React application state
     setCurrentUser(updatedAgentProfile);
     setCurrentRole('agent');
-    setUserView('feed');
+    setUserView('dashboard');
     window.location.hash = '#/agent';
 
     // 3. Save to registry and Supabase platform_users database
@@ -2135,10 +2125,8 @@ export function App() {
         localStorage.setItem('setlla_user', JSON.stringify(user));
         setIsSignupOpen(false);
         setSignupNotice(null);
-        if (user.isAgent) {
+        if (user.isAgent && currentRole !== 'agent') {
           setCurrentRole('agent');
-          setUserView('feed');
-          window.location.hash = '#/agent';
         }
         return;
       }
@@ -2158,10 +2146,8 @@ export function App() {
           localStorage.setItem('setlla_user', JSON.stringify(existingUser));
           setIsSignupOpen(false);
           setSignupNotice(null);
-          if (existingUser.isAgent) {
+          if (existingUser.isAgent && currentRole !== 'agent') {
             setCurrentRole('agent');
-            setUserView('feed');
-            window.location.hash = '#/agent';
           }
           return;
         }
