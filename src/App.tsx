@@ -25,7 +25,8 @@ import {
   isDeletedUserRecord,
   recordDeletedUser,
   findUserByCredential,
-  findUserByCredentialAsync
+  findUserByCredentialAsync,
+  isDemoAvatarUrl
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
@@ -154,19 +155,20 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   if (hash.includes('admin')) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
+  // Explore / Feed takes strict precedence: User refreshing on Explore must stay on Explore Feed!
+  if (hash.includes('explore') || hash.includes('feed') || hash === '#/jobs' || hash === '#jobs') {
+    return { role: (savedRole === 'agent' && isUserAgent) ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+  }
   if (hash.includes('agent') || hash.includes('employer')) {
     if (isUserAgent) {
-      return { role: 'agent', view: 'feed', openPasses: false };
+      return { role: 'agent', view: 'dashboard', openPasses: false };
     }
   }
   if (hash.includes('dashboard')) {
     if (isUserAgent && !hash.includes('jobs')) {
-      return { role: 'agent', view: 'feed', openPasses: false };
+      return { role: 'agent', view: 'dashboard', openPasses: false };
     }
     return { role: 'tenant', view: 'dashboard', openPasses: false };
-  }
-  if (hash.includes('explore') || hash.includes('feed') || hash === '#/jobs' || hash === '#jobs') {
-    return { role: 'tenant', view: 'feed', openPasses: false };
   }
   if (hash.includes('inspections') || hash.includes('passes')) {
     return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
@@ -179,8 +181,12 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     }
     return { role: 'tenant', view: 'feed', openPasses: false };
   }
+  // If user was viewing the continuous feed on reload, preserve explore feed view!
+  if (savedView === 'feed') {
+    return { role: (savedRole === 'agent' && isUserAgent) ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+  }
   if (savedRole === 'agent' && isUserAgent) {
-    return { role: 'agent', view: 'feed', openPasses: false };
+    return { role: 'agent', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
   }
   if (savedRole === 'seeker' || savedRole === 'tenant') {
     return { role: 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: false };
@@ -227,8 +233,14 @@ export function App() {
                 return m;
               });
 
+              const sanitizedAgent = item.agent ? {
+                ...item.agent,
+                avatarUrl: (item.agent.avatarUrl && !isDemoAvatarUrl(item.agent.avatarUrl)) ? item.agent.avatarUrl : undefined,
+              } : item.agent;
+
               return {
                 ...item,
+                agent: sanitizedAgent,
                 media: sanitizedMedia.length > 0 ? sanitizedMedia : [{
                   type: 'image' as const,
                   url: FALLBACK_PROPERTY_IMAGES[idx % FALLBACK_PROPERTY_IMAGES.length],
@@ -389,6 +401,9 @@ export function App() {
         ) {
           return GUEST_USER;
         }
+        if (parsed && parsed.avatarUrl && isDemoAvatarUrl(parsed.avatarUrl)) {
+          delete parsed.avatarUrl;
+        }
         if (isElvisSuperAdmin(parsed)) {
           return {
             ...parsed,
@@ -467,7 +482,9 @@ export function App() {
         : currentRole === 'admin'
         ? '#/admin'
         : room === 'jobs'
-        ? (currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
+        ? (userView === 'feed' ? '#/jobs' : currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
+        : userView === 'feed'
+        ? '#/explore'
         : currentRole === 'agent'
         ? '#/agent'
         : userView === 'dashboard'
@@ -566,15 +583,17 @@ export function App() {
         operatingState: myListing.state || currentUser.state || 'Delta State',
       };
       setCurrentUser(healedAgent);
-      setCurrentRole('agent');
+      if (userView !== 'feed') {
+        setCurrentRole('agent');
+        localStorage.setItem('setlla_active_role', 'agent');
+        localStorage.setItem('deltarent_active_role', 'agent');
+      }
       localStorage.setItem('setlla_user', JSON.stringify(healedAgent));
       localStorage.setItem('deltarent_user', JSON.stringify(healedAgent));
-      localStorage.setItem('setlla_active_role', 'agent');
-      localStorage.setItem('deltarent_active_role', 'agent');
       saveRegisteredUser(healedAgent, { skipBroadcast: true });
       saveRegisteredUserAsync(healedAgent, { skipBroadcast: true });
     }
-  }, [listings, currentUser]);
+  }, [listings, currentUser, userView]);
 
   // 1. Keep active view, role & room in sync with localStorage and URL Hash on every navigation
   useEffect(() => {
@@ -589,7 +608,9 @@ export function App() {
       : currentRole === 'admin'
       ? '#/admin'
       : activeRoom === 'jobs'
-      ? (currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
+      ? (userView === 'feed' ? '#/jobs' : currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
+      : userView === 'feed'
+      ? '#/explore'
       : currentRole === 'agent'
       ? '#/agent'
       : userView === 'dashboard'
@@ -622,6 +643,9 @@ export function App() {
       } else if (hash.includes('admin')) {
         setCurrentRole('admin');
         setUserView('feed');
+      } else if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals')) {
+        setActiveRoom('rentals');
+        setUserView('feed');
       } else if (hash.includes('agent')) {
         setActiveRoom('rentals');
         setCurrentRole('agent');
@@ -635,10 +659,6 @@ export function App() {
         }
       } else if (hash.includes('inspections') || hash.includes('passes')) {
         setIsMyPassesOpen(true);
-      } else if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals')) {
-        setActiveRoom('rentals');
-        setCurrentRole('tenant');
-        setUserView('feed');
       }
     };
 
@@ -2188,13 +2208,53 @@ export function App() {
   };
 
   const handleUpdateAvatar = (avatarUrl: string) => {
+    const cleanAvatar = isDemoAvatarUrl(avatarUrl) ? undefined : (avatarUrl ? avatarUrl.trim() : undefined);
     const updated: UserProfile = {
       ...currentUser,
-      avatarUrl,
+      avatarUrl: cleanAvatar,
     };
     saveRegisteredUser(updated);
+    saveRegisteredUserAsync(updated).catch(() => {});
+    broadcastRealtimeEvent('USER_REGISTERED', { user: updated });
     setCurrentUser(updated);
-    localStorage.setItem('setlla_user', JSON.stringify(updated));
+    try {
+      localStorage.setItem('setlla_user', JSON.stringify(updated));
+      localStorage.setItem('deltarent_user', JSON.stringify(updated));
+    } catch (_) {}
+
+    // Reflect profile picture across all user's listings immediately
+    const userPhoneNorm = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
+    setListings((prevListings) => {
+      let hasChanges = false;
+      const nextListings = prevListings.map((listing) => {
+        const isMatch = (listing.agent?.id && currentUser.id && listing.agent.id === currentUser.id) ||
+          (userPhoneNorm && listing.agent?.phone && normalizePhoneNumber(listing.agent.phone) === userPhoneNorm) ||
+          (currentUser.fullName && listing.agent?.fullName && listing.agent.fullName.trim().toLowerCase() === currentUser.fullName.trim().toLowerCase());
+
+        if (isMatch) {
+          hasChanges = true;
+          const updatedListing: PropertyListing = {
+            ...listing,
+            agent: {
+              ...listing.agent,
+              avatarUrl: cleanAvatar,
+            },
+          };
+          updateListing(updatedListing).catch(() => {});
+          broadcastRealtimeEvent('LISTING_UPDATED', { listing: updatedListing });
+          return updatedListing;
+        }
+        return listing;
+      });
+
+      if (hasChanges) {
+        try {
+          localStorage.setItem('setlla_listings', JSON.stringify(nextListings));
+          localStorage.setItem('deltarent_listings', JSON.stringify(nextListings));
+        } catch (_) {}
+      }
+      return nextListings;
+    });
   };
 
   // Handler: Update current user from signup/login modal
@@ -2209,6 +2269,45 @@ export function App() {
     localStorage.setItem('setlla_auth', 'true');
     localStorage.setItem('setlla_user', JSON.stringify(updatedUser));
     setSignupNotice(null);
+
+    // Also propagate profile photo and agency details to all user's listings
+    const cleanAvatar = isDemoAvatarUrl(updatedUser.avatarUrl) ? undefined : (updatedUser.avatarUrl ? updatedUser.avatarUrl.trim() : undefined);
+    const userPhoneNorm = updatedUser.phone ? normalizePhoneNumber(updatedUser.phone) : '';
+    setListings((prevListings) => {
+      let hasChanges = false;
+      const nextListings = prevListings.map((listing) => {
+        const isMatch = (listing.agent?.id && updatedUser.id && listing.agent.id === updatedUser.id) ||
+          (userPhoneNorm && listing.agent?.phone && normalizePhoneNumber(listing.agent.phone) === userPhoneNorm) ||
+          (updatedUser.fullName && listing.agent?.fullName && listing.agent.fullName.trim().toLowerCase() === updatedUser.fullName.trim().toLowerCase());
+
+        if (isMatch) {
+          hasChanges = true;
+          const updatedListing: PropertyListing = {
+            ...listing,
+            agent: {
+              ...listing.agent,
+              fullName: updatedUser.fullName || listing.agent?.fullName,
+              agencyName: updatedUser.agencyName || listing.agent?.agencyName,
+              phone: updatedUser.phone || listing.agent?.phone,
+              whatsapp: updatedUser.whatsapp || updatedUser.phone || listing.agent?.whatsapp,
+              avatarUrl: cleanAvatar,
+            },
+          };
+          updateListing(updatedListing).catch(() => {});
+          broadcastRealtimeEvent('LISTING_UPDATED', { listing: updatedListing });
+          return updatedListing;
+        }
+        return listing;
+      });
+
+      if (hasChanges) {
+        try {
+          localStorage.setItem('setlla_listings', JSON.stringify(nextListings));
+          localStorage.setItem('deltarent_listings', JSON.stringify(nextListings));
+        } catch (_) {}
+      }
+      return nextListings;
+    });
 
     if (updatedUser.savedListingIds) {
       setSavedPropertyIds(updatedUser.savedListingIds);
@@ -2247,7 +2346,7 @@ export function App() {
 
   // Determine root container layout:
   // Feed view is viewport-locked for continuous momentum feeds (both Rentals and Setlla Jobs) so desktop ad sidebars stay static while feeds scroll
-  const isFeedView = (activeRoom === 'rentals' || activeRoom === 'jobs') && (currentRole === 'tenant' || currentRole === 'seeker') && userView === 'feed';
+  const isFeedView = (activeRoom === 'rentals' || activeRoom === 'jobs') && userView === 'feed';
 
   return (
     <div className={`bg-[#FCF9F5] text-[#000004] flex flex-col font-body selection:bg-[#342A21]/15 selection:text-[#342A21] ${
@@ -2497,7 +2596,7 @@ export function App() {
             />
           </main>
         )
-      ) : (currentRole === 'tenant' || currentRole === 'seeker' || userView === 'feed') && currentRole !== 'agent' ? (
+      ) : (userView === 'feed' || currentRole === 'tenant' || currentRole === 'seeker') ? (
           /* Tenant Snap Feed View */
           <main className="flex-1 w-full h-[calc(100dvh-4rem)] flex flex-col items-center justify-center relative overflow-hidden">
             {/* Snap-Feed Filter Bar with Squared Rounded-Edges Adverts Tray */}

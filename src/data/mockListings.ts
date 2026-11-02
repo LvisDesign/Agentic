@@ -66,8 +66,7 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
       completedInspections: 138,
       responseTime: 'Responds within 10 mins',
       phone: '08034928172',
-      whatsapp: '2348034928172',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
+      whatsapp: '2348034928172'
     },
     inspectionSlots: [
       {
@@ -167,8 +166,7 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
       completedInspections: 95,
       responseTime: 'Responds within 15 mins',
       phone: '08129841029',
-      whatsapp: '2348129841029',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80'
+      whatsapp: '2348129841029'
     },
     inspectionSlots: [
       {
@@ -250,8 +248,7 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
       completedInspections: 210,
       responseTime: 'Responds within 5 mins',
       phone: '09071239845',
-      whatsapp: '2349071239845',
-      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80'
+      whatsapp: '2349071239845'
     },
     inspectionSlots: [
       {
@@ -338,8 +335,7 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
       completedInspections: 62,
       responseTime: 'Responds within 20 mins',
       phone: '08056712390',
-      whatsapp: '2348056712390',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80'
+      whatsapp: '2348056712390'
     },
     inspectionSlots: [
       {
@@ -423,8 +419,7 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
       completedInspections: 138,
       responseTime: 'Responds within 10 mins',
       phone: '08034928172',
-      whatsapp: '2348034928172',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
+      whatsapp: '2348034928172'
     },
     inspectionSlots: [
       {
@@ -501,8 +496,7 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
       completedInspections: 138,
       responseTime: 'Responds within 10 mins',
       phone: '08034928172',
-      whatsapp: '2348034928172',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
+      whatsapp: '2348034928172'
     },
     inspectionSlots: [
       {
@@ -579,8 +573,7 @@ export const INITIAL_LISTINGS: PropertyListing[] = [
       completedInspections: 138,
       responseTime: 'Responds within 10 mins',
       phone: '08034928172',
-      whatsapp: '2348034928172',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'
+      whatsapp: '2348034928172'
     },
     inspectionSlots: [
       {

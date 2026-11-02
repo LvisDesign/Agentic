@@ -48,6 +48,25 @@ export function normalizeEmail(email?: string): string {
   return email.trim().toLowerCase();
 }
 
+/**
+ * Checks if a given avatar or media URL is a known stock demo or placeholder image.
+ */
+export function isDemoAvatarUrl(url?: string): boolean {
+  if (!url) return false;
+  return (
+    url.includes('images.unsplash.com') ||
+    url.includes('unsplash.com') ||
+    url.includes('asaba_gra_exterior.jpg') ||
+    url.includes('photo-1534528741775') ||
+    url.includes('photo-1507003211169') ||
+    url.includes('photo-1573496359142') ||
+    url.includes('photo-1472099645785') ||
+    url.includes('/images/properties/') ||
+    url.includes('/images/agents/') ||
+    url.includes('placeholder')
+  );
+}
+
 const DELETED_USERS_STORAGE_KEY = 'setlla_deleted_user_ids';
 const LEGACY_DELETED_USERS_STORAGE_KEY = 'deltarent_deleted_user_ids';
 const DELETED_PHONES_STORAGE_KEY = 'setlla_deleted_user_phones';

@@ -17,6 +17,7 @@ import { CustomConfirmModal } from './UI/CustomConfirmModal';
 import { getActiveAdvertiser } from '../services/advertiserAuthService';
 import { getSavedApplications } from '../services/jobService';
 import { isElvisSuperAdmin } from '../services/adminAuthService';
+import { isDemoAvatarUrl } from '../utils/userRegistry';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -304,7 +305,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label={isSuperAdmin ? 'Admin Profile' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
               title={isSuperAdmin ? 'Admin Profile' : (currentUser.isAgent || currentRole === 'agent') ? 'Agent Portal' : 'Profile'}
             >
-                {currentUser.avatarUrl ? (
+                {currentUser.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl) ? (
                   <img
                     src={currentUser.avatarUrl}
                     alt={currentUser.fullName}

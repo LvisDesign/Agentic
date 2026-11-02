@@ -39,6 +39,7 @@ import { CustomDropdown } from '../UI/CustomDropdown';
 import { ModalPortal } from '../UI/ModalPortal';
 import { isLocalUrl } from '../../utils/environment';
 import { isSuperAdminAuthenticated, isElvisSuperAdmin } from '../../services/adminAuthService';
+import { isDemoAvatarUrl } from '../../utils/userRegistry';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -318,7 +319,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   className="relative w-14 h-14 rounded-2xl overflow-hidden bg-[#342A21] text-white font-bold text-lg flex items-center justify-center shadow-xs cursor-pointer group-hover:ring-2 group-hover:ring-[#000004] transition-all"
                   title="Click to upload profile photo"
                 >
-                  {currentUser.avatarUrl ? (
+                  {currentUser.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl) ? (
                     <img
                       src={currentUser.avatarUrl}
                       alt={currentUser.fullName}
@@ -367,9 +368,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     className="text-[10px] font-bold text-[#342A21] hover:underline cursor-pointer flex items-center gap-0.5"
                   >
                     <Camera className="w-2.5 h-2.5 text-[#342A21]" />
-                    <span>{currentUser.avatarUrl ? 'Change photo' : 'Upload photo'}</span>
+                    <span>{(currentUser.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl)) ? 'Change photo' : 'Upload photo'}</span>
                   </button>
-                  {currentUser.avatarUrl && (
+                  {currentUser.avatarUrl && !isDemoAvatarUrl(currentUser.avatarUrl) && (
                     <button
                       type="button"
                       onClick={handleRemoveAvatar}
