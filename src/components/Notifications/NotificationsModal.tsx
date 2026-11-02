@@ -55,6 +55,20 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
   const [selectedPassBooking, setSelectedPassBooking] = useState<{ booking: BookingRecord; listing: PropertyListing } | null>(null);
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
   const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
+  const [isAnnouncementDismissed, setIsAnnouncementDismissed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('setlla_freshness_banner_dismissed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleDismissAnnouncement = () => {
+    setIsAnnouncementDismissed(true);
+    try {
+      localStorage.setItem('setlla_freshness_banner_dismissed', 'true');
+    } catch (_) {}
+  };
 
   // Retrieve saved job applications
   const jobApplications = useMemo(() => {
@@ -202,43 +216,53 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
             </div>
           )}
 
-          {/* GENERAL POLICY ANNOUNCEMENT FOR ALL LISTERS & AGENTS */}
-          {isLister && (
+          {/* SIMPLIFIED POLICY ANNOUNCEMENT FOR ALL LISTERS & AGENTS (NO BLINKING) */}
+          {isLister && !isAnnouncementDismissed && (
             <aside 
               aria-label="Setlla Freshness Policy"
-              className="p-4 rounded-2xl bg-gradient-to-br from-[#342A21] to-[#201914] text-white shadow-md border border-amber-500/30 space-y-2 animate-fade-in"
+              className="p-3.5 sm:p-4 rounded-2xl bg-[#FCF9F5] border border-[#342A21]/15 text-[#342A21] shadow-2xs relative animate-fade-in"
             >
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping shrink-0" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">
-                  Platform Update: 72-Hour Freshness Guarantee
-                </span>
-              </div>
-              <h4 className="font-display font-bold text-sm text-white">
-                Zero Ghost Listings & Automated 48-Hour Availability Checks
-              </h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                To guarantee 100% active vacancies and maximize tenant trust across Delta State, all properties and jobs now operate on a 72-hour lifecycle:
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
-                <div className="p-2.5 rounded-xl bg-white/10 border border-white/10 space-y-1">
-                  <span className="font-bold text-amber-300 block">1. 48h Check Alert</span>
-                  <span className="text-slate-300 text-[10px] block leading-snug">
-                    Receive a quick prompt to confirm your property is still available with 1 tap.
-                  </span>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#342A21] text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <Clock className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#70798C]">
+                        Platform Update
+                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#342A21]/30" />
+                      <span className="text-[11px] font-bold text-[#342A21]">
+                        72h Freshness Guarantee
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#70798C] leading-snug">
+                      Listings require a 1-tap availability check every 48h to prevent ghost posts. Unconfirmed listings automatically delist after 72h.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-900 border border-amber-500/20 text-[10px] font-bold">
+                        48h Check Alert
+                      </span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-900 border border-rose-500/20 text-[10px] font-bold">
+                        72h Auto-Delist
+                      </span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-900 border border-emerald-500/20 text-[10px] font-bold">
+                        24h Taken Cleanup
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="p-2.5 rounded-xl bg-white/10 border border-white/10 space-y-1">
-                  <span className="font-bold text-rose-300 block">2. 72h Auto-Delist</span>
-                  <span className="text-slate-300 text-[10px] block leading-snug">
-                    Unconfirmed listings are safely hidden from public feeds. Your photos and data are never lost—relist anytime in 1 tap!
-                  </span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/10 border border-white/10 space-y-1">
-                  <span className="font-bold text-emerald-300 block">3. 24h Taken Cleanup</span>
-                  <span className="text-slate-300 text-[10px] block leading-snug">
-                    Listings marked "Rented Out" remain for 24 hours as social proof, then are purged.
-                  </span>
-                </div>
+
+                <button
+                  type="button"
+                  onClick={handleDismissAnnouncement}
+                  className="p-1 rounded-lg text-[#70798C] hover:text-[#000004] hover:bg-black/5 transition-colors shrink-0 cursor-pointer"
+                  title="Dismiss announcement"
+                  aria-label="Dismiss announcement"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </aside>
           )}
@@ -247,7 +271,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           {myActionRequiredListings.length > 0 && (
             <div className="space-y-3 pt-1">
               <div className="flex items-center gap-1.5 px-1">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
                 <span className="text-[11px] font-bold text-[#342A21] uppercase tracking-wider">
                   Action Required: Availability Checks ({myActionRequiredListings.length})
                 </span>

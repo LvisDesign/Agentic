@@ -95,7 +95,7 @@ export function getDeletedAdvertIds(): Set<string> {
         arr.forEach((id) => set.add(id));
       }
     }
-  } catch (e) {}
+  } catch (e) { }
   return set;
 }
 
@@ -114,10 +114,10 @@ export function recordDeletedAdvertId(id: string): void {
             const filtered = parsed.filter((a: any) => a && a.id !== id);
             localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(filtered));
           }
-        } catch (_) {}
+        } catch (_) { }
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 export function unrecordDeletedAdvertId(id: string): void {
@@ -129,7 +129,7 @@ export function unrecordDeletedAdvertId(id: string): void {
         localStorage.setItem(DELETED_ADVERTS_STORAGE_KEY, JSON.stringify(Array.from(set)));
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 /**
@@ -148,7 +148,7 @@ export async function syncDeletedAdvertsFromCloud(): Promise<Set<string>> {
           localStorage.setItem(DELETED_ADVERTS_STORAGE_KEY, JSON.stringify(Array.from(localSet)));
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
   return localSet;
 }
@@ -169,7 +169,7 @@ export async function purgeSystemDemoAdverts(): Promise<void> {
           const clean = parsed.filter((a: any) => a && !SYSTEM_DEMO_ADVERT_IDS.has(a.id));
           localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(clean));
         }
-      } catch (_) {}
+      } catch (_) { }
     }
   }
 
@@ -178,7 +178,7 @@ export async function purgeSystemDemoAdverts(): Promise<void> {
       await supabase.from('adverts').delete().in('id', demoIds);
       const tombstoneRows = demoIds.map((id) => ({ id, deleted_at: new Date().toISOString() }));
       await supabase.from('deleted_adverts').upsert(tombstoneRows);
-    } catch (_) {}
+    } catch (_) { }
   }
 }
 
@@ -355,7 +355,7 @@ export const isCampaignExpired = (ad: AdvertStory): boolean => {
  */
 export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
   // 1. Sync cloud tombstones so this device knows what was deleted
-  await syncDeletedAdvertsFromCloud().catch(() => {});
+  await syncDeletedAdvertsFromCloud().catch(() => { });
   const deletedIds = getDeletedAdvertIds();
 
   let list: AdvertStory[] = [];
@@ -480,7 +480,7 @@ export const removeAdvert = async (id: string): Promise<void> => {
   const raw = typeof window !== 'undefined' ? localStorage.getItem(ADVERTS_STORAGE_KEY) : null;
   let all: AdvertStory[] = [];
   if (raw) {
-    try { all = JSON.parse(raw); } catch {}
+    try { all = JSON.parse(raw); } catch { }
   }
   const filtered = all.filter((item) => item.id !== id);
 
@@ -508,10 +508,10 @@ export const removeAdvert = async (id: string): Promise<void> => {
  * Subscribes to advert changes via Realtime and local events across tabs/devices
  */
 export const subscribeToAdvertChanges = (callback: (adverts: AdvertStory[]) => void): (() => void) => {
-  if (typeof window === 'undefined') return () => {};
+  if (typeof window === 'undefined') return () => { };
 
   const handler = () => {
-    loadAllAdverts().then(callback).catch(() => {});
+    loadAllAdverts().then(callback).catch(() => { });
   };
 
   window.addEventListener('setlla_adverts_updated', handler);
@@ -532,19 +532,19 @@ export const subscribeToAdvertChanges = (callback: (adverts: AdvertStory[]) => v
             'postgres_changes',
             { event: '*', schema: 'public', table: 'adverts' },
             () => {
-              loadAllAdverts().then(callback).catch(() => {});
+              loadAllAdverts().then(callback).catch(() => { });
             }
           )
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'deleted_adverts' },
             () => {
-              loadAllAdverts().then(callback).catch(() => {});
+              loadAllAdverts().then(callback).catch(() => { });
             }
           )
           .subscribe();
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   return () => {
@@ -553,7 +553,7 @@ export const subscribeToAdvertChanges = (callback: (adverts: AdvertStory[]) => v
       try {
         const client = getSupabaseClient();
         client?.removeChannel(channel);
-      } catch (e) {}
+      } catch (e) { }
     }
   };
 };
@@ -932,7 +932,7 @@ export const createPartnerApiKey = (
 ): PartnerApiKey => {
   const randomHex = Array.from({ length: 24 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   const apiKey = `stla_live_${randomHex}`;
-  
+
   const newKey: PartnerApiKey = {
     id: `key-${Date.now()}`,
     companyName,
@@ -1001,5 +1001,5 @@ const incrementApiKeyUsage = (id: string) => {
 
 // Auto-purge any stale system demo adverts on client bootstrap
 if (typeof window !== 'undefined') {
-  purgeSystemDemoAdverts().catch(() => {});
+  purgeSystemDemoAdverts().catch(() => { });
 }

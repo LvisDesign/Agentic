@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  CheckCircle2, 
-  ExternalLink, 
-  Plus, 
-  MapPin, 
-  Phone, 
+import {
+  CheckCircle2,
+  ExternalLink,
+  Plus,
+  MapPin,
+  Phone,
   Share2,
   ChevronLeft,
   ChevronRight,
@@ -77,7 +77,7 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
                   setIsMuted(true);
                   video.play()
                     .then(() => setIsPlaying(true))
-                    .catch(() => {});
+                    .catch(() => { });
                 }
               });
           }
@@ -139,7 +139,7 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
     setHasEnded(false);
     video.play()
       .then(() => setIsPlaying(true))
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleEnded = () => {
@@ -156,7 +156,7 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
       if (hasEnded) handlePlayAgain();
     }}>
       {/* Ambient blurred backdrop so letterboxing (if any) looks seamless */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center filter blur-xl opacity-30 scale-110 pointer-events-none"
         style={{ backgroundImage: `url(${mediaUrl})` }}
       />
@@ -199,7 +199,7 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl })
 
       {/* Replay Overlay when video finishes without scrolling past */}
       {hasEnded ? (
-        <div 
+        <div
           className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] transition-all"
           onClick={handlePlayAgain}
         >
@@ -348,7 +348,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
   if (!adverts || adverts.length === 0) return null;
 
   return (
-    <div 
+    <div
       className="w-full my-4 sm:my-6 rounded-3xl p-3.5 sm:p-5 shadow-2xl border relative overflow-hidden backdrop-blur-2xl transition-all"
       style={{
         background: 'linear-gradient(135deg, rgba(135, 142, 122, 0.70) 0%, rgba(162, 168, 146, 0.60) 38%, rgba(195, 188, 172, 0.65) 72%, rgba(228, 222, 210, 0.80) 100%)',
@@ -357,7 +357,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
       }}
     >
       {/* Specular Ambient Glass Light Sheen (matching sample gradient) */}
-      <div 
+      <div
         className="absolute inset-0 pointer-events-none rounded-3xl"
         style={{
           background: 'radial-gradient(ellipse 75% 55% at 85% 15%, rgba(255, 255, 255, 0.55) 0%, transparent 65%), linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 40%)',
@@ -420,189 +420,189 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
         )}
 
         {/* Carousel Track */}
-        <div 
+        <div
           ref={scrollContainerRef}
           className="flex gap-3 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-1 pt-1 overscroll-x-contain scroll-smooth"
         >
-        {adverts.map((ad) => {
-          const isExpanded = !!expandedAdIds[ad.id];
+          {adverts.map((ad) => {
+            const isExpanded = !!expandedAdIds[ad.id];
 
-          return (
-            <div
-              key={ad.id}
-              className="w-[86%] sm:w-[88%] shrink-0 snap-start rounded-[22px] bg-white/95 hover:bg-white border border-[#E5E7EB] hover:border-[#342A21]/20 p-4 flex flex-col justify-between shadow-card hover:shadow-elevated relative group transition-all duration-200 active:scale-[0.99] backdrop-blur-sm"
-            >
-              {/* Top Row: Author Avatar + Handle + Timestamp + Share */}
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-2.5">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {/* Avatar */}
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-[#F6F3EF] shrink-0 border border-[#E5E7EB]">
-                      <img
-                        src={ad.avatarUrl || ad.thumbnailUrl}
-                        alt={ad.advertiserName}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+            return (
+              <div
+                key={ad.id}
+                className="w-[86%] sm:w-[88%] shrink-0 snap-start rounded-[22px] bg-white/95 hover:bg-white border border-[#E5E7EB] hover:border-[#342A21]/20 p-4 flex flex-col justify-between shadow-card hover:shadow-elevated relative group transition-all duration-200 active:scale-[0.99] backdrop-blur-sm"
+              >
+                {/* Top Row: Author Avatar + Handle + Timestamp + Share */}
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2.5">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {/* Avatar */}
+                      <div className="w-9 h-9 rounded-full overflow-hidden bg-[#F6F3EF] shrink-0 border border-[#E5E7EB]">
+                        <img
+                          src={ad.avatarUrl || ad.thumbnailUrl}
+                          alt={ad.advertiserName}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+
+                      {/* Author Handle & Time */}
+                      <div className="flex items-center gap-1.5 truncate">
+                        <span className="font-bold text-[#000004] text-xs sm:text-sm tracking-tight truncate">
+                          {ad.advertiserHandle || ad.advertiserName.toLowerCase().replace(/\s+/g, '_')}
+                        </span>
+                        <span className="text-[#70798C] text-xs shrink-0">•</span>
+                        <span className="text-[#70798C] text-xs shrink-0">
+                          {ad.timeAgo || '2d'}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Author Handle & Time */}
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="font-bold text-[#000004] text-xs sm:text-sm tracking-tight truncate">
-                        {ad.advertiserHandle || ad.advertiserName.toLowerCase().replace(/\s+/g, '_')}
-                      </span>
-                      <span className="text-[#70798C] text-xs shrink-0">•</span>
-                      <span className="text-[#70798C] text-xs shrink-0">
-                        {ad.timeAgo || '2d'}
-                      </span>
-                    </div>
+                    {/* Direct Share Button */}
+                    <button
+                      onClick={(e) => handleShare(e, ad)}
+                      className="w-7 h-7 rounded-full hover:bg-[#F6F3EF] text-[#70798C] hover:text-[#000004] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                      aria-label="Share advert"
+                      title="Share Advert"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
 
-                  {/* Direct Share Button */}
-                  <button
-                    onClick={(e) => handleShare(e, ad)}
-                    className="w-7 h-7 rounded-full hover:bg-[#F6F3EF] text-[#70798C] hover:text-[#000004] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
-                    aria-label="Share advert"
-                    title="Share Advert"
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Bold Headline */}
-                <h4 
-                  onClick={(e) => handleCTA(e, ad)}
-                  className="font-bold text-[#000004] text-[14px] sm:text-[15px] leading-snug tracking-tight mb-2 hover:text-[#342A21] cursor-pointer transition-colors"
-                >
-                  {ad.headline}
-                </h4>
-
-                {/* Text Body Copy (with ... more toggle) */}
-                <div className="text-[#70798C] text-xs leading-relaxed">
-                  <p className={isExpanded ? 'whitespace-pre-line text-[#342A21]' : 'line-clamp-3'}>
-                    {ad.description}
-                  </p>
-                  
-                  {ad.description.length > 90 && (
-                    <button
-                      onClick={() => setExpandedAdIds((prev) => ({ ...prev, [ad.id]: !isExpanded }))}
-                      className="text-[#342A21] hover:underline font-bold text-xs mt-1 transition-colors cursor-pointer"
-                    >
-                      {isExpanded ? 'less' : '... more'}
-                    </button>
-                  )}
-                </div>
-
-                {/* Media Preview (Walkthrough Video or High-Res Photo) */}
-                {ad.mediaUrl && (
-                  <div 
+                  {/* Bold Headline */}
+                  <h4
                     onClick={(e) => handleCTA(e, ad)}
-                    className="mt-2.5 rounded-xl overflow-hidden aspect-video bg-slate-900 border border-[#E5E7EB] relative group/media cursor-pointer flex items-center justify-center"
+                    className="font-bold text-[#000004] text-[14px] sm:text-[15px] leading-snug tracking-tight mb-2 hover:text-[#342A21] cursor-pointer transition-colors"
                   >
-                    {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
-                      <InFeedSponsoredVideo mediaUrl={ad.mediaUrl} />
-                    ) : (
-                      <img
-                        src={ad.mediaUrl}
-                        alt={ad.headline}
-                        className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
+                    {ad.headline}
+                  </h4>
+
+                  {/* Text Body Copy (with ... more toggle) */}
+                  <div className="text-[#70798C] text-xs leading-relaxed">
+                    <p className={isExpanded ? 'whitespace-pre-line text-[#342A21]' : 'line-clamp-3'}>
+                      {ad.description}
+                    </p>
+
+                    {ad.description.length > 90 && (
+                      <button
+                        onClick={() => setExpandedAdIds((prev) => ({ ...prev, [ad.id]: !isExpanded }))}
+                        className="text-[#342A21] hover:underline font-bold text-xs mt-1 transition-colors cursor-pointer"
+                      >
+                        {isExpanded ? 'less' : '... more'}
+                      </button>
                     )}
                   </div>
-                )}
 
-                {/* Location / Price Tag */}
-                <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                  {ad.price && (
-                    <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                      {ad.price}
-                    </span>
+                  {/* Media Preview (Walkthrough Video or High-Res Photo) */}
+                  {ad.mediaUrl && (
+                    <div
+                      onClick={(e) => handleCTA(e, ad)}
+                      className="mt-2.5 rounded-xl overflow-hidden aspect-video bg-slate-900 border border-[#E5E7EB] relative group/media cursor-pointer flex items-center justify-center"
+                    >
+                      {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
+                        <InFeedSponsoredVideo mediaUrl={ad.mediaUrl} />
+                      ) : (
+                        <img
+                          src={ad.mediaUrl}
+                          alt={ad.headline}
+                          className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      )}
+                    </div>
                   )}
-                  <span className="text-[11px] text-[#70798C] flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-[#70798C] shrink-0" />
-                    <span className="truncate max-w-[140px]">{ad.location}</span>
-                  </span>
+
+                  {/* Location / Price Tag */}
+                  <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                    {ad.price && (
+                      <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                        {ad.price}
+                      </span>
+                    )}
+                    <span className="text-[11px] text-[#70798C] flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-[#70798C] shrink-0" />
+                      <span className="truncate max-w-[140px]">{ad.location}</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bottom Action Area: Best-Practice Destination-Aware CTA */}
+                <div className="mt-3.5 pt-3 border-t border-[#E5E7EB] flex items-center gap-2">
+                  {(() => {
+                    const cta = getAdvertCtaConfig(ad);
+                    return (
+                      <>
+                        <button
+                          onClick={(e) => handleCTA(e, ad)}
+                          className="flex-1 py-2.5 px-3.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold text-xs flex items-center justify-between gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer group/cta"
+                        >
+                          <span className="truncate">{cta.label}</span>
+                          <div className="flex items-center gap-1.5 text-white/70 group-hover/cta:text-white transition-colors shrink-0">
+                            {cta.type === 'website' && (
+                              <>
+                                <span className="text-[10px] font-normal opacity-70 hidden sm:inline truncate max-w-[110px]">
+                                  {cta.destinationHint}
+                                </span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </>
+                            )}
+                            {cta.type === 'contact' && (
+                              <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-400" />
+                            )}
+                            {cta.type === 'property' && (
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            )}
+                          </div>
+                        </button>
+
+                        {/* Secondary Quick Contact for Website/Property ads that also support WhatsApp */}
+                        {cta.type !== 'contact' && ad.whatsappNumber && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const text = encodeURIComponent(
+                                `Hello ${ad.advertiserName}, I saw your sponsored advert "${ad.headline}" on Setlla.`
+                              );
+                              window.open(`https://wa.me/${ad.whatsappNumber}?text=${text}`, '_blank');
+                            }}
+                            className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-colors shrink-0 shadow-2xs active:scale-95 cursor-pointer"
+                            title="Direct WhatsApp Chat"
+                            aria-label="Direct WhatsApp Chat"
+                          >
+                            <WhatsAppIcon className="w-4 h-4" />
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
+            );
+          })}
 
-              {/* Bottom Action Area: Best-Practice Destination-Aware CTA */}
-              <div className="mt-3.5 pt-3 border-t border-[#E5E7EB] flex items-center gap-2">
-                {(() => {
-                  const cta = getAdvertCtaConfig(ad);
-                  return (
-                    <>
-                      <button
-                        onClick={(e) => handleCTA(e, ad)}
-                        className="flex-1 py-2.5 px-3.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold text-xs flex items-center justify-between gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer group/cta"
-                      >
-                        <span className="truncate">{cta.label}</span>
-                        <div className="flex items-center gap-1.5 text-white/70 group-hover/cta:text-white transition-colors shrink-0">
-                          {cta.type === 'website' && (
-                            <>
-                              <span className="text-[10px] font-normal opacity-70 hidden sm:inline truncate max-w-[110px]">
-                                {cta.destinationHint}
-                              </span>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </>
-                          )}
-                          {cta.type === 'contact' && (
-                            <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-400" />
-                          )}
-                          {cta.type === 'property' && (
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          )}
-                        </div>
-                      </button>
-
-                      {/* Secondary Quick Contact for Website/Property ads that also support WhatsApp */}
-                      {cta.type !== 'contact' && ad.whatsappNumber && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const text = encodeURIComponent(
-                              `Hello ${ad.advertiserName}, I saw your sponsored advert "${ad.headline}" on Setlla.`
-                            );
-                            window.open(`https://wa.me/${ad.whatsappNumber}?text=${text}`, '_blank');
-                          }}
-                          className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 flex items-center justify-center transition-colors shrink-0 shadow-2xs active:scale-95 cursor-pointer"
-                          title="Direct WhatsApp Chat"
-                          aria-label="Direct WhatsApp Chat"
-                        >
-                          <WhatsAppIcon className="w-4 h-4" />
-                        </button>
-                      )}
-                    </>
-                  );
-                })()}
+          {/* 3. FINAL END CARD: Post an Ad Invitation */}
+          {onOpenPostAd && (
+            <div
+              onClick={onOpenPostAd}
+              className="w-[75%] sm:w-[65%] shrink-0 snap-start rounded-[22px] bg-white/85 hover:bg-white border-2 border-dashed border-[#342A21]/20 hover:border-[#342A21]/50 p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all active:scale-[0.98] group shadow-card"
+            >
+              <div className="w-12 h-12 rounded-full bg-[#F6F3EF] group-hover:bg-[#342A21] text-[#342A21] group-hover:text-white border border-[#E5E7EB] flex items-center justify-center mb-3 transition-colors shadow-2xs">
+                <Plus className="w-6 h-6" />
               </div>
+
+              <h4 className="font-bold text-[#000004] text-sm mb-1 group-hover:text-[#342A21] transition-colors">
+                Grow Your Business Here
+              </h4>
+              <p className="text-[#70798C] text-xs leading-relaxed mb-4 max-w-[220px]">
+                Reach thousands of verified house-hunters and tenants today.
+              </p>
+
+              <span className="py-2 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold text-xs shadow-xs transition-colors">
+                Post Sponsored Ad
+              </span>
             </div>
-          );
-        })}
-
-        {/* 3. FINAL END CARD: Post an Ad Invitation */}
-        {onOpenPostAd && (
-          <div
-            onClick={onOpenPostAd}
-            className="w-[75%] sm:w-[65%] shrink-0 snap-start rounded-[22px] bg-white/85 hover:bg-white border-2 border-dashed border-[#342A21]/20 hover:border-[#342A21]/50 p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all active:scale-[0.98] group shadow-card"
-          >
-            <div className="w-12 h-12 rounded-full bg-[#F6F3EF] group-hover:bg-[#342A21] text-[#342A21] group-hover:text-white border border-[#E5E7EB] flex items-center justify-center mb-3 transition-colors shadow-2xs">
-              <Plus className="w-6 h-6" />
-            </div>
-
-            <h4 className="font-bold text-[#000004] text-sm mb-1 group-hover:text-[#342A21] transition-colors">
-              Grow Your Business Here
-            </h4>
-            <p className="text-[#70798C] text-xs leading-relaxed mb-4 max-w-[220px]">
-              Reach thousands of verified house-hunters and tenants today.
-            </p>
-
-            <span className="py-2 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold text-xs shadow-xs transition-colors">
-              Post Sponsored Ad
-            </span>
-          </div>
-        )}
+          )}
         </div>
       </div>
     </div>

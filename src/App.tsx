@@ -2296,7 +2296,7 @@ export function App() {
       {/* Platform Emergency Announcement Banner */}
       {currentRole !== 'admin' && userView !== 'partner' && platformSettings.emergencyAnnouncementActive && platformSettings.emergencyAnnouncement && (
         <div className="bg-gradient-to-r from-amber-600 via-amber-700 to-amber-600 text-white px-4 py-2.5 text-xs font-bold text-center shadow-xs flex items-center justify-center gap-2 border-b border-amber-800 z-40">
-          <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping shrink-0" />
+          <span className="w-2 h-2 rounded-full bg-amber-300 shrink-0" />
           <span>{platformSettings.emergencyAnnouncement}</span>
         </div>
       )}
