@@ -2110,9 +2110,13 @@ export function App() {
       if (!email) return;
       const clean = normalizeEmail(email);
 
+      const currentHash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
+      const isAdminRoute = currentHash.includes('admin') || currentRole === 'admin';
+
       // 1. Check if this email matches an active pending signup verification
       const pending = getPendingEmailOTP();
       if (pending && normalizeEmail(pending.email) === clean && pending.pendingUser) {
+        if (isAdminRoute) return;
         console.log('[App] Auto-activating pending user from email link confirmation:', clean);
         const user = pending.pendingUser;
         user.isEmailVerified = true;
@@ -2135,6 +2139,22 @@ export function App() {
       try {
         const existingUser = findUserByCredential(clean) || (await findUserByCredentialAsync(clean));
         if (existingUser) {
+          // If on admin route, do NOT allow a non-admin session to hijack role or redirect to feed!
+          if (isAdminRoute) {
+            if (existingUser.isAdmin || existingUser.isSuperAdmin || isElvisSuperAdmin(existingUser)) {
+              unrecordDeletedUser(existingUser);
+              existingUser.isEmailVerified = true;
+              saveRegisteredUser(existingUser, { allowReRegistration: true });
+              saveRegisteredUserAsync(existingUser, { allowReRegistration: true });
+              setIsAdminAuthenticated(true);
+              setActiveAdminUser(existingUser);
+              setCurrentUser(existingUser);
+              setCurrentRole('admin');
+              updateAdminLastActivity();
+            }
+            return;
+          }
+
           unrecordDeletedUser(existingUser);
           existingUser.isEmailVerified = true;
           saveRegisteredUser(existingUser, { allowReRegistration: true });

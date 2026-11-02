@@ -213,13 +213,13 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     }
     if (e.key === 'Enter') {
       const code = otpDigits.join('');
-      if (code.length >= 6) {
+      if (code.length >= 4) {
         executeVerifyOTP(code);
       }
     }
   };
 
-  // Handle Pasting Full Code (Supports 8 or 6 digits)
+  // Handle Pasting Full Code (Supports 8, 6, or 4 digits)
   const handleDigitPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').replace(/[^0-9a-zA-Z]/g, '').slice(0, 8);
@@ -232,7 +232,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
     setOtpDigits(newDigits);
     setOtpError(null);
 
-    if (pastedData.length >= 6) {
+    if (pastedData.length >= 4) {
       digitInputRefs.current[Math.min(pastedData.length - 1, 7)]?.focus();
       executeVerifyOTP(pastedData);
     } else {
@@ -266,8 +266,8 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
   // Execute OTP Verification
   const executeVerifyOTP = async (codeToVerify?: string) => {
     const code = (codeToVerify || otpDigits.join('')).trim();
-    if (code.length < 6) {
-      setOtpError('Please enter the authorization code received in your email.');
+    if (code.length < 4) {
+      setOtpError('Please enter the authorization code or PIN.');
       return;
     }
 
