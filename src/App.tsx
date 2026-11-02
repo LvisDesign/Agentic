@@ -827,14 +827,23 @@ export function App() {
         setBookings((prev) => [event.booking!, ...prev.filter((b) => b.id !== event.booking!.id)]);
 
         const targetListing = event.listing || listings.find((p) => p.id === event.booking!.propertyId);
-        const isMyListing = !targetListing || targetListing.agent.id === currentUser.id || targetListing.agent.phone === currentUser.phone || currentUser.isAdmin;
+        // Strict ownership check: Must have valid targetListing AND must be this agent's listing
+        if (!targetListing || !currentUser.isAgent) return;
 
-        if (currentUser.isAgent && currentUser.phone !== event.booking.applicantPhone && isMyListing) {
+        const isMyListing = (
+          (targetListing.agent?.id && currentUser.id && targetListing.agent.id === currentUser.id) ||
+          (currentUser.phone && targetListing.agent?.phone && normalizePhoneNumber(targetListing.agent.phone) === normalizePhoneNumber(currentUser.phone))
+        );
+        const isMe = currentUser.phone && event.booking.applicantPhone &&
+          normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(event.booking.applicantPhone);
+
+        if (isMyListing && !isMe) {
           recordNotifiedAgentBookingId(event.booking.id);
-          const title = targetListing ? targetListing.title : 'your listing';
+          const title = targetListing.title;
+          const timeSnippet = event.booking.slotTimeWindow ? ` (${event.booking.slotTimeWindow})` : '';
           setPushNotification({
             title: '🔔 New Inspection Request!',
-            body: `${event.booking.applicantName} requested inspection for "${title}" (${event.booking.slotTimeWindow}).`,
+            body: `${event.booking.applicantName || 'An applicant'} requested inspection for "${title}"${timeSnippet}.`,
             type: 'inspection_request',
             listing: targetListing,
             booking: event.booking,
@@ -844,7 +853,7 @@ export function App() {
             },
           });
           showDeviceNotification('🔔 New Inspection Request!', {
-            body: `${event.booking.applicantName} requested inspection for "${title}" (${event.booking.slotTimeWindow}).`,
+            body: `${event.booking.applicantName || 'An applicant'} requested inspection for "${title}"${timeSnippet}.`,
           });
           playNotificationSound('alert');
         }
@@ -1036,35 +1045,47 @@ export function App() {
               if (payload.eventType === 'INSERT' && payload.new) {
                 const newBookingRow = payload.new as any;
                 const bookingId = newBookingRow.id;
-                const applicantName = newBookingRow.applicant_name || newBookingRow.applicantName || 'Applicant';
-                const applicantPhone = newBookingRow.applicant_phone || newBookingRow.applicantPhone;
+                const status = newBookingRow.status || 'REQUEST_SUBMITTED';
+                if (status !== 'REQUEST_SUBMITTED' && status !== 'QUEUED') return;
+
                 const propId = newBookingRow.property_id || newBookingRow.propertyId;
-                const slotTime = newBookingRow.slot_time_window || newBookingRow.slotTimeWindow || '';
+                if (!propId) return;
+
                 const targetListing = listings.find((p) => p.id === propId);
+                // Strict check: DO NOT notify if targetListing does not exist or user is not agent
+                if (!targetListing || !currentUser.isAgent) return;
 
+                const isMyListing = (
+                  (targetListing.agent?.id && currentUser.id && targetListing.agent.id === currentUser.id) ||
+                  (currentUser.phone && targetListing.agent?.phone && normalizePhoneNumber(targetListing.agent.phone) === normalizePhoneNumber(currentUser.phone))
+                );
+                if (!isMyListing) return;
+
+                const applicantPhone = newBookingRow.applicant_phone || newBookingRow.applicantPhone;
                 const isMe = currentUser.phone && applicantPhone &&
-                  currentUser.phone.replace(/[^0-9]/g, '').slice(-10) === applicantPhone.replace(/[^0-9]/g, '').slice(-10);
+                  normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(applicantPhone);
+                if (isMe) return;
 
-                const isMyListing = !targetListing || targetListing.agent.id === currentUser.id || targetListing.agent.phone === currentUser.phone || currentUser.isAdmin;
+                if (bookingId && !getNotifiedAgentBookingIds().has(bookingId)) {
+                  recordNotifiedAgentBookingId(bookingId);
+                  const applicantName = newBookingRow.applicant_name || newBookingRow.applicantName || 'An applicant';
+                  const slotTime = newBookingRow.slot_time_window || newBookingRow.slotTimeWindow;
+                  const timeSnippet = slotTime ? ` (${slotTime})` : '';
+                  const propTitle = targetListing.title;
 
-                if (currentUser.isAgent && !isMe && isMyListing && bookingId) {
-                  if (!getNotifiedAgentBookingIds().has(bookingId)) {
-                    recordNotifiedAgentBookingId(bookingId);
-                    const propTitle = targetListing?.title || 'your listed property';
-                    setPushNotification({
-                      title: '🔔 New Inspection Request!',
-                      body: `${applicantName} booked an inspection for "${propTitle}" (${slotTime}).`,
-                      type: 'inspection_request',
-                      actionText: 'Tap to review in Agent Portal',
-                      onAction: () => {
-                        setCurrentRole('agent');
-                      },
-                    });
-                    showDeviceNotification('🔔 New Inspection Request!', {
-                      body: `${applicantName} booked "${propTitle}" (${slotTime}).`,
-                    });
-                    playNotificationSound('alert');
-                  }
+                  setPushNotification({
+                    title: '🔔 New Inspection Request!',
+                    body: `${applicantName} booked an inspection for "${propTitle}"${timeSnippet}.`,
+                    type: 'inspection_request',
+                    actionText: 'Tap to review in Agent Portal',
+                    onAction: () => {
+                      setCurrentRole('agent');
+                    },
+                  });
+                  showDeviceNotification('🔔 New Inspection Request!', {
+                    body: `${applicantName} booked "${propTitle}"${timeSnippet}.`,
+                  });
+                  playNotificationSound('alert');
                 }
               } else if (payload.eventType === 'UPDATE' && payload.new) {
                 const updatedRow = payload.new as any;
@@ -1289,29 +1310,53 @@ export function App() {
     if (!currentUser || !currentUser.isAgent) return;
 
     const notifiedAgentRequests = getNotifiedAgentBookingIds();
+    // Strictly agent's own listings (never all listings just because admin)
     const agentListingIds = new Set(
       listings
-        .filter((l) => l.agent.id === currentUser.id || l.agent.phone === currentUser.phone || currentUser.isAdmin)
+        .filter((l) => (
+          (l.agent?.id && currentUser.id && l.agent.id === currentUser.id) ||
+          (currentUser.phone && l.agent?.phone && normalizePhoneNumber(l.agent.phone) === normalizePhoneNumber(currentUser.phone))
+        ))
         .map((l) => l.id)
     );
 
-    const unnotifiedBooking = bookings.find(
-      (b) =>
-        (b.status === 'REQUEST_SUBMITTED' || b.status === 'QUEUED') &&
-        agentListingIds.has(b.propertyId) &&
-        !notifiedAgentRequests.has(b.id) &&
-        b.applicantPhone !== currentUser.phone
-    );
+    if (agentListingIds.size === 0) return;
+
+    // Only notify for fresh, pending bookings that belong strictly to this agent's listing
+    const unnotifiedBooking = bookings.find((b) => {
+      if (!b || !b.id || notifiedAgentRequests.has(b.id)) return false;
+      if (b.status !== 'REQUEST_SUBMITTED' && b.status !== 'QUEUED') return false;
+      if (!agentListingIds.has(b.propertyId)) return false;
+      if (currentUser.phone && b.applicantPhone && normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(b.applicantPhone)) return false;
+
+      // Must belong to an actual known listing
+      const listing = listings.find((p) => p.id === b.propertyId);
+      if (!listing) return false;
+
+      // Don't fire historic notifications older than 2 hours as a fresh popup
+      if (b.createdAt) {
+        const ageHours = (Date.now() - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
+        if (ageHours > 2) {
+          recordNotifiedAgentBookingId(b.id);
+          return false;
+        }
+      }
+
+      return true;
+    });
 
     if (unnotifiedBooking) {
       recordNotifiedAgentBookingId(unnotifiedBooking.id);
 
       const targetListing = listings.find((p) => p.id === unnotifiedBooking.propertyId);
-      const propTitle = targetListing?.title || 'your listing';
+      if (!targetListing) return;
+
+      const propTitle = targetListing.title;
+      const slotTimeSnippet = unnotifiedBooking.slotTimeWindow ? ` (${unnotifiedBooking.slotTimeWindow})` : '';
 
       setPushNotification({
         title: '🔔 New Inspection Request!',
-        body: `${unnotifiedBooking.applicantName} requested inspection for "${propTitle}" (${unnotifiedBooking.slotTimeWindow}).`,
+        body: `${unnotifiedBooking.applicantName || 'An applicant'} requested inspection for "${propTitle}"${slotTimeSnippet}.`,
         type: 'inspection_request',
         listing: targetListing,
         booking: unnotifiedBooking,
@@ -1323,7 +1368,7 @@ export function App() {
 
       playNotificationSound('alert');
       showDeviceNotification('🔔 New Inspection Request!', {
-        body: `${unnotifiedBooking.applicantName} requested inspection for "${propTitle}".`,
+        body: `${unnotifiedBooking.applicantName || 'An applicant'} requested inspection for "${propTitle}".`,
       });
     }
   }, [bookings, listings, currentUser]);
@@ -1733,6 +1778,13 @@ export function App() {
 
   // Handler: Create listing from agent onboarding form
   const handleListingCreated = (newListing: PropertyListing) => {
+    // Pre-record all existing bookings so no historic or unrelated requests trigger false inspection notifications upon upload
+    bookings.forEach((b) => {
+      if (b && b.id) {
+        recordNotifiedAgentBookingId(b.id);
+      }
+    });
+
     setListings((prev) => [newListing, ...prev]);
     saveNewListing(newListing);
 
