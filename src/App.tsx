@@ -130,7 +130,7 @@ interface InitialNavState {
  */
 function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = false): InitialNavState {
   if (typeof window === 'undefined') {
-    return { role: isUserAdmin ? 'admin' : isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
   }
 
   const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
@@ -139,7 +139,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   const savedRole = (localStorage.getItem('setlla_active_role') || localStorage.getItem('deltarent_active_role')) as UserRole | null;
   const savedView = (localStorage.getItem('setlla_active_view') || localStorage.getItem('deltarent_active_view')) as ('dashboard' | 'feed' | 'partner') | null;
 
-  // 1. Direct route deep-links (partner / admin)
+  // 1. Direct route deep-links: Partner Portal
   if (
     hash.includes('partner') || 
     hash.includes('advertise') || 
@@ -152,55 +152,63 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   ) {
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
-  if (hash.includes('admin')) {
+
+  // 2. Direct route deep-links: Admin Portal (Strictly when URL explicitly targets admin)
+  if (hash.includes('admin') || pathname.includes('/admin')) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
 
-  // 2. Explicit Dashboard URL Deep Links (e.g. #/agent, #/jobs/agent, #/dashboard, #/jobs/dashboard)
+  // 3. Explicit Explore / Feed URL (STRICT: Refreshing on Explore MUST stay on Explore feed, NEVER admin or dashboard)
+  if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals') || hash === '#/jobs' || hash === '#jobs') {
+    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
+  }
+
+  // 4. Explicit Agent Portal URL
   if (hash.includes('agent') || hash.includes('employer')) {
     if (isUserAgent) {
       return { role: 'agent', view: 'dashboard', openPasses: false };
     }
   }
+
+  // 5. Explicit Dashboard URL
   if (hash.includes('dashboard')) {
     if (isUserAgent && !hash.includes('jobs')) {
       return { role: 'agent', view: 'dashboard', openPasses: false };
     }
     return { role: 'tenant', view: 'dashboard', openPasses: false };
   }
+
+  // 6. Inspection passes
   if (hash.includes('inspections') || hash.includes('passes')) {
     return { role: isUserAgent ? 'agent' : 'tenant', view: savedView === 'dashboard' ? 'dashboard' : 'feed', openPasses: true };
   }
 
-  // 3. Explicit Explore / Feed URL Deep Links (STRICT: Refreshing on Explore must NEVER redirect to dashboard)
-  if (hash.includes('explore') || hash.includes('feed') || hash.includes('rentals') || hash === '#/jobs' || hash === '#jobs') {
-    return { role: isUserAgent ? 'agent' : (savedRole || 'tenant'), view: 'feed', openPasses: false };
+  // 7. Session Persistence across page reloads:
+  // If user was on Partner:
+  if (savedView === 'partner') {
+    return { role: 'tenant', view: 'partner', openPasses: false };
   }
 
-  // 4. Session Persistence across page reloads
+  // If user was on Admin Portal:
   if (savedRole === 'admin') {
-    if (isSuperAdminAuthenticated() && (hash.includes('admin') || pathname.includes('/admin'))) {
-      return { role: 'admin', view: 'feed', openPasses: false };
-    }
-    return { role: 'tenant', view: 'feed', openPasses: false };
+    return { role: 'admin', view: 'feed', openPasses: false };
   }
 
-  // If user was explicitly on feed before reload, guarantee they stay on feed!
+  // If user was on Feed/Explore:
   if (savedView === 'feed') {
-    return { role: isUserAgent ? 'agent' : (savedRole || 'tenant'), view: 'feed', openPasses: false };
+    return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
   }
 
-  // If user was on dashboard and hash didn't reset to explore/root, preserve dashboard
-  if (savedView === 'dashboard' && (hash.includes('agent') || hash.includes('dashboard'))) {
+  // If user was on Dashboard:
+  if (savedView === 'dashboard') {
     if (savedRole === 'agent' && isUserAgent) {
       return { role: 'agent', view: 'dashboard', openPasses: false };
     }
     return { role: 'tenant', view: 'dashboard', openPasses: false };
   }
 
-  // 5. Default Fallback for all normal visits, root '/', empty hash, '#', etc.:
-  // The default landing page of Setlla is ALWAYS the continuous Explore Feed!
-  return { role: isUserAgent ? 'agent' : (savedRole || 'tenant'), view: 'feed', openPasses: false };
+  // 8. Default landing page: Continuous Explore Feed
+  return { role: isUserAgent ? 'agent' : 'tenant', view: 'feed', openPasses: false };
 }
 
 export function App() {
