@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 import { isVideoMediaUrl } from '../../services/adService';
+import { AdvertVideoPlayer } from './AdvertVideoPlayer';
 
 interface AdvertStoriesTrayProps {
   adverts: AdvertStory[];
@@ -70,10 +71,13 @@ export const AdvertStoriesTray: React.FC<AdvertStoriesTrayProps> = ({
               {/* Right Side: Product / Property Visual with "Ad" Pill Badge */}
               <div className="w-[100px] sm:w-[108px] h-full shrink-0 relative rounded-xl overflow-hidden bg-black/5 flex items-center justify-center">
                 {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
-                  <video
+                  <AdvertVideoPlayer
                     src={ad.mediaUrl}
                     poster={ad.thumbnailUrl && ad.thumbnailUrl !== ad.mediaUrl ? ad.thumbnailUrl : undefined}
+                    advertId={ad.id}
                     className="w-full h-full object-cover rounded-xl group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                    autoPlay
+                    loop
                     muted
                     playsInline
                   />

@@ -17,6 +17,7 @@ import {
 import { JobListing } from '../../types/jobs';
 import { AdvertStory } from '../../data/mockAdverts';
 import { isVideoMediaUrl } from '../../services/adService';
+import { AdvertVideoPlayer } from '../Feed/AdvertVideoPlayer';
 import { UserProfile } from '../../types/marketplace';
 import { JobListingCard } from './JobListingCard';
 import { JobDetailsSheet } from './JobDetailsSheet';
@@ -457,10 +458,13 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
               >
                 <div className="w-full h-[140px] rounded-2xl overflow-hidden relative bg-black/10 flex items-center justify-center">
                   {adverts[0].mediaType === 'video' || isVideoMediaUrl(adverts[0].mediaUrl) ? (
-                    <video
+                    <AdvertVideoPlayer
                       src={adverts[0].mediaUrl}
                       poster={adverts[0].thumbnailUrl && adverts[0].thumbnailUrl !== adverts[0].mediaUrl ? adverts[0].thumbnailUrl : undefined}
+                      advertId={adverts[0].id}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                      autoPlay
+                      loop
                       muted
                       playsInline
                     />

@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, ChevronRight, Play, Megaphone } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 import { isVideoMediaUrl } from '../../services/adService';
+import { AdvertVideoPlayer } from './AdvertVideoPlayer';
 
 interface DesktopAdvertSidebarProps {
   adverts: AdvertStory[];
@@ -81,9 +82,10 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
             >
               {/* Full-bleed background media: Exact video or image uploaded by lister/partner */}
               {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
-                <video
+                <AdvertVideoPlayer
                   src={ad.mediaUrl}
                   poster={ad.thumbnailUrl && ad.thumbnailUrl !== ad.mediaUrl ? ad.thumbnailUrl : undefined}
+                  advertId={ad.id}
                   autoPlay
                   loop
                   muted

@@ -23,7 +23,7 @@ import { CustomDropdown } from '../UI/CustomDropdown';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { ModalPortal } from '../UI/ModalPortal';
 import { getAdPricing } from '../../services/adminService';
-import { processUploadedFile } from '../../utils/mediaStorage';
+import { processUploadedFile, storeBlobInIDB } from '../../utils/mediaStorage';
 import { isVideoMediaUrl } from '../../services/adService';
 
 interface PostAdModalProps {
@@ -53,6 +53,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     type: 'image' | 'video';
     name: string;
     poster?: string;
+    file?: File;
   } | null>(null);
   const [isProcessingMedia, setIsProcessingMedia] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
@@ -78,6 +79,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
         type: processed.type,
         name: file.name,
         poster: processed.poster,
+        file,
       });
     } catch (err) {
       console.warn('Failed processing media via CDN, falling back to local stream', err);
@@ -86,6 +88,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
         url,
         type: isVideo ? 'video' : 'image',
         name: file.name,
+        file,
       });
     } finally {
       setIsProcessingMedia(false);
@@ -109,9 +112,14 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
     const mediaType = uploadedMedia?.type || 'image';
     const mediaUrl = uploadedMedia?.url || '';
     const thumbnailUrl = uploadedMedia?.poster || mediaUrl;
+    const newAdId = `ad-user-${Date.now()}`;
+
+    if (uploadedMedia?.file) {
+      storeBlobInIDB(newAdId, uploadedMedia.file, { type: mediaType, name: uploadedMedia.file.name }).catch(() => {});
+    }
 
     const newAd: AdvertStory = {
-      id: `ad-user-${Date.now()}`,
+      id: newAdId,
       title: headline.slice(0, 14) || `${city} Rental`,
       advertiserName: advertiserName || 'Partner',
       category: 'Property',

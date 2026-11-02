@@ -55,6 +55,7 @@ import {
   Briefcase
 } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
+import { AdvertVideoPlayer } from '../Feed/AdvertVideoPlayer';
 import { ApiWebhookModal } from './ApiWebhookModal';
 import { PartnerAdSubmissionModal } from '../Adverts/PartnerAdSubmissionModal';
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
@@ -2483,9 +2484,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                       {/* Media Preview Thumbnail: Exact video or image uploaded by lister/partner */}
                       <div className="relative h-44 w-full bg-slate-900 overflow-hidden flex items-center justify-center">
                         {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
-                          <video
+                          <AdvertVideoPlayer
                             src={ad.mediaUrl}
                             poster={ad.thumbnailUrl && ad.thumbnailUrl !== ad.mediaUrl ? ad.thumbnailUrl : undefined}
+                            advertId={ad.id}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
                             muted
                             playsInline
@@ -3894,7 +3896,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shrink-0 flex items-center justify-center">
                 {decliningAd.mediaType === 'video' || isVideoMediaUrl(decliningAd.mediaUrl) ? (
-                  <video src={decliningAd.mediaUrl} className="w-full h-full object-cover" muted playsInline />
+                  <AdvertVideoPlayer src={decliningAd.mediaUrl} advertId={decliningAd.id} className="w-full h-full object-cover" muted playsInline />
                 ) : (
                   <img
                     src={decliningAd.thumbnailUrl || decliningAd.mediaUrl}

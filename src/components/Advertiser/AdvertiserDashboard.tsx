@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { ModalPortal } from '../UI/ModalPortal';
+import { AdvertVideoPlayer } from '../Feed/AdvertVideoPlayer';
 import { 
   AdvertiserUser, 
   logoutAdvertiser, 
@@ -883,9 +884,10 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                       <div className="flex items-start gap-3 sm:gap-4">
                         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-slate-900 border border-[#E5E7EB] shrink-0 flex items-center justify-center">
                           {ad.mediaType === 'video' || (ad.mediaUrl && /\.(mp4|webm|mov|ogg|m4v)(\?.*)?$/i.test(ad.mediaUrl)) ? (
-                            <video
+                            <AdvertVideoPlayer
                               src={ad.mediaUrl}
                               poster={ad.thumbnailUrl && ad.thumbnailUrl !== ad.mediaUrl ? ad.thumbnailUrl : undefined}
+                              advertId={ad.id}
                               className="w-full h-full object-cover"
                               muted
                               playsInline
