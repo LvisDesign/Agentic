@@ -3,6 +3,7 @@ import { UserProfile } from '../types/marketplace';
 import {
   findUserByCredential,
   findUserByCredentialAsync,
+  saveRegisteredUser,
   saveRegisteredUserAsync,
   normalizeEmail,
 } from '../utils/userRegistry';
@@ -63,13 +64,14 @@ export async function sendEmailOTP(
     throw new Error('Please enter a valid email address.');
   }
 
-  // If forgot password, ensure an account exists with this email
+  // If forgot password, check if account exists (or allow if Supabase configured)
   if (purpose === 'forgot_password') {
     let existingUser = findUserByCredential(cleanEmail);
     if (!existingUser) {
       existingUser = await findUserByCredentialAsync(cleanEmail);
     }
-    if (!existingUser) {
+    // If not found in local/cache and Supabase is not configured, abort
+    if (!existingUser && !isSupabaseConfigured()) {
       throw new Error(`No account registered with ${cleanEmail}. Please check your email or create an account.`);
     }
   }
@@ -97,31 +99,46 @@ export async function sendEmailOTP(
     localStorage.setItem(PENDING_EMAIL_OTP_KEY, JSON.stringify(record));
   }
 
-  // Best-effort Supabase Auth OTP delivery via Hostinger custom SMTP (Non-blocking background dispatch)
+  // Supabase Auth Email Delivery via Hostinger custom SMTP
   if (isSupabaseConfigured()) {
     const redirectUrl = typeof window !== 'undefined' && window.location?.origin
       ? `${window.location.origin}${window.location.pathname}`
       : 'https://setlla.com';
 
-    // Fire-and-forget in background so user UI transitions to OTP input immediately with 0 delay!
-    supabase.auth
-      .signInWithOtp({
-        email: cleanEmail,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: redirectUrl,
-        },
-      })
-      .then((res) => {
-        if (res.error) {
-          console.warn('[Setlla Email Service] Background Supabase OTP notice:', res.error.message || res.error);
-        } else {
-          console.log('[Setlla Email Service] Background Supabase OTP dispatched successfully to', cleanEmail);
-        }
-      })
-      .catch((err) => {
-        console.warn('[Setlla Email Service] Background Supabase OTP exception:', err);
+    if (purpose === 'forgot_password') {
+      // Use Supabase's dedicated resetPasswordForEmail which dispatches the recovery email via Hostinger SMTP
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo: redirectUrl,
       });
+
+      if (error) {
+        console.error('[Setlla Email Service] Supabase resetPasswordForEmail error:', error);
+        throw new Error(error.message || 'Failed to dispatch password recovery email.');
+      }
+      console.log('[Setlla Email Service] Password reset email dispatched via Hostinger SMTP to:', cleanEmail);
+    } else {
+      // Non-blocking signup email delivery
+      try {
+        const { error: resendError } = await supabase.auth.resend({
+          type: 'signup',
+          email: cleanEmail,
+          options: {
+            emailRedirectTo: redirectUrl,
+          },
+        });
+        if (resendError) {
+          await supabase.auth.signUp({
+            email: cleanEmail,
+            password: pendingUser?.password || `Setlla_${Math.random().toString(36).substring(2, 10)}!`,
+            options: {
+              emailRedirectTo: redirectUrl,
+            },
+          });
+        }
+      } catch (signupErr) {
+        console.warn('[Setlla Email Service] Supabase signup email dispatch notice:', signupErr);
+      }
+    }
   }
 
   return {
@@ -170,16 +187,45 @@ export async function verifyEmailOTP(
 
   // If local hash doesn't match, verify against Supabase Auth OTP (code sent via Hostinger SMTP)
   if (!matches && isSupabaseConfigured()) {
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: cleanEmail,
-        token: enteredCode.trim(),
-        type: 'email',
-      });
-      if (!error && (data?.session || data?.user)) {
-        matches = true;
-      }
-    } catch (_) {}
+    // If purpose is forgot_password, check recovery token first
+    if (record.purpose === 'forgot_password') {
+      try {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: enteredCode.trim(),
+          type: 'recovery',
+        });
+        if (!error && (data?.session || data?.user)) {
+          matches = true;
+        }
+      } catch (_) {}
+    }
+
+    if (!matches) {
+      try {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: enteredCode.trim(),
+          type: 'recovery',
+        });
+        if (!error && (data?.session || data?.user)) {
+          matches = true;
+        }
+      } catch (_) {}
+    }
+
+    if (!matches) {
+      try {
+        const { data, error } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: enteredCode.trim(),
+          type: 'email',
+        });
+        if (!error && (data?.session || data?.user)) {
+          matches = true;
+        }
+      } catch (_) {}
+    }
 
     if (!matches) {
       try {
@@ -240,7 +286,7 @@ export async function verifyEmailOTP(
 
 /**
  * Resets user account password after OTP verification.
- * Updates local cache and central Supabase platform_users.
+ * Updates local cache and central Supabase platform_users and auth.users.
  */
 export async function resetUserPassword(
   email: string,
@@ -251,19 +297,53 @@ export async function resetUserPassword(
     throw new Error('New password must be at least 6 characters.');
   }
 
+  // 1. Update Supabase Auth user password if session exists
+  if (isSupabaseConfigured()) {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword.trim() });
+      if (error) {
+        console.warn('[Setlla Auth] Supabase updateUser notice:', error.message);
+      } else {
+        console.log('[Setlla Auth] Supabase auth.users password updated successfully.');
+      }
+    } catch (e) {
+      console.warn('[Setlla Auth] Exception updating Supabase auth password:', e);
+    }
+  }
+
+  // 2. Locate profile in local cache or platform_users
   let user = findUserByCredential(cleanEmail);
   if (!user) {
     user = await findUserByCredentialAsync(cleanEmail);
   }
 
   if (!user) {
-    throw new Error(`Account ${cleanEmail} could not be located.`);
+    const authUser = (await supabase.auth.getUser())?.data?.user;
+    user = {
+      id: authUser?.id || `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
+      fullName: authUser?.user_metadata?.full_name || 'Member',
+      phone: authUser?.user_metadata?.phone || '',
+      email: cleanEmail,
+      persona: 'tenant',
+      state: 'Delta State',
+      city: 'Asaba',
+      operatingCity: 'Asaba',
+      isAgent: false,
+      kycStatus: 'verified',
+      isVerifiedTenant: true,
+      savedListingIds: [],
+      createdAt: new Date().toISOString(),
+      isEmailVerified: true,
+      password: newPassword.trim(),
+    };
+  } else {
+    user.password = newPassword.trim();
+    user.isEmailVerified = true;
+    user.lastProfileEditAt = new Date().toISOString();
   }
 
-  user.password = newPassword.trim();
-  user.lastProfileEditAt = new Date().toISOString();
-
-  await saveRegisteredUserAsync(user);
+  saveRegisteredUser(user, { allowReRegistration: true });
+  await saveRegisteredUserAsync(user, { allowReRegistration: true });
 
   return user;
 }

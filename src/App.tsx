@@ -1281,7 +1281,7 @@ export function App() {
   const [pendingBookingListing, setPendingBookingListing] = useState<PropertyListing | null>(null);
   const [signupNotice, setSignupNotice] = useState<{ title: string; message: string } | null>(null);
   const [signupInitialRole, setSignupInitialRole] = useState<'seeker' | 'agent'>('seeker');
-  const [signupInitialMode, setSignupInitialMode] = useState<'signup' | 'login'>(() => {
+  const [signupInitialMode, setSignupInitialMode] = useState<'signup' | 'login' | 'forgot_password' | 'reset_password'>(() => {
     if (typeof window === 'undefined') return 'signup';
     try {
       const isInstalled = isStandalone() || localStorage.getItem('setlla_pwa_installed') === 'true';
@@ -2060,6 +2060,15 @@ export function App() {
 
     // 1. Check existing session on load (handles instant token parse from email link redirect)
     supabase.auth.getSession().then(({ data: { session } }) => {
+      const hash = typeof window !== 'undefined' ? window.location.hash : '';
+      const search = typeof window !== 'undefined' ? window.location.search : '';
+      const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
+      if (isRecovery) {
+        setSignupInitialRole('seeker');
+        setSignupInitialMode('reset_password');
+        setIsSignupOpen(true);
+        return;
+      }
       if (session?.user?.email) {
         handleEmailSession(session.user.email);
       }
@@ -2067,12 +2076,19 @@ export function App() {
 
     // 2. Subscribe to auth state changes (handles magic link click while app is open or loading)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        console.log('[App] Detected PASSWORD_RECOVERY event for:', session?.user?.email);
+        setSignupInitialRole('seeker');
+        setSignupInitialMode('reset_password');
+        setIsSignupOpen(true);
+        return;
+      }
       if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && session?.user?.email) {
         handleEmailSession(session.user.email);
       }
     });
 
-    // 3. Fallback: Parse URL parameters or hash for email confirmation / magic link redirects
+    // 3. Fallback: Parse URL parameters or hash for email confirmation / magic link / recovery redirects
     if (typeof window !== 'undefined') {
       try {
         const searchParams = new URLSearchParams(window.location.search);
@@ -2082,6 +2098,24 @@ export function App() {
         const authType = (searchParams.get('type') || hashParams.get('type') || 'signup') as any;
         const code = searchParams.get('code') || hashParams.get('code');
         const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+
+        if (authType === 'recovery') {
+          if (tokenHash) {
+            supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' }).then(({ data, error }) => {
+              if (!error && (data?.user?.email || data?.session?.user?.email)) {
+                setSignupInitialRole('seeker');
+                setSignupInitialMode('reset_password');
+                setIsSignupOpen(true);
+                window.history.replaceState({}, document.title, window.location.pathname);
+              }
+            }).catch(() => {});
+          } else {
+            setSignupInitialRole('seeker');
+            setSignupInitialMode('reset_password');
+            setIsSignupOpen(true);
+          }
+          return;
+        }
 
         if (tokenHash) {
           supabase.auth.verifyOtp({ token_hash: tokenHash, type: authType }).then(({ data, error }) => {

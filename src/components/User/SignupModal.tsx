@@ -142,7 +142,7 @@ interface SignupModalProps {
   onUpdateUser: (updatedUser: UserProfile, role?: UserRole, targetRoom?: 'rentals' | 'jobs') => void;
   onSkip?: () => void;
   initialRole?: 'seeker' | 'agent';
-  initialMode?: 'signup' | 'login';
+  initialMode?: 'signup' | 'login' | 'forgot_password' | 'reset_password';
   initialPersona?: UserPersona;
   notice?: { title: string; message: string } | null;
   isAuthenticated?: boolean;
@@ -202,6 +202,13 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       if (initialMode) {
         setAuthMode(initialMode);
         setSignupStep(initialMode === 'login' ? 'form' : 'persona');
+        if (initialMode === 'reset_password' && isSupabaseConfigured()) {
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user?.email) {
+              setOtpEmail(session.user.email);
+            }
+          }).catch(() => {});
+        }
       }
       if (initialPersona) {
         setSelectedPersona(initialPersona);
@@ -839,7 +846,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       const sessionEmail = session?.user?.email ? normalizeEmail(session.user.email) : '';
       const targetEmail = normalizeEmail(otpEmail);
 
-      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && sessionEmail && sessionEmail === targetEmail) {
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'PASSWORD_RECOVERY') && sessionEmail && sessionEmail === targetEmail) {
+        if (otpPurpose === 'forgot_password' || event === 'PASSWORD_RECOVERY') {
+          console.log('[SignupModal] Detected instant password reset confirmation for:', sessionEmail);
+          setAuthMode('reset_password');
+          setIsVerifyingOtp(false);
+          return;
+        }
+
         console.log('[SignupModal] Detected instant email confirmation for:', sessionEmail);
         setIsVerifyingOtp(true);
         try {
@@ -1016,7 +1030,20 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     setIsResettingPassword(true);
     setResetPasswordError(null);
     try {
-      const updatedUser = await resetUserPassword(otpEmail, newPassword.trim());
+      let targetEmail = (otpEmail || forgotPasswordEmail).trim();
+      if (!targetEmail && isSupabaseConfigured()) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.email) {
+          targetEmail = session.user.email;
+        }
+      }
+      if (!targetEmail && typeof window !== 'undefined') {
+        targetEmail = (localStorage.getItem('setlla_last_email') || '').trim();
+      }
+      if (!targetEmail) {
+        throw new Error('Email address could not be verified. Please request a new recovery link.');
+      }
+      const updatedUser = await resetUserPassword(targetEmail, newPassword.trim());
       try {
         confetti({
           particleCount: 60,
