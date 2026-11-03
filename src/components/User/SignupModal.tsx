@@ -250,7 +250,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [seekerPhone, setSeekerPhone] = useState('');
   const [seekerEmail, setSeekerEmail] = useState('');
   const [seekerPassword, setSeekerPassword] = useState('');
+  const [seekerConfirmPassword, setSeekerConfirmPassword] = useState('');
   const [showSeekerPassword, setShowSeekerPassword] = useState(false);
+  const [showSeekerConfirmPassword, setShowSeekerConfirmPassword] = useState(false);
   const [seekerState, setSeekerState] = useState('Delta State');
   const [seekerCity, setSeekerCity] = useState<string>('');
 
@@ -263,7 +265,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [sameAsPhone, setSameAsPhone] = useState(true);
   const [agentEmail, setAgentEmail] = useState('');
   const [agentPassword, setAgentPassword] = useState('');
+  const [agentConfirmPassword, setAgentConfirmPassword] = useState('');
   const [showAgentPassword, setShowAgentPassword] = useState(false);
+  const [showAgentConfirmPassword, setShowAgentConfirmPassword] = useState(false);
   const [agentState, setAgentState] = useState('Delta State');
   const [agentCity, setAgentCity] = useState('');
   const [agentCitySelection, setAgentCitySelection] = useState('');
@@ -420,6 +424,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+    if (seekerPassword.trim() !== seekerConfirmPassword.trim()) {
+      setSignupError('Passwords do not match. Please verify your confirm password.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     setIsSubmittingSeeker(true);
 
@@ -550,6 +559,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
     if (!agentPassword.trim() || agentPassword.trim().length < 6) {
       setSignupError('Please create a secure password (minimum 6 characters).');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (agentPassword.trim() !== agentConfirmPassword.trim()) {
+      setSignupError('Passwords do not match. Please verify your confirm password.');
       formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -2201,6 +2215,49 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           </div>
                         </div>
 
+                        {/* Confirm Password - Seeker */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-[#70798C]">
+                              Confirm Password
+                            </label>
+                            {seekerConfirmPassword && seekerPassword !== seekerConfirmPassword && (
+                              <span className="text-[10px] text-[#F0544F] font-semibold">
+                                Passwords do not match
+                              </span>
+                            )}
+                          </div>
+                          <div className="relative">
+                            <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type={showSeekerConfirmPassword ? 'text' : 'password'}
+                              required
+                              minLength={6}
+                              autoComplete="new-password"
+                              placeholder="Re-enter password to confirm"
+                              value={seekerConfirmPassword}
+                              onChange={(e) => {
+                                setSeekerConfirmPassword(e.target.value);
+                                if (signupError) setSignupError(null);
+                              }}
+                              className={`w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 transition-all font-medium ${
+                                seekerConfirmPassword && seekerPassword !== seekerConfirmPassword
+                                  ? 'border-[#F0544F] focus:border-[#F0544F]'
+                                  : 'border-[#E5E7EB] focus:border-[#000004]'
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowSeekerConfirmPassword(!showSeekerConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                              tabIndex={-1}
+                              title={showSeekerConfirmPassword ? "Hide password" : "Show password"}
+                            >
+                              {showSeekerConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+
                         {/* Step 2 Back & Submit Buttons */}
                         <div className="pt-2 flex items-center gap-2">
                           <button
@@ -2549,6 +2606,49 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               title={showAgentPassword ? "Hide password" : "Show password"}
                             >
                               {showAgentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Confirm Password - Agent */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-semibold text-[#70798C]">
+                              Confirm Password
+                            </label>
+                            {agentConfirmPassword && agentPassword !== agentConfirmPassword && (
+                              <span className="text-[10px] text-[#F0544F] font-semibold">
+                                Passwords do not match
+                              </span>
+                            )}
+                          </div>
+                          <div className="relative">
+                            <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type={showAgentConfirmPassword ? 'text' : 'password'}
+                              required
+                              minLength={6}
+                              autoComplete="new-password"
+                              placeholder="Re-enter password to confirm"
+                              value={agentConfirmPassword}
+                              onChange={(e) => {
+                                setAgentConfirmPassword(e.target.value);
+                                if (signupError) setSignupError(null);
+                              }}
+                              className={`w-full pl-9 pr-10 py-2 bg-[#F9FAFB] border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 transition-all font-medium ${
+                                agentConfirmPassword && agentPassword !== agentConfirmPassword
+                                  ? 'border-[#F0544F] focus:border-[#F0544F]'
+                                  : 'border-[#E5E7EB] focus:border-[#000004]'
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowAgentConfirmPassword(!showAgentConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#70798C] hover:text-[#000004] p-1 cursor-pointer transition-colors"
+                              tabIndex={-1}
+                              title={showAgentConfirmPassword ? "Hide password" : "Show password"}
+                            >
+                              {showAgentConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                           </div>
                         </div>

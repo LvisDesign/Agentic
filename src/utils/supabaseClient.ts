@@ -142,3 +142,54 @@ export async function checkSupabaseHealth(): Promise<SupabaseHealth> {
     };
   }
 }
+
+
+/**
+ * In-memory Request Deduplicator & TTL Cache
+ * Prevents multiple components from firing redundant requests for the same query,
+ * shielding the database against flooding and denial of service.
+ */
+const queryCache = new Map<string, { data: any; expiry: number }>();
+const inFlightRequests = new Map<string, Promise<any>>();
+
+export async function fetchWithDeduplication<T>(
+  cacheKey: string,
+  fetchFn: () => Promise<T>,
+  ttlMs: number = 10000 // 10 seconds default TTL
+): Promise<T> {
+  const now = Date.now();
+  const cached = queryCache.get(cacheKey);
+  if (cached && now < cached.expiry) {
+    return cached.data as T;
+  }
+
+  const existingPromise = inFlightRequests.get(cacheKey);
+  if (existingPromise) {
+    return existingPromise as Promise<T>;
+  }
+
+  const promise = (async () => {
+    try {
+      const result = await fetchFn();
+      queryCache.set(cacheKey, { data: result, expiry: Date.now() + ttlMs });
+      return result;
+    } finally {
+      inFlightRequests.delete(cacheKey);
+    }
+  })();
+
+  inFlightRequests.set(cacheKey, promise);
+  return promise;
+}
+
+export function invalidateCache(prefix?: string): void {
+  if (!prefix) {
+    queryCache.clear();
+    return;
+  }
+  for (const key of queryCache.keys()) {
+    if (key.startsWith(prefix)) {
+      queryCache.delete(key);
+    }
+  }
+}

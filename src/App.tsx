@@ -15,7 +15,7 @@ import {
   recordNotifiedDeclinedBookingId, 
   getNotifiedAgentBookingIds, 
   recordNotifiedAgentBookingId,
-  fetchRegisteredUsersFromDb,
+  syncSingleUserProfile,
   mapDbToUserProfile,
   normalizePhoneNumber,
   normalizeEmail,
@@ -464,14 +464,14 @@ export function App() {
     if (typeof window !== 'undefined') {
       const targetHash = userView === 'partner'
         ? '#/partner'
+        : userView === 'dashboard'
+        ? (room === 'jobs' ? '#/jobs/dashboard' : '#/dashboard')
         : currentRole === 'admin'
         ? '#/admin'
         : room === 'jobs'
-        ? (currentRole === 'agent' ? '#/jobs/agent' : userView === 'dashboard' ? '#/jobs/dashboard' : '#/jobs')
+        ? (currentRole === 'agent' ? '#/jobs/agent' : '#/jobs')
         : currentRole === 'agent'
         ? '#/agent'
-        : userView === 'dashboard'
-        ? '#/dashboard'
         : '#/explore';
 
       if (window.location.hash !== targetHash) {
@@ -646,87 +646,58 @@ export function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [currentUser.isAgent]);
 
-  // Background Data Synchronizer without requiring manual page reloads
+  // Data Synchronizer: fetches lightweight active listings & adverts
   const syncLatestData = useCallback(async () => {
     try {
-      const [fetchedListings, fetchedBookings, fetchedUsers, fetchedAdverts] = await Promise.all([
-        fetchAllListings(),
-        fetchAllBookings(),
-        fetchRegisteredUsersFromDb(),
+      const [fetchedListings, fetchedAdverts] = await Promise.all([
+        fetchAllListings({ limit: 24 }),
         loadAllAdverts(),
       ]);
 
       if (fetchedListings && fetchedListings.length > 0) {
         setListings(fetchedListings);
       }
-      if (fetchedBookings) {
-        setBookings(fetchedBookings);
-      }
       if (fetchedAdverts && fetchedAdverts.length > 0) {
         setAdverts(fetchedAdverts);
       }
-      // Keep active session in sync with central platform_users database
-      if (fetchedUsers && currentUser.id && currentUser.id !== 'GUEST_USER' && currentUser.id !== 'DT-USR-GUEST') {
-        const matched = fetchedUsers.find(
-          (u) =>
-            u.id === currentUser.id ||
-            (currentUser.phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(currentUser.phone))
-        );
-        if (matched) {
-          if (matched.isSuspended && !isElvisSuperAdmin(currentUser)) {
+
+      // If user is signed in, sync only their own single profile securely (never downloads all users)
+      if (currentUser.id && currentUser.id !== 'GUEST_USER' && currentUser.id !== 'DT-USR-GUEST') {
+        const profile = await syncSingleUserProfile(currentUser.id);
+        if (profile) {
+          if (profile.isSuspended && !isElvisSuperAdmin(currentUser)) {
             handleSignOut();
             return;
           }
           const isAdmin = Boolean(
-            matched.isAdmin || 
-            matched.isSuperAdmin || 
-            isElvisSuperAdmin(matched) ||
+            profile.isAdmin || 
+            profile.isSuperAdmin || 
+            isElvisSuperAdmin(profile as any) ||
             isElvisSuperAdmin(currentUser)
           );
           setCurrentUser((prev) => ({ 
             ...prev, 
-            ...matched,
+            ...profile,
             ...(isAdmin ? { isAgent: true, kycStatus: 'verified', isVerifiedTenant: false } : {})
           }));
         }
       }
     } catch (err) {
-      console.warn('[Setlla Sync] Real-time background refresh notice:', err);
+      console.warn('[Setlla Sync] Background refresh notice:', err);
     }
-  }, [currentUser.id, currentUser.phone]);
+  }, [currentUser.id]);
 
-  // When user opens the app, unlocks screen, or switches to tab, auto-sync immediately without reload
+  // Sync once on app mount and when network connectivity returns (no continuous loop polling)
   useEffect(() => {
     syncLatestData();
 
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        syncLatestData();
-      }
-    };
-    const handleFocus = () => {
-      syncLatestData();
-    };
     const handleOnline = () => {
       syncLatestData();
     };
 
-    document.addEventListener('visibilitychange', handleVisibility);
-    window.addEventListener('focus', handleFocus);
     window.addEventListener('online', handleOnline);
-
-    // Heartbeat auto-sync every 12 seconds in background
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        syncLatestData();
-      }
-    }, 12000);
-
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('online', handleOnline);
-      clearInterval(interval);
     };
   }, [syncLatestData]);
 
@@ -1141,16 +1112,14 @@ export function App() {
                 }
               }
             }
-            fetchRegisteredUsersFromDb().then(() => {
-              if (payload.new && payload.eventType !== 'DELETE') {
-                const updated = mapDbToUserProfile(payload.new);
-                if (isDeletedUserRecord(updated)) return;
-                if (currentUser.id === updated.id || (currentUser.phone && normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(updated.phone))) {
-                  setCurrentUser(updated);
-                  localStorage.setItem('setlla_user', JSON.stringify(updated));
-                }
+            if (payload.new && payload.eventType !== 'DELETE') {
+              const updated = mapDbToUserProfile(payload.new);
+              if (isDeletedUserRecord(updated)) return;
+              if (currentUser.id === updated.id || (currentUser.phone && normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(updated.phone))) {
+                setCurrentUser(updated);
+                localStorage.setItem('setlla_user', JSON.stringify(updated));
               }
-            });
+            }
           }
         )
         .subscribe();
@@ -2321,7 +2290,7 @@ export function App() {
             onAdSubmitted={handleAddAdvert}
           />
         </main>
-      ) : currentRole === 'admin' ? (
+      ) : (currentRole === 'admin' && userView !== 'dashboard') ? (
         /* Super Admin Control Center or Admin Authentication Portal */
         isAdminAuthenticated ? (
           <main className="flex-1 w-full relative">

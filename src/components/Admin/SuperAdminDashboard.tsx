@@ -703,14 +703,14 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       }
     });
 
-    // 2. Poll Supabase every 12s so new accounts from mobile reflect automatically
+    // 2. Poll Supabase every 60s in background if admin remains active
     const interval = setInterval(() => {
       fetchRegisteredUsersFromDb().then((users) => {
         if (Array.isArray(users)) {
           setRegisteredUsers(users);
         }
       });
-    }, 12000);
+    }, 60000);
 
     // 3. Auto-sync on window focus
     const handleFocus = () => refreshAdminData();

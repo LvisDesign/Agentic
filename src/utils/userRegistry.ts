@@ -523,8 +523,49 @@ export function resolveUserPersona(
 }
 
 /**
+ * Safely synchronizes only the active logged-in user's profile from the cloud.
+ * Never requests other users or passwords, protecting confidential credentials.
+ */
+export async function syncSingleUserProfile(userId: string): Promise<Partial<UserProfile> | null> {
+  const client = getSupabaseClient();
+  if (!isSupabaseConfigured() || !client || !userId || userId === 'GUEST_USER' || userId === 'DT-USR-GUEST') {
+    return null;
+  }
+
+  try {
+    const { data, error } = await client
+      .from('platform_users')
+      .select('id, full_name, email, phone, is_agent, is_admin, is_super_admin, is_suspended, kyc_status, avatar_url, agency_name, company_name, persona, city, state')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!error && data) {
+      return {
+        id: data.id,
+        fullName: data.full_name,
+        email: data.email,
+        phone: data.phone,
+        isAgent: data.is_agent,
+        isAdmin: data.is_admin,
+        isSuperAdmin: data.is_super_admin,
+        isSuspended: data.is_suspended,
+        kycStatus: data.kyc_status,
+        avatarUrl: data.avatar_url,
+        agencyName: data.agency_name,
+        companyName: data.company_name,
+        persona: data.persona,
+        city: data.city,
+        state: data.state,
+      };
+    }
+  } catch (_) {}
+
+  return null;
+}
+
+/**
  * Fetches all registered users from the shared Supabase database.
- * Syncs the local storage cache so that accounts created on mobile or web correlate automatically.
+ * Strictly intended for Super Admin Dashboard use only.
  */
 export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
   const localUsers = getRegisteredUsers();

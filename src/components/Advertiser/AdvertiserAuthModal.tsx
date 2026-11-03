@@ -52,6 +52,7 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
   // Credentials
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   
   // Signup fields (pre-filled with registered user data if available)
   const [companyName, setCompanyName] = useState(initialCompanyName || initialName);
@@ -120,6 +121,10 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
     }
 
     if (mode === 'signup') {
+      if (password.trim() !== confirmPassword.trim()) {
+        setErrorMsg('Passwords do not match. Please verify your confirm password.');
+        return;
+      }
       if (!companyName.trim() || !contactName.trim() || !phone.trim()) {
         setErrorMsg('Please complete company / brand name, contact person, and phone number.');
         return;
@@ -417,6 +422,31 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
                   className="w-full pl-9 pr-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-medium text-[#000004] focus:outline-none focus:border-[#342A21]"
                 />
               </div>
+              {mode === 'signup' && (
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-[#000004]">Confirm Password</label>
+                    {confirmPassword && password !== confirmPassword && (
+                      <span className="text-[10px] text-[#F0544F] font-semibold">Passwords do not match</span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-3 pointer-events-none" />
+                    <input
+                      type="password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Re-enter password to confirm"
+                      className={`w-full pl-9 pr-3.5 py-2.5 bg-[#FCF9F5] border rounded-xl text-xs font-medium text-[#000004] focus:outline-none ${
+                        confirmPassword && password !== confirmPassword
+                          ? 'border-[#F0544F] focus:border-[#F0544F]'
+                          : 'border-[#E5E7EB] focus:border-[#342A21]'
+                      }`}
+                    />
+                  </div>
+                </div>
+              )}
               <p className="text-[10px] text-[#70798C] mt-1">
                 An email verification OTP will be sent to confirm your identity before dashboard access.
               </p>

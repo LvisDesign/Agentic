@@ -403,7 +403,17 @@ export async function sendAdvertiserEmailOTP(
   // Best effort Supabase Auth OTP delivery if configured
   if (isSupabaseConfigured()) {
     try {
-      await supabase.auth.signInWithOtp({ email: cleanEmail });
+      const redirectUrl = typeof window !== 'undefined' && window.location?.origin
+        ? `${window.location.origin}${window.location.pathname}#/partner`
+        : 'https://setlla.com/#/partner';
+
+      await supabase.auth.signInWithOtp({ 
+        email: cleanEmail,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: redirectUrl,
+        }
+      });
     } catch (_) {}
   }
 

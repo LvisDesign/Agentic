@@ -1,5 +1,5 @@
 import { AdvertStory, AdvertPendingChanges } from '../data/mockAdverts';
-import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured, getSupabaseClient, fetchWithDeduplication } from '../utils/supabaseClient';
 import { isSuperAdminAuthenticated } from './adminAuthService';
 
 export interface PartnerApiKey {
@@ -350,37 +350,48 @@ export const isCampaignExpired = (ad: AdvertStory): boolean => {
 };
 
 /**
- * Fetches all adverts with automatic expiration detection.
- * Reads from Supabase if online, seamlessly falls back to localStorage.
- * STRICT RULE: Never resurrects deleted ads or system demo ads.
+ * Public fields strictly required by the frontend UI feed.
+ * Omits internal accounting, review metadata, rejection logs, and private keys.
+ */
+export const PUBLIC_ADVERT_COLUMNS =
+  'id, title, headline, advertiser_name, advertiser_handle, avatar_url, category, badge_text, thumbnail_url, media_url, media_type, description, location, price, cta_text, website_url, action_type, whatsapp_number, phone, is_verified, status, start_date, end_date, impressions_count, clicks_count, created_at';
+
+/**
+ * Fetches active adverts for the frontend UI feed.
+ * Data-minimized: selects ONLY the ~20% of fields needed for rendering.
+ * Strictly filters to active campaigns only (never fetches deleted or internal rows).
  */
 export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
-  // 1. Sync cloud tombstones so this device knows what was deleted
-  await syncDeletedAdvertsFromCloud().catch(() => { });
   const deletedIds = getDeletedAdvertIds();
 
   let list: AdvertStory[] = [];
   let fetchedFromCloud = false;
 
-  // 2. Fetch live adverts from Supabase
+  // 1. Fetch lightweight active adverts from Supabase with request deduplication
   if (isSupabaseConfigured()) {
     try {
-      const { data, error } = await supabase
-        .from('adverts')
-        .select('*')
-        .neq('status', 'deleted')
-        .order('created_at', { ascending: false });
+      const data = await fetchWithDeduplication('public_adverts_feed', async () => {
+        const { data: resData, error: resErr } = await supabase
+          .from('adverts')
+          .select(PUBLIC_ADVERT_COLUMNS)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(24);
 
-      if (!error && Array.isArray(data)) {
+        if (resErr) throw resErr;
+        return resData || [];
+      }, 15000);
+
+      if (Array.isArray(data)) {
         fetchedFromCloud = true;
         list = data
           .map(mapDbToAdvert)
-          .filter((ad) => ad && ad.id && !deletedIds.has(ad.id) && ad.status !== 'deleted');
+          .filter((ad) => ad && ad.id && !deletedIds.has(ad.id) && ad.status === 'active');
 
-        // Immediately update localStorage with the clean cloud list (capped to 30 to protect browser quota)
+        // Immediately update localStorage with the clean cloud list (capped to 24 to protect browser quota)
         if (typeof window !== 'undefined') {
           try {
-            localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list.slice(0, 30)));
+            localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list.slice(0, 24)));
           } catch (_) {}
         }
       }
@@ -389,7 +400,7 @@ export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
     }
   }
 
-  // 3. Fallback to localStorage ONLY if cloud was unreachable/offline
+  // 2. Fallback to localStorage ONLY if cloud was unreachable/offline
   if (!fetchedFromCloud) {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(ADVERTS_STORAGE_KEY) : null;
     if (raw) {
@@ -399,7 +410,7 @@ export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
           list = parsed
             .map(mapDbToAdvert)
             .filter(
-              (ad: AdvertStory) => ad && ad.id && !deletedIds.has(ad.id) && ad.status !== 'deleted'
+              (ad: AdvertStory) => ad && ad.id && !deletedIds.has(ad.id) && ad.status === 'active'
             );
         }
       } catch {
@@ -408,28 +419,14 @@ export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
     }
   }
 
-  // 4. Update localStorage with sanitized list (capped to 30 to prevent QuotaExceeded errors)
+  // 3. Update localStorage with sanitized list (capped to 24 to prevent QuotaExceeded errors)
   if (typeof window !== 'undefined') {
     try {
-      localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list.slice(0, 30)));
+      localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list.slice(0, 24)));
     } catch (_) {}
   }
 
-  // Check and flag expired campaigns
-  let changed = false;
-  const updated = list.map((ad) => {
-    if (ad.status === 'active' && isCampaignExpired(ad)) {
-      changed = true;
-      return { ...ad, status: 'expired' as const };
-    }
-    return ad;
-  });
-
-  if (changed && typeof window !== 'undefined') {
-    localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(updated));
-  }
-
-  return updated;
+  return list;
 };
 
 /**

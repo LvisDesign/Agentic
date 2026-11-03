@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured, getSupabaseClient, fetchWithDeduplication } from '../utils/supabaseClient';
 import { PropertyListing, ListingAvailability } from '../types/marketplace';
 import { INITIAL_LISTINGS } from '../data/mockListings';
 import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO, getBlobFromIDB, uploadMediaToSupabaseStorage } from '../utils/mediaStorage';
@@ -272,41 +272,50 @@ export interface FetchListingOptions {
 
 /**
  * Fetches active property listings from Supabase (or fallback to local storage).
- * Supports cursor pagination (.range) and server-side filters.
+ * Always paginated (default max 24 items per request) to prevent mass data harvesting.
+ * Protected by in-memory request deduplication and caching.
  */
 export async function fetchAllListings(options?: FetchListingOptions): Promise<PropertyListing[]> {
   const client = getSupabaseClient();
   const isNonActive = (st?: string) => 
     !st || st === 'Deleted' || st === 'Archived' || st === 'Inactive' || st === 'Removed';
 
+  // Safe pagination: Default to 24 items, capped at max 50 per request
+  const pageLimit = Math.min(Math.max(1, options?.limit || 24), 50);
+  const pageOffset = Math.max(0, options?.offset || 0);
+
   // If Supabase is configured, load real listings from cloud database
   if (isSupabaseConfigured() && client) {
     try {
-      // Build optimized query with optional server-side filters & range
-      let query = client
-        .from('listings')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const cacheKey = `listings_${options?.city || 'all'}_${options?.propertyType || 'all'}_${pageOffset}_${pageLimit}`;
 
-      if (options?.city && options.city !== 'All Cities' && options.city.trim()) {
-        query = query.ilike('city', `%${options.city.trim()}%`);
-      }
-      if (options?.propertyType && options.propertyType !== 'All Property Types' && options.propertyType.trim()) {
-        query = query.ilike('property_type', `%${options.propertyType.trim()}%`);
-      }
-      if (typeof options?.limit === 'number' && options.limit > 0) {
-        const from = options.offset || 0;
-        const to = from + options.limit - 1;
+      const data = await fetchWithDeduplication(cacheKey, async () => {
+        let query = client
+          .from('listings')
+          .select('*')
+          .neq('availability_status', 'Deleted')
+          .order('created_at', { ascending: false });
+
+        if (options?.city && options.city !== 'All Cities' && options.city.trim()) {
+          query = query.ilike('city', `%${options.city.trim()}%`);
+        }
+        if (options?.propertyType && options.propertyType !== 'All Property Types' && options.propertyType.trim()) {
+          query = query.ilike('property_type', `%${options.propertyType.trim()}%`);
+        }
+
+        const from = pageOffset;
+        const to = from + pageLimit - 1;
         query = query.range(from, to);
-      }
 
-      const { data, error } = await query;
+        const { data: resData, error: resErr } = await query;
+        if (resErr) {
+          console.error('[Setlla Supabase Error] Could not fetch listings:', resErr.message);
+          return [];
+        }
+        return resData || [];
+      }, 10000);
 
-      if (error) {
-        console.error('[Setlla Supabase Error] Could not fetch listings from Supabase:', error.message);
-      }
-
-      if (!error && Array.isArray(data)) {
+      if (Array.isArray(data)) {
         const deletedIds = getDeletedListingIds();
         const cloudListings: PropertyListing[] = data
           .filter((row) => {
