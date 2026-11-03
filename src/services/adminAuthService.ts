@@ -487,6 +487,8 @@ export async function generateAndSendAdminOTP(
           console.warn('[Setlla Admin Auth] resend signup error:', resendError);
           if (otpError.status === 429 || (otpError.message && otpError.message.toLowerCase().includes('rate limit'))) {
             sendError = 'Supabase email delivery rate limit exceeded. Please wait a moment before requesting another email.';
+          } else if (otpError.message && (otpError.message.toLowerCase().includes('otp') || otpError.message.toLowerCase().includes('disabled') || otpError.message.toLowerCase().includes('not allowed'))) {
+            sendError = 'Email OTP sign-in is disabled in your Supabase Auth settings. Please switch to password sign-in (or click Forgot Password).';
           } else {
             sendError = `Email delivery notice: ${otpError.message || resendError.message}`;
           }

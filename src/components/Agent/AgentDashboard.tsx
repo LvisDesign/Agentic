@@ -197,10 +197,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           {onOpenAdsPortal && (
             <button
               onClick={onOpenAdsPortal}
-              className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl border border-neutral-200/90 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
               title="Open Customer Ads Dashboard to promote listings & reach more tenants"
             >
-              <Megaphone className="w-3.5 h-3.5 text-neutral-500" />
+              <Megaphone className="w-3.5 h-3.5 text-amber-700" />
               <span>Ads Portal</span>
             </button>
           )}

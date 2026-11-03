@@ -566,11 +566,9 @@ export function App() {
         operatingState: myListing.state || currentUser.state || 'Delta State',
       };
       setCurrentUser(healedAgent);
-      setCurrentRole('agent');
+      // Auto-heal agent permissions without disrupting the user's active page/role
       localStorage.setItem('setlla_user', JSON.stringify(healedAgent));
       localStorage.setItem('deltarent_user', JSON.stringify(healedAgent));
-      localStorage.setItem('setlla_active_role', 'agent');
-      localStorage.setItem('deltarent_active_role', 'agent');
       saveRegisteredUser(healedAgent, { skipBroadcast: true });
       saveRegisteredUserAsync(healedAgent, { skipBroadcast: true });
     }
@@ -625,6 +623,7 @@ export function App() {
       } else if (hash.includes('agent')) {
         setActiveRoom('rentals');
         setCurrentRole('agent');
+        setUserView('dashboard');
       } else if (hash.includes('dashboard')) {
         setActiveRoom('rentals');
         if (currentUser.isAgent) {
@@ -1968,7 +1967,6 @@ export function App() {
     const authorizeSuperAdminFromEmail = async (_email?: string | null) => {
       const verified = await verifyAdminSessionWithSupabase();
       if (verified) {
-
         const currentHash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
         const currentSearch = typeof window !== 'undefined' ? window.location.search.toLowerCase() : '';
         const currentPath = typeof window !== 'undefined' ? (window.location.pathname || '').toLowerCase() : '';
@@ -1984,6 +1982,23 @@ export function App() {
         const resolved = (activeAdminUser && isElvisSuperAdmin(activeAdminUser))
           ? activeAdminUser
           : (isElvisSuperAdmin(verified) ? verified : (getActiveAdminUser() || verified));
+
+        // Zero-Trust Console Gate:
+        // Do NOT auto-authenticate the Super Admin console merely on window focus or background session refresh.
+        // Auto-auth is ONLY permitted if there is an active cryptographic admin session token, or if the user arrived
+        // via an explicit email confirmation / magic link callback (containing access_token, token_hash, or code).
+        const hasActiveAdminSession = isSuperAdminAuthenticated();
+        const hasExplicitAuthToken = 
+          currentHash.includes('access_token') || 
+          currentSearch.includes('token_hash') || 
+          currentHash.includes('token_hash') || 
+          currentSearch.includes('code=');
+
+        if (!hasActiveAdminSession && !hasExplicitAuthToken) {
+          // Keep activeAdminUser cached for verified admin recognition, but require manual login on AdminAuthPortal
+          setActiveAdminUser(resolved);
+          return;
+        }
 
         setIsAdminAuthenticated(true);
         setActiveAdminUser(resolved);
@@ -2023,7 +2038,7 @@ export function App() {
         setSignupNotice(null);
         if (user.isAgent) {
           setCurrentRole('agent');
-          setUserView('feed');
+          setUserView('dashboard');
           window.location.hash = '#/agent';
         }
         return;
@@ -2044,9 +2059,18 @@ export function App() {
           localStorage.setItem('setlla_user', JSON.stringify(existingUser));
           setIsSignupOpen(false);
           setSignupNotice(null);
-          if (existingUser.isAgent) {
+          const currentH = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
+          const hasExplicitRoute = 
+            currentH.includes('explore') || 
+            currentH.includes('agent') || 
+            currentH.includes('dashboard') || 
+            currentH.includes('partner') || 
+            currentH.includes('jobs') || 
+            currentH.includes('admin');
+
+          if (!hasExplicitRoute && existingUser.isAgent) {
             setCurrentRole('agent');
-            setUserView('feed');
+            setUserView('dashboard');
             window.location.hash = '#/agent';
           }
           return;
