@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  CheckCircle2, 
-  Globe, 
-  Copy, 
-  Check, 
-  Play, 
-  Plus, 
-  Trash2, 
+import {
+  CheckCircle2,
+  Globe,
+  Copy,
+  Check,
+  Play,
+  Plus,
+  Trash2,
   ChevronRight,
   Megaphone,
   Eye,
@@ -33,8 +33,8 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { PaystackModal } from '../Booking/PaystackModal';
-import { 
-  submitPartnerAdvert, 
+import {
+  submitPartnerAdvert,
   PartnerSubmissionPayload,
   getPartnerApiKeys,
   createPartnerApiKey,
@@ -456,7 +456,7 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
       try {
         localStorage.removeItem('setlla_admin_auth');
         localStorage.removeItem('setlla_admin_user');
-      } catch (_) {}
+      } catch (_) { }
     }
     if (onBackToExplore) {
       onBackToExplore();
@@ -526,10 +526,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             </button>
 
             <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-              <img 
-                src="/images/setlla-logo.png" 
-                alt="Setlla" 
-                className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer shrink-0" 
+              <img
+                src="/images/setlla-logo.png"
+                alt="Setlla"
+                className="h-5 sm:h-5.5 w-auto object-contain cursor-pointer shrink-0"
                 onClick={handleReturn}
               />
               <span className="hidden md:inline-flex text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[#342A21]/5 text-[#342A21] border border-[#342A21]/15 whitespace-nowrap">
@@ -547,11 +547,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   const el = document.getElementById('ad-creation-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                  activeTab === 'packages'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21]'
-                }`}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${activeTab === 'packages'
+                  ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                  : 'text-[#70798C] hover:text-[#342A21]'
+                  }`}
               >
                 Ad Packages
               </button>
@@ -561,11 +560,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   const el = document.getElementById('ad-creation-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${
-                  activeTab === 'placements'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21]'
-                }`}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer ${activeTab === 'placements'
+                  ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                  : 'text-[#70798C] hover:text-[#342A21]'
+                  }`}
               >
                 Showcase
               </button>
@@ -575,11 +573,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                   const el = document.getElementById('ad-creation-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
-                  activeTab === 'guide'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21]'
-                }`}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${activeTab === 'guide'
+                  ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                  : 'text-[#70798C] hover:text-[#342A21]'
+                  }`}
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Ads Guide</span>
@@ -591,11 +588,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     const el = document.getElementById('ad-creation-section');
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
-                    activeTab === 'api'
-                      ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                      : 'text-[#70798C] hover:text-[#342A21]'
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${activeTab === 'api'
+                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                    : 'text-[#70798C] hover:text-[#342A21]'
+                    }`}
                 >
                   <Code2 className="w-3.5 h-3.5" />
                   <span>REST API</span>
@@ -655,9 +651,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               const el = document.getElementById('ad-creation-section');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${
-              activeTab === 'packages' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
-            }`}
+            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${activeTab === 'packages' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
+              }`}
           >
             Ad Packages
           </button>
@@ -667,9 +662,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               const el = document.getElementById('ad-creation-section');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${
-              activeTab === 'placements' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
-            }`}
+            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${activeTab === 'placements' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
+              }`}
           >
             Showcase
           </button>
@@ -679,9 +673,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               const el = document.getElementById('ad-creation-section');
               if (el) el.scrollIntoView({ behavior: 'smooth' });
             }}
-            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${
-              activeTab === 'guide' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
-            }`}
+            className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs ${activeTab === 'guide' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
+              }`}
           >
             Ads Guide
           </button>
@@ -692,9 +685,8 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                 const el = document.getElementById('ad-creation-section');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs flex items-center gap-1 ${
-                activeTab === 'api' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
-              }`}
+              className={`py-1.5 px-3 rounded-lg font-semibold transition-colors shrink-0 whitespace-nowrap text-xs flex items-center gap-1 ${activeTab === 'api' ? 'bg-[#342A21] text-white shadow-2xs' : 'text-[#70798C] bg-white border border-[#E5E7EB]'
+                }`}
             >
               <Code2 className="w-3 h-3" />
               <span>REST API</span>
@@ -1090,31 +1082,28 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
           <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-[#E5E7EB] self-start sm:self-auto overflow-x-auto max-w-full">
             <button
               onClick={() => setActiveTab('packages')}
-              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
-                activeTab === 'packages'
-                  ? 'bg-[#342A21] text-white shadow-xs'
-                  : 'text-[#70798C] hover:text-[#342A21]'
-              }`}
+              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${activeTab === 'packages'
+                ? 'bg-[#342A21] text-white shadow-xs'
+                : 'text-[#70798C] hover:text-[#342A21]'
+                }`}
             >
               Ad Packages & Campaign Builder
             </button>
             <button
               onClick={() => setActiveTab('placements')}
-              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
-                activeTab === 'placements'
-                  ? 'bg-[#342A21] text-white shadow-xs'
-                  : 'text-[#70798C] hover:text-[#342A21]'
-              }`}
+              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${activeTab === 'placements'
+                ? 'bg-[#342A21] text-white shadow-xs'
+                : 'text-[#70798C] hover:text-[#342A21]'
+                }`}
             >
               Showcase
             </button>
             <button
               onClick={() => setActiveTab('guide')}
-              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
-                activeTab === 'guide'
-                  ? 'bg-[#342A21] text-white shadow-xs'
-                  : 'text-[#70798C] hover:text-[#342A21]'
-              }`}
+              className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 flex items-center gap-1 ${activeTab === 'guide'
+                ? 'bg-[#342A21] text-white shadow-xs'
+                : 'text-[#70798C] hover:text-[#342A21]'
+                }`}
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>Ads Guide</span>
@@ -1122,11 +1111,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             {activeAdvertiser && (
               <button
                 onClick={() => setActiveTab('api')}
-                className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 flex items-center gap-1 ${
-                  activeTab === 'api'
-                    ? 'bg-[#342A21] text-white shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21]'
-                }`}
+                className={`py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 flex items-center gap-1 ${activeTab === 'api'
+                  ? 'bg-[#342A21] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#342A21]'
+                  }`}
               >
                 <Code2 className="w-3.5 h-3.5" />
                 <span>REST API Sandbox</span>
@@ -1158,11 +1146,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     <div
                       key={tier.id}
                       onClick={() => setPackageTier(tier.id)}
-                      className={`relative bg-white rounded-3xl p-6 border transition-all cursor-pointer flex flex-col justify-between ${
-                        isSelected
-                          ? 'border-[#342A21] shadow-card ring-2 ring-[#342A21]/15'
-                          : 'border-[#342A21]/15 hover:border-[#342A21]/40 shadow-subtle'
-                      }`}
+                      className={`relative bg-white rounded-3xl p-6 border transition-all cursor-pointer flex flex-col justify-between ${isSelected
+                        ? 'border-[#342A21] shadow-card ring-2 ring-[#342A21]/15'
+                        : 'border-[#342A21]/15 hover:border-[#342A21]/40 shadow-subtle'
+                        }`}
                     >
                       {tier.popular && (
                         <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-full bg-[#342A21] text-[#FCF9F5] text-[10px] font-bold uppercase tracking-wider shadow-xs">
@@ -1208,11 +1195,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                       <div className="pt-6 mt-6 border-t border-[#E5E7EB]">
                         <button
                           type="button"
-                          className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold transition-all ${
-                            isSelected
-                              ? 'bg-[#342A21] text-white shadow-xs'
-                              : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] border border-[#E5E7EB]'
-                          }`}
+                          className={`w-full py-2.5 px-4 rounded-xl text-xs font-semibold transition-all ${isSelected
+                            ? 'bg-[#342A21] text-white shadow-xs'
+                            : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] border border-[#E5E7EB]'
+                            }`}
                         >
                           {isSelected ? 'Selected Plan' : 'Choose Plan'}
                         </button>
@@ -1279,41 +1265,41 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                     </p>
                   </div>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                      <button
-                        onClick={() => {
-                          if (activeAdvertiser) {
-                            setViewMode('advertiser-dashboard');
-                          } else {
-                            setAuthModalInitialMode('signup');
-                            setIsAuthModalOpen(true);
-                          }
-                        }}
-                        className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        <Building2 className="w-4 h-4 text-amber-300" />
-                        <span>{activeAdvertiser ? 'Manage on Advertiser Dashboard' : 'Open Ads Dashboard'}</span>
-                      </button>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        if (activeAdvertiser) {
+                          setViewMode('advertiser-dashboard');
+                        } else {
+                          setAuthModalInitialMode('signup');
+                          setIsAuthModalOpen(true);
+                        }
+                      }}
+                      className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      <Building2 className="w-4 h-4 text-amber-300" />
+                      <span>{activeAdvertiser ? 'Manage on Advertiser Dashboard' : 'Open Ads Dashboard'}</span>
+                    </button>
 
-                      <a
-                        href={`https://wa.me/2348000000000?text=${encodeURIComponent(
-                          `Hello Setlla Team, I submitted an ad campaign with Ref: ${submittedResult.trackingRef} for ${submittedResult.advert.advertiserName}. Please review and activate.`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        <WhatsAppIcon className="w-4 h-4" />
-                        <span>Fast-Track on WhatsApp</span>
-                      </a>
+                    <a
+                      href={`https://wa.me/2348000000000?text=${encodeURIComponent(
+                        `Hello Setlla Team, I submitted an ad campaign with Ref: ${submittedResult.trackingRef} for ${submittedResult.advert.advertiserName}. Please review and activate.`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      <WhatsAppIcon className="w-4 h-4" />
+                      <span>Fast-Track on WhatsApp</span>
+                    </a>
 
-                      <button
-                        onClick={() => setSubmittedResult(null)}
-                        className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] text-xs font-semibold border border-[#E5E7EB] transition-colors cursor-pointer whitespace-nowrap"
-                      >
-                        Submit Another
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setSubmittedResult(null)}
+                      className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#342A21] text-xs font-semibold border border-[#E5E7EB] transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      Submit Another
+                    </button>
+                  </div>
                 </div>
               ) : (
                 /* Booking Form */
@@ -1462,11 +1448,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           <button
                             type="button"
                             onClick={() => setMediaSourceMode('upload')}
-                            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                              mediaSourceMode === 'upload'
-                                ? 'bg-white text-[#342A21] shadow-xs'
-                                : 'text-[#70798C] hover:text-[#342A21]'
-                            }`}
+                            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${mediaSourceMode === 'upload'
+                              ? 'bg-white text-[#342A21] shadow-xs'
+                              : 'text-[#70798C] hover:text-[#342A21]'
+                              }`}
                           >
                             <Upload className="w-3.5 h-3.5" />
                             <span>Upload File</span>
@@ -1475,11 +1460,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                           <button
                             type="button"
                             onClick={() => setMediaSourceMode('url')}
-                            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                              mediaSourceMode === 'url'
-                                ? 'bg-white text-[#342A21] shadow-xs'
-                                : 'text-[#70798C] hover:text-[#342A21]'
-                            }`}
+                            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${mediaSourceMode === 'url'
+                              ? 'bg-white text-[#342A21] shadow-xs'
+                              : 'text-[#70798C] hover:text-[#342A21]'
+                              }`}
                           >
                             <Globe className="w-3.5 h-3.5" />
                             <span>Enter URL / Presets</span>
@@ -1500,11 +1484,10 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
                         <div className="space-y-3">
                           <div
                             onClick={() => !isUploadingMedia && fileInputRef.current?.click()}
-                            className={`p-6 sm:p-8 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center relative ${
-                              isUploadingMedia
-                                ? 'bg-amber-50/60 border-amber-300 cursor-wait'
-                                : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] border-[#E5E7EB] hover:border-[#342A21]/40'
-                            }`}
+                            className={`p-6 sm:p-8 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center relative ${isUploadingMedia
+                              ? 'bg-amber-50/60 border-amber-300 cursor-wait'
+                              : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] border-[#E5E7EB] hover:border-[#342A21]/40'
+                              }`}
                           >
                             {isUploadingMedia ? (
                               <div className="py-4 space-y-2.5">
@@ -1729,31 +1712,28 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
             <div className="flex items-center justify-center gap-2">
               <button
                 onClick={() => setPreviewPlacement('stories')}
-                className={`py-2 px-4 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  previewPlacement === 'stories'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:text-[#342A21]'
-                }`}
+                className={`py-2 px-4 rounded-xl text-xs font-semibold transition-all cursor-pointer ${previewPlacement === 'stories'
+                  ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                  : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:text-[#342A21]'
+                  }`}
               >
                 1. Feed Stories Tray
               </button>
               <button
                 onClick={() => setPreviewPlacement('sidebar')}
-                className={`py-2 px-4 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  previewPlacement === 'sidebar'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:text-[#342A21]'
-                }`}
+                className={`py-2 px-4 rounded-xl text-xs font-semibold transition-all cursor-pointer ${previewPlacement === 'sidebar'
+                  ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                  : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:text-[#342A21]'
+                  }`}
               >
                 2. Desktop Pinned Sidebar
               </button>
               <button
                 onClick={() => setPreviewPlacement('feed')}
-                className={`py-2 px-4 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                  previewPlacement === 'feed'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:text-[#342A21]'
-                }`}
+                className={`py-2 px-4 rounded-xl text-xs font-semibold transition-all cursor-pointer ${previewPlacement === 'feed'
+                  ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                  : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:text-[#342A21]'
+                  }`}
               >
                 3. In-Feed Verified Card
               </button>
@@ -2013,63 +1993,63 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
               </div>
             </div>
           ) : (
-          <div className="space-y-8 animate-fade-in">
-            <div className="text-center max-w-xl mx-auto space-y-1">
-              <span className="text-xs uppercase tracking-widest font-semibold text-[#70798C]">Method 3: Automation</span>
-              <h2 className="font-display text-2xl sm:text-3xl text-[#342A21] font-normal">
-                Enterprise REST API & Ingestion Gateway
-              </h2>
-              <p className="text-xs sm:text-sm text-[#70798C]">
-                Allow corporate marketing servers, real estate CMS platforms, or digital agencies to push campaigns automatically.
-              </p>
-            </div>
+            <div className="space-y-8 animate-fade-in">
+              <div className="text-center max-w-xl mx-auto space-y-1">
+                <span className="text-xs uppercase tracking-widest font-semibold text-[#70798C]">Method 3: Automation</span>
+                <h2 className="font-display text-2xl sm:text-3xl text-[#342A21] font-normal">
+                  Enterprise REST API & Ingestion Gateway
+                </h2>
+                <p className="text-xs sm:text-sm text-[#70798C]">
+                  Allow corporate marketing servers, real estate CMS platforms, or digital agencies to push campaigns automatically.
+                </p>
+              </div>
 
-            {/* Ingestion Endpoint Card */}
-            <div className="bg-white rounded-3xl border border-[#342A21]/15 p-6 shadow-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#70798C] block">
-                  Public REST Ingestion Endpoint
-                </span>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="px-2 py-0.5 rounded-md bg-[#342A21] text-white font-mono text-[11px] font-bold">
-                    POST
+              {/* Ingestion Endpoint Card */}
+              <div className="bg-white rounded-3xl border border-[#342A21]/15 p-6 shadow-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#70798C] block">
+                    Public REST Ingestion Endpoint
                   </span>
-                  <code className="text-xs sm:text-sm font-mono font-semibold text-[#342A21]">
-                    https://iadzihievmbhssqycpol.supabase.co/rest/v1/adverts
-                  </code>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="px-2 py-0.5 rounded-md bg-[#342A21] text-white font-mono text-[11px] font-bold">
+                      POST
+                    </span>
+                    <code className="text-xs sm:text-sm font-mono font-semibold text-[#342A21]">
+                      https://iadzihievmbhssqycpol.supabase.co/rest/v1/adverts
+                    </code>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleCopyEndpoint}
+                    className="py-2 px-3.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] hover:bg-[#F6F3EF] text-xs font-semibold text-[#342A21] flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    {copiedEndpoint ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#70798C]" />}
+                    <span>{copiedEndpoint ? 'Copied!' : 'Copy URL'}</span>
+                  </button>
+
+                  <button
+                    onClick={handleCopyCurl}
+                    className="py-2 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    {copiedCurl ? <Check className="w-3.5 h-3.5 text-amber-300" /> : <Code2 className="w-3.5 h-3.5 text-amber-300" />}
+                    <span>{copiedCurl ? 'Copied cURL!' : 'Copy cURL Command'}</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleCopyEndpoint}
-                  className="py-2 px-3.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] hover:bg-[#F6F3EF] text-xs font-semibold text-[#342A21] flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  {copiedEndpoint ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#70798C]" />}
-                  <span>{copiedEndpoint ? 'Copied!' : 'Copy URL'}</span>
-                </button>
+              {/* cURL Snippet Card (Styled cleanly with warm light stone background, NOT cyberpunk) */}
+              <div className="bg-white rounded-3xl border border-[#342A21]/15 p-6 shadow-subtle space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-[#342A21]">
+                    Sample HTTP Request & Headers
+                  </label>
+                  <span className="text-[11px] text-[#70798C]">Content-Type: application/json</span>
+                </div>
 
-                <button
-                  onClick={handleCopyCurl}
-                  className="py-2 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  {copiedCurl ? <Check className="w-3.5 h-3.5 text-amber-300" /> : <Code2 className="w-3.5 h-3.5 text-amber-300" />}
-                  <span>{copiedCurl ? 'Copied cURL!' : 'Copy cURL Command'}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* cURL Snippet Card (Styled cleanly with warm light stone background, NOT cyberpunk) */}
-            <div className="bg-white rounded-3xl border border-[#342A21]/15 p-6 shadow-subtle space-y-3">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wider text-[#342A21]">
-                  Sample HTTP Request & Headers
-                </label>
-                <span className="text-[11px] text-[#70798C]">Content-Type: application/json</span>
-              </div>
-
-              <pre className="p-5 rounded-2xl bg-[#FCF9F5] text-[#342A21] text-xs font-mono overflow-x-auto leading-relaxed border border-[#E5E7EB]">
-{`curl -X POST "https://iadzihievmbhssqycpol.supabase.co/rest/v1/adverts" \\
+                <pre className="p-5 rounded-2xl bg-[#FCF9F5] text-[#342A21] text-xs font-mono overflow-x-auto leading-relaxed border border-[#E5E7EB]">
+                  {`curl -X POST "https://iadzihievmbhssqycpol.supabase.co/rest/v1/adverts" \\
   -H "Content-Type: application/json" \\
   -H "X-Setlla-Partner-Key: stla_live_8f39a01b92c44de88a912bf7" \\
   -d '{
@@ -2084,260 +2064,258 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     "location": "Nationwide",
     "durationDays": 30
   }'`}
-              </pre>
-            </div>
-
-            {/* Corporate Partner Keys Management */}
-            <div className="bg-white rounded-3xl border border-[#342A21]/15 p-6 sm:p-8 shadow-card space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h3 className="font-display text-lg text-[#342A21]">Corporate Partner API Keys</h3>
-                  <p className="text-xs text-[#70798C] mt-0.5">
-                    Generate and manage private API keys for external automated push integrations.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setShowNewKeyModal(true)}
-                  className="py-2.5 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer self-start sm:self-auto"
-                >
-                  <Plus className="w-3.5 h-3.5 text-amber-300" />
-                  <span>Generate New Partner Key</span>
-                </button>
+                </pre>
               </div>
 
-              {/* Keys List */}
-              <div className="space-y-3">
-                {keys.map((k) => (
-                  <div
-                    key={k.id}
-                    className="p-4 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-[#342A21]/30 transition-colors"
+              {/* Corporate Partner Keys Management */}
+              <div className="bg-white rounded-3xl border border-[#342A21]/15 p-6 sm:p-8 shadow-card space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-display text-lg text-[#342A21]">Corporate Partner API Keys</h3>
+                    <p className="text-xs text-[#70798C] mt-0.5">
+                      Generate and manage private API keys for external automated push integrations.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setShowNewKeyModal(true)}
+                    className="py-2.5 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer self-start sm:self-auto"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs sm:text-sm text-[#342A21]">{k.companyName}</span>
-                        {k.isActive ? (
-                          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-semibold border border-emerald-200">
-                            Active
-                          </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">
-                            Suspended
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-[#70798C]">
-                        <span>{k.contactEmail}</span>
-                        <span>·</span>
-                        <span>{k.requestsToday} requests today</span>
-                        <span>·</span>
-                        <code className="font-mono bg-white px-2 py-0.5 rounded border border-[#E5E7EB] text-[11px] text-[#342A21]">
-                          {k.apiKey.slice(0, 14)}••••••••••••••••
-                        </code>
-                      </div>
-                    </div>
+                    <Plus className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Generate New Partner Key</span>
+                  </button>
+                </div>
 
-                    <div className="flex items-center gap-2 self-end sm:self-center">
-                      <button
-                        onClick={() => handleCopy(k.apiKey, k.id)}
-                        className="py-1.5 px-3 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F6F3EF] text-xs text-[#342A21] font-medium flex items-center gap-1 cursor-pointer"
-                        title="Copy Key"
-                      >
-                        {copiedKey === k.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#70798C]" />}
-                        <span>{copiedKey === k.id ? 'Copied' : 'Copy'}</span>
-                      </button>
+                {/* Keys List */}
+                <div className="space-y-3">
+                  {keys.map((k) => (
+                    <div
+                      key={k.id}
+                      className="p-4 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-[#342A21]/30 transition-colors"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs sm:text-sm text-[#342A21]">{k.companyName}</span>
+                          {k.isActive ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-semibold border border-emerald-200">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                              Suspended
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-[#70798C]">
+                          <span>{k.contactEmail}</span>
+                          <span>·</span>
+                          <span>{k.requestsToday} requests today</span>
+                          <span>·</span>
+                          <code className="font-mono bg-white px-2 py-0.5 rounded border border-[#E5E7EB] text-[11px] text-[#342A21]">
+                            {k.apiKey.slice(0, 14)}••••••••••••••••
+                          </code>
+                        </div>
+                      </div>
 
-                      <button
-                        onClick={() => handleToggleKey(k.id)}
-                        className={`py-1.5 px-3 rounded-xl text-xs font-semibold transition-colors cursor-pointer border ${
-                          k.isActive
+                      <div className="flex items-center gap-2 self-end sm:self-center">
+                        <button
+                          onClick={() => handleCopy(k.apiKey, k.id)}
+                          className="py-1.5 px-3 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F6F3EF] text-xs text-[#342A21] font-medium flex items-center gap-1 cursor-pointer"
+                          title="Copy Key"
+                        >
+                          {copiedKey === k.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#70798C]" />}
+                          <span>{copiedKey === k.id ? 'Copied' : 'Copy'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleToggleKey(k.id)}
+                          className={`py-1.5 px-3 rounded-xl text-xs font-semibold transition-colors cursor-pointer border ${k.isActive
                             ? 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
                             : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                        }`}
-                      >
-                        {k.isActive ? 'Suspend' : 'Activate'}
-                      </button>
+                            }`}
+                        >
+                          {k.isActive ? 'Suspend' : 'Activate'}
+                        </button>
 
+                        <button
+                          onClick={() => handleDeleteKey(k.id)}
+                          className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50 cursor-pointer"
+                          title="Delete Key"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Inline Create Key Form */}
+                {showNewKeyModal && (
+                  <div className="p-5 rounded-2xl bg-white border border-[#342A21]/20 space-y-4 shadow-sm animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-display text-sm text-[#342A21]">Issue New Corporate Partner API Key</h4>
                       <button
-                        onClick={() => handleDeleteKey(k.id)}
-                        className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50 cursor-pointer"
-                        title="Delete Key"
+                        onClick={() => setShowNewKeyModal(false)}
+                        className="text-xs text-[#70798C] hover:text-[#342A21]"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        Cancel
                       </button>
                     </div>
-                  </div>
-                ))}
-              </div>
 
-              {/* Inline Create Key Form */}
-              {showNewKeyModal && (
-                <div className="p-5 rounded-2xl bg-white border border-[#342A21]/20 space-y-4 shadow-sm animate-fade-in">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-display text-sm text-[#342A21]">Issue New Corporate Partner API Key</h4>
-                    <button
-                      onClick={() => setShowNewKeyModal(false)}
-                      className="text-xs text-[#70798C] hover:text-[#342A21]"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-
-                  <form onSubmit={handleCreateKey} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <input
-                      type="text"
-                      required
-                      placeholder="Company Name *"
-                      value={newCompanyName}
-                      onChange={(e) => setNewCompanyName(e.target.value)}
-                      className="px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
-                    />
-                    <input
-                      type="email"
-                      required
-                      placeholder="Official Contact Email *"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      className="px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
-                    />
-                    <div className="flex items-center gap-2">
+                    <form onSubmit={handleCreateKey} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <input
                         type="text"
-                        placeholder="Phone (Optional)"
-                        value={newPhone}
-                        onChange={(e) => setNewPhone(e.target.value)}
-                        className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
+                        required
+                        placeholder="Company Name *"
+                        value={newCompanyName}
+                        onChange={(e) => setNewCompanyName(e.target.value)}
+                        className="px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
                       />
-                      <button
-                        type="submit"
-                        className="px-4 py-2 rounded-xl bg-[#342A21] text-white text-xs font-semibold cursor-pointer shrink-0"
-                      >
-                        Generate
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              )}
-            </div>
-
-            {/* Live Push Simulator Sandbox */}
-            <div className="bg-white rounded-3xl border border-[#342A21]/15 p-6 sm:p-8 shadow-card space-y-5">
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex items-center justify-center shrink-0">
-                  <Zap className="w-4 h-4 text-[#B45309]" />
-                </div>
-                <div>
-                  <h3 className="font-display text-lg text-[#342A21]">Live Push Sandbox & Validation</h3>
-                  <p className="text-xs text-[#70798C] mt-0.5">
-                    Test an incoming automated push payload against your API key to verify database ingestion and feed broadcast.
-                  </p>
-                </div>
+                      <input
+                        type="email"
+                        required
+                        placeholder="Official Contact Email *"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        className="px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
+                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="Phone (Optional)"
+                          value={newPhone}
+                          onChange={(e) => setNewPhone(e.target.value)}
+                          className="w-full px-3.5 py-2 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004] focus:outline-none focus:border-[#342A21]"
+                        />
+                        <button
+                          type="submit"
+                          className="px-4 py-2 rounded-xl bg-[#342A21] text-white text-xs font-semibold cursor-pointer shrink-0"
+                        >
+                          Generate
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-[#342A21] block mb-1.5">
-                    Select Test API Key
-                  </label>
-                  <AdminCustomSelect
-                    value={simSelectedKey}
-                    onChange={(val) => setSimSelectedKey(val)}
-                    options={keys.map((k) => ({
-                      value: k.apiKey,
-                      label: `${k.companyName} (${k.apiKey.slice(0, 16)}...)`,
-                    }))}
-                    placeholder="Select API Key..."
-                    variant="form"
-                  />
+              {/* Live Push Simulator Sandbox */}
+              <div className="bg-white rounded-3xl border border-[#342A21]/15 p-6 sm:p-8 shadow-card space-y-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex items-center justify-center shrink-0">
+                    <Zap className="w-4 h-4 text-[#B45309]" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-lg text-[#342A21]">Live Push Sandbox & Validation</h3>
+                    <p className="text-xs text-[#70798C] mt-0.5">
+                      Test an incoming automated push payload against your API key to verify database ingestion and feed broadcast.
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-medium text-[#342A21] block mb-1.5">Brand / Company Name</label>
-                  <input
-                    type="text"
-                    value={simCompanyName}
-                    onChange={(e) => setSimCompanyName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004]"
-                  />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-[#342A21] block mb-1.5">
+                      Select Test API Key
+                    </label>
+                    <AdminCustomSelect
+                      value={simSelectedKey}
+                      onChange={(val) => setSimSelectedKey(val)}
+                      options={keys.map((k) => ({
+                        value: k.apiKey,
+                        label: `${k.companyName} (${k.apiKey.slice(0, 16)}...)`,
+                      }))}
+                      placeholder="Select API Key..."
+                      variant="form"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-[#342A21] block mb-1.5">Brand / Company Name</label>
+                    <input
+                      type="text"
+                      value={simCompanyName}
+                      onChange={(e) => setSimCompanyName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-[#342A21] block mb-1.5">Campaign Headline</label>
+                    <input
+                      type="text"
+                      value={simHeadline}
+                      onChange={(e) => setSimHeadline(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-[#342A21] block mb-1.5">Category</label>
+                    <AdminCustomSelect
+                      value={simCategory}
+                      onChange={(val) => setSimCategory(val as any)}
+                      options={[
+                        { value: 'Service', label: 'Service' },
+                        { value: 'Property', label: 'Property' },
+                        { value: 'Estate', label: 'Estate' },
+                        { value: 'Promo', label: 'Promo' },
+                      ]}
+                      variant="form"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-medium text-[#342A21] block mb-1.5">Media Creative URL</label>
+                    <input
+                      type="url"
+                      value={simMediaUrl}
+                      onChange={(e) => setSimMediaUrl(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-mono text-[#000004]"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="text-xs font-medium text-[#342A21] block mb-1.5">Campaign Headline</label>
-                  <input
-                    type="text"
-                    value={simHeadline}
-                    onChange={(e) => setSimHeadline(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs text-[#000004]"
-                  />
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-xs text-[#70798C]">
+                    Duration: <strong className="text-[#342A21]">{simDuration} Days</strong>
+                  </span>
+
+                  <button
+                    onClick={handleRunSimulation}
+                    disabled={isSimulating}
+                    className="py-2.5 px-5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    <Play className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
+                    <span>{isSimulating ? 'Executing POST...' : 'Execute Test Push Request'}</span>
+                  </button>
                 </div>
 
-                <div>
-                  <label className="text-xs font-medium text-[#342A21] block mb-1.5">Category</label>
-                  <AdminCustomSelect
-                    value={simCategory}
-                    onChange={(val) => setSimCategory(val as any)}
-                    options={[
-                      { value: 'Service', label: 'Service' },
-                      { value: 'Property', label: 'Property' },
-                      { value: 'Estate', label: 'Estate' },
-                      { value: 'Promo', label: 'Promo' },
-                    ]}
-                    variant="form"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="text-xs font-medium text-[#342A21] block mb-1.5">Media Creative URL</label>
-                  <input
-                    type="url"
-                    value={simMediaUrl}
-                    onChange={(e) => setSimMediaUrl(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-mono text-[#000004]"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-xs text-[#70798C]">
-                  Duration: <strong className="text-[#342A21]">{simDuration} Days</strong>
-                </span>
-
-                <button
-                  onClick={handleRunSimulation}
-                  disabled={isSimulating}
-                  className="py-2.5 px-5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
-                >
-                  <Play className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-                  <span>{isSimulating ? 'Executing POST...' : 'Execute Test Push Request'}</span>
-                </button>
-              </div>
-
-              {simResult && (
-                <div
-                  className={`p-4 rounded-2xl border text-xs space-y-1.5 animate-fade-in ${
-                    simResult.success
+                {simResult && (
+                  <div
+                    className={`p-4 rounded-2xl border text-xs space-y-1.5 animate-fade-in ${simResult.success
                       ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
                       : 'bg-rose-50 border-rose-200 text-rose-950'
-                  }`}
-                >
-                  <div className="flex items-center justify-between font-semibold">
-                    <span className="flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      HTTP {simResult.status} {simResult.success ? 'Campaign Ingested' : 'Error'}
-                    </span>
-                    <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-emerald-200">
-                      ID: {simResult.advert?.id || 'N/A'}
-                    </span>
+                      }`}
+                  >
+                    <div className="flex items-center justify-between font-semibold">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        HTTP {simResult.status} {simResult.success ? 'Campaign Ingested' : 'Error'}
+                      </span>
+                      <span className="font-mono text-[11px] bg-white px-2 py-0.5 rounded border border-emerald-200">
+                        ID: {simResult.advert?.id || 'N/A'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed">
+                      {simResult.success
+                        ? `Campaign "${simResult.advert?.headline}" received and broadcasted live across Setlla's Stories Tray and Desktop Banners!`
+                        : simResult.error}
+                    </p>
                   </div>
-                  <p className="text-[11px] leading-relaxed">
-                    {simResult.success
-                      ? `Campaign "${simResult.advert?.headline}" received and broadcasted live across Setlla's Stories Tray and Desktop Banners!`
-                      : simResult.error}
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          </div>
           )
         )}
       </main>
