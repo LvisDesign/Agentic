@@ -197,16 +197,16 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           {onOpenAdsPortal && (
             <button
               onClick={onOpenAdsPortal}
-              className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl border border-neutral-200/90 bg-white hover:bg-neutral-50 text-neutral-800 text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
               title="Open Customer Ads Dashboard to promote listings & reach more tenants"
             >
-              <Megaphone className="w-3.5 h-3.5 text-amber-700" />
+              <Megaphone className="w-3.5 h-3.5 text-neutral-500" />
               <span>Ads Portal</span>
             </button>
           )}
           <button
             onClick={() => setShowCreateModal(true)}
-            className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+            className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add New Property</span>
@@ -216,54 +216,54 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mb-6">
-        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0">
-          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
-            <span className="truncate">Booked Inspections</span>
-            <CalendarCheck className="w-4 h-4 text-[#342A21] shrink-0" />
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-neutral-200/80 shadow-2xs min-w-0">
+          <div className="flex items-center justify-between text-xs text-neutral-500 gap-1">
+            <span className="truncate font-medium">Booked Inspections</span>
+            <CalendarCheck className="w-4 h-4 text-neutral-400 shrink-0" />
           </div>
-          <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
+          <div className="font-display text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
             {agentProfile.completedInspections + acceptedOrPaid.length}
           </div>
-          <span className="text-[10px] text-emerald-600 font-medium block truncate mt-0.5">
+          <span className="text-[10px] text-neutral-500 font-medium block truncate mt-0.5">
             {agentProfile.completedInspections === 0 && acceptedOrPaid.length === 0
               ? 'No inspections yet'
               : 'Total scheduled'}
           </span>
         </div>
 
-        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0">
-          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
-            <span className="truncate">Pending Requests</span>
-            <Clock className="w-4 h-4 text-amber-500 shrink-0" />
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-neutral-200/80 shadow-2xs min-w-0">
+          <div className="flex items-center justify-between text-xs text-neutral-500 gap-1">
+            <span className="truncate font-medium">Pending Requests</span>
+            <Clock className="w-4 h-4 text-neutral-400 shrink-0" />
           </div>
-          <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
+          <div className="font-display text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
             {pendingRequests.length}
           </div>
-          <span className="text-[10px] text-[#70798C] block truncate mt-0.5">
+          <span className="text-[10px] text-neutral-500 block truncate mt-0.5">
             {pendingRequests.length === 0 ? 'All caught up' : 'Waiting for reply'}
           </span>
         </div>
 
-        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0">
-          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
-            <span className="truncate">Waiting List</span>
-            <Users className="w-4 h-4 text-[#F0544F] shrink-0" />
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-neutral-200/80 shadow-2xs min-w-0">
+          <div className="flex items-center justify-between text-xs text-neutral-500 gap-1">
+            <span className="truncate font-medium">Waiting List</span>
+            <Users className="w-4 h-4 text-neutral-400 shrink-0" />
           </div>
-          <div className="font-display text-xl sm:text-2xl font-bold text-[#F0544F] mt-1">
+          <div className="font-display text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
             {queuedRequests.length}
           </div>
-          <span className="text-[10px] text-[#F0544F] block truncate mt-0.5">Max 5 per time slot</span>
+          <span className="text-[10px] text-neutral-500 block truncate mt-0.5">Max 5 per time slot</span>
         </div>
 
-        <div className="p-3 sm:p-4 rounded-xl bg-white border border-[#E5E7EB] shadow-xs min-w-0">
-          <div className="flex items-center justify-between text-xs text-[#70798C] gap-1">
-            <span className="truncate">My Listed Houses</span>
-            <Building className="w-4 h-4 text-[#342A21] shrink-0" />
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-neutral-200/80 shadow-2xs min-w-0">
+          <div className="flex items-center justify-between text-xs text-neutral-500 gap-1">
+            <span className="truncate font-medium">My Listed Houses</span>
+            <Building className="w-4 h-4 text-neutral-400 shrink-0" />
           </div>
-          <div className="font-display text-xl sm:text-2xl font-bold text-[#000004] mt-1">
+          <div className="font-display text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
             {agentListings.length}
           </div>
-          <span className="text-[10px] text-[#70798C] block truncate mt-0.5">
+          <span className="text-[10px] text-neutral-500 block truncate mt-0.5">
             {agentListings.length === 0 ? 'No listings yet' : 'Live on platform'}
           </span>
         </div>
@@ -557,39 +557,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                 return (
                   <div
                     key={prop.id}
-                    className={`bg-white rounded-xl border overflow-hidden shadow-xs flex flex-col transition-all ${
-                      lifecycle.stage === 'expired'
-                        ? 'border-rose-300 ring-1 ring-rose-200 bg-rose-50/10'
-                        : lifecycle.stage === 'needs_confirmation'
-                        ? 'border-amber-300 ring-1 ring-amber-200 bg-amber-50/10'
-                        : 'border-[#E5E7EB]'
-                    }`}
+                    className="bg-white rounded-2xl border border-neutral-200/90 hover:border-neutral-300 hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group"
                   >
-                    <div className="h-44 relative bg-slate-900 overflow-hidden">
-                      {/* Top-left Lifecycle Badge */}
-                      <div className="absolute top-2.5 left-2.5 z-20 flex items-center gap-1.5 flex-wrap">
-                        {lifecycle.stage === 'expired' ? (
-                          <span className="px-2.5 py-1 rounded-full bg-rose-600/95 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            <span>Delisted from Feed (72h)</span>
-                          </span>
-                        ) : lifecycle.stage === 'needs_confirmation' ? (
-                          <span className="px-2.5 py-1 rounded-full bg-amber-500/95 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1 animate-pulse">
-                            <Clock className="w-3 h-3" />
-                            <span>48h Check ({Math.ceil(lifecycle.hoursUntilDelist)}h left)</span>
-                          </span>
-                        ) : lifecycle.stage === 'taken_grace' ? (
-                          <span className="px-2.5 py-1 rounded-full bg-slate-900/95 backdrop-blur-md text-slate-200 text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3 text-amber-400" />
-                            <span>Taken ({Math.ceil(lifecycle.hoursUntilTakenCleanup || 24)}h display left)</span>
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-full bg-emerald-600/95 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            <span>Live on Feed</span>
-                          </span>
-                        )}
-                      </div>
+                    {/* Media Header */}
+                    <div className="h-44 relative bg-neutral-950 overflow-hidden">
                       {prop.media[0]?.type === 'video' ? (
                         <div className="w-full h-full relative">
                           <img
@@ -598,15 +569,15 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                             onError={(e) => {
                               e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
                             }}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                           />
-                          <div className="absolute inset-0 bg-black/30 flex items-center justify-center pointer-events-none">
-                            <span className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center shadow-lg border border-white/20">
-                              <Film className="w-4 h-4 text-amber-300" />
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center pointer-events-none">
+                            <span className="w-8 h-8 rounded-full bg-black/50 backdrop-blur-md text-white flex items-center justify-center border border-white/20 shadow-md">
+                              <Film className="w-3.5 h-3.5 text-white" />
                             </span>
                           </div>
-                          <span className="absolute top-2.5 right-2.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 border border-white/10 z-10">
-                            <Film className="w-3 h-3 text-amber-300" />
+                          <span className="absolute top-2.5 right-2.5 bg-black/50 backdrop-blur-md text-white/90 text-[10px] font-medium px-2 py-0.5 rounded-full flex items-center gap-1 border border-white/10 z-10">
+                            <Film className="w-3 h-3 text-white/80" />
                             Walkthrough
                           </span>
                         </div>
@@ -617,59 +588,82 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                           onError={(e) => {
                             e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
                           }}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                         />
                       )}
-                      <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium">
-                        {prop.city}
+
+                      {/* Smooth bottom gradient overlay for readability */}
+                      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/75 via-black/30 to-transparent pointer-events-none" />
+
+                      {/* Top-left Minimalist Status Pill */}
+                      <div className="absolute top-2.5 left-2.5 z-20">
+                        {lifecycle.stage === 'expired' ? (
+                          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-medium border border-white/15 flex items-center gap-1.5 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                            <span>Off Feed (72h)</span>
+                          </span>
+                        ) : lifecycle.stage === 'needs_confirmation' ? (
+                          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-medium border border-white/15 flex items-center gap-1.5 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                            <span>Verify Freshness ({Math.ceil(lifecycle.hoursUntilDelist)}h)</span>
+                          </span>
+                        ) : lifecycle.stage === 'taken_grace' ? (
+                          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-medium border border-white/15 flex items-center gap-1.5 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400" />
+                            <span>Taken</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-medium border border-white/15 flex items-center gap-1.5 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                            <span>Live on Feed</span>
+                          </span>
+                        )}
                       </div>
-                      <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-white font-display text-sm font-bold">
-                        {formatNaira(prop.fees.baseRent)}/{prop.fees.rentPeriod}
+
+                      {/* Bottom-left Price Badge */}
+                      <div className="absolute bottom-2.5 left-2.5 z-10">
+                        <div className="bg-black/65 backdrop-blur-md px-2.5 py-1 rounded-lg text-white text-xs font-semibold border border-white/15 flex items-baseline gap-1 shadow-sm">
+                          <span>{formatNaira(prop.fees.baseRent)}</span>
+                          <span className="text-white/60 text-[10px] font-normal">/{prop.fees.rentPeriod}</span>
+                        </div>
+                      </div>
+
+                      {/* Bottom-right City Badge */}
+                      <div className="absolute bottom-2.5 right-2.5 z-10 bg-black/50 backdrop-blur-md px-2 py-0.5 rounded-md text-white/80 text-[10px] font-medium border border-white/10">
+                        {prop.city}
                       </div>
 
                       {/* Rented Out Backdrop Overlay */}
                       {isRentedOut && (
-                        <div className="absolute inset-0 bg-black/65 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center p-3 text-center">
-                          <span className="px-3 py-1 rounded-[6px] bg-[#F0544F] text-white text-xs font-extrabold tracking-wider shadow-lg flex items-center gap-1.5">
-                            <AlertCircle className="w-3.5 h-3.5" />
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center p-3 text-center">
+                          <span className="px-3 py-1 rounded-lg bg-neutral-800 text-white text-xs font-semibold tracking-wide border border-white/20 shadow-lg flex items-center gap-1.5">
+                            <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
                             RENTED OUT
                           </span>
-                          <span className="text-white/80 text-[10px] mt-1">
+                          <span className="text-white/70 text-[10px] mt-1">
                             Auto-archiving from feed in 3s...
                           </span>
                         </div>
                       )}
                     </div>
 
+                    {/* Content Section */}
                     <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
                       <div>
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="font-bold text-sm text-[#000004] line-clamp-2 break-words flex-1 leading-snug">
-                            {prop.title}
-                          </h4>
-                          {isRentedOut ? (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-extrabold bg-[#F0544F] text-white shrink-0">
-                              RENTED OUT
-                            </span>
-                          ) : prop.availabilityStatus === 'Under Inspection' ? (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-500 text-white shrink-0">
-                              Under Inspection
-                            </span>
-                          ) : (
-                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-600 text-white shrink-0">
-                              Available
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-[#70798C] line-clamp-1">
+                        <h4 className="font-semibold text-sm text-neutral-900 line-clamp-1 leading-snug group-hover:text-black transition-colors" title={prop.title}>
+                          {prop.title}
+                        </h4>
+                        <p className="text-xs text-neutral-500 line-clamp-1 mt-0.5">
                           {prop.neighborhood} • {prop.propertyType}
                         </p>
+
+                        {/* Feature / Addon Chips - Subtle Neutral Palette */}
                         {prop.addons && prop.addons.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1.5">
+                          <div className="flex flex-wrap gap-1 mt-2">
                             {prop.addons.map((addon) => (
                               <span
                                 key={addon}
-                                className="px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-900 border border-purple-200/70 text-[10px] font-semibold"
+                                className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-600 border border-neutral-200/60 text-[10px] font-medium"
                               >
                                 {addon}
                               </span>
@@ -678,14 +672,12 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         )}
                       </div>
 
-                      {/* 1-Tap Status Selector */}
-                      <div className="pt-2 border-t border-[#E5E7EB] space-y-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                          <span className="font-bold text-[#70798C] text-[11px] uppercase tracking-wider shrink-0">
-                            Status:
-                          </span>
-                          <div className="grid grid-cols-3 sm:flex items-center gap-1 w-full sm:w-auto">
-                            {(['Available', 'Under Inspection', 'Rented Out'] as ListingAvailability[]).map((st) => (
+                      {/* Segmented Status Selector */}
+                      <div className="space-y-2 pt-1 border-t border-neutral-100">
+                        <div className="bg-neutral-100/90 p-0.5 rounded-xl border border-neutral-200/70 grid grid-cols-3 gap-0.5 text-[11px]">
+                          {(['Available', 'Under Inspection', 'Rented Out'] as ListingAvailability[]).map((st) => {
+                            const isSelected = prop.availabilityStatus === st || (!prop.availabilityStatus && st === 'Available');
+                            return (
                               <button
                                 key={st}
                                 type="button"
@@ -698,53 +690,43 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                                     }
                                   }
                                 }}
-                                className={`w-full sm:w-auto text-center px-1.5 sm:px-2 py-1 sm:py-0.5 rounded-[6px] text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                                  prop.availabilityStatus === st || (!prop.availabilityStatus && st === 'Available')
-                                    ? st === 'Rented Out'
-                                      ? 'bg-[#F0544F] text-white shadow-2xs'
-                                      : st === 'Under Inspection'
-                                      ? 'bg-amber-500 text-white shadow-2xs'
-                                      : 'bg-[#000004] text-white shadow-2xs'
-                                    : 'bg-white text-[#70798C] border border-[#E5E7EB] hover:bg-slate-50'
+                                className={`py-1 px-1 rounded-lg text-center transition-all cursor-pointer truncate ${
+                                  isSelected
+                                    ? 'bg-white text-neutral-900 font-semibold shadow-2xs border border-neutral-200/60'
+                                    : 'text-neutral-500 hover:text-neutral-900 font-medium'
                                 }`}
                               >
                                 {st}
                               </button>
-                            ))}
-                          </div>
+                            );
+                          })}
                         </div>
 
-                        {/* 48-Hour Availability Check & 72-Hour Lifecycle Engine */}
-                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] p-2.5 rounded-[8px] border transition-colors ${
-                          lifecycle.stage === 'expired'
-                            ? 'bg-rose-50 border-rose-200 text-rose-900'
-                            : lifecycle.stage === 'needs_confirmation'
-                            ? 'bg-amber-50 border-amber-200 text-amber-900'
-                            : lifecycle.stage === 'taken_grace'
-                            ? 'bg-slate-50 border-slate-200 text-slate-800'
-                            : 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
-                        }`}>
-                          {lifecycle.stage === 'expired' ? (
-                            <span className="font-semibold flex items-center gap-1 text-rose-800">
-                              <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                              Delisted from public feed (72h expired without confirmation)
-                            </span>
-                          ) : lifecycle.stage === 'needs_confirmation' ? (
-                            <span className="font-semibold flex items-center gap-1 text-amber-800">
-                              <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0 animate-spin-slow" />
-                              48h Check: Is this still vacant? ({Math.ceil(lifecycle.hoursUntilDelist)}h until auto-delist)
-                            </span>
-                          ) : lifecycle.stage === 'taken_grace' ? (
-                            <span className="font-medium flex items-center gap-1 text-slate-700">
-                              <CheckCircle className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                              Marked Rented Out ({Math.ceil(lifecycle.hoursUntilTakenCleanup || 24)}h display left before auto-delete)
-                            </span>
-                          ) : (
-                            <span className="font-medium flex items-center gap-1 text-emerald-800">
-                              <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                              Live on Feed ({Math.ceil(48 - lifecycle.hoursSinceConfirmed)}h until availability check)
-                            </span>
-                          )}
+                        {/* Subtle Freshness / 48-Hour Lifecycle Row */}
+                        <div className="bg-neutral-50/80 border border-neutral-200/70 rounded-xl px-3 py-2 flex items-center justify-between gap-2 text-xs">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1 truncate">
+                            {lifecycle.stage === 'expired' ? (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                <span className="text-neutral-600 truncate text-[11px]">Delisted (72h unconfirmed)</span>
+                              </>
+                            ) : lifecycle.stage === 'needs_confirmation' ? (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 animate-pulse" />
+                                <span className="text-amber-800 font-medium truncate text-[11px]">Verify vacancy ({Math.ceil(lifecycle.hoursUntilDelist)}h left)</span>
+                              </>
+                            ) : lifecycle.stage === 'taken_grace' ? (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 shrink-0" />
+                                <span className="text-neutral-600 truncate text-[11px]">Rented Out ({Math.ceil(lifecycle.hoursUntilTakenCleanup || 24)}h left)</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                <span className="text-neutral-600 truncate text-[11px]">Fresh on Feed ({Math.ceil(48 - lifecycle.hoursSinceConfirmed)}h)</span>
+                              </>
+                            )}
+                          </div>
 
                           {onConfirmFreshness && (
                             <button
@@ -758,57 +740,56 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                                 );
                                 setTimeout(() => setDashboardToast(null), 3000);
                               }}
-                              className={`w-full sm:w-auto text-center px-3 py-1.5 sm:py-1 rounded-[6px] font-bold text-[10px] transition-all cursor-pointer shadow-2xs whitespace-nowrap active:scale-95 ${
-                                lifecycle.stage === 'expired'
-                                  ? 'bg-rose-600 hover:bg-rose-700 text-white'
-                                  : lifecycle.stage === 'needs_confirmation'
-                                  ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                                  : 'bg-[#000004] hover:bg-[#1f2937] text-white'
+                              className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer shadow-2xs whitespace-nowrap active:scale-95 ${
+                                lifecycle.stage === 'expired' || lifecycle.stage === 'needs_confirmation'
+                                  ? 'bg-neutral-900 hover:bg-neutral-800 text-white font-semibold'
+                                  : 'bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-200/90'
                               }`}
                             >
                               {lifecycle.stage === 'expired'
-                                ? 'Relist & Renew (1-Tap)'
+                                ? 'Relist'
                                 : lifecycle.stage === 'needs_confirmation'
-                                ? '✓ Yes, Still Available'
-                                : 'Confirm Still Vacant'}
+                                ? 'Still Vacant'
+                                : 'Confirm Vacant'}
                             </button>
                           )}
                         </div>
                       </div>
 
-                      <div className="pt-2.5 border-t border-[#E5E7EB] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-                        <div className="grid grid-cols-2 sm:flex items-center gap-1.5 w-full sm:w-auto">
+                      {/* Footer Actions */}
+                      <div className="pt-2.5 border-t border-neutral-100 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => setEditingListing(prop)}
-                            className="w-full sm:w-auto justify-center px-2.5 py-1.5 sm:py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#000004] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200/80 shadow-2xs active:scale-95 whitespace-nowrap"
+                            className="px-2.5 py-1.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 text-neutral-700 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-neutral-200/70 shadow-2xs"
                             title="Edit property details, rent price, media, and inspection slots"
                           >
-                            <Edit3 className="w-3.5 h-3.5 text-slate-700" />
+                            <Edit3 className="w-3.5 h-3.5 text-neutral-500" />
                             <span>Edit</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => setListingToDelete(prop)}
-                            className="w-full sm:w-auto justify-center px-2.5 py-1.5 sm:py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-rose-200 shadow-2xs active:scale-95 whitespace-nowrap"
+                            className="px-2.5 py-1.5 rounded-lg bg-transparent hover:bg-rose-50 text-neutral-400 hover:text-rose-600 hover:border-rose-200 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-transparent"
                             title="Permanently delete this property listing"
                           >
-                            <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                            <Trash2 className="w-3.5 h-3.5" />
                             <span>Delete</span>
                           </button>
                         </div>
 
-                        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]/60">
-                          <span className="text-[#70798C] text-[11px] whitespace-nowrap">
-                            {prop.inspectionSlots.length} Slots
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-neutral-400 text-[11px] whitespace-nowrap">
+                            {prop.inspectionSlots.length} slots
                           </span>
                           <button
                             type="button"
                             onClick={onSwitchToTenant || onSwitchToSeeker}
-                            className="text-[#342A21] hover:underline font-semibold flex items-center gap-1 cursor-pointer whitespace-nowrap"
+                            className="text-neutral-700 hover:text-neutral-950 font-medium text-xs flex items-center gap-1 cursor-pointer whitespace-nowrap hover:underline"
                           >
                             <span>View in Feed</span>
-                            <ArrowUpRight className="w-3.5 h-3.5" />
+                            <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400" />
                           </button>
                         </div>
                       </div>
