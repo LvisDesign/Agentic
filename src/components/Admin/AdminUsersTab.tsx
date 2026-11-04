@@ -38,7 +38,9 @@ import {
   ChevronRight,
   Clock,
   FileCheck,
-  Award
+  Award,
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
 import { UserProfile, PropertyListing, BookingRecord } from '../../types/marketplace';
 import { JobListing, JobApplication } from '../../types/jobs';
@@ -56,7 +58,9 @@ import {
   normalizeEmail,
   resolveUserPersona,
   PlatformUserPersona,
-  isDeletedUserRecord
+  isDeletedUserRecord,
+  unblockUserCredentials,
+  getBlockedCredentials
 } from '../../utils/userRegistry';
 import { toggleAgentVerification, toggleTenantVerification, toggleUserSuspension } from '../../services/adminService';
 import { isElvisSuperAdmin, removeAdminCredential } from '../../services/adminAuthService';
@@ -108,8 +112,30 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [personaFilter, setPersonaFilter] = useState<'all' | 'agent' | 'tenant' | 'job_seeker' | 'employer' | 'advertiser' | 'admin'>(defaultPersonaFilter);
   const [cityFilter, setCityFilter] = useState('All Cities');
-  const [standingFilter, setStandingFilter] = useState<'all' | 'verified' | 'pending' | 'suspended'>('all');
+  const [standingFilter, setStandingFilter] = useState<'all' | 'verified' | 'pending' | 'suspended' | 'blocked'>('all');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+
+  // Deletion / Moderation modal state
+  const [deletionModalUser, setDeletionModalUser] = useState<UserProfile | null>(null);
+  const [deleteActionType, setDeleteActionType] = useState<'ban' | 'reset'>('ban');
+  const [isExecutingDelete, setIsExecutingDelete] = useState(false);
+  const [blockedCredentialsState, setBlockedCredentialsState] = useState<{ phones: string[]; emails: string[] }>(() => getBlockedCredentials());
+
+  const refreshBlockedCredentials = () => {
+    setBlockedCredentialsState(getBlockedCredentials());
+  };
+
+  const handleUnblockCredential = (credential: { phone?: string; email?: string }) => {
+    unblockUserCredentials(credential);
+    refreshBlockedCredentials();
+    showToast(`Restriction lifted for ${credential.phone || credential.email}. They can now sign up fresh.`);
+    onRecordAuditLog(
+      'CREDENTIALS_UNBLOCKED',
+      'system',
+      credential.phone || credential.email || 'Credential',
+      `Super Admin ${currentUser.fullName} unblocked credentials, permitting re-registration.`
+    );
+  };
 
   // Modals & Drawers state
   const [inspectingCvCandidate, setInspectingCvCandidate] = useState<UserProfile | null>(null);
@@ -388,39 +414,57 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
       return;
     }
 
-    openConfirmDialog({
-      title: isTargetAdmin ? `Revoke & Delete Admin (${user.fullName})?` : `Delete ${user.fullName}'s Account?`,
-      message: isTargetAdmin
-        ? `Permanently revoke all administrator privileges and platform credentials for ${user.fullName} (${user.phone}). This administrator account will be permanently erased.`
-        : `Are you sure you want to permanently remove this user account from Setlla? This action removes their credentials and cannot be undone.`,
-      itemTitle: user.fullName,
-      itemSubtitle: `${user.phone} · ${user.city || 'Delta State'}${isTargetAdmin ? ' · Platform Administrator' : ''}`,
-      badge: isTargetAdmin ? 'SUPER ADMIN REVOCATION' : getUserPersona(user).toUpperCase(),
-      confirmText: isTargetAdmin ? 'Revoke & Delete Admin' : 'Delete Account',
-      variant: 'danger',
-      onConfirm: async () => {
-        showToast(`Wiping all records for ${user.fullName}...`);
-        await deleteUserFromRegistryAsync(user);
-        if (isTargetAdmin) {
-          removeAdminCredential(user.email, user.phone);
-        }
-        const normPhone = normalizePhoneNumber(user.phone);
-        const normEmail = normalizeEmail(user.email);
-        setRegisteredUsers((prev) => prev.filter((u) => {
-          if (u.id === user.id) return false;
-          if (normPhone && normalizePhoneNumber(u.phone) === normPhone) return false;
-          if (normEmail && normalizeEmail(u.email) === normEmail) return false;
-          return true;
-        }));
-        showToast(`${user.fullName} and all records permanently wiped from database.`);
+    setDeleteActionType('ban');
+    setDeletionModalUser(user);
+  };
+
+  const handleConfirmDeletionExecution = async () => {
+    if (!deletionModalUser) return;
+    const user = deletionModalUser;
+    const isTargetAdmin = Boolean(user.isAdmin || user.isSuperAdmin);
+    const allowReRegistration = deleteActionType === 'reset';
+
+    setIsExecutingDelete(true);
+    try {
+      showToast(allowReRegistration ? `Resetting ${user.fullName}...` : `Banning and blocking ${user.fullName}...`);
+      await deleteUserFromRegistryAsync(user, { allowReRegistration });
+      if (isTargetAdmin) {
+        removeAdminCredential(user.email, user.phone);
+      }
+      const normPhone = normalizePhoneNumber(user.phone);
+      const normEmail = normalizeEmail(user.email);
+      setRegisteredUsers((prev) => prev.filter((u) => {
+        if (u.id === user.id) return false;
+        if (normPhone && normalizePhoneNumber(u.phone) === normPhone) return false;
+        if (normEmail && normalizeEmail(u.email) === normEmail) return false;
+        return true;
+      }));
+
+      refreshBlockedCredentials();
+
+      if (allowReRegistration) {
+        showToast(`${user.fullName} reset. They can now re-register fresh with their credentials.`);
         onRecordAuditLog(
-          isTargetAdmin ? 'ADMIN_ACCOUNT_PURGED' : 'USER_DELETED',
+          isTargetAdmin ? 'ADMIN_ACCOUNT_RESET' : 'USER_ACCOUNT_RESET',
           'system',
           user.fullName,
-          `Super Admin Elvis permanently wiped ${isTargetAdmin ? 'administrator' : 'user'} ID: ${user.id} (${user.email || user.phone}) from database and registries.`
+          `Super Admin ${currentUser.fullName} reset user ${user.id} (${user.phone}) with re-registration permitted.`
         );
-      },
-    });
+      } else {
+        showToast(`${user.fullName} permanently banned. Phone & email blocked from signup.`);
+        onRecordAuditLog(
+          isTargetAdmin ? 'ADMIN_ACCOUNT_BANNED' : 'USER_BANNED_AND_BLOCKED',
+          'system',
+          user.fullName,
+          `Super Admin ${currentUser.fullName} permanently banned user ${user.id} (${user.email || user.phone}). Credentials blacklisted.`
+        );
+      }
+      setDeletionModalUser(null);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to remove user.');
+    } finally {
+      setIsExecutingDelete(false);
+    }
   };
 
   // Handler: Save Edited User
@@ -780,6 +824,11 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
                 { value: 'verified', label: 'Verified Accounts', dotColor: '#10B981' },
                 { value: 'pending', label: 'Pending KYC Review', dotColor: '#F59E0B' },
                 { value: 'suspended', label: 'Suspended (Frozen)', dotColor: '#EF4444' },
+                {
+                  value: 'blocked',
+                  label: `Blocked Credentials (${blockedCredentialsState.phones.length + blockedCredentialsState.emails.length})`,
+                  dotColor: '#DC2626'
+                },
               ]}
               variant="filter"
             />
@@ -810,9 +859,75 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. USERS DIRECTORY VIEW (TABLE OR CARDS)                                 */}
+      {/* 3. USERS DIRECTORY VIEW (TABLE OR CARDS OR BLOCKED VIEW)                  */}
       {/* ========================================================================= */}
-      {filteredUsers.length === 0 ? (
+      {standingFilter === 'blocked' ? (
+        <div className="bg-white rounded-3xl border border-[#E5E7EB] shadow-xs p-6 space-y-4 animate-fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E5E7EB] pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-5 h-5 text-rose-600" />
+                <h4 className="font-bold text-sm sm:text-base text-[#000004]">Restricted / Blocked Credentials</h4>
+              </div>
+              <p className="text-xs text-[#70798C] mt-0.5">
+                These phone numbers and email addresses were banned by platform administration and are blocked from signing up or receiving OTPs.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 self-start sm:self-auto">
+              {blockedCredentialsState.phones.length + blockedCredentialsState.emails.length} Blocked Total
+            </span>
+          </div>
+
+          {blockedCredentialsState.phones.length === 0 && blockedCredentialsState.emails.length === 0 ? (
+            <div className="py-12 text-center text-xs text-[#70798C] space-y-2">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto" />
+              <p className="font-semibold text-sm text-[#000004]">No credentials currently blocked</p>
+              <p className="text-slate-400">All registered users are in good standing.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {blockedCredentialsState.phones.map((phone) => (
+                <div key={phone} className="py-3.5 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">PHONE</span>
+                    <div>
+                      <p className="text-xs font-mono font-bold text-[#000004]">{phone}</p>
+                      <p className="text-[10px] text-[#70798C]">Prohibited from registering new account</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleUnblockCredential({ phone })}
+                    className="px-3.5 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span>Unblock / Allow Signup</span>
+                  </button>
+                </div>
+              ))}
+              {blockedCredentialsState.emails.map((email) => (
+                <div key={email} className="py-3.5 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200">EMAIL</span>
+                    <div>
+                      <p className="text-xs font-mono font-bold text-[#000004]">{email}</p>
+                      <p className="text-[10px] text-[#70798C]">Prohibited from registering new account</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleUnblockCredential({ email })}
+                    className="px-3.5 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span>Unblock / Allow Signup</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : filteredUsers.length === 0 ? (
         <div className="bg-white rounded-3xl p-12 text-center border border-[#E5E7EB] space-y-3">
           <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center mx-auto">
             <Users className="w-6 h-6" />
@@ -2273,6 +2388,149 @@ export const AdminUsersTab: React.FC<AdminUsersTabProps> = ({
           </div>
         </div>
       </ModalPortal>
+      )}
+
+      {/* MODAL 8: ACCOUNT REMOVAL / BAN / RESET MODAL */}
+      {deletionModalUser && (
+        <ModalPortal>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in overflow-y-auto"
+            onClick={() => !isExecutingDelete && setDeletionModalUser(null)}
+          >
+            <div
+              className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-[#E5E7EB] animate-scale-up space-y-4 my-auto max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3 border-b border-[#E5E7EB] pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                    <Trash2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-display font-bold text-base text-[#000004]">
+                      Remove {deletionModalUser.fullName}
+                    </h4>
+                    <p className="text-xs text-[#70798C] font-mono">
+                      {deletionModalUser.phone} {deletionModalUser.email ? `· ${deletionModalUser.email}` : ''}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  disabled={isExecutingDelete}
+                  onClick={() => setDeletionModalUser(null)}
+                  className="p-1 rounded-lg text-[#70798C] hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Instructions */}
+              <p className="text-xs text-[#70798C] leading-relaxed">
+                Choose how this account removal should be handled under Setlla's platform moderation policies:
+              </p>
+
+              {/* Choices */}
+              <div className="space-y-2.5">
+                {/* Choice 1: Ban & Block Credentials */}
+                <div
+                  onClick={() => !isExecutingDelete && setDeleteActionType('ban')}
+                  className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    deleteActionType === 'ban'
+                      ? 'border-rose-500 bg-rose-50/50 ring-2 ring-rose-500/10'
+                      : 'border-[#E5E7EB] hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5">
+                      <input
+                        type="radio"
+                        checked={deleteActionType === 'ban'}
+                        onChange={() => setDeleteActionType('ban')}
+                        className="accent-rose-600 w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-rose-950">Ban & Block Credentials</span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-100 text-rose-700">Recommended</span>
+                      </div>
+                      <p className="text-[11px] text-[#70798C] leading-snug mt-1">
+                        Permanently wipes listings and active sessions. <strong>Blocks this phone and email from ever signing up again</strong>. (Use for scamming, fake listings, or terms violations).
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Choice 2: Reset Account */}
+                <div
+                  onClick={() => !isExecutingDelete && setDeleteActionType('reset')}
+                  className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                    deleteActionType === 'reset'
+                      ? 'border-amber-500 bg-amber-50/50 ring-2 ring-amber-500/10'
+                      : 'border-[#E5E7EB] hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5">
+                      <input
+                        type="radio"
+                        checked={deleteActionType === 'reset'}
+                        onChange={() => setDeleteActionType('reset')}
+                        className="accent-amber-600 w-4 h-4 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-bold text-amber-950">Reset Account (Allow Re-Registration)</span>
+                      <p className="text-[11px] text-[#70798C] leading-snug mt-1">
+                        Purges account data cleanly but <strong>does not blacklist</strong> their phone or email. The user can start fresh and register a new account.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E5E7EB]">
+                <button
+                  type="button"
+                  disabled={isExecutingDelete}
+                  onClick={() => setDeletionModalUser(null)}
+                  className="py-2 px-4 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#70798C] hover:bg-slate-50 cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isExecutingDelete}
+                  onClick={handleConfirmDeletionExecution}
+                  className={`py-2 px-5 rounded-xl text-xs font-bold text-white transition-all cursor-pointer shadow-xs flex items-center gap-1.5 disabled:opacity-50 ${
+                    deleteActionType === 'ban'
+                      ? 'bg-rose-600 hover:bg-rose-700'
+                      : 'bg-amber-600 hover:bg-amber-700'
+                  }`}
+                >
+                  {isExecutingDelete ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Processing...</span>
+                    </>
+                  ) : deleteActionType === 'ban' ? (
+                    <>
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                      <span>Confirm Ban & Block</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Confirm Reset</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </ModalPortal>
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import {
   saveRegisteredUser,
   saveRegisteredUserAsync,
   normalizeEmail,
+  isDeletedUserRecord,
 } from '../utils/userRegistry';
 import { hashToken, verifyHashedToken, checkRateLimit } from '../utils/security';
 
@@ -62,6 +63,11 @@ export async function sendEmailOTP(
   const cleanEmail = normalizeEmail(email);
   if (!cleanEmail || !cleanEmail.includes('@')) {
     throw new Error('Please enter a valid email address.');
+  }
+
+  // Strict Security: Check if email is blacklisted / banned by admin
+  if (isDeletedUserRecord({ email: cleanEmail })) {
+    throw new Error('This email address has been restricted by platform administration. Please contact support@setlla.com.');
   }
 
   // If forgot password, check if account exists (or allow if Supabase configured)

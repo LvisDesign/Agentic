@@ -795,8 +795,10 @@ export function saveRegisteredUser(
 ): void {
   if (typeof window === 'undefined' || !user) return;
 
-  // Always unrecord any stale tombstone when saving a valid user
-  unrecordDeletedUser(user);
+  // Only unrecord stale tombstone if allowReRegistration is explicitly true
+  if (options?.allowReRegistration) {
+    unrecordDeletedUser(user);
+  }
 
   const allUsers = getRegisteredUsers();
   const existingIndex = allUsers.findIndex(
@@ -877,8 +879,10 @@ export async function saveRegisteredUserAsync(
   options?: SaveRegisteredUserOptions
 ): Promise<boolean> {
   if (!user) return false;
-  // Always unrecord any stale deletion tombstone when saving a valid user
-  unrecordDeletedUser(user);
+  // Only unrecord deletion tombstone when allowReRegistration is explicitly granted
+  if (options?.allowReRegistration) {
+    unrecordDeletedUser(user);
+  }
 
   saveRegisteredUser(user, { ...options, skipCloudSync: true });
   if (!isSupabaseConfigured() || options?.skipCloudSync) return true;
@@ -968,7 +972,8 @@ export function adminUpdateUser(user: UserProfile): void {
  * be freely reused to register a brand-new account without any conflict or "already exists" errors.
  */
 export async function deleteUserFromRegistryAsync(
-  target: string | UserProfile
+  target: string | UserProfile,
+  options?: { allowReRegistration?: boolean }
 ): Promise<{ success: boolean; error?: string }> {
   if (typeof window === 'undefined') return { success: false, error: 'Window undefined' };
   if (!target) return { success: false, error: 'No target specified' };
@@ -1172,10 +1177,18 @@ export async function deleteUserFromRegistryAsync(
     });
   } catch (_) {}
 
-  // 8. Record deleted user tombstone locally & in cloud so this account never resurfaces
-  ids.forEach((id) => recordDeletedUser({ id }, true));
-  phoneVariants.forEach((p) => recordDeletedUser({ phone: p }, true));
-  emailVariants.forEach((e) => recordDeletedUser({ email: e }, true));
+  // 8. Record deleted user tombstone locally & in cloud:
+  // - Default (allowReRegistration: false): Credentials remain permanently restricted/banned.
+  // - Admin Reset (allowReRegistration: true): Credentials are cleared so the user can sign up clean.
+  if (!options?.allowReRegistration) {
+    ids.forEach((id) => recordDeletedUser({ id }, true));
+    phoneVariants.forEach((p) => recordDeletedUser({ phone: p }, true));
+    emailVariants.forEach((e) => recordDeletedUser({ email: e }, true));
+  } else {
+    ids.forEach((id) => unrecordDeletedUser({ id }));
+    phoneVariants.forEach((p) => unrecordDeletedUser({ phone: p }));
+    emailVariants.forEach((e) => unrecordDeletedUser({ email: e }));
+  }
 
   // 9. Dispatch account deletion notice email directly to user's registered email
   const targetEmail = resolvedUser?.email || rawEmail;
@@ -1328,10 +1341,73 @@ export function deleteUserFromRegistry(target: string | UserProfile): void {
 
 export interface DuplicateCheckResult {
   exists: boolean;
+  isBanned?: boolean;
   reason?: 'phone' | 'email' | 'both';
   field?: 'phone' | 'email' | 'both';
   message?: string;
   matchedUser?: UserProfile;
+}
+
+/**
+ * Checks whether a phone number or email address has been banned/restricted by platform administration.
+ */
+export function isCredentialBanned(
+  phone?: string,
+  email?: string
+): { banned: boolean; reason?: 'phone' | 'email' | 'both'; message?: string } {
+  const normPhone = phone ? normalizePhoneNumber(phone) : '';
+  const normEmail = email ? normalizeEmail(email) : '';
+
+  const deletedPhones = getDeletedPhones();
+  const deletedEmails = getDeletedEmails();
+
+  const phoneBanned = Boolean(normPhone && deletedPhones.has(normPhone));
+  const emailBanned = Boolean(normEmail && deletedEmails.has(normEmail));
+
+  if (phoneBanned && emailBanned) {
+    return {
+      banned: true,
+      reason: 'both',
+      message: 'This phone number and email address have been restricted by platform administration. Please contact support@setlla.com.',
+    };
+  }
+  if (phoneBanned) {
+    return {
+      banned: true,
+      reason: 'phone',
+      message: 'This phone number has been restricted by platform administration. Please contact support@setlla.com.',
+    };
+  }
+  if (emailBanned) {
+    return {
+      banned: true,
+      reason: 'email',
+      message: 'This email address has been restricted by platform administration. Please contact support@setlla.com.',
+    };
+  }
+  return { banned: false };
+}
+
+/**
+ * Super Admin function: Unblocks previously restricted / banned credentials
+ * so a forgiven user or innocent account can sign up again.
+ */
+export function unblockUserCredentials(options: {
+  phone?: string;
+  email?: string;
+  id?: string;
+}): void {
+  unrecordDeletedUser(options);
+}
+
+/**
+ * Returns all currently restricted credentials (phones and emails).
+ */
+export function getBlockedCredentials(): { phones: string[]; emails: string[] } {
+  return {
+    phones: Array.from(getDeletedPhones()),
+    emails: Array.from(getDeletedEmails()),
+  };
 }
 
 /**
@@ -1343,6 +1419,17 @@ export function checkUserExists(
   email?: string,
   excludeUserId?: string
 ): DuplicateCheckResult {
+  // 1. Strict Blacklist check: If an admin banned this phone or email, registration is strictly prohibited
+  const banCheck = isCredentialBanned(phone, email);
+  if (banCheck.banned) {
+    return {
+      exists: true,
+      isBanned: true,
+      reason: banCheck.reason || 'both',
+      field: banCheck.reason || 'both',
+      message: banCheck.message || 'This credential has been restricted by platform administration.',
+    };
+  }
   const normPhone = normalizePhoneNumber(phone);
   const normEmail = normalizeEmail(email);
 
@@ -1423,6 +1510,47 @@ export async function checkUserExistsAsync(
   try {
     const client = getSupabaseClient();
     if (!client) return { exists: false };
+
+    // 2. Query cloud blacklist / tombstones in deleted_adverts
+    try {
+      const tombstoneKeys: string[] = [];
+      if (normPhone) {
+        tombstoneKeys.push(`usr_phone:${normPhone}`);
+        if (last10.length === 10) tombstoneKeys.push(`usr_phone:0${last10}`);
+      }
+      if (normEmail) {
+        tombstoneKeys.push(`usr_email:${normEmail}`);
+      }
+      if (tombstoneKeys.length > 0) {
+        const { data: tombstones } = await client
+          .from('deleted_adverts')
+          .select('id')
+          .in('id', tombstoneKeys);
+
+        if (tombstones && tombstones.length > 0) {
+          const isPhoneBlocked = tombstones.some((t: any) => typeof t.id === 'string' && t.id.startsWith('usr_phone:'));
+          const isEmailBlocked = tombstones.some((t: any) => typeof t.id === 'string' && t.id.startsWith('usr_email:'));
+
+          if (normPhone && isPhoneBlocked) recordDeletedUser({ phone: normPhone }, false);
+          if (normEmail && isEmailBlocked) recordDeletedUser({ email: normEmail }, false);
+
+          const reason = isPhoneBlocked && isEmailBlocked ? 'both' : isPhoneBlocked ? 'phone' : 'email';
+          return {
+            exists: true,
+            isBanned: true,
+            reason,
+            field: reason,
+            message: reason === 'both'
+              ? 'This phone number and email address have been restricted by platform administration. Please contact support@setlla.com.'
+              : reason === 'phone'
+              ? 'This phone number has been restricted by platform administration. Please contact support@setlla.com.'
+              : 'This email address has been restricted by platform administration. Please contact support@setlla.com.',
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('[UserRegistry] Exception checking cloud blacklist:', err);
+    }
 
     const queryPromise = (async (): Promise<DuplicateCheckResult> => {
       const filters: string[] = [];

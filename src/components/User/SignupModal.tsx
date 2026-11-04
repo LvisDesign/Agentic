@@ -169,7 +169,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
   // Email OTP Verification State (Agents, Employers, Password Recovery)
   const [otpEmail, setOtpEmail] = useState('');
-  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '', '', '']);
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [otpPurpose, setOtpPurpose] = useState<EmailOTPPurpose>('agent_signup');
   const [otpPendingUser, setOtpPendingUser] = useState<UserProfile | null>(null);
   const [otpResendSeconds, setOtpResendSeconds] = useState(0);
@@ -491,7 +491,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         setOtpEmail(seekerEmail.trim());
         setOtpPurpose(otpPurpose);
         setOtpPendingUser(updated);
-        setOtpDigits(['', '', '', '', '', '', '', '']);
+        setOtpDigits(['', '', '', '', '', '']);
         setOtpResendSeconds(60);
         setOtpError(null);
         setIsExistingAccountNotice(Boolean(res.isExistingAccount));
@@ -633,7 +633,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         setOtpEmail(agentEmail.trim());
         setOtpPurpose(otpPurpose);
         setOtpPendingUser(updated);
-        setOtpDigits(['', '', '', '', '', '', '', '']);
+        setOtpDigits(['', '', '', '', '', '']);
         setOtpResendSeconds(60);
         setOtpError(null);
         setIsExistingAccountNotice(Boolean(res.isExistingAccount));
@@ -653,18 +653,18 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
-  // --- OTP Input & Verification Handlers (Supports both 6-digit & 8-digit OTPs + Instant Paste) ---
+  // --- OTP Input & Verification Handlers (6-digit OTPs + Instant Paste) ---
   const applyPastedCode = (rawText: string) => {
     const cleaned = (rawText || '').replace(/\D/g, '');
     if (!cleaned) return;
-    const chars = cleaned.slice(0, 8).split('');
-    const newDigits = Array(8).fill('');
+    const chars = cleaned.slice(0, 6).split('');
+    const newDigits = Array(6).fill('');
     chars.forEach((c, idx) => {
-      if (idx < 8) newDigits[idx] = c;
+      if (idx < 6) newDigits[idx] = c;
     });
     setOtpDigits(newDigits);
     if (otpError) setOtpError(null);
-    const nextIdx = Math.min(chars.length, 7);
+    const nextIdx = Math.min(chars.length, 5);
     const nextInput = document.getElementById(`otp-box-${nextIdx}`);
     if (nextInput) nextInput.focus();
   };
@@ -703,7 +703,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     setOtpDigits(newDigits);
     if (otpError) setOtpError(null);
 
-    if (cleaned && index < 7) {
+    if (cleaned && index < 5) {
       const nextInput = document.getElementById(`otp-box-${index + 1}`);
       if (nextInput) nextInput.focus();
     }
@@ -1011,7 +1011,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       const res = await sendEmailOTP(forgotPasswordEmail.trim(), 'forgot_password');
       setOtpEmail(forgotPasswordEmail.trim());
       setOtpPurpose('forgot_password');
-      setOtpDigits(['', '', '', '', '', '', '', '']);
+      setOtpDigits(['', '', '', '', '', '']);
       setOtpResendSeconds(60);
       setOtpError(null);
       setAuthMode('verify_email');
@@ -1716,7 +1716,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <label className="block text-xs font-semibold text-[#70798C] text-center">
                         Enter verification code
                       </label>
-                      <div className="flex items-center justify-center gap-1 sm:gap-2 my-2">
+                      <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 my-2">
                         {otpDigits.map((digit, idx) => (
                           <input
                             key={idx}
@@ -1729,7 +1729,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             onPaste={handlePaste}
                             onChange={(e) => handleDigitChange(idx, e.target.value)}
                             onKeyDown={(e) => handleDigitKeyDown(idx, e)}
-                            className="w-8 h-11 sm:w-10 sm:h-12 text-center text-base sm:text-lg font-black rounded-lg sm:rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] text-[#000004] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/20 focus:border-[#F95700] transition-all"
+                            className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-black rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] text-[#000004] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F95700]/20 focus:border-[#F95700] transition-all"
                           />
                         ))}
                       </div>
@@ -1747,14 +1747,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </div>
 
                       <p className="text-[11px] text-[#70798C] text-center pt-0.5">
-                        Enter the code from your email (6 or 8 digits), or tap the confirmation link to activate instantly.
+                        Enter the 6-digit code from your email, or tap the confirmation link to activate instantly.
                       </p>
                     </div>
 
                     <div className="pt-2 space-y-2.5">
                       <button
                         type="submit"
-                        disabled={isVerifyingOtp || (otpDigits.filter(Boolean).length !== 6 && otpDigits.filter(Boolean).length !== 8)}
+                        disabled={isVerifyingOtp || otpDigits.filter(Boolean).length !== 6}
                         className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
                       >
                         {isVerifyingOtp ? (
@@ -2054,22 +2054,26 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <AlertTriangle className="w-3.5 h-3.5" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h5 className="font-bold text-xs text-[#000004] leading-tight">Account Already Exists</h5>
+                            <h5 className="font-bold text-xs text-[#000004] leading-tight">
+                              {duplicateError.isBanned ? 'Account Credentials Restricted' : 'Account Already Exists'}
+                            </h5>
                             <p className="text-[11px] text-[#70798C] leading-relaxed mt-0.5">
-                              {duplicateError.message} You cannot register twice with the same phone number or email address.
+                              {duplicateError.message}
                             </p>
                           </div>
                         </div>
-                        <div className="pt-0.5 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                            className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
-                          >
-                            <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
-                            <span>Sign In With This Account</span>
-                          </button>
-                        </div>
+                        {!duplicateError.isBanned && (
+                          <div className="pt-0.5 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
+                              className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                            >
+                              <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
+                              <span>Sign In With This Account</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -2394,22 +2398,26 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <AlertTriangle className="w-3.5 h-3.5" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h5 className="font-bold text-xs text-[#000004] leading-tight">Account Already Exists</h5>
+                            <h5 className="font-bold text-xs text-[#000004] leading-tight">
+                              {duplicateError.isBanned ? 'Account Credentials Restricted' : 'Account Already Exists'}
+                            </h5>
                             <p className="text-[11px] text-[#70798C] leading-relaxed mt-0.5">
-                              {duplicateError.message} You cannot register twice with the same phone number or email address.
+                              {duplicateError.message}
                             </p>
                           </div>
                         </div>
-                        <div className="pt-0.5 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                            className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
-                          >
-                            <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
-                            <span>Sign In With This Account</span>
-                          </button>
-                        </div>
+                        {!duplicateError.isBanned && (
+                          <div className="pt-0.5 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
+                              className="px-3 py-1 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                            >
+                              <LogIn className="w-3.5 h-3.5 text-[#10B981]" />
+                              <span>Sign In With This Account</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
 
