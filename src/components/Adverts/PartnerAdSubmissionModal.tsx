@@ -21,7 +21,7 @@ import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { processUploadedFile } from '../../utils/mediaStorage';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { ModalPortal } from '../UI/ModalPortal';
-import { getAdPricing } from '../../services/adminService';
+import { getAdPricing, fetchPlatformSettingsAsync } from '../../services/adminService';
 import { formatNaira } from '../../utils/formatters';
 
 interface PartnerAdSubmissionModalProps {
@@ -103,10 +103,22 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [adPricing, setAdPricing] = useState(() => getAdPricing());
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    setAdPricing(getAdPricing());
+    const handler = () => {
+      setAdPricing(getAdPricing());
+    };
+    window.addEventListener('setlla:platform_settings_updated', handler);
+    fetchPlatformSettingsAsync().then(() => {
+      setAdPricing(getAdPricing());
+    }).catch(() => {});
+    return () => window.removeEventListener('setlla:platform_settings_updated', handler);
+  }, [isOpen]);
 
   if (!isOpen) return null;
-
-  const adPricing = getAdPricing();
 
   const TIERS = [
     {

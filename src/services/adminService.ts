@@ -1,5 +1,6 @@
 import { AdminAuditLog, PlatformSettings, UserProfile, PropertyListing, BookingRecord } from '../types/marketplace';
 import { getRegisteredUsers, adminUpdateUser, deleteUserFromRegistry, deleteUserFromRegistryAsync } from '../utils/userRegistry';
+import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 export { deleteUserFromRegistry, deleteUserFromRegistryAsync };
 
 const AUDIT_LOGS_KEY = 'setlla_admin_audit_logs';
@@ -49,6 +50,68 @@ export function getPlatformSettings(): PlatformSettings {
 }
 
 /**
+ * Asynchronously fetches platform settings and ad prices from Supabase central database.
+ * Merges cloud values into local cache so all devices and screens see identical prices set by Super Admin.
+ */
+export async function fetchPlatformSettingsAsync(): Promise<PlatformSettings> {
+  const current = getPlatformSettings();
+  if (!isSupabaseConfigured()) return current;
+
+  try {
+    const { data, error } = await supabase
+      .from('platform_settings')
+      .select('*');
+
+    if (error) {
+      console.warn('[AdminService] Error fetching platform_settings from Supabase:', error);
+      return current;
+    }
+
+    if (Array.isArray(data) && data.length > 0) {
+      const globalRow = data.find((r) => r.id === 'global_config') || data[0];
+      const pricingRow = data.find((r) => r.id === 'ad_pricing_config');
+
+      let parsedPricing: any = {};
+      if (pricingRow?.emergency_announcement) {
+        try {
+          parsedPricing = JSON.parse(pricingRow.emergency_announcement);
+        } catch (_) {}
+      }
+
+      const settingsData = (globalRow as any)?.settings_data || {};
+
+      const merged: PlatformSettings = {
+        ...DEFAULT_PLATFORM_SETTINGS,
+        ...current,
+        defaultInspectionFee: Number(globalRow.default_inspection_fee ?? current.defaultInspectionFee),
+        maxQueueLimitPerSlot: Number(globalRow.max_queue_limit_per_slot ?? current.maxQueueLimitPerSlot),
+        maintenanceMode: Boolean(globalRow.maintenance_mode ?? current.maintenanceMode),
+        emergencyAnnouncement: globalRow.emergency_announcement ?? current.emergencyAnnouncement,
+        emergencyAnnouncementActive: Boolean(globalRow.emergency_announcement_active ?? current.emergencyAnnouncementActive),
+        autoApproveVerifiedAgentListings: Boolean(globalRow.auto_approve_verified_agent_listings ?? current.autoApproveVerifiedAgentListings),
+        
+        // Dynamic ad pricing from cloud database (strictly synchronized across all devices)
+        adPricingStarter: Number((globalRow as any)?.ad_pricing_starter ?? parsedPricing.adPricingStarter ?? parsedPricing.starter ?? settingsData.adPricingStarter ?? current.adPricingStarter ?? 15000),
+        adPricingGrowth: Number((globalRow as any)?.ad_pricing_growth ?? parsedPricing.adPricingGrowth ?? parsedPricing.growth ?? settingsData.adPricingGrowth ?? current.adPricingGrowth ?? 45000),
+        adPricingCorporate: Number((globalRow as any)?.ad_pricing_corporate ?? parsedPricing.adPricingCorporate ?? parsedPricing.corporate ?? settingsData.adPricingCorporate ?? current.adPricingCorporate ?? 120000),
+        adPricingFeedWeekly: Number((globalRow as any)?.ad_pricing_feed_weekly ?? parsedPricing.adPricingFeedWeekly ?? parsedPricing.feedWeekly ?? settingsData.adPricingFeedWeekly ?? current.adPricingFeedWeekly ?? 5000),
+        adPricingFeedMonthly: Number((globalRow as any)?.ad_pricing_feed_monthly ?? parsedPricing.adPricingFeedMonthly ?? parsedPricing.feedMonthly ?? settingsData.adPricingFeedMonthly ?? current.adPricingFeedMonthly ?? 15000),
+      };
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+        window.dispatchEvent(new CustomEvent('setlla:platform_settings_updated', { detail: merged }));
+      }
+      return merged;
+    }
+  } catch (err) {
+    console.warn('[AdminService] Exception in fetchPlatformSettingsAsync:', err);
+  }
+
+  return current;
+}
+
+/**
  * Returns dynamic ad pricing rates set by Super Admin (with sensible defaults)
  */
 export function getAdPricing(): {
@@ -69,6 +132,60 @@ export function getAdPricing(): {
 }
 
 /**
+ * Saves updated platform settings and synchronizes them to Supabase cloud.
+ * Broadcasts changes so all devices/screens reflect new pricing immediately.
+ */
+export async function savePlatformSettingsAsync(settings: PlatformSettings): Promise<void> {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    window.dispatchEvent(new CustomEvent('setlla:platform_settings_updated', { detail: settings }));
+  }
+
+  if (!isSupabaseConfigured()) return;
+
+  try {
+    // 1. Sync global settings to Supabase
+    const globalPayload: any = {
+      id: 'global_config',
+      default_inspection_fee: settings.defaultInspectionFee,
+      max_queue_limit_per_slot: settings.maxQueueLimitPerSlot,
+      maintenance_mode: settings.maintenanceMode,
+      emergency_announcement: settings.emergencyAnnouncement,
+      emergency_announcement_active: settings.emergencyAnnouncementActive,
+      auto_approve_verified_agent_listings: settings.autoApproveVerifiedAgentListings,
+      updated_at: new Date().toISOString(),
+    };
+
+    await supabase.from('platform_settings').upsert(globalPayload);
+
+    // 2. Sync ad pricing config row so devices without custom columns read updated rates
+    const adPricingData = {
+      starter: settings.adPricingStarter ?? 15000,
+      growth: settings.adPricingGrowth ?? 45000,
+      corporate: settings.adPricingCorporate ?? 120000,
+      feedWeekly: settings.adPricingFeedWeekly ?? 5000,
+      feedMonthly: settings.adPricingFeedMonthly ?? 15000,
+      adPricingStarter: settings.adPricingStarter ?? 15000,
+      adPricingGrowth: settings.adPricingGrowth ?? 45000,
+      adPricingCorporate: settings.adPricingCorporate ?? 120000,
+      adPricingFeedWeekly: settings.adPricingFeedWeekly ?? 5000,
+      adPricingFeedMonthly: settings.adPricingFeedMonthly ?? 15000,
+    };
+
+    await supabase.from('platform_settings').upsert({
+      id: 'ad_pricing_config',
+      emergency_announcement: JSON.stringify(adPricingData),
+      emergency_announcement_active: false,
+      updated_at: new Date().toISOString(),
+    });
+
+    console.log('[AdminService] Platform settings & ad prices synchronized to Supabase cloud successfully.');
+  } catch (err) {
+    console.error('[AdminService] Failed to synchronize settings to cloud:', err);
+  }
+}
+
+/**
  * Saves updated platform settings.
  * Strictly guarded to prevent unauthorized tampering or defacement.
  */
@@ -80,12 +197,10 @@ export function savePlatformSettings(settings: PlatformSettings): void {
     console.warn('[AdminService] Unauthorized attempt to modify platform settings rejected.');
     return;
   }
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    window.dispatchEvent(new CustomEvent('setlla:platform_settings_updated', { detail: settings }));
-  } catch (err) {
-    console.error('[AdminService] Failed to save settings:', err);
-  }
+
+  savePlatformSettingsAsync(settings).catch((err) => {
+    console.error('[AdminService] Error saving settings:', err);
+  });
 }
 
 /**

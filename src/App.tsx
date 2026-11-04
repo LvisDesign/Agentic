@@ -75,7 +75,7 @@ import {
   isAdminSessionExpired,
   getAndClearAdminExpiredNotice
 } from './services/adminAuthService';
-import { getPlatformSettings } from './services/adminService';
+import { getPlatformSettings, fetchPlatformSettingsAsync } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
 import { fetchAllBookings, saveNewBooking, updateBookingStatus, deleteBooking } from './services/bookingService';
 import { supabase, isSupabaseConfigured, getSupabaseClient } from './utils/supabaseClient';
@@ -442,6 +442,49 @@ export function App() {
   const [isMyPassesOpen, setIsMyPassesOpen] = useState(initialNav.openPasses);
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(() => getPlatformSettings());
 
+  // Realtime Cloud Synchronization for Platform Settings & Ad Pricing across all device screens
+  useEffect(() => {
+    const handleSettingsUpdate = (e: any) => {
+      if (e.detail) {
+        setPlatformSettings(e.detail);
+      } else {
+        setPlatformSettings(getPlatformSettings());
+      }
+    };
+
+    window.addEventListener('setlla:platform_settings_updated', handleSettingsUpdate);
+
+    // Initial cloud fetch on startup
+    fetchPlatformSettingsAsync().then((settings) => {
+      if (settings) setPlatformSettings(settings);
+    }).catch(() => {});
+
+    // Realtime channel for platform_settings table so mobile and desktop sync instantly
+    if (isSupabaseConfigured()) {
+      const channel = supabase
+        .channel('public:platform_settings_sync')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'platform_settings' },
+          () => {
+            fetchPlatformSettingsAsync().then((latest) => {
+              if (latest) setPlatformSettings(latest);
+            }).catch(() => {});
+          }
+        )
+        .subscribe();
+
+      return () => {
+        window.removeEventListener('setlla:platform_settings_updated', handleSettingsUpdate);
+        supabase.removeChannel(channel);
+      };
+    }
+
+    return () => {
+      window.removeEventListener('setlla:platform_settings_updated', handleSettingsUpdate);
+    };
+  }, []);
+
   // Active Room state: 'rentals' (Accommodations) or 'jobs' (Setlla Jobs)
   const [activeRoom, setActiveRoom] = useState<'rentals' | 'jobs'>(() => {
     if (typeof window !== 'undefined') {
@@ -648,9 +691,10 @@ export function App() {
   // Data Synchronizer: fetches lightweight active listings & adverts
   const syncLatestData = useCallback(async () => {
     try {
-      const [fetchedListings, fetchedAdverts] = await Promise.all([
+      const [fetchedListings, fetchedAdverts, fetchedSettings] = await Promise.all([
         fetchAllListings({ limit: 24 }),
         loadAllAdverts(),
+        fetchPlatformSettingsAsync(),
       ]);
 
       if (fetchedListings && fetchedListings.length > 0) {
@@ -658,6 +702,9 @@ export function App() {
       }
       if (fetchedAdverts && fetchedAdverts.length > 0) {
         setAdverts(fetchedAdverts);
+      }
+      if (fetchedSettings) {
+        setPlatformSettings(fetchedSettings);
       }
 
       // If user is signed in, sync only their own single profile securely (never downloads all users)

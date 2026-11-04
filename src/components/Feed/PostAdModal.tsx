@@ -22,7 +22,7 @@ import { PaystackModal } from '../Booking/PaystackModal';
 import { CustomDropdown } from '../UI/CustomDropdown';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { ModalPortal } from '../UI/ModalPortal';
-import { getAdPricing } from '../../services/adminService';
+import { getAdPricing, fetchPlatformSettingsAsync } from '../../services/adminService';
 import { processUploadedFile, storeBlobInIDB } from '../../utils/mediaStorage';
 import { isVideoMediaUrl } from '../../services/adService';
 
@@ -60,10 +60,23 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   const [showPaystackModal, setShowPaystackModal] = useState(false);
   const [paymentRef, setPaymentRef] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [adPricing, setAdPricing] = useState(() => getAdPricing());
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    setAdPricing(getAdPricing());
+    const handler = () => {
+      setAdPricing(getAdPricing());
+    };
+    window.addEventListener('setlla:platform_settings_updated', handler);
+    fetchPlatformSettingsAsync().then(() => {
+      setAdPricing(getAdPricing());
+    }).catch(() => {});
+    return () => window.removeEventListener('setlla:platform_settings_updated', handler);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const adPricing = getAdPricing();
   const advertCost = selectedPlan === 'weekly' ? adPricing.feedWeekly : adPricing.feedMonthly;
 
   const handleMediaFile = async (e: React.ChangeEvent<HTMLInputElement>) => {

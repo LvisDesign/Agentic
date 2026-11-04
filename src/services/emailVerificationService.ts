@@ -58,7 +58,7 @@ export async function sendEmailOTP(
   email: string,
   purpose: EmailOTPPurpose,
   pendingUser?: UserProfile
-): Promise<{ success: boolean; message: string; testOtp: string; expiresAt: number }> {
+): Promise<{ success: boolean; message: string; testOtp: string; expiresAt: number; isExistingAccount?: boolean }> {
   const cleanEmail = normalizeEmail(email);
   if (!cleanEmail || !cleanEmail.includes('@')) {
     throw new Error('Please enter a valid email address.');
@@ -99,94 +99,94 @@ export async function sendEmailOTP(
     localStorage.setItem(PENDING_EMAIL_OTP_KEY, JSON.stringify(record));
   }
 
+  let isExistingAccount = false;
+
   // Supabase Auth Email Delivery via Hostinger custom SMTP
   if (isSupabaseConfigured()) {
     const redirectUrl = typeof window !== 'undefined' && window.location?.origin
       ? `${window.location.origin}${window.location.pathname}`
       : 'https://setlla.com';
 
-    if (purpose === 'forgot_password') {
-      // Use Supabase's dedicated resetPasswordForEmail which dispatches the recovery email via Hostinger SMTP
-      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-        redirectTo: redirectUrl,
+    // Primary OTP Dispatch via Supabase signInWithOtp:
+    // This is the dedicated Supabase API that dispatches 6-digit email OTPs via SMTP.
+    // Setting shouldCreateUser: true ensures both brand-new signups and existing accounts receive the code.
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          emailRedirectTo: redirectUrl,
+          shouldCreateUser: true,
+        },
       });
 
-      if (error) {
-        console.error('[Setlla Email Service] Supabase resetPasswordForEmail error:', error);
-        throw new Error(error.message || 'Failed to dispatch password recovery email.');
-      }
-      console.log('[Setlla Email Service] Password reset email dispatched via Hostinger SMTP to:', cleanEmail);
-    } else {
-      // Primary Signup Email Dispatch via Supabase Auth & Hostinger SMTP
-      try {
-        const userPassword = pendingUser?.password || `Setlla_${Math.random().toString(36).substring(2, 10)}!`;
+      if (otpError) {
+        console.warn('[Setlla Email Service] Supabase signInWithOtp notice:', otpError);
 
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password: userPassword,
-          options: {
-            emailRedirectTo: redirectUrl,
-            data: {
-              full_name: pendingUser?.fullName || '',
-              phone: pendingUser?.phone || '',
-              persona: pendingUser?.persona || '',
-              is_agent: pendingUser?.isAgent || false,
-            },
-          },
-        });
+        if (otpError.status === 429 || otpError.message.toLowerCase().includes('rate limit')) {
+          throw new Error('Email delivery rate limit reached. Please wait a moment before requesting another code.');
+        }
 
-        if (signUpError) {
-          console.warn('[Setlla Email Service] Supabase signUp response notice:', signUpError);
-          
-          if (signUpError.status === 429 || signUpError.message.toLowerCase().includes('rate limit')) {
-            throw new Error('Email delivery rate limit reached. Please wait a moment before requesting another code.');
-          }
-
-          // If the email was already registered in auth.users, trigger a resend of the confirmation email
-          if (
-            signUpError.message.toLowerCase().includes('already registered') ||
-            signUpError.message.toLowerCase().includes('already exists')
-          ) {
-            console.log('[Setlla Email Service] User exists in auth.users, requesting resend of confirmation email:', cleanEmail);
-            const { error: resendError } = await supabase.auth.resend({
-              type: 'signup',
-              email: cleanEmail,
-              options: {
-                emailRedirectTo: redirectUrl,
-              },
-            });
-            if (resendError) {
-              console.warn('[Setlla Email Service] Resend error for existing user:', resendError);
-            }
-          } else {
-            throw new Error(signUpError.message || 'Failed to dispatch verification email.');
-          }
-        } else if (signUpData?.user && signUpData.user.identities && signUpData.user.identities.length === 0) {
-          // If identities is empty, Supabase detected existing user — trigger confirmation resend
-          console.log('[Setlla Email Service] Existing unconfirmed user identity detected, requesting confirmation resend:', cleanEmail);
-          const { error: resendErr } = await supabase.auth.resend({
-            type: 'signup',
-            email: cleanEmail,
-            options: {
-              emailRedirectTo: redirectUrl,
-            },
+        // Secondary Fallback: If signInWithOtp fails, attempt signUp/resend
+        if (purpose === 'forgot_password') {
+          const { error: resetErr } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+            redirectTo: redirectUrl,
           });
-          if (resendErr) {
-            console.warn('[Setlla Email Service] Resend notice:', resendErr);
+          if (resetErr) {
+            console.warn('[Setlla Email Service] Password reset fallback notice:', resetErr);
           }
         } else {
-          console.log('[Setlla Email Service] Supabase signup confirmation email successfully dispatched via Hostinger SMTP to:', cleanEmail);
+          const userPassword = pendingUser?.password || `Setlla_${Math.random().toString(36).substring(2, 10)}!`;
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: cleanEmail,
+            password: userPassword,
+            options: {
+              emailRedirectTo: redirectUrl,
+              data: {
+                full_name: pendingUser?.fullName || '',
+                phone: pendingUser?.phone || '',
+                persona: pendingUser?.persona || '',
+                is_agent: pendingUser?.isAgent || false,
+              },
+            },
+          });
+
+          if (signUpError) {
+            console.warn('[Setlla Email Service] Fallback signUp notice:', signUpError);
+            if (
+              signUpError.message.toLowerCase().includes('already registered') ||
+              signUpError.message.toLowerCase().includes('already exists')
+            ) {
+              isExistingAccount = true;
+              await supabase.auth.resend({
+                type: 'signup',
+                email: cleanEmail,
+                options: { emailRedirectTo: redirectUrl },
+              }).catch(() => {});
+            }
+          } else if (signUpData?.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
+            isExistingAccount = true;
+            await supabase.auth.resend({
+              type: 'signup',
+              email: cleanEmail,
+              options: { emailRedirectTo: redirectUrl },
+            }).catch(() => {});
+          }
         }
-      } catch (signupErr: any) {
-        console.error('[Setlla Email Service] Supabase signup email dispatch error:', signupErr);
-        throw new Error(signupErr?.message || 'Failed to dispatch verification email. Please check your connection.');
+      } else {
+        console.log('[Setlla Email Service] Supabase OTP email successfully dispatched via Hostinger SMTP to:', cleanEmail);
       }
+    } catch (dispatchErr: any) {
+      console.error('[Setlla Email Service] Supabase OTP dispatch error:', dispatchErr);
+      throw new Error(dispatchErr?.message || 'Failed to dispatch verification email. Please check your connection.');
     }
   }
 
   return {
     success: true,
-    message: `A 6-digit verification code was sent to ${cleanEmail}.`,
+    message: isExistingAccount
+      ? `This email is already associated with an account. We've sent a verification link if pending confirmation.`
+      : `A 6-digit verification code was sent to ${cleanEmail}.`,
+    isExistingAccount,
     testOtp: '',
     expiresAt,
   };
@@ -315,6 +315,11 @@ export async function verifyEmailOTP(
     if (verifiedUser) {
       verifiedUser.isEmailVerified = true;
       await saveRegisteredUserAsync(verifiedUser, { allowReRegistration: true });
+      if (verifiedUser.password && isSupabaseConfigured()) {
+        try {
+          await supabase.auth.updateUser({ password: verifiedUser.password });
+        } catch (_) {}
+      }
     }
   }
 

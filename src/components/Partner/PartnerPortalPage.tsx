@@ -48,7 +48,7 @@ import { AdvertStory } from '../../data/mockAdverts';
 import { UserProfile } from '../../types/marketplace';
 import { CustomConfirmModal } from '../UI/CustomConfirmModal';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
-import { getAdPricing } from '../../services/adminService';
+import { getAdPricing, fetchPlatformSettingsAsync } from '../../services/adminService';
 import { formatNaira } from '../../utils/formatters';
 import { AdvertiserUser, getActiveAdvertiser, logoutAdvertiser } from '../../services/advertiserAuthService';
 import { isSuperAdminAuthenticated } from '../../services/adminAuthService';
@@ -215,7 +215,18 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
-  const adPricing = getAdPricing();
+  const [adPricing, setAdPricing] = useState(() => getAdPricing());
+
+  useEffect(() => {
+    const handler = () => {
+      setAdPricing(getAdPricing());
+    };
+    window.addEventListener('setlla:platform_settings_updated', handler);
+    fetchPlatformSettingsAsync().then(() => {
+      setAdPricing(getAdPricing());
+    }).catch(() => {});
+    return () => window.removeEventListener('setlla:platform_settings_updated', handler);
+  }, []);
 
   const TIERS = [
     {

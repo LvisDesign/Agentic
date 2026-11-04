@@ -175,6 +175,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const [otpResendSeconds, setOtpResendSeconds] = useState(0);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [isExistingAccountNotice, setIsExistingAccountNotice] = useState(false);
 
   // Forgot Password State
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
@@ -486,13 +487,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
       // Send OTP to email and transition to verify_email screen for ALL signups
       try {
-        await sendEmailOTP(seekerEmail.trim(), otpPurpose, updated);
+        const res = await sendEmailOTP(seekerEmail.trim(), otpPurpose, updated);
         setOtpEmail(seekerEmail.trim());
         setOtpPurpose(otpPurpose);
         setOtpPendingUser(updated);
         setOtpDigits(['', '', '', '', '', '', '', '']);
         setOtpResendSeconds(60);
         setOtpError(null);
+        setIsExistingAccountNotice(Boolean(res.isExistingAccount));
         setAuthMode('verify_email');
         setIsSubmittingSeeker(false);
         return;
@@ -627,13 +629,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       // Enforce email verification for Agents and Employers
       const otpPurpose: EmailOTPPurpose = resolvedPersona === 'employer' ? 'employer_signup' : 'agent_signup';
       try {
-        await sendEmailOTP(agentEmail.trim(), otpPurpose, updated);
+        const res = await sendEmailOTP(agentEmail.trim(), otpPurpose, updated);
         setOtpEmail(agentEmail.trim());
         setOtpPurpose(otpPurpose);
         setOtpPendingUser(updated);
         setOtpDigits(['', '', '', '', '', '', '', '']);
         setOtpResendSeconds(60);
         setOtpError(null);
+        setIsExistingAccountNotice(Boolean(res.isExistingAccount));
         setAuthMode('verify_email');
         setIsSubmittingAgent(false);
         return;
@@ -716,9 +719,12 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   const handleResendOtp = async () => {
     if (otpResendSeconds > 0 || !otpEmail) return;
     try {
-      await sendEmailOTP(otpEmail, otpPurpose, otpPendingUser || undefined);
+      const res = await sendEmailOTP(otpEmail, otpPurpose, otpPendingUser || undefined);
       setOtpResendSeconds(60);
       setOtpError(null);
+      if (res.isExistingAccount) {
+        setIsExistingAccountNotice(true);
+      }
     } catch (err: any) {
       setOtpError(err.message || 'Failed to resend verification code.');
     }
@@ -1664,6 +1670,47 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <span className="flex-1 font-semibold">{otpError}</span>
                       </div>
                     )}
+
+                    {isExistingAccountNotice && (
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-col gap-1.5 animate-fade-in shadow-2xs">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Account Already Exists</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-amber-800">
+                          An account with <strong>{otpEmail}</strong> is already registered. If you already have your password, you can sign in directly.
+                        </p>
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLoginPhoneOrEmail(otpEmail);
+                              setAuthMode('login');
+                            }}
+                            className="px-2.5 py-1 rounded-md bg-[#000004] text-white text-[11px] font-bold hover:bg-gray-800 cursor-pointer"
+                          >
+                            Sign In with Password
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForgotPasswordEmail(otpEmail);
+                              setAuthMode('forgot_password');
+                            }}
+                            className="text-[11px] font-bold text-amber-900 underline hover:text-amber-950 cursor-pointer"
+                          >
+                            Forgot Password?
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-100 text-blue-900 text-[11px] flex items-start gap-2">
+                      <Mail className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      <div className="leading-relaxed">
+                        <strong className="font-semibold text-blue-950">Can't find the email?</strong> Please check your <strong className="underline">Spam</strong> or <strong className="underline">Junk</strong> folder.
+                      </div>
+                    </div>
 
                     <div className="space-y-2">
                       <label className="block text-xs font-semibold text-[#70798C] text-center">
