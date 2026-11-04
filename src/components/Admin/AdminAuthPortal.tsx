@@ -24,7 +24,8 @@ import {
   findAdminAccount,
   completeAdminRegistration,
   loginAdminWithPassword,
-  updateAdminLastActivity
+  updateAdminLastActivity,
+  issueAdminSessionToken
 } from '../../services/adminAuthService';
 import { recordAuditLog } from '../../services/adminService';
 import { supabase, isSupabaseConfigured } from '../../utils/supabaseClient';
@@ -348,6 +349,7 @@ export const AdminAuthPortal: React.FC<AdminAuthPortalProps> = ({
       if (typeof window !== 'undefined') {
         localStorage.setItem('setlla_admin_auth', 'true');
         localStorage.setItem('setlla_admin_user', JSON.stringify(adminProfile));
+        issueAdminSessionToken(adminProfile);
         updateAdminLastActivity();
       }
 

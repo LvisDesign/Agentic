@@ -80,6 +80,20 @@ export async function fetchPlatformSettingsAsync(): Promise<PlatformSettings> {
 
       const settingsData = (globalRow as any)?.settings_data || {};
 
+      const starter = Number((globalRow as any)?.ad_pricing_starter ?? parsedPricing.adPricingStarter ?? parsedPricing.starter ?? settingsData.adPricingStarter ?? current.adPricingStarter ?? 15000);
+      const growth = Number((globalRow as any)?.ad_pricing_growth ?? parsedPricing.adPricingGrowth ?? parsedPricing.growth ?? settingsData.adPricingGrowth ?? current.adPricingGrowth ?? 45000);
+      const corporate = Number((globalRow as any)?.ad_pricing_corporate ?? parsedPricing.adPricingCorporate ?? parsedPricing.corporate ?? settingsData.adPricingCorporate ?? current.adPricingCorporate ?? 120000);
+      let feedWeekly = Number((globalRow as any)?.ad_pricing_feed_weekly ?? parsedPricing.adPricingFeedWeekly ?? parsedPricing.feedWeekly ?? settingsData.adPricingFeedWeekly ?? current.adPricingFeedWeekly ?? 5000);
+      let feedMonthly = Number((globalRow as any)?.ad_pricing_feed_monthly ?? parsedPricing.adPricingFeedMonthly ?? parsedPricing.feedMonthly ?? settingsData.adPricingFeedMonthly ?? current.adPricingFeedMonthly ?? 15000);
+
+      // Harmonization: If the admin customized 7-Day or 30-Day under Starter/Growth but left feedWeekly/feedMonthly at defaults (or vice versa), keep them aligned
+      if (feedWeekly === 5000 && starter !== 15000) {
+        feedWeekly = starter;
+      }
+      if (feedMonthly === 15000 && growth !== 45000) {
+        feedMonthly = growth;
+      }
+
       const merged: PlatformSettings = {
         ...DEFAULT_PLATFORM_SETTINGS,
         ...current,
@@ -91,11 +105,11 @@ export async function fetchPlatformSettingsAsync(): Promise<PlatformSettings> {
         autoApproveVerifiedAgentListings: Boolean(globalRow.auto_approve_verified_agent_listings ?? current.autoApproveVerifiedAgentListings),
         
         // Dynamic ad pricing from cloud database (strictly synchronized across all devices)
-        adPricingStarter: Number((globalRow as any)?.ad_pricing_starter ?? parsedPricing.adPricingStarter ?? parsedPricing.starter ?? settingsData.adPricingStarter ?? current.adPricingStarter ?? 15000),
-        adPricingGrowth: Number((globalRow as any)?.ad_pricing_growth ?? parsedPricing.adPricingGrowth ?? parsedPricing.growth ?? settingsData.adPricingGrowth ?? current.adPricingGrowth ?? 45000),
-        adPricingCorporate: Number((globalRow as any)?.ad_pricing_corporate ?? parsedPricing.adPricingCorporate ?? parsedPricing.corporate ?? settingsData.adPricingCorporate ?? current.adPricingCorporate ?? 120000),
-        adPricingFeedWeekly: Number((globalRow as any)?.ad_pricing_feed_weekly ?? parsedPricing.adPricingFeedWeekly ?? parsedPricing.feedWeekly ?? settingsData.adPricingFeedWeekly ?? current.adPricingFeedWeekly ?? 5000),
-        adPricingFeedMonthly: Number((globalRow as any)?.ad_pricing_feed_monthly ?? parsedPricing.adPricingFeedMonthly ?? parsedPricing.feedMonthly ?? settingsData.adPricingFeedMonthly ?? current.adPricingFeedMonthly ?? 15000),
+        adPricingStarter: starter,
+        adPricingGrowth: growth,
+        adPricingCorporate: corporate,
+        adPricingFeedWeekly: feedWeekly,
+        adPricingFeedMonthly: feedMonthly,
       };
 
       if (typeof window !== 'undefined') {
@@ -112,6 +126,22 @@ export async function fetchPlatformSettingsAsync(): Promise<PlatformSettings> {
 }
 
 /**
+ * Checks whether the current user is an authorized administrator.
+ */
+export function isAuthorizedAdmin(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (localStorage.getItem('setlla_admin_auth') === 'true') return true;
+  try {
+    const rawUser = localStorage.getItem('setlla_admin_user') || localStorage.getItem('setlla_user');
+    if (rawUser) {
+      const u = JSON.parse(rawUser);
+      if (u.isAdmin || u.isSuperAdmin) return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+/**
  * Returns dynamic ad pricing rates set by Super Admin (with sensible defaults)
  */
 export function getAdPricing(): {
@@ -122,12 +152,26 @@ export function getAdPricing(): {
   feedMonthly: number;
 } {
   const settings = getPlatformSettings();
+  const starter = Number(settings.adPricingStarter) > 0 ? Number(settings.adPricingStarter) : 15000;
+  const growth = Number(settings.adPricingGrowth) > 0 ? Number(settings.adPricingGrowth) : 45000;
+  const corporate = Number(settings.adPricingCorporate) > 0 ? Number(settings.adPricingCorporate) : 120000;
+  let feedWeekly = Number(settings.adPricingFeedWeekly) > 0 ? Number(settings.adPricingFeedWeekly) : 5000;
+  let feedMonthly = Number(settings.adPricingFeedMonthly) > 0 ? Number(settings.adPricingFeedMonthly) : 15000;
+
+  // Harmonization fallback: if starter was customized, ensure feed story advert follows
+  if (feedWeekly === 5000 && starter !== 15000) {
+    feedWeekly = starter;
+  }
+  if (feedMonthly === 15000 && growth !== 45000) {
+    feedMonthly = growth;
+  }
+
   return {
-    starter: Number(settings.adPricingStarter) > 0 ? Number(settings.adPricingStarter) : 15000,
-    growth: Number(settings.adPricingGrowth) > 0 ? Number(settings.adPricingGrowth) : 45000,
-    corporate: Number(settings.adPricingCorporate) > 0 ? Number(settings.adPricingCorporate) : 120000,
-    feedWeekly: Number(settings.adPricingFeedWeekly) > 0 ? Number(settings.adPricingFeedWeekly) : 5000,
-    feedMonthly: Number(settings.adPricingFeedMonthly) > 0 ? Number(settings.adPricingFeedMonthly) : 15000,
+    starter,
+    growth,
+    corporate,
+    feedWeekly,
+    feedMonthly,
   };
 }
 
@@ -156,7 +200,10 @@ export async function savePlatformSettingsAsync(settings: PlatformSettings): Pro
       updated_at: new Date().toISOString(),
     };
 
-    await supabase.from('platform_settings').upsert(globalPayload);
+    const { error: err1 } = await supabase.from('platform_settings').upsert(globalPayload);
+    if (err1) {
+      console.warn('[AdminService] Supabase global settings upsert warning:', err1);
+    }
 
     // 2. Sync ad pricing config row so devices without custom columns read updated rates
     const adPricingData = {
@@ -172,16 +219,21 @@ export async function savePlatformSettingsAsync(settings: PlatformSettings): Pro
       adPricingFeedMonthly: settings.adPricingFeedMonthly ?? 15000,
     };
 
-    await supabase.from('platform_settings').upsert({
+    const { error: err2 } = await supabase.from('platform_settings').upsert({
       id: 'ad_pricing_config',
       emergency_announcement: JSON.stringify(adPricingData),
       emergency_announcement_active: false,
       updated_at: new Date().toISOString(),
     });
+    if (err2) {
+      console.error('[AdminService] Supabase ad pricing upsert failed:', err2);
+      throw new Error(err2.message || 'Failed to update ad pricing in cloud');
+    }
 
     console.log('[AdminService] Platform settings & ad prices synchronized to Supabase cloud successfully.');
   } catch (err) {
     console.error('[AdminService] Failed to synchronize settings to cloud:', err);
+    throw err;
   }
 }
 
@@ -191,9 +243,7 @@ export async function savePlatformSettingsAsync(settings: PlatformSettings): Pro
  */
 export function savePlatformSettings(settings: PlatformSettings): void {
   if (typeof window === 'undefined') return;
-  const isAuth = localStorage.getItem('setlla_admin_auth') === 'true';
-  const token = localStorage.getItem('setlla_admin_session_token');
-  if (!isAuth || !token) {
+  if (!isAuthorizedAdmin()) {
     console.warn('[AdminService] Unauthorized attempt to modify platform settings rejected.');
     return;
   }

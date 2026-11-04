@@ -92,6 +92,8 @@ import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { 
   getPlatformSettings, 
   savePlatformSettings, 
+  savePlatformSettingsAsync,
+  fetchPlatformSettingsAsync,
   getAuditLogs, 
   recordAuditLog, 
   toggleAgentVerification, 
@@ -226,6 +228,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   const [registeredUsers, setRegisteredUsers] = useState<UserProfile[]>(() => getRegisteredUsers());
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>(getPlatformSettings());
   const [auditLogs, setAuditLogs] = useState<AdminAuditLog[]>([]);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isSavingPricingModal, setIsSavingPricingModal] = useState(false);
 
   // Cloudinary CDN Configuration state
   const [cloudinaryCloudName, setCloudinaryCloudName] = useState(() => getCloudinaryConfig().cloudName);
@@ -618,6 +622,11 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     setPlatformSettings(getPlatformSettings());
     setAuditLogs(getAuditLogs());
 
+    // Also fetch fresh platform settings from Supabase cloud in background
+    fetchPlatformSettingsAsync().then((cloudSettings) => {
+      if (cloudSettings) setPlatformSettings(cloudSettings);
+    }).catch(() => {});
+
     // 2. Reload adverts locally
     try {
       const freshAdverts = loadAllAdverts();
@@ -716,12 +725,28 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
     const handleFocus = () => refreshAdminData();
     window.addEventListener('focus', handleFocus);
 
+    // 4. Real-time platform settings update listener
+    const handleSettingsUpdated = (e: any) => {
+      if (e?.detail) setPlatformSettings(e.detail);
+    };
+    window.addEventListener('setlla:platform_settings_updated', handleSettingsUpdated);
+
     return () => {
       unsub();
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('setlla:platform_settings_updated', handleSettingsUpdated);
     };
   }, [refreshAdminData]);
+
+  // When pricing modal is opened, fetch freshest cloud pricing to ensure latest rates are displayed
+  useEffect(() => {
+    if (isPricingModalOpen) {
+      fetchPlatformSettingsAsync().then((settings) => {
+        if (settings) setPlatformSettings(settings);
+      }).catch(() => {});
+    }
+  }, [isPricingModalOpen]);
 
   // Split users into agents and tenants: Any user marked isAgent or who has active published listings is categorized as an Agent
   // In Setlla, platform administrator also possesses agent/employer authority
@@ -1058,34 +1083,48 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
   };
 
   // Action: Save Platform Settings
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    savePlatformSettings(platformSettings);
-    recordAuditLog(
-      'SETTINGS_UPDATED',
-      'system',
-      'platform_settings',
-      'Platform Configuration',
-      currentUser.fullName,
-      `Fee: ₦${platformSettings.defaultInspectionFee}, Queue: ${platformSettings.maxQueueLimitPerSlot}, Starter: ₦${platformSettings.adPricingStarter ?? 15000}, Growth: ₦${platformSettings.adPricingGrowth ?? 45000}, Corporate: ₦${platformSettings.adPricingCorporate ?? 120000}, Feed 7d: ₦${platformSettings.adPricingFeedWeekly ?? 5000}, Feed 30d: ₦${platformSettings.adPricingFeedMonthly ?? 15000}`
-    );
-    showToast('Platform settings and ad prices saved successfully.');
+    setIsSavingSettings(true);
+    try {
+      await savePlatformSettingsAsync(platformSettings);
+      recordAuditLog(
+        'SETTINGS_UPDATED',
+        'system',
+        'platform_settings',
+        'Platform Configuration',
+        currentUser.fullName,
+        `Fee: ₦${platformSettings.defaultInspectionFee}, Queue: ${platformSettings.maxQueueLimitPerSlot}, Starter: ₦${platformSettings.adPricingStarter ?? 15000}, Growth: ₦${platformSettings.adPricingGrowth ?? 45000}, Corporate: ₦${platformSettings.adPricingCorporate ?? 120000}, Feed 7d: ₦${platformSettings.adPricingFeedWeekly ?? 5000}, Feed 30d: ₦${platformSettings.adPricingFeedMonthly ?? 15000}`
+      );
+      showToast('Platform settings and ad prices saved and synced to cloud successfully.');
+    } catch (err: any) {
+      showToast('Failed to save settings: ' + (err?.message || 'Error occurred'));
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   // Action: Save Ad Pricing Modal
-  const handleSaveAdPricingModal = (e: React.FormEvent) => {
+  const handleSaveAdPricingModal = async (e: React.FormEvent) => {
     e.preventDefault();
-    savePlatformSettings(platformSettings);
-    recordAuditLog(
-      'SETTINGS_UPDATED',
-      'system',
-      'ad_pricing',
-      'Ad Campaign Pricing Rates',
-      currentUser.fullName,
-      `Starter: ₦${platformSettings.adPricingStarter ?? 15000}, Growth: ₦${platformSettings.adPricingGrowth ?? 45000}, Corporate: ₦${platformSettings.adPricingCorporate ?? 120000}, Feed 7d: ₦${platformSettings.adPricingFeedWeekly ?? 5000}, Feed 30d: ₦${platformSettings.adPricingFeedMonthly ?? 15000}`
-    );
-    showToast('Ad campaign pricing updated successfully.');
-    setIsPricingModalOpen(false);
+    setIsSavingPricingModal(true);
+    try {
+      await savePlatformSettingsAsync(platformSettings);
+      recordAuditLog(
+        'SETTINGS_UPDATED',
+        'system',
+        'ad_pricing',
+        'Ad Campaign Pricing Rates',
+        currentUser.fullName,
+        `Starter: ₦${platformSettings.adPricingStarter ?? 15000}, Growth: ₦${platformSettings.adPricingGrowth ?? 45000}, Corporate: ₦${platformSettings.adPricingCorporate ?? 120000}, Feed 7d: ₦${platformSettings.adPricingFeedWeekly ?? 5000}, Feed 30d: ₦${platformSettings.adPricingFeedMonthly ?? 15000}`
+      );
+      showToast('Ad campaign pricing updated and synced across all devices.');
+      setIsPricingModalOpen(false);
+    } catch (err: any) {
+      showToast('Failed to save pricing: ' + (err?.message || 'Error occurred'));
+    } finally {
+      setIsSavingPricingModal(false);
+    }
   };
 
   // Action: Export Backup
@@ -3050,10 +3089,20 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
             <div className="pt-4 border-t border-[#E5E7EB] flex items-center justify-end gap-3">
               <button
                 type="submit"
-                className="py-2.5 px-6 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer"
+                disabled={isSavingSettings}
+                className="py-2.5 px-6 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
               >
-                <SaveSettingsIcon />
-                <span>Save Platform Settings</span>
+                {isSavingSettings ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Syncing with Cloud...</span>
+                  </>
+                ) : (
+                  <>
+                    <SaveSettingsIcon />
+                    <span>Save Platform Settings</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
@@ -4156,10 +4205,20 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#000004] hover:bg-[#1f2937] text-white shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    disabled={isSavingPricingModal}
+                    className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#000004] hover:bg-[#1f2937] text-white shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                   >
-                    <Check className="w-4 h-4 text-emerald-400" />
-                    <span>Save Ad Prices</span>
+                    {isSavingPricingModal ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                        <span>Syncing to Cloud...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span>Save Ad Prices</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
