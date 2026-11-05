@@ -712,20 +712,11 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
       }
     });
 
-    // 2. Poll Supabase every 60s in background if admin remains active
-    const interval = setInterval(() => {
-      fetchRegisteredUsersFromDb().then((users) => {
-        if (Array.isArray(users)) {
-          setRegisteredUsers(users);
-        }
-      });
-    }, 60000);
-
-    // 3. Auto-sync on window focus
+    // 2. Auto-sync on window focus
     const handleFocus = () => refreshAdminData();
     window.addEventListener('focus', handleFocus);
 
-    // 4. Real-time platform settings update listener
+    // 3. Real-time platform settings update listener
     const handleSettingsUpdated = (e: any) => {
       if (e?.detail) setPlatformSettings(e.detail);
     };
@@ -733,7 +724,6 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
 
     return () => {
       unsub();
-      clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('setlla:platform_settings_updated', handleSettingsUpdated);
     };

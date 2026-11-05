@@ -63,6 +63,7 @@ import {
   EmailOTPPurpose
 } from '../../services/emailVerificationService';
 import { isElvisSuperAdmin } from '../../services/adminAuthService';
+import { TurnstileWidget, TurnstileRef } from '../Security/TurnstileWidget';
 
 export const NIGERIAN_STATES = [
   'Delta State',
@@ -310,6 +311,14 @@ export const SignupModal: React.FC<SignupModalProps> = ({
   // Duplicate Account Prevention State
   const [duplicateError, setDuplicateError] = useState<DuplicateCheckResult | null>(null);
 
+  // Cloudflare Turnstile Bot Defense States
+  const [seekerTurnstileToken, setSeekerTurnstileToken] = useState<string | null>(null);
+  const [agentTurnstileToken, setAgentTurnstileToken] = useState<string | null>(null);
+  const [forgotPasswordTurnstileToken, setForgotPasswordTurnstileToken] = useState<string | null>(null);
+  const seekerTurnstileRef = useRef<TurnstileRef>(null);
+  const agentTurnstileRef = useRef<TurnstileRef>(null);
+  const forgotPasswordTurnstileRef = useRef<TurnstileRef>(null);
+
   const handleFinishSignup = () => {
     if (pendingRegistration) {
       saveRegisteredUser(pendingRegistration.user, { allowReRegistration: true });
@@ -487,7 +496,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
       // Send OTP to email and transition to verify_email screen for ALL signups
       try {
-        const res = await sendEmailOTP(seekerEmail.trim(), otpPurpose, updated);
+        const res = await sendEmailOTP(seekerEmail.trim(), otpPurpose, updated, seekerTurnstileToken || undefined);
         setOtpEmail(seekerEmail.trim());
         setOtpPurpose(otpPurpose);
         setOtpPendingUser(updated);
@@ -629,7 +638,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       // Enforce email verification for Agents and Employers
       const otpPurpose: EmailOTPPurpose = resolvedPersona === 'employer' ? 'employer_signup' : 'agent_signup';
       try {
-        const res = await sendEmailOTP(agentEmail.trim(), otpPurpose, updated);
+        const res = await sendEmailOTP(agentEmail.trim(), otpPurpose, updated, agentTurnstileToken || undefined);
         setOtpEmail(agentEmail.trim());
         setOtpPurpose(otpPurpose);
         setOtpPendingUser(updated);
@@ -1008,7 +1017,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     setIsSendingResetOtp(true);
     setForgotPasswordError(null);
     try {
-      const res = await sendEmailOTP(forgotPasswordEmail.trim(), 'forgot_password');
+      const res = await sendEmailOTP(forgotPasswordEmail.trim(), 'forgot_password', undefined, forgotPasswordTurnstileToken || undefined);
       setOtpEmail(forgotPasswordEmail.trim());
       setOtpPurpose('forgot_password');
       setOtpDigits(['', '', '', '', '', '']);
@@ -1822,6 +1831,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       </p>
                     </div>
 
+                    {/* Cloudflare Turnstile Bot Defense */}
+                    <TurnstileWidget
+                      ref={forgotPasswordTurnstileRef}
+                      action="forgot_password"
+                      onVerify={(token) => setForgotPasswordTurnstileToken(token)}
+                      onError={() => setForgotPasswordTurnstileToken(null)}
+                      onExpire={() => setForgotPasswordTurnstileToken(null)}
+                    />
+
                     <div className="pt-2">
                       <button
                         type="submit"
@@ -2335,6 +2353,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             </button>
                           </div>
                         </div>
+
+                        {/* Cloudflare Turnstile Bot Defense */}
+                        <TurnstileWidget
+                          ref={seekerTurnstileRef}
+                          action="seeker_signup"
+                          onVerify={(token) => setSeekerTurnstileToken(token)}
+                          onError={() => setSeekerTurnstileToken(null)}
+                          onExpire={() => setSeekerTurnstileToken(null)}
+                        />
 
                         {/* Step 2 Back & Submit Buttons */}
                         <div className="pt-2 flex items-center gap-2">
@@ -2855,6 +2882,15 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             </div>
                           )}
                         </div>
+
+                        {/* Cloudflare Turnstile Bot Defense */}
+                        <TurnstileWidget
+                          ref={agentTurnstileRef}
+                          action="agent_signup"
+                          onVerify={(token) => setAgentTurnstileToken(token)}
+                          onError={() => setAgentTurnstileToken(null)}
+                          onExpire={() => setAgentTurnstileToken(null)}
+                        />
 
                         {/* Step 2 Back & Submit Buttons */}
                         <div className="pt-2 flex items-center gap-2">

@@ -350,6 +350,37 @@ export async function findAdminAccount(emailInput: string): Promise<UserProfile 
     return matchedUser;
   }
 
+  // 2b. Primary: Check dedicated admin_profiles table in Supabase (Phase 2 hardened architecture)
+  if (isSupabaseConfigured()) {
+    try {
+      const { data: adminData } = await supabase
+        .from('admin_profiles')
+        .select('*')
+        .ilike('email', cleanEmail)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (adminData) {
+        return {
+          id: adminData.id,
+          fullName: adminData.full_name,
+          email: adminData.email,
+          phone: adminData.phone || '0800 000 0001',
+          state: 'Delta State',
+          city: 'Asaba',
+          isVerifiedTenant: false,
+          isAgent: false,
+          isAdmin: true,
+          isSuperAdmin: adminData.role === 'super_admin' || cleanEmail === OFFICIAL_ADMIN_EMAIL.toLowerCase(),
+          savedListingIds: [],
+          createdAt: adminData.created_at || new Date().toISOString(),
+        };
+      }
+    } catch (e) {
+      console.warn('[AdminAuthService] Supabase admin_profiles check notice:', e);
+    }
+  }
+
   // 3. Check Supabase platform_users table if configured
   if (isSupabaseConfigured()) {
     try {

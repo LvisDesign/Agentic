@@ -1725,18 +1725,31 @@ export async function findUserByCredentialAsync(query: string): Promise<UserProf
       }
     }
 
-    // 3. Fallback: Fetch latest users from DB if targeted indexed query returned no hit
-    const allDbUsers = await fetchRegisteredUsersFromDb();
-    for (const user of allDbUsers) {
-      if (isDeletedUserRecord(user)) continue;
-      if (isEmail) {
-        if (user.email && normalizeEmail(user.email) === normEmail) {
-          return user;
-        }
-      } else {
-        const uPhone = normalizePhoneNumber(user.phone);
-        if (uPhone === normPhone || (last10.length >= 7 && uPhone.slice(-10) === last10)) {
-          return user;
+    // 3. Fallback: Quick targeted check on advertisers table if not found in platform_users (never dump entire DB)
+    if (isEmail) {
+      const { data: advData } = await client
+        .from('advertisers')
+        .select('id, name, email, phone, created_at')
+        .ilike('email', normEmail)
+        .limit(1);
+
+      if (advData && advData.length > 0) {
+        const adv = advData[0];
+        const advUser: UserProfile = {
+          id: adv.id,
+          fullName: adv.name || 'Advertiser',
+          phone: adv.phone || '',
+          email: adv.email || normEmail,
+          city: (adv as any)?.city || 'Asaba',
+          state: (adv as any)?.state || 'Delta State',
+          isVerifiedTenant: false,
+          isAgent: false,
+          persona: 'employer',
+          savedListingIds: [],
+          createdAt: adv.created_at || new Date().toISOString(),
+        };
+        if (!isDeletedUserRecord(advUser)) {
+          return advUser;
         }
       }
     }

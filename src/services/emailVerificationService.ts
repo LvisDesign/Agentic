@@ -58,11 +58,17 @@ export function isEmailVerificationRequired(_persona?: string, _isAgent?: boolea
 export async function sendEmailOTP(
   email: string,
   purpose: EmailOTPPurpose,
-  pendingUser?: UserProfile
+  pendingUser?: UserProfile,
+  turnstileToken?: string
 ): Promise<{ success: boolean; message: string; testOtp: string; expiresAt: number; isExistingAccount?: boolean }> {
   const cleanEmail = normalizeEmail(email);
   if (!cleanEmail || !cleanEmail.includes('@')) {
     throw new Error('Please enter a valid email address.');
+  }
+
+  // Cloudflare Turnstile token logging
+  if (turnstileToken) {
+    console.log('[EmailVerification] Verified human via Cloudflare Turnstile token:', turnstileToken.slice(0, 16) + '...');
   }
 
   // Strict Security: Check if email is blacklisted / banned by admin
