@@ -161,8 +161,8 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
   if (hash.includes('admin') || pathname.includes('/admin') || search.includes('admin')) {
-    if (typeof window !== 'undefined') {
-      window.location.replace('https://private.setlla.com');
+    if (typeof window !== 'undefined' && window.location.hash.includes('admin')) {
+      window.history.replaceState(null, '', window.location.pathname || '/');
     }
     return { role: 'tenant', view: 'feed', openPasses: false };
   }
@@ -2408,17 +2408,6 @@ export function App() {
               onAdSubmitted={handleAddAdvert}
             />
           </Suspense>
-        </main>
-      ) : (currentRole === 'admin') ? (
-        <main className="flex-1 w-full min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-8 h-8 border-2 border-slate-200 border-t-[#000004] rounded-full animate-spin mb-3" />
-          <p className="text-sm font-semibold text-slate-800">Redirecting to Setlla Operations Console...</p>
-          <a
-            href="https://private.setlla.com"
-            className="text-xs text-[#F95700] hover:underline mt-2 font-medium"
-          >
-            Click here to access private.setlla.com
-          </a>
         </main>
       ) : userView === 'dashboard' && isAuthenticated ? (
         activeRoom === 'jobs' ? (
