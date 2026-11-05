@@ -66,9 +66,28 @@ export async function sendEmailOTP(
     throw new Error('Please enter a valid email address.');
   }
 
-  // Cloudflare Turnstile token logging
+  // Cloudflare Turnstile server-side validation
   if (turnstileToken) {
-    console.log('[EmailVerification] Verified human via Cloudflare Turnstile token:', turnstileToken.slice(0, 16) + '...');
+    try {
+      const verifyRes = await fetch('/api/verify-turnstile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      });
+      if (verifyRes.ok) {
+        const verifyData = await verifyRes.json();
+        if (verifyData && verifyData.success === false) {
+          console.warn('[EmailVerification] Turnstile verification failed:', verifyData['error-codes']);
+          throw new Error('Bot verification expired or invalid. Please check the verification box again.');
+        }
+        console.log('[EmailVerification] Cloudflare Turnstile siteverify success.');
+      }
+    } catch (err: any) {
+      if (err.message && err.message.includes('Bot verification')) {
+        throw err;
+      }
+      console.warn('[EmailVerification] Turnstile siteverify notice:', err);
+    }
   }
 
   // Strict Security: Check if email is blacklisted / banned by admin

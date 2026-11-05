@@ -56,6 +56,17 @@ export const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(({
   const [isReady, setIsReady] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
 
+  // Keep fresh callback references without triggering widget re-renders
+  const onVerifyRef = useRef(onVerify);
+  const onErrorRef = useRef(onError);
+  const onExpireRef = useRef(onExpire);
+
+  useEffect(() => {
+    onVerifyRef.current = onVerify;
+    onErrorRef.current = onError;
+    onExpireRef.current = onExpire;
+  });
+
   const siteKey = (
     import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY || 
     DEFAULT_TURNSTILE_SITE_KEY
@@ -116,16 +127,12 @@ export const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(({
   }, []);
 
   // Render Turnstile widget once script and DOM container are ready
+  // CRITICAL: Stable render - NEVER destroy widget on parent re-renders
   useEffect(() => {
     if (!isReady || !containerRef.current || !window.turnstile || !siteKey) return;
 
-    // Clean up any existing instance
-    if (widgetIdRef.current) {
-      try {
-        window.turnstile.remove(widgetIdRef.current);
-      } catch (_) {}
-      widgetIdRef.current = null;
-    }
+    // If already rendered in this container, do not re-render
+    if (widgetIdRef.current) return;
 
     try {
       const widgetId = window.turnstile.render(containerRef.current, {
@@ -135,16 +142,16 @@ export const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(({
         size: 'flexible',
         callback: (token: string) => {
           setIsVerified(true);
-          onVerify(token);
+          onVerifyRef.current?.(token);
         },
         'error-callback': (code: string) => {
           setIsVerified(false);
           console.warn('[Turnstile] Verification error code:', code);
-          onError?.(code);
+          onErrorRef.current?.(code);
         },
         'expired-callback': () => {
           setIsVerified(false);
-          onExpire?.();
+          onExpireRef.current?.();
         },
       });
 
@@ -161,7 +168,7 @@ export const TurnstileWidget = forwardRef<TurnstileRef, TurnstileWidgetProps>(({
         widgetIdRef.current = null;
       }
     };
-  }, [isReady, siteKey, action, theme, onVerify, onError, onExpire]);
+  }, [isReady, siteKey, action, theme]);
 
   return (
     <div className={`turnstile-wrapper my-2 flex flex-col items-center justify-center ${className}`}>
