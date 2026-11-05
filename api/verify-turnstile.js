@@ -41,7 +41,7 @@ export default async function handler(req, res) {
 
     const cfResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
-      body: formData,
+      body: formData.toString(),
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     return res.status(200).json(result);
   } catch (err) {
     console.error('[Siteverify Error]', err);
-    return res.status(500).json({ success: false, error: 'Internal verification error' });
+    return res.status(500).json({ success: false, error: err?.message || 'Internal verification error' });
   }
 }
 
