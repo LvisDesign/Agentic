@@ -9,6 +9,50 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [];
 
 const STORAGE_KEY = 'setlla_registered_users';
 const LEGACY_STORAGE_KEY = 'deltarent_registered_users';
+const CLEAN_SLATE_KEY = 'setlla_v2_clean_slate_applied_2026';
+
+/**
+ * Automatically purges all legacy test accounts, ghost sessions, and temporary demo users
+ * so all devices and the Setlla production platform start 100% fresh.
+ */
+export function purgeAllLegacyAccounts(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const keysToPurge = [
+      'setlla_registered_users',
+      'deltarent_registered_users',
+      'setlla_user',
+      'deltarent_user',
+      'setlla_auth',
+      'deltarent_auth',
+      'setlla_active_role',
+      'deltarent_active_role',
+      'setlla_active_view',
+      'deltarent_active_view',
+      'setlla_active_room',
+      'setlla_deleted_user_ids',
+      'deltarent_deleted_user_ids',
+      'setlla_deleted_user_phones',
+      'setlla_deleted_user_emails',
+      'setlla_my_booking_ids',
+      'deltarent_my_booking_ids',
+      'setlla_notified_confirmed_bookings',
+      'deltarent_notified_confirmed_bookings',
+      'setlla_notified_declined_bookings',
+      'deltarent_notified_declined_bookings',
+      'setlla_notified_agent_requests',
+      'deltarent_notified_agent_requests',
+    ];
+    keysToPurge.forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem(CLEAN_SLATE_KEY, 'true');
+    console.log('[Setlla] Clean-slate purge executed: all legacy test data wiped.');
+  } catch (_) {}
+}
+
+// Execute clean slate automatically on client initialization
+if (typeof window !== 'undefined' && !localStorage.getItem(CLEAN_SLATE_KEY)) {
+  purgeAllLegacyAccounts();
+}
 
 /**
  * Normalizes Nigerian mobile phone numbers for robust, format-agnostic comparison.
