@@ -587,7 +587,7 @@ export async function syncSingleUserProfile(userId: string): Promise<Partial<Use
   try {
     const { data, error } = await client
       .from('platform_users')
-      .select('id, full_name, email, phone, is_agent, is_admin, is_super_admin, is_suspended, kyc_status, avatar_url, agency_name, company_name, persona, city, state')
+      .select('id, full_name, email, phone, is_agent, is_admin, is_super_admin, is_suspended, kyc_status, avatar_url, agency_name, city, state')
       .eq('id', userId)
       .maybeSingle();
 
@@ -604,8 +604,8 @@ export async function syncSingleUserProfile(userId: string): Promise<Partial<Use
         kycStatus: data.kyc_status,
         avatarUrl: data.avatar_url,
         agencyName: data.agency_name,
-        companyName: data.company_name,
-        persona: data.persona,
+        companyName: (data as any).company_name || data.agency_name,
+        persona: (data as any).persona,
         city: data.city,
         state: data.state,
       };
@@ -1565,7 +1565,7 @@ export async function checkUserExistsAsync(
 
       const { data, error } = await client
         .from('platform_users')
-        .select('id, full_name, phone, email, is_agent, agency_name, persona')
+        .select('id, full_name, phone, email, is_agent, agency_name')
         .or(filters.join(','));
 
       if (!error && Array.isArray(data)) {
