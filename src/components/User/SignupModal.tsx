@@ -1285,7 +1285,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         </div>
       ) : (
         <div 
-          className="w-full max-w-4xl bg-white rounded-[24px] sm:rounded-[28px] md:rounded-[32px] shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col md:flex-row my-auto max-h-[min(94dvh,780px)] animate-scale-up"
+          className="w-full max-w-4xl bg-[#FCF9F5] rounded-[24px] sm:rounded-[28px] md:rounded-[32px] shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col md:flex-row my-auto max-h-[min(94dvh,780px)] animate-scale-up"
           onClick={(e) => e.stopPropagation()}
         >
           {/* LEFT COLUMN: Visual Brand Banner with Warm Vertical Glows (Desktop & Tablet) */}
@@ -1328,7 +1328,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
           </div>
 
           {/* RIGHT COLUMN: Authentication Form (Responsive & Streamlined for Mobile) */}
-          <div ref={formScrollRef} className="flex-1 flex flex-col justify-between p-4 sm:p-6 md:p-7 lg:p-8 bg-white overflow-y-auto max-h-[min(94dvh,780px)] no-scrollbar">
+          <div ref={formScrollRef} className="flex-1 flex flex-col justify-between p-4 sm:p-6 md:p-7 lg:p-8 bg-[#FCF9F5] overflow-y-auto max-h-[min(94dvh,780px)] no-scrollbar">
             <div>
               {/* Notice Banner (If triggered by attempting to book inspection) */}
               {notice && (
@@ -1358,7 +1358,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-[#70798C] hover:text-[#000004] flex items-center justify-center cursor-pointer transition-colors"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#000004]/5 hover:bg-[#000004]/10 text-[#70798C] hover:text-[#000004] flex items-center justify-center cursor-pointer transition-colors"
                   title="Close"
                   aria-label="Close"
                 >
@@ -1457,7 +1457,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 </>
               ) : authMode === 'login' ? (
                 <>
-                  <div className="p-1 bg-[#F4F5F7] rounded-xl grid grid-cols-2 gap-1 mb-2.5 sm:mb-3">
+                  <div className="p-1 bg-[#000004]/5 rounded-xl grid grid-cols-2 gap-1 mb-2.5 sm:mb-3">
                     <button
                       type="button"
                       onClick={() => {
@@ -1483,9 +1483,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#000004] tracking-tight">
                       Welcome back
                     </h2>
-                    <p className="text-[11px] sm:text-xs text-[#70798C] mt-0.5">
-                      Sign in to access your jobs, applications, bookings, and passes.
-                    </p>
                   </div>
                 </>
               ) : signupStep === 'persona' ? (
@@ -1986,7 +1983,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setLoginPhoneOrEmail(e.target.value);
                             if (loginError) setLoginError(null);
                           }}
-                          className="w-full pl-9 pr-3 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
+                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
                         />
                       </div>
                     </div>
@@ -2019,7 +2016,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setLoginPassword(e.target.value);
                             if (loginError) setLoginError(null);
                           }}
-                          className="w-full pl-9 pr-10 py-2.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] transition-all font-medium"
+                          className="w-full pl-9 pr-10 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
                         />
                         <button
                           type="button"
@@ -2037,17 +2034,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <button
                         type="submit"
                         disabled={isLoggingIn}
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                       >
                         {isLoggingIn ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-white" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
                             <span>Verifying Account...</span>
                           </>
                         ) : (
                           <>
                             <span>Sign In</span>
-                            <ArrowRight className="w-4 h-4" />
+                            <ArrowRight className="w-4 h-4 text-[#000004]" />
                           </>
                         )}
                       </button>
