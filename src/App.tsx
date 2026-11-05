@@ -787,26 +787,8 @@ export function App() {
   const [isBecomeAgentOpen, setIsBecomeAgentOpen] = useState(false);
   const [isAdvertiserAuthOpen, setIsAdvertiserAuthOpen] = useState(false);
 
-  // For first-time visitors, open signup modal on arrival if they haven't skipped yet (NEVER on admin or partner pages)
-  const [isSignupOpen, setIsSignupOpen] = useState<boolean>(() => {
-    const hash = typeof window !== 'undefined' ? window.location.hash.toLowerCase() : '';
-    const search = typeof window !== 'undefined' ? (window.location.search || '').toLowerCase() : '';
-    if (
-      hash.includes('admin') || 
-      hash.includes('partner') || 
-      hash.includes('advertise') || 
-      search.includes('partner') || 
-      search.includes('advertise') || 
-      initialNav.role === 'admin' || 
-      initialNav.view === 'partner' || 
-      isSuperAdminAuthenticated()
-    ) {
-      return false;
-    }
-    const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
-    const hasSkipped = (sessionStorage.getItem('setlla_guest_skipped') || sessionStorage.getItem('deltarent_guest_skipped')) === 'true';
-    return !isAuth && !hasSkipped;
-  });
+  // Visiting users land cleanly on the listings feed. The modal only opens when engaging with primary actions (e.g. Book Inspection) or clicking Sign In / Create Account.
+  const [isSignupOpen, setIsSignupOpen] = useState<boolean>(false);
 
   // Ensure signup modal is immediately dismissed whenever in Admin or Partner mode
   useEffect(() => {
