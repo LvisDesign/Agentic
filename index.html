@@ -36,7 +36,7 @@
     <script>
       (function() {
         try {
-          if (localStorage.getItem('setlla_clean_slate_wiped_v24') !== 'true') {
+          if (localStorage.getItem('setlla_clean_slate_wiped_v25') !== 'true') {
             var raw = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
             var isSuperAdmin = false;
             if (raw) {
@@ -49,23 +49,16 @@
               } catch(e) {}
             }
             if (!isSuperAdmin) {
-              [
-                'setlla_user', 'deltarent_user',
-                'setlla_auth', 'deltarent_auth',
-                'setlla_active_role', 'deltarent_active_role',
-                'setlla_active_view', 'deltarent_active_view',
-                'setlla_active_room', 'setlla_adverts', 'deltarent_adverts',
-                'setlla_last_email', 'setlla_last_phone'
-              ].forEach(function(k) { localStorage.removeItem(k); });
+              var keysToDrop = [];
+              for (var i = 0; i < localStorage.length; i++) {
+                var k = localStorage.key(i);
+                if (k && k !== 'setlla_clean_slate_wiped_v25') {
+                  keysToDrop.push(k);
+                }
+              }
+              keysToDrop.forEach(function(k) { localStorage.removeItem(k); });
             }
-            [
-              'setlla_registered_users',
-              'deltarent_registered_users',
-              'setlla_deleted_emails',
-              'setlla_deleted_phones',
-              'setlla_deleted_user_ids'
-            ].forEach(function(k) { localStorage.removeItem(k); });
-            localStorage.setItem('setlla_clean_slate_wiped_v24', 'true');
+            localStorage.setItem('setlla_clean_slate_wiped_v25', 'true');
           }
         } catch(e) {}
       })();

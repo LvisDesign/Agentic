@@ -2041,6 +2041,36 @@ export function App() {
       if (!email) return;
       const clean = normalizeEmail(email);
 
+      // Verify against central platform_users: if the account does not exist in the database,
+      // it was deleted or is a ghost session: immediately terminate the auth session and do not revive it!
+      if (clean !== 'admin@setlla.com') {
+        const client = getSupabaseClient();
+        if (client) {
+          try {
+            const { data: dbUser } = await client
+              .from('platform_users')
+              .select('id, is_suspended')
+              .eq('email', clean)
+              .maybeSingle();
+
+            if (!dbUser || dbUser.is_suspended) {
+              console.warn('[App] Ghost or purged account detected for:', clean, '- Terminating session.');
+              try {
+                await supabase.auth.signOut();
+                clearPendingEmailOTP();
+                localStorage.removeItem('setlla_user');
+                localStorage.removeItem('setlla_auth');
+                localStorage.removeItem('deltarent_user');
+                localStorage.removeItem('deltarent_auth');
+              } catch (_) {}
+              setCurrentUser(GUEST_USER);
+              setIsAuthenticated(false);
+              return;
+            }
+          } catch (_) {}
+        }
+      }
+
       // 1. Check if this email matches an active pending signup verification
       const pending = getPendingEmailOTP();
       if (pending && normalizeEmail(pending.email) === clean && pending.pendingUser) {
