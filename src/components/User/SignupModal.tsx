@@ -1490,38 +1490,34 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                 <div className="mb-2.5 sm:mb-3">
                   <div className="mb-3.5 sm:mb-4">
                     <h2 className="font-display text-xl sm:text-2xl font-black text-[#000004] tracking-tight leading-snug">
-                      Welcome to Setlla. What brings you here today?
+                      What brings you to Setlla?
                     </h2>
                   </div>
 
-                  {/* 4 Beautiful Selectable Persona Cards */}
-                  <div className="space-y-2.5 mb-4 sm:mb-5">
+                  {/* 4 Simple Selectable Persona Cards */}
+                  <div className="space-y-2 mb-4 sm:mb-5">
                     {[
                       {
                         id: 'job_seeker' as UserPersona,
                         title: 'Job Seeker',
-                        tagline: 'Find career opportunities & apply with your CV',
-                        room: 'Setlla Jobs',
+                        room: 'Jobs',
                         activeRole: 'seeker' as const,
                       },
                       {
                         id: 'employer' as UserPersona,
-                        title: 'Employer / Hiring Partner',
-                        tagline: 'Post open vacancies & discover local talent',
-                        room: 'Setlla Jobs',
+                        title: 'Employer',
+                        room: 'Jobs',
                         activeRole: 'agent' as const,
                       },
                       {
                         id: 'tenant' as UserPersona,
-                        title: 'Tenant / House Hunter',
-                        tagline: 'Find verified apartments & schedule viewings',
+                        title: 'Tenant',
                         room: 'Rentals',
                         activeRole: 'seeker' as const,
                       },
                       {
                         id: 'lister' as UserPersona,
-                        title: 'Property Lister / Real Estate Agent',
-                        tagline: 'List properties & manage inspection bookings',
+                        title: 'Agent / Landlord',
                         room: 'Rentals',
                         activeRole: 'agent' as const,
                       },
@@ -1534,30 +1530,25 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setSelectedPersona(persona.id);
                             setActiveRoleTab(persona.activeRole);
                           }}
-                          className={`group relative p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3.5 select-none ${
+                          className={`group relative py-3 px-3.5 sm:py-3.5 sm:px-4 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 select-none ${
                             isSelected
-                              ? 'border-2 border-[#000004] bg-[#FCF9F5] ring-2 ring-[#000004]/5 shadow-xs'
-                              : 'border-[#E5E7EB] bg-white hover:border-[#CBD5E1] hover:bg-[#FAF9F6]/80'
+                              ? 'border-2 border-[#000004] bg-white ring-2 ring-[#FFAD05]/20 shadow-xs'
+                              : 'border-[#E5E7EB] bg-white hover:border-[#CBD5E1] hover:bg-[#FAF9F6]'
                           }`}
                         >
-                          <div className="flex-1 min-w-0 pr-1">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <h4 className="font-bold text-xs sm:text-sm text-[#000004] tracking-tight">
-                                {persona.title}
-                              </h4>
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider transition-colors ${
-                                  isSelected
-                                    ? 'bg-[#000004] text-white'
-                                    : 'bg-[#F4F5F7] text-[#70798C] border border-[#E5E7EB]'
-                                }`}
-                              >
-                                {persona.room}
-                              </span>
-                            </div>
-                            <p className="text-[11px] sm:text-xs text-[#70798C] leading-snug">
-                              {persona.tagline}
-                            </p>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h4 className="font-bold text-xs sm:text-sm text-[#000004] tracking-tight">
+                              {persona.title}
+                            </h4>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider transition-colors ${
+                                isSelected
+                                  ? 'bg-[#000004] text-white'
+                                  : 'bg-[#F4F5F7] text-[#70798C] border border-[#E5E7EB]'
+                              }`}
+                            >
+                              {persona.room}
+                            </span>
                           </div>
 
                           <div className="shrink-0 flex items-center justify-center">
@@ -1592,7 +1583,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                     }}
                     className="w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
                   >
-                    <span>Continue to Account Setup</span>
+                    <span>Continue</span>
                     <ArrowRight className="w-4 h-4 text-[#000004]" />
                   </button>
                 </div>
