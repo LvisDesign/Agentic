@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability, PlatformSettings } from './types/marketplace';
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge, autoEnableNotifications, isStandalone } from './utils/pwa';
@@ -46,7 +46,6 @@ import { AdvertStory } from './data/mockAdverts';
 import { loadAllAdverts, saveAdvert, removeAdvert, subscribeToAdvertChanges, getDeletedAdvertIds, SYSTEM_DEMO_ADVERT_IDS, mapDbToAdvert } from './services/adService';
 import { PostAdModal } from './components/Feed/PostAdModal';
 import { PartnerAdSubmissionModal } from './components/Adverts/PartnerAdSubmissionModal';
-import { PartnerPortalPage } from './components/Partner/PartnerPortalPage';
 import { AdvertiserAuthModal } from './components/Advertiser/AdvertiserAuthModal';
 import { getActiveAdvertiser } from './services/advertiserAuthService';
 import { DesktopAdvertSidebar } from './components/Feed/DesktopAdvertSidebar';
@@ -55,11 +54,27 @@ import { JobsDashboard } from './components/Jobs/JobsDashboard';
 import { JobAgentDashboard } from './components/Jobs/JobAgentDashboard';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
-import { SuperAdminDashboard } from './components/Admin/SuperAdminDashboard';
 import { CustomConfirmModal } from './components/UI/CustomConfirmModal';
 import { PWAInstallBanner } from './components/UI/PWAInstallBanner';
-import { AdminAuthPortal } from './components/Admin/AdminAuthPortal';
 import { Clock } from 'lucide-react';
+
+// Code-split heavy isolated portals (Super Admin & Partner Portal) to minimize initial bundle payload
+const SuperAdminDashboard = lazy(() =>
+  import('./components/Admin/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard }))
+);
+const AdminAuthPortal = lazy(() =>
+  import('./components/Admin/AdminAuthPortal').then(m => ({ default: m.AdminAuthPortal }))
+);
+const PartnerPortalPage = lazy(() =>
+  import('./components/Partner/PartnerPortalPage').then(m => ({ default: m.PartnerPortalPage }))
+);
+
+const SectionLoadingFallback: React.FC<{ label?: string }> = ({ label = 'Loading...' }) => (
+  <div className="flex-1 w-full min-h-[50vh] flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+    <div className="w-8 h-8 border-2 border-slate-200 border-t-[#000004] rounded-full animate-spin mb-3" />
+    <p className="text-xs font-semibold text-[#70798C] tracking-wide">{label}</p>
+  </div>
+);
 import { 
   isSuperAdminAuthenticated, 
   getActiveAdminUser, 
@@ -2379,21 +2394,23 @@ export function App() {
       {userView === 'partner' ? (
         /* Setlla Partner & Brand Advertising Dedicated Standalone Page */
         <main className="flex-1 w-full min-h-screen">
-          <PartnerPortalPage
-            currentUser={currentUser}
-            onBackToExplore={() => {
-              // Strictly ensure any admin state is purged so Explore Feed NEVER opens with admin privileges
-              setIsAdminAuthenticated(false);
-              try {
-                localStorage.removeItem('setlla_admin_auth');
-                localStorage.removeItem('setlla_admin_user');
-              } catch (_) {}
-              setCurrentRole('tenant');
-              setUserView('feed');
-              window.location.hash = activeRoom === 'jobs' ? '#/jobs' : '#/explore';
-            }}
-            onAdSubmitted={handleAddAdvert}
-          />
+          <Suspense fallback={<SectionLoadingFallback label="Loading Partner Portal..." />}>
+            <PartnerPortalPage
+              currentUser={currentUser}
+              onBackToExplore={() => {
+                // Strictly ensure any admin state is purged so Explore Feed NEVER opens with admin privileges
+                setIsAdminAuthenticated(false);
+                try {
+                  localStorage.removeItem('setlla_admin_auth');
+                  localStorage.removeItem('setlla_admin_user');
+                } catch (_) {}
+                setCurrentRole('tenant');
+                setUserView('feed');
+                window.location.hash = activeRoom === 'jobs' ? '#/jobs' : '#/explore';
+              }}
+              onAdSubmitted={handleAddAdvert}
+            />
+          </Suspense>
         </main>
       ) : (currentRole === 'admin' && userView !== 'dashboard') ? (
         /* Super Admin Control Center or Admin Authentication Portal */
@@ -2422,49 +2439,53 @@ export function App() {
                 </button>
               </div>
             )}
-            <SuperAdminDashboard
-              currentUser={activeAdminUser || currentUser}
-              listings={listings}
-              bookings={bookings}
-              adverts={adverts}
-              onAddAdvert={handleAddAdvert}
-              onUpdateAdvert={handleUpdateAdvert}
-              onDeleteAdvert={handleDeleteAdvert}
-              onUpdateListingAvailability={handleUpdateListingAvailability}
-              onDeleteListing={handleDeleteListing}
-              onAcceptBooking={handleAcceptBooking}
-              onRejectBooking={handleRejectBooking}
-              onDeleteBooking={handleDeleteBooking}
-              onUpdateListing={handleListingUpdated}
-              onAddListing={handleListingCreated}
-              onRefreshData={syncLatestData}
-              onSwitchToExplore={() => {
-                setCurrentRole('tenant');
-                setUserView('feed');
-              }}
-              onSwitchToAgent={() => setCurrentRole('agent')}
-              onSwitchToTenant={() => {
-                setCurrentRole('tenant');
-                setUserView('dashboard');
-              }}
-              onSwitchToPartner={() => {
-                setUserView('partner');
-                window.location.hash = '#/partner';
-              }}
-              onSignOut={handleAdminSignOut}
-            />
+            <Suspense fallback={<SectionLoadingFallback label="Loading Super Admin Console..." />}>
+              <SuperAdminDashboard
+                currentUser={activeAdminUser || currentUser}
+                listings={listings}
+                bookings={bookings}
+                adverts={adverts}
+                onAddAdvert={handleAddAdvert}
+                onUpdateAdvert={handleUpdateAdvert}
+                onDeleteAdvert={handleDeleteAdvert}
+                onUpdateListingAvailability={handleUpdateListingAvailability}
+                onDeleteListing={handleDeleteListing}
+                onAcceptBooking={handleAcceptBooking}
+                onRejectBooking={handleRejectBooking}
+                onDeleteBooking={handleDeleteBooking}
+                onUpdateListing={handleListingUpdated}
+                onAddListing={handleListingCreated}
+                onRefreshData={syncLatestData}
+                onSwitchToExplore={() => {
+                  setCurrentRole('tenant');
+                  setUserView('feed');
+                }}
+                onSwitchToAgent={() => setCurrentRole('agent')}
+                onSwitchToTenant={() => {
+                  setCurrentRole('tenant');
+                  setUserView('dashboard');
+                }}
+                onSwitchToPartner={() => {
+                  setUserView('partner');
+                  window.location.hash = '#/partner';
+                }}
+                onSignOut={handleAdminSignOut}
+              />
+            </Suspense>
           </main>
         ) : (
           <main className="flex-1 w-full">
-            <AdminAuthPortal
-              onSuccess={handleAdminAuthSuccess}
-              expiredNotice={adminExpiredNotice}
-              onSwitchToExplore={() => {
-                setAdminExpiredNotice(null);
-                setCurrentRole('tenant');
-                setUserView('feed');
-              }}
-            />
+            <Suspense fallback={<SectionLoadingFallback label="Loading Secure Admin Portal..." />}>
+              <AdminAuthPortal
+                onSuccess={handleAdminAuthSuccess}
+                expiredNotice={adminExpiredNotice}
+                onSwitchToExplore={() => {
+                  setAdminExpiredNotice(null);
+                  setCurrentRole('tenant');
+                  setUserView('feed');
+                }}
+              />
+            </Suspense>
           </main>
         )
       ) : userView === 'dashboard' && isAuthenticated ? (
