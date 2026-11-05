@@ -2170,7 +2170,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             onClick={handleSeekerNextStep}
                             className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
-                            <span>Next: Account Details</span>
+                            <span>Next</span>
                             <ArrowRight className="w-4 h-4 text-[#000004]" />
                           </button>
                         </div>
@@ -2363,18 +2363,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             {isSubmittingSeeker ? (
                               <>
                                 <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
-                                <span>Setting Up Account...</span>
-                              </>
-                            ) : selectedPersona === 'job_seeker' ? (
-                              <>
-                                <Briefcase className="w-4 h-4 text-[#000004]" />
-                                <span>Create Job Seeker Account</span>
-                                <ArrowRight className="w-4 h-4 text-[#000004]" />
+                                <span>Registering...</span>
                               </>
                             ) : (
                               <>
-                                <User className="w-4 h-4 text-[#000004]" />
-                                <span>Create Tenant Account</span>
+                                <span>Register</span>
                                 <ArrowRight className="w-4 h-4 text-[#000004]" />
                               </>
                             )}
@@ -2606,7 +2599,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             onClick={handleAgentNextStep}
                             className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
-                            <span>Next: Account Details</span>
+                            <span>Next</span>
                             <ArrowRight className="w-4 h-4 text-[#000004]" />
                           </button>
                         </div>
@@ -2828,12 +2821,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             {isSubmittingAgent ? (
                               <>
                                 <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
-                                <span>Processing Registration...</span>
+                                <span>Registering...</span>
                               </>
                             ) : (
                               <>
-                                <Building2 className="w-4 h-4 text-[#000004]" />
-                                <span>{selectedPersona === 'employer' ? 'Register as Employer & Post Jobs' : 'Register as Agent'}</span>
+                                <span>Register</span>
                                 <ArrowRight className="w-4 h-4 text-[#000004]" />
                               </>
                             )}
