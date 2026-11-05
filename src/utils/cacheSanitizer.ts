@@ -4,14 +4,23 @@
  * mobile or desktop browsers during previous visits is thoroughly purged on startup.
  */
 
-const SYNC_VERSION_KEY = 'setlla_clean_slate_v8_purge';
+const SYNC_VERSION_KEY = 'setlla_clean_slate_v9_purge';
 
 export function runClientCacheSanitization(): void {
   if (typeof window === 'undefined') return;
 
   try {
+    // Unconditionally wipe any stale test ads (such as Lvis Agency or 3 Bed Room)
+    try {
+      const rawAds = localStorage.getItem('setlla_adverts');
+      if (rawAds && (rawAds.includes('Lvis Agency') || rawAds.includes('3 Bed Room') || rawAds.includes('20,000'))) {
+        localStorage.removeItem('setlla_adverts');
+        localStorage.removeItem('deltarent_adverts');
+      }
+    } catch (_) {}
+
     const currentVersion = localStorage.getItem(SYNC_VERSION_KEY);
-    if (currentVersion === 'v8_purged') return;
+    if (currentVersion === 'v9_purged') return;
 
     console.log('[Setlla] Performing complete clean slate purge v8...');
 
@@ -67,8 +76,8 @@ export function runClientCacheSanitization(): void {
       }).catch(() => {});
     }
 
-    // 8. Mark client as synced to v8
-    localStorage.setItem(SYNC_VERSION_KEY, 'v8_purged');
+    // 8. Mark client as synced to v9
+    localStorage.setItem(SYNC_VERSION_KEY, 'v9_purged');
   } catch (err) {
     console.warn('[Setlla] Cache sanitizer notice:', err);
   }

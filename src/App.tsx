@@ -1357,27 +1357,7 @@ export function App() {
   });
 
   // Sponsored adverts state - Loaded live from adService (Supabase + active partner campaigns)
-  const [adverts, setAdverts] = useState<AdvertStory[]>(() => {
-    const deletedIds = getDeletedAdvertIds();
-    const saved = typeof window !== 'undefined'
-      ? (localStorage.getItem('setlla_adverts') || localStorage.getItem('deltarent_adverts'))
-      : null;
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          // Strictly filter out any deleted or system demo ads and sanitize stored demo images
-          return parsed
-            .map(mapDbToAdvert)
-            .filter(
-              (a: AdvertStory) => a && a.id && !deletedIds.has(a.id) && !SYSTEM_DEMO_ADVERT_IDS.has(a.id) && a.status !== 'deleted'
-            );
-        }
-      } catch (e) {}
-    }
-    // Strictly return [] - Never fallback to demo mock ads
-    return [];
-  });
+  const [adverts, setAdverts] = useState<AdvertStory[]>([]);
 
   useEffect(() => {
     try {
@@ -1405,12 +1385,14 @@ export function App() {
     return unsubscribe;
   }, []);
 
-  // Active, verified campaigns to broadcast on the public feed (filters out declined, pending, and expired ads)
+  // Active, verified campaigns to broadcast on the public feed (filters out declined, pending, test, and expired ads)
   const activePublicAdverts = useMemo(() => {
     return adverts.filter(
       (a) =>
         a &&
         a.id &&
+        a.advertiserName !== 'Lvis Agency' &&
+        a.title !== '3 Bed Room' &&
         a.status !== 'rejected' &&
         a.status !== 'pending_review' &&
         a.status !== 'deleted' &&
