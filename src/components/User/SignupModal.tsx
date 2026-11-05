@@ -1650,7 +1650,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             : selectedPersona === 'lister'
                             ? 'Agency & Location'
                             : 'Personal Profile')
-                        : 'Contact & Security'}
+                        : 'Account Details'}
                     </h2>
                   </div>
                 </>
@@ -2185,7 +2185,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             onClick={handleSeekerNextStep}
                             className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
-                            <span>Next: Contact & Security</span>
+                            <span>Next: Account Details</span>
                             <ArrowRight className="w-4 h-4" />
                           </button>
                         </div>
@@ -2234,12 +2234,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                         {/* Email Address */}
                         <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-xs font-semibold text-[#70798C]">
-                              Email Address
-                            </label>
-                            <span className="text-[10px] text-[#70798C] font-medium">Required</span>
-                          </div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            Email Address
+                          </label>
                           <div className="relative">
                             <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
                               duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
@@ -2276,14 +2273,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                         {/* Password - Mandatory for all personas */}
                         <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-xs font-semibold text-[#70798C]">
-                              Create Password
-                            </label>
-                            <span className="text-[10px] text-[#70798C]">
-                              Min. 6 characters
-                            </span>
-                          </div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            Create Password
+                          </label>
                           <div className="relative">
                             <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                             <input
@@ -2330,7 +2322,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               required
                               minLength={6}
                               autoComplete="new-password"
-                              placeholder="Re-enter password to confirm"
+                              placeholder="Confirm your password"
                               value={seekerConfirmPassword}
                               onChange={(e) => {
                                 setSeekerConfirmPassword(e.target.value);
@@ -2629,7 +2621,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             onClick={handleAgentNextStep}
                             className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
-                            <span>Next: Contact & Security</span>
+                            <span>Next: Account Details</span>
                             <ArrowRight className="w-4 h-4" />
                           </button>
                         </div>
@@ -2639,14 +2631,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <div className="space-y-2.5 sm:space-y-3 animate-fade-in">
                         {/* Official Email */}
                         <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-xs font-semibold text-[#70798C]">
-                              {selectedPersona === 'employer' ? 'Official Work Email' : 'Official Agent Email'}
-                            </label>
-                            <span className="text-[10px] text-[#70798C]">
-                              {selectedPersona === 'employer' ? 'For alerts & sign-in' : 'For notifications & sign-in'}
-                            </span>
-                          </div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            {selectedPersona === 'employer' ? 'Work Email' : 'Email Address'}
+                          </label>
                           <div className="relative">
                             <Mail className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
                               duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
@@ -2684,14 +2671,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                         {/* Create Password */}
                         <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <label className="text-xs font-semibold text-[#70798C]">
-                              Create Password
-                            </label>
-                            <span className="text-[10px] text-[#70798C]">
-                              Min. 6 characters
-                            </span>
-                          </div>
+                          <label className="block text-xs font-semibold text-[#70798C] mb-1">
+                            Create Password
+                          </label>
                           <div className="relative">
                             <Lock className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                             <input
@@ -2738,7 +2720,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               required
                               minLength={6}
                               autoComplete="new-password"
-                              placeholder="Re-enter password to confirm"
+                              placeholder="Confirm your password"
                               value={agentConfirmPassword}
                               onChange={(e) => {
                                 setAgentConfirmPassword(e.target.value);
@@ -2766,7 +2748,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                         <div>
                           <div className="flex items-center justify-between mb-1">
                             <label className="text-xs font-semibold text-[#70798C]">
-                              {selectedPersona === 'employer' ? 'Contact Phone Number' : 'Direct Phone Number'}
+                              Phone Number
                             </label>
                             <label className="flex items-center gap-1.5 cursor-pointer select-none text-[10px] text-[#70798C] hover:text-[#000004]">
                               <input
@@ -2824,60 +2806,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   onChange={(e) => setAgentWhatsapp(e.target.value)}
                                   className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] font-medium"
                                 />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Optional CAC / Business Verification Section */}
-                        <div className="pt-0.5">
-                          {!showOptionalAgentFields ? (
-                            <button
-                              type="button"
-                              onClick={() => setShowOptionalAgentFields(true)}
-                              className="text-xs font-semibold text-[#70798C] hover:text-[#000004] inline-flex items-center gap-1 cursor-pointer py-1"
-                            >
-                              <ChevronDown className="w-3.5 h-3.5" />
-                              <span>
-                                {selectedPersona === 'employer'
-                                  ? 'Add Business Registration / CAC Number (Optional)'
-                                  : 'Add CAC / License / Reg Number (Optional)'}
-                              </span>
-                            </button>
-                          ) : (
-                            <div className="space-y-2 p-2.5 sm:p-3 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB] animate-fade-in">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-[#000004]">Business Verification (Optional)</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setShowOptionalAgentFields(false)}
-                                  className="text-[11px] text-[#70798C] hover:text-[#000004] inline-flex items-center gap-0.5 cursor-pointer"
-                                >
-                                  <ChevronUp className="w-3 h-3" />
-                                  <span>Hide</span>
-                                </button>
-                              </div>
-                              <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
-                                <div>
-                                  <div className="flex items-center justify-between mb-1">
-                                    <label className="text-xs font-semibold text-[#70798C]">
-                                      {selectedPersona === 'employer' ? 'CAC / RC Number (Optional)' : 'CAC / License No. (Optional)'}
-                                    </label>
-                                    <span className="text-[10px] text-[#342A21] bg-[#342A21]/5 px-1 py-0.5 rounded font-semibold">
-                                      {selectedPersona === 'employer' ? 'Verified Employer' : 'Badge'}
-                                    </span>
-                                  </div>
-                                  <div className="relative">
-                                    <FileText className="w-4 h-4 text-[#70798C] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                    <input
-                                      type="text"
-                                      placeholder="e.g. RC-182903 or BN-293810"
-                                      value={agentCac}
-                                      onChange={(e) => setAgentCac(e.target.value)}
-                                      className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#000004]/10 focus:border-[#000004] font-medium"
-                                    />
-                                  </div>
-                                </div>
                               </div>
                             </div>
                           )}
@@ -2998,17 +2926,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                   </button>
                 </p>
               )}
-
-              <p className="text-[11px] text-[#70798C]/80">
-                Just browsing?{' '}
-                <button
-                  type="button"
-                  onClick={handleSkipClick}
-                  className="font-medium hover:text-[#000004] hover:underline cursor-pointer"
-                >
-                  Explore live feed →
-                </button>
-              </p>
             </div>
           </div>
         </div>
