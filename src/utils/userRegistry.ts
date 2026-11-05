@@ -9,10 +9,10 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [];
 
 const STORAGE_KEY = 'setlla_registered_users';
 const LEGACY_STORAGE_KEY = 'deltarent_registered_users';
-const CLEAN_SLATE_KEY = 'setlla_v2_clean_slate_applied_2026';
+const CLEAN_SLATE_KEY = 'setlla_v2_clean_slate_applied_complete_2026';
 
 /**
- * Automatically purges all legacy test accounts, ghost sessions, and temporary demo users
+ * Automatically purges all legacy test accounts, ghost sessions, test adverts, and temporary data
  * so all devices and the Setlla production platform start 100% fresh.
  */
 export function purgeAllLegacyAccounts(): void {
@@ -30,10 +30,25 @@ export function purgeAllLegacyAccounts(): void {
       'setlla_active_view',
       'deltarent_active_view',
       'setlla_active_room',
+      'setlla_advertiser_user',
+      'setlla_adverts',
+      'deltarent_adverts',
+      'setlla_deleted_adverts',
+      'setlla_partner_api_keys',
+      'setlla_listings',
+      'deltarent_listings',
+      'setlla_bookings',
+      'deltarent_bookings',
+      'setlla_jobs',
+      'deltarent_jobs',
+      'setlla_job_applications',
+      'deltarent_job_applications',
       'setlla_deleted_user_ids',
       'deltarent_deleted_user_ids',
       'setlla_deleted_user_phones',
       'setlla_deleted_user_emails',
+      'setlla_last_email',
+      'setlla_last_phone',
       'setlla_my_booking_ids',
       'deltarent_my_booking_ids',
       'setlla_notified_confirmed_bookings',
@@ -42,10 +57,11 @@ export function purgeAllLegacyAccounts(): void {
       'deltarent_notified_declined_bookings',
       'setlla_notified_agent_requests',
       'deltarent_notified_agent_requests',
+      'setlla_v2_clean_slate_applied_2026',
     ];
     keysToPurge.forEach((k) => localStorage.removeItem(k));
     localStorage.setItem(CLEAN_SLATE_KEY, 'true');
-    console.log('[Setlla] Clean-slate purge executed: all legacy test data wiped.');
+    console.log('[Setlla] Complete clean-slate purge executed: all legacy test data wiped.');
   } catch (_) {}
 }
 
