@@ -161,10 +161,10 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
   if (hash.includes('admin') || pathname.includes('/admin') || search.includes('admin')) {
-    if (typeof window !== 'undefined' && window.location.hash.includes('admin')) {
-      window.history.replaceState(null, '', window.location.pathname || '/');
+    if (typeof window !== 'undefined') {
+      window.location.href = 'https://private.setlla.com';
+      return { role: 'tenant', view: 'feed', openPasses: false };
     }
-    return { role: 'tenant', view: 'feed', openPasses: false };
   }
   if (hash.includes('agent') || hash.includes('employer')) {
     if (isUserAgent) {
@@ -186,9 +186,6 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
 
   // 2. LocalStorage Persistence (Preserves active page across normal F5 / page reloads)
   if (savedRole === 'admin') {
-    if (isSuperAdminAuthenticated() && (hash.includes('admin') || pathname.includes('/admin'))) {
-      return { role: 'admin', view: 'feed', openPasses: false };
-    }
     return { role: 'tenant', view: 'feed', openPasses: false };
   }
   if (savedRole === 'agent' && isUserAgent) {
