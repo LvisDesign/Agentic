@@ -4,7 +4,7 @@
  * mobile or desktop browsers during previous visits is thoroughly purged on startup.
  */
 
-const SYNC_VERSION_KEY = 'setlla_clean_slate_v18_complete';
+const SYNC_VERSION_KEY = 'setlla_clean_slate_v20_complete';
 
 export function runClientCacheSanitization(): void {
   if (typeof window === 'undefined') return;
@@ -43,9 +43,9 @@ export function runClientCacheSanitization(): void {
     } catch (_) {}
 
     const currentVersion = localStorage.getItem(SYNC_VERSION_KEY);
-    if (currentVersion === 'v18_purged') return;
+    if (currentVersion === 'v20_purged') return;
 
-    console.log('[Setlla] Performing complete clean slate purge v18...');
+    console.log('[Setlla] Performing complete clean slate purge v20...');
 
     // 1. Wipe all local advert caches (removes stale test adverts like Lvis Agency)
     ['setlla_adverts', 'deltarent_adverts', 'setlla_deleted_adverts', 'setlla_partner_api_keys', 'setlla_advertiser_user'].forEach((key) => {
@@ -77,18 +77,30 @@ export function runClientCacheSanitization(): void {
       localStorage.removeItem(key);
     });
 
-    // 7. Clear user sessions for clean launch
-    localStorage.removeItem('setlla_user');
-    localStorage.removeItem('deltarent_user');
-    localStorage.removeItem('setlla_auth');
-    localStorage.removeItem('deltarent_auth');
-    localStorage.removeItem('setlla_active_role');
-    localStorage.removeItem('deltarent_active_role');
-    localStorage.removeItem('setlla_active_view');
-    localStorage.removeItem('deltarent_active_view');
+    // 7. Clear non-admin user sessions for clean launch
+    const rawCheck = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    let isSuperAdmin = false;
+    if (rawCheck) {
+      try {
+        const u = JSON.parse(rawCheck);
+        if (u && (u.email === 'admin@setlla.com' || u.id === 'DT-ADMIN-ELVIS')) {
+          isSuperAdmin = true;
+        }
+      } catch (_) {}
+    }
+    if (!isSuperAdmin) {
+      localStorage.removeItem('setlla_user');
+      localStorage.removeItem('deltarent_user');
+      localStorage.removeItem('setlla_auth');
+      localStorage.removeItem('deltarent_auth');
+      localStorage.removeItem('setlla_active_role');
+      localStorage.removeItem('deltarent_active_role');
+      localStorage.removeItem('setlla_active_view');
+      localStorage.removeItem('deltarent_active_view');
+    }
 
-    // 8. Mark client as synced to v18
-    localStorage.setItem(SYNC_VERSION_KEY, 'v18_purged');
+    // 8. Mark client as synced to v20
+    localStorage.setItem(SYNC_VERSION_KEY, 'v20_purged');
   } catch (err) {
     console.warn('[Setlla] Cache sanitizer notice:', err);
   }

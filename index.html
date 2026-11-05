@@ -36,7 +36,7 @@
     <script>
       (function() {
         try {
-          if (localStorage.getItem('setlla_clean_slate_fresh_v18') !== 'true') {
+          if (localStorage.getItem('setlla_clean_slate_fresh_v20') !== 'true') {
             [
               'setlla_registered_users',
               'deltarent_registered_users',
@@ -46,7 +46,7 @@
               'setlla_last_email',
               'setlla_last_phone'
             ].forEach(function(k) { localStorage.removeItem(k); });
-            localStorage.setItem('setlla_clean_slate_fresh_v18', 'true');
+            localStorage.setItem('setlla_clean_slate_fresh_v20', 'true');
           }
 
           var raw = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');

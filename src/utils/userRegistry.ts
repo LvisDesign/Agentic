@@ -9,7 +9,7 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [];
 
 const STORAGE_KEY = 'setlla_registered_users';
 const LEGACY_STORAGE_KEY = 'deltarent_registered_users';
-const CLEAN_SLATE_KEY = 'setlla_v2_clean_slate_applied_complete_2026';
+const CLEAN_SLATE_KEY = 'setlla_v20_clean_slate_wiped_2026';
 
 /**
  * Automatically purges all legacy test accounts, ghost sessions, test adverts, and temporary data
@@ -18,13 +18,20 @@ const CLEAN_SLATE_KEY = 'setlla_v2_clean_slate_applied_complete_2026';
 export function purgeAllLegacyAccounts(): void {
   if (typeof window === 'undefined') return;
   try {
+    const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    let isSuperAdmin = false;
+    if (rawCurrent) {
+      try {
+        const u = JSON.parse(rawCurrent);
+        if (u && (u.email === 'admin@setlla.com' || u.id === 'DT-ADMIN-ELVIS')) {
+          isSuperAdmin = true;
+        }
+      } catch (_) {}
+    }
+
     const keysToPurge = [
       'setlla_registered_users',
       'deltarent_registered_users',
-      'setlla_user',
-      'deltarent_user',
-      'setlla_auth',
-      'deltarent_auth',
       'setlla_active_role',
       'deltarent_active_role',
       'setlla_active_view',
@@ -58,10 +65,60 @@ export function purgeAllLegacyAccounts(): void {
       'setlla_notified_agent_requests',
       'deltarent_notified_agent_requests',
       'setlla_v2_clean_slate_applied_2026',
+      'setlla_v2_clean_slate_applied_complete_2026',
     ];
+
+    if (!isSuperAdmin) {
+      keysToPurge.push('setlla_user', 'deltarent_user', 'setlla_auth', 'deltarent_auth');
+    }
+
     keysToPurge.forEach((k) => localStorage.removeItem(k));
     localStorage.setItem(CLEAN_SLATE_KEY, 'true');
     console.log('[Setlla] Complete clean-slate purge executed: all legacy test data wiped.');
+  } catch (_) {}
+}
+
+// Purges any ghost user session or cached record matching phone or email that no longer exists in Supabase
+export function purgeGhostUserFromLocalStorage(phone?: string, email?: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const normPhone = phone ? normalizePhoneNumber(phone) : '';
+    const normEmail = email ? normalizeEmail(email) : '';
+    const last10 = normPhone.slice(-10);
+
+    const rawReg = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (rawReg) {
+      const list = JSON.parse(rawReg);
+      if (Array.isArray(list)) {
+        const filtered = list.filter((u: any) => {
+          const uEmail = normalizeEmail(u.email);
+          const uPhone = normalizePhoneNumber(u.phone);
+          if (normEmail && uEmail && uEmail === normEmail) return false;
+          if (normPhone && uPhone && (uPhone === normPhone || (last10.length === 10 && uPhone.slice(-10) === last10))) return false;
+          return true;
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+      }
+    }
+
+    const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    if (rawCurrent) {
+      const u = JSON.parse(rawCurrent);
+      const uEmail = (u && u.email ? u.email : '').toLowerCase().trim();
+      const uPhone = u && u.phone ? normalizePhoneNumber(u.phone) : '';
+      if (uEmail !== 'admin@setlla.com' && u?.id !== 'DT-ADMIN-ELVIS') {
+        const emailMatches = Boolean(normEmail && uEmail && uEmail === normEmail);
+        const phoneMatches = Boolean(normPhone && uPhone && (uPhone === normPhone || (last10.length === 10 && uPhone.slice(-10) === last10)));
+        if (emailMatches || phoneMatches) {
+          localStorage.removeItem('setlla_user');
+          localStorage.removeItem('deltarent_user');
+          localStorage.removeItem('setlla_auth');
+          localStorage.removeItem('deltarent_auth');
+        }
+      }
+    }
+
+    unrecordDeletedUser({ phone, email });
   } catch (_) {}
 }
 
@@ -411,14 +468,16 @@ export function getRegisteredUsers(): UserProfile[] {
     console.warn('[UserRegistry] Failed to parse registered users:', err);
   }
 
-  // 3. Include currently active user from setlla_user / deltarent_user if present
+  // 3. Include super admin from setlla_user if present
   try {
     const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
     if (rawCurrent) {
       const current: UserProfile = JSON.parse(rawCurrent);
       if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
-        unrecordDeletedUser(current);
-        addOrMergeUser(current);
+        if (current.email && current.email.toLowerCase() === 'admin@setlla.com') {
+          unrecordDeletedUser(current);
+          addOrMergeUser(current);
+        }
       }
     }
   } catch (err) {
@@ -1567,14 +1626,9 @@ export async function checkUserExistsAsync(
   email?: string,
   excludeUserId?: string
 ): Promise<DuplicateCheckResult> {
-  // First check local cache
-  const localCheck = checkUserExists(phone, email, excludeUserId);
-  if (localCheck.exists) {
-    return localCheck;
-  }
-
+  // If Supabase is not configured, fall back to local registry
   if (!isSupabaseConfigured()) {
-    return { exists: false };
+    return checkUserExists(phone, email, excludeUserId);
   }
 
   const normPhone = normalizePhoneNumber(phone);
@@ -1583,9 +1637,11 @@ export async function checkUserExistsAsync(
 
   try {
     const client = getSupabaseClient();
-    if (!client) return { exists: false };
+    if (!client) {
+      return checkUserExists(phone, email, excludeUserId);
+    }
 
-    // 2. Query cloud blacklist / tombstones in deleted_adverts
+    // 1. Query cloud blacklist / tombstones in deleted_adverts
     try {
       const tombstoneKeys: string[] = [];
       if (normPhone) {
@@ -1697,14 +1753,21 @@ export async function checkUserExistsAsync(
     })();
 
     const timeoutPromise = new Promise<DuplicateCheckResult>((resolve) =>
-      setTimeout(() => resolve({ exists: false }), 2000)
+      setTimeout(() => resolve({ exists: false }), 4000)
     );
 
-    return await Promise.race([queryPromise, timeoutPromise]);
+    const result = await Promise.race([queryPromise, timeoutPromise]);
+    if (!result.exists) {
+      // Cloud database confirmed this credential does not exist.
+      // Purge any stale ghost session or local cache for this email/phone.
+      purgeGhostUserFromLocalStorage(phone, email);
+    }
+    return result;
   } catch (err) {
     console.warn('[UserRegistry] Exception during checkUserExistsAsync:', err);
   }
 
+  purgeGhostUserFromLocalStorage(phone, email);
   return { exists: false };
 }
 

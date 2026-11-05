@@ -44,7 +44,6 @@ import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { usePWA } from '../../utils/pwa';
 import { isLocalUrl } from '../../utils/environment';
 import { 
-  checkUserExists, 
   checkUserExistsAsync,
   findUserByCredential, 
   findUserByCredentialAsync,
@@ -450,14 +449,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     setIsSubmittingSeeker(true);
 
     try {
-      // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
-      const localDupCheck = checkUserExists(seekerPhone, seekerEmail);
-      if (localDupCheck.exists) {
-        setDuplicateError(localDupCheck);
-        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        setIsSubmittingSeeker(false);
-        return;
-      }
+      // Strict duplicate check: query cloud database for real existing accounts
       const dupCheck = await checkUserExistsAsync(seekerPhone, seekerEmail);
       if (dupCheck.exists) {
         setDuplicateError(dupCheck);
@@ -589,14 +581,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     setIsSubmittingAgent(true);
 
     try {
-      // Strict duplicate check: prevent signing up twice with same phone number or email across local & shared DB
-      const localDupCheck = checkUserExists(agentPhone, agentEmail);
-      if (localDupCheck.exists) {
-        setDuplicateError(localDupCheck);
-        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-        setIsSubmittingAgent(false);
-        return;
-      }
+      // Strict duplicate check: query cloud database for real existing accounts
       const dupCheck = await checkUserExistsAsync(agentPhone, agentEmail);
       if (dupCheck.exists) {
         setDuplicateError(dupCheck);
