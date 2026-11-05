@@ -433,34 +433,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             </p>
           </div>
 
-          {/* ACTION CARD: Admin Console (Super Admin Upper-Level Console) */}
-          {isSuperAdmin ? (
-            <div className="p-4 rounded-2xl bg-[#000004] text-white shadow-sm space-y-2.5">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-white/10 text-white flex items-center justify-center border border-white/10">
-                  <Shield className="w-3.5 h-3.5" />
-                </div>
-                <span className="font-bold text-xs text-white">
-                  Super Admin Console
-                </span>
-              </div>
-              <p className="text-[11px] text-white/80 leading-relaxed">
-                Central governance console for platform users, KYC verifications, listings oversight, applicant reviews, clearance escrow, and security audits.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onChangeRole('admin');
-                  window.location.hash = '#/admin';
-                }}
-                className="w-full py-2.5 px-3 rounded-xl bg-white hover:bg-slate-100 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-              >
-                <Shield className="w-3.5 h-3.5" />
-                <span>Open Admin Console</span>
-              </button>
-            </div>
-          ) : !isAgent ? (
+          {!isAgent ? (
             <div className="p-4 rounded-2xl bg-gradient-to-br from-[#000004] to-[#1a2332] text-white shadow-sm space-y-2.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1066,32 +1039,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 className="px-3 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold transition-colors cursor-pointer shadow-xs"
               >
                 Back to Agent Portal
-              </button>
-            </div>
-          ) : null}
-
-          {/* Admin Dashboard Access (Only shown if primary admin card above was not already displayed) */}
-          {!isSuperAdmin && isSuperAdminAuthenticated() && (currentUser.isAdmin || currentUser.isSuperAdmin || currentUser.email === 'admin@setlla.com') ? (
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-[#E5E7EB] flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <div className="w-8 h-8 rounded-xl bg-[#000004] text-white flex items-center justify-center shadow-xs shrink-0">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-bold text-xs text-[#000004] truncate">Admin Dashboard</div>
-                  <div className="text-[11px] text-[#70798C] truncate">
-                    Platform management and operations
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  onChangeRole('admin');
-                  onClose();
-                }}
-                className="shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
-              >
-                Admin Dashboard
               </button>
             </div>
           ) : null}

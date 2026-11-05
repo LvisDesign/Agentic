@@ -179,17 +179,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-          {isAdmin ? (
-            <button
-              onClick={() => {
-                window.location.hash = '#/admin';
-              }}
-              className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
-            >
-              <LayoutDashboard className="w-4 h-4" />
-              <span>Admin Dashboard</span>
-            </button>
-          ) : currentUser.isAgent ? (
+          {currentUser.isAgent ? (
             <button
               onClick={() => onSwitchToAgent?.()}
               className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
@@ -225,32 +215,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       </div>
 
       {/* 2. Notice Box */}
-      {isAdmin ? (
-        <div className="mb-6 p-4 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[#000004] text-white flex items-center justify-center shrink-0 mt-0.5">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <h4 className="font-bold text-[#000004]">
-                Administrator Account Active
-              </h4>
-              <p className="text-[11px] text-[#70798C] mt-0.5">
-                You are signed in as a platform administrator with full agent & employer privileges. You can monitor platform activity, view live bookings, inspect inventory, publish listings, or open the central Admin Dashboard.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              window.location.hash = '#/admin';
-            }}
-            className="shrink-0 px-3.5 py-2 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-          >
-            <LayoutDashboard className="w-3.5 h-3.5" />
-            <span>Open Admin Dashboard →</span>
-          </button>
-        </div>
-      ) : currentUser.isAgent ? (
+      {currentUser.isAgent ? (
         <div className="mb-6 p-4 rounded-2xl bg-[#FCF9F5] border border-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-xl bg-[#000004] text-amber-300 flex items-center justify-center shrink-0 mt-0.5">
