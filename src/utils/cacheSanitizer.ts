@@ -4,7 +4,7 @@
  * mobile or desktop browsers during previous visits is thoroughly purged on startup.
  */
 
-const SYNC_VERSION_KEY = 'setlla_clean_slate_v10_complete';
+const SYNC_VERSION_KEY = 'setlla_clean_slate_v18_complete';
 
 export function runClientCacheSanitization(): void {
   if (typeof window === 'undefined') return;
@@ -26,7 +26,8 @@ export function runClientCacheSanitization(): void {
             'setlla_active_role', 'deltarent_active_role',
             'setlla_active_view', 'deltarent_active_view',
             'setlla_active_room', 'setlla_registered_users',
-            'deltarent_registered_users', 'setlla_adverts', 'deltarent_adverts'
+            'deltarent_registered_users', 'setlla_adverts', 'deltarent_adverts',
+            'setlla_last_email', 'setlla_last_phone'
           ].forEach((k) => localStorage.removeItem(k));
         }
       }
@@ -42,9 +43,9 @@ export function runClientCacheSanitization(): void {
     } catch (_) {}
 
     const currentVersion = localStorage.getItem(SYNC_VERSION_KEY);
-    if (currentVersion === 'v10_purged') return;
+    if (currentVersion === 'v18_purged') return;
 
-    console.log('[Setlla] Performing complete clean slate purge v10...');
+    console.log('[Setlla] Performing complete clean slate purge v18...');
 
     // 1. Wipe all local advert caches (removes stale test adverts like Lvis Agency)
     ['setlla_adverts', 'deltarent_adverts', 'setlla_deleted_adverts', 'setlla_partner_api_keys', 'setlla_advertiser_user'].forEach((key) => {
@@ -63,7 +64,7 @@ export function runClientCacheSanitization(): void {
     localStorage.removeItem('deltarent_listings');
 
     // 4. Purge legacy mock users from local user registry cache
-    ['setlla_registered_users', 'deltarent_registered_users'].forEach((key) => {
+    ['setlla_registered_users', 'deltarent_registered_users', 'setlla_last_email', 'setlla_last_phone'].forEach((key) => {
       localStorage.removeItem(key);
     });
 
@@ -86,20 +87,8 @@ export function runClientCacheSanitization(): void {
     localStorage.removeItem('setlla_active_view');
     localStorage.removeItem('deltarent_active_view');
 
-    // 7. Purge any stale Service Worker caches from older versions
-    if (typeof caches !== 'undefined') {
-      caches.keys().then((names) => {
-        names.forEach((name) => {
-          if (name !== 'setlla-pwa-v9') {
-            console.log('[Setlla] Purging legacy SW cache:', name);
-            caches.delete(name);
-          }
-        });
-      }).catch(() => {});
-    }
-
-    // 8. Mark client as synced to v10
-    localStorage.setItem(SYNC_VERSION_KEY, 'v10_purged');
+    // 8. Mark client as synced to v18
+    localStorage.setItem(SYNC_VERSION_KEY, 'v18_purged');
   } catch (err) {
     console.warn('[Setlla] Cache sanitizer notice:', err);
   }

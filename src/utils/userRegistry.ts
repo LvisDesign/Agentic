@@ -339,6 +339,20 @@ export function getRegisteredUsers(): UserProfile[] {
   if (typeof window === 'undefined') return DEFAULT_REGISTERED_USERS;
   ensureZombiePurgeMigration();
 
+  // Clean-Slate enforcement: If local device still has unpurged legacy user cache, wipe it immediately
+  try {
+    if (localStorage.getItem('setlla_clean_slate_fresh_v18') !== 'true') {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+      localStorage.removeItem('setlla_deleted_emails');
+      localStorage.removeItem('setlla_deleted_phones');
+      localStorage.removeItem('setlla_deleted_user_ids');
+      localStorage.removeItem('setlla_last_email');
+      localStorage.removeItem('setlla_last_phone');
+      localStorage.setItem('setlla_clean_slate_fresh_v18', 'true');
+    }
+  } catch (_) {}
+
   const usersMap = new Map<string, UserProfile>();
 
   const addOrMergeUser = (user: UserProfile) => {
