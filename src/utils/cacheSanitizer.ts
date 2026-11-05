@@ -4,12 +4,34 @@
  * mobile or desktop browsers during previous visits is thoroughly purged on startup.
  */
 
-const SYNC_VERSION_KEY = 'setlla_clean_slate_v9_purge';
+const SYNC_VERSION_KEY = 'setlla_clean_slate_v10_complete';
 
 export function runClientCacheSanitization(): void {
   if (typeof window === 'undefined') return;
 
   try {
+    // 0. Complete Unconditional Session Purge:
+    // Only admin@setlla.com survives. Any legacy accounts (e.g. Obaro Uti, Fgag, demo agents, test users) are wiped.
+    try {
+      const rawUser = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        const email = (u?.email || '').toLowerCase().trim();
+        const isOfficialSuperAdmin = (email === 'admin@setlla.com' || u?.id === 'DT-ADMIN-ELVIS');
+        if (!isOfficialSuperAdmin) {
+          console.log('[Setlla] Clean Slate: Purged legacy user session from device:', u.fullName || email || u.id);
+          [
+            'setlla_user', 'deltarent_user',
+            'setlla_auth', 'deltarent_auth',
+            'setlla_active_role', 'deltarent_active_role',
+            'setlla_active_view', 'deltarent_active_view',
+            'setlla_active_room', 'setlla_registered_users',
+            'deltarent_registered_users', 'setlla_adverts', 'deltarent_adverts'
+          ].forEach((k) => localStorage.removeItem(k));
+        }
+      }
+    } catch (_) {}
+
     // Unconditionally wipe any stale test ads (such as Lvis Agency or 3 Bed Room)
     try {
       const rawAds = localStorage.getItem('setlla_adverts');
@@ -20,9 +42,9 @@ export function runClientCacheSanitization(): void {
     } catch (_) {}
 
     const currentVersion = localStorage.getItem(SYNC_VERSION_KEY);
-    if (currentVersion === 'v9_purged') return;
+    if (currentVersion === 'v10_purged') return;
 
-    console.log('[Setlla] Performing complete clean slate purge v8...');
+    console.log('[Setlla] Performing complete clean slate purge v10...');
 
     // 1. Wipe all local advert caches (removes stale test adverts like Lvis Agency)
     ['setlla_adverts', 'deltarent_adverts', 'setlla_deleted_adverts', 'setlla_partner_api_keys', 'setlla_advertiser_user'].forEach((key) => {
@@ -76,8 +98,8 @@ export function runClientCacheSanitization(): void {
       }).catch(() => {});
     }
 
-    // 8. Mark client as synced to v9
-    localStorage.setItem(SYNC_VERSION_KEY, 'v9_purged');
+    // 8. Mark client as synced to v10
+    localStorage.setItem(SYNC_VERSION_KEY, 'v10_purged');
   } catch (err) {
     console.warn('[Setlla] Cache sanitizer notice:', err);
   }

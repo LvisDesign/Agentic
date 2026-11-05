@@ -389,21 +389,16 @@ export function App() {
     if (hash.includes('admin') && isSuperAdminAuthenticated()) {
       return getActiveAdminUser() || ADMIN_USER;
     }
-    const isAuth = (localStorage.getItem('setlla_auth') || localStorage.getItem('deltarent_auth')) === 'true';
-    const saved = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    const saved = typeof window !== 'undefined' ? (localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user')) : null;
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (
-          parsed.id === 'DT-USR-8492' ||
-          parsed.id === 'DT-AGT-9012' ||
-          parsed.email === 'chinedu.okafor@gmail.com'
-        ) {
-          return GUEST_USER;
-        }
-        if (isElvisSuperAdmin(parsed)) {
+        const email = (parsed?.email || '').toLowerCase().trim();
+        // Clean Slate: ONLY official Super Admin admin@setlla.com is preserved on client startup
+        if (email === 'admin@setlla.com' || parsed?.id === 'DT-ADMIN-ELVIS') {
           return {
             ...parsed,
+            email: 'admin@setlla.com',
             isAdmin: true,
             isSuperAdmin: true,
             isAgent: true,
@@ -411,9 +406,18 @@ export function App() {
             persona: 'admin',
           };
         }
-        if (parsed && parsed.id && parsed.id !== 'GUEST_USER' && parsed.id !== 'DT-USR-GUEST') {
-          return parsed;
-        }
+
+        // All other legacy accounts (Obaro Uti, Fgag, etc.) are purged immediately
+        try {
+          [
+            'setlla_user', 'deltarent_user',
+            'setlla_auth', 'deltarent_auth',
+            'setlla_active_role', 'deltarent_active_role',
+            'setlla_active_view', 'deltarent_active_view',
+            'setlla_active_room', 'setlla_registered_users',
+            'deltarent_registered_users', 'setlla_adverts', 'deltarent_adverts'
+          ].forEach((k) => localStorage.removeItem(k));
+        } catch (_) {}
       } catch (e) {
         // fallback
       }
