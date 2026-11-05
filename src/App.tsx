@@ -58,13 +58,7 @@ import { CustomConfirmModal } from './components/UI/CustomConfirmModal';
 import { PWAInstallBanner } from './components/UI/PWAInstallBanner';
 import { Clock } from 'lucide-react';
 
-// Code-split heavy isolated portals (Super Admin & Partner Portal) to minimize initial bundle payload
-const SuperAdminDashboard = lazy(() =>
-  import('./components/Admin/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard }))
-);
-const AdminAuthPortal = lazy(() =>
-  import('./components/Admin/AdminAuthPortal').then(m => ({ default: m.AdminAuthPortal }))
-);
+// Code-split heavy isolated portals (Partner Portal) to minimize initial bundle payload
 const PartnerPortalPage = lazy(() =>
   import('./components/Partner/PartnerPortalPage').then(m => ({ default: m.PartnerPortalPage }))
 );
@@ -167,7 +161,10 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
   if (hash.includes('admin') || pathname.includes('/admin') || search.includes('admin')) {
-    return { role: 'admin', view: 'feed', openPasses: false };
+    if (typeof window !== 'undefined') {
+      window.location.replace('https://private.setlla.com');
+    }
+    return { role: 'tenant', view: 'feed', openPasses: false };
   }
   if (hash.includes('agent') || hash.includes('employer')) {
     if (isUserAgent) {
@@ -2412,82 +2409,17 @@ export function App() {
             />
           </Suspense>
         </main>
-      ) : (currentRole === 'admin' && userView !== 'dashboard') ? (
-        /* Super Admin Control Center or Admin Authentication Portal */
-        isAdminAuthenticated ? (
-          <main className="flex-1 w-full relative">
-            {adminIdleWarning && (
-              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] bg-[#000004]/95 text-white backdrop-blur-md border border-[#F95700]/60 p-3.5 sm:p-4 rounded-2xl shadow-2xl flex items-center justify-between gap-3 animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-[#F95700]/20 flex items-center justify-center shrink-0">
-                    <Clock className="w-4 h-4 text-[#F95700]" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-white">Admin Session Expiring</div>
-                    <div className="text-[11px] text-white/70">Idle for 55 minutes. Expiring in ~5 minutes. Tap to stay signed in.</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateAdminLastActivity();
-                    setAdminIdleWarning(false);
-                  }}
-                  className="px-3 py-1.5 bg-[#F95700] hover:bg-[#E65100] text-white text-xs font-bold rounded-lg shrink-0 cursor-pointer transition-colors shadow-sm"
-                >
-                  Stay Active
-                </button>
-              </div>
-            )}
-            <Suspense fallback={<SectionLoadingFallback label="Loading Super Admin Console..." />}>
-              <SuperAdminDashboard
-                currentUser={activeAdminUser || currentUser}
-                listings={listings}
-                bookings={bookings}
-                adverts={adverts}
-                onAddAdvert={handleAddAdvert}
-                onUpdateAdvert={handleUpdateAdvert}
-                onDeleteAdvert={handleDeleteAdvert}
-                onUpdateListingAvailability={handleUpdateListingAvailability}
-                onDeleteListing={handleDeleteListing}
-                onAcceptBooking={handleAcceptBooking}
-                onRejectBooking={handleRejectBooking}
-                onDeleteBooking={handleDeleteBooking}
-                onUpdateListing={handleListingUpdated}
-                onAddListing={handleListingCreated}
-                onRefreshData={syncLatestData}
-                onSwitchToExplore={() => {
-                  setCurrentRole('tenant');
-                  setUserView('feed');
-                }}
-                onSwitchToAgent={() => setCurrentRole('agent')}
-                onSwitchToTenant={() => {
-                  setCurrentRole('tenant');
-                  setUserView('dashboard');
-                }}
-                onSwitchToPartner={() => {
-                  setUserView('partner');
-                  window.location.hash = '#/partner';
-                }}
-                onSignOut={handleAdminSignOut}
-              />
-            </Suspense>
-          </main>
-        ) : (
-          <main className="flex-1 w-full">
-            <Suspense fallback={<SectionLoadingFallback label="Loading Secure Admin Portal..." />}>
-              <AdminAuthPortal
-                onSuccess={handleAdminAuthSuccess}
-                expiredNotice={adminExpiredNotice}
-                onSwitchToExplore={() => {
-                  setAdminExpiredNotice(null);
-                  setCurrentRole('tenant');
-                  setUserView('feed');
-                }}
-              />
-            </Suspense>
-          </main>
-        )
+      ) : (currentRole === 'admin') ? (
+        <main className="flex-1 w-full min-h-[60vh] flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-8 h-8 border-2 border-slate-200 border-t-[#000004] rounded-full animate-spin mb-3" />
+          <p className="text-sm font-semibold text-slate-800">Redirecting to Setlla Operations Console...</p>
+          <a
+            href="https://private.setlla.com"
+            className="text-xs text-[#F95700] hover:underline mt-2 font-medium"
+          >
+            Click here to access private.setlla.com
+          </a>
+        </main>
       ) : userView === 'dashboard' && isAuthenticated ? (
         activeRoom === 'jobs' ? (
           (currentRole === 'agent' || currentUser.isAgent || currentUser.persona === 'employer') ? (
