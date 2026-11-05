@@ -162,7 +162,11 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   }
   if (hash.includes('admin') || pathname.includes('/admin') || search.includes('admin')) {
     if (typeof window !== 'undefined') {
-      window.location.href = 'https://private.setlla.com';
+      // Strictly prevent revealing or redirecting to private.setlla.com
+      // Silently wipe the admin route and keep visitors safely on the home explore feed
+      try {
+        window.history.replaceState(null, '', '/');
+      } catch (_) {}
       return { role: 'tenant', view: 'feed', openPasses: false };
     }
   }
