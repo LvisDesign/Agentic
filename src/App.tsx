@@ -166,7 +166,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
   ) {
     return { role: 'tenant', view: 'partner', openPasses: false };
   }
-  if (hash.includes('admin')) {
+  if (hash.includes('admin') || pathname.includes('/admin') || search.includes('admin')) {
     return { role: 'admin', view: 'feed', openPasses: false };
   }
   if (hash.includes('agent') || hash.includes('employer')) {
