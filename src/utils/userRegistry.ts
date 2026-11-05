@@ -393,98 +393,17 @@ export function isDeletedUserRecord(user: { id?: string; phone?: string; email?:
  * Provides all available registered agents, tenants, and platform administrators.
  */
 export function getRegisteredUsers(): UserProfile[] {
-  if (typeof window === 'undefined') return DEFAULT_REGISTERED_USERS;
-  ensureZombiePurgeMigration();
-
-  // Clean-Slate enforcement: If local device still has unpurged legacy user cache, wipe it immediately
-  try {
-    if (localStorage.getItem('setlla_clean_slate_fresh_v18') !== 'true') {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(LEGACY_STORAGE_KEY);
-      localStorage.removeItem('setlla_deleted_emails');
-      localStorage.removeItem('setlla_deleted_phones');
-      localStorage.removeItem('setlla_deleted_user_ids');
-      localStorage.removeItem('setlla_last_email');
-      localStorage.removeItem('setlla_last_phone');
-      localStorage.setItem('setlla_clean_slate_fresh_v18', 'true');
-    }
-  } catch (_) {}
-
-  const usersMap = new Map<string, UserProfile>();
-
-  const addOrMergeUser = (user: UserProfile) => {
-    if (!user || !user.id || isDeletedUserRecord(user)) return;
-    const isAdmin = Boolean(
-      user.isAdmin || 
-      user.isSuperAdmin || 
-      (user.email && user.email.toLowerCase() === 'admin@setlla.com') ||
-      (user.fullName && user.fullName.toLowerCase().includes('elvis'))
-    );
-    const resolvedUser: UserProfile = {
-      ...user,
-      ...(isAdmin ? { isAgent: true, kycStatus: 'verified', isVerifiedTenant: false } : {}),
-    };
-
-    const phoneNorm = resolvedUser.phone ? normalizePhoneNumber(resolvedUser.phone) : '';
-    const emailNorm = resolvedUser.email ? normalizeEmail(resolvedUser.email) : '';
-
-    // Check if user already exists by ID, phone, or email
-    for (const [existingId, existingUser] of usersMap.entries()) {
-      const existingPhone = existingUser.phone ? normalizePhoneNumber(existingUser.phone) : '';
-      const existingEmail = existingUser.email ? normalizeEmail(existingUser.email) : '';
-      if (
-        existingId === resolvedUser.id ||
-        (phoneNorm && existingPhone && phoneNorm === existingPhone) ||
-        (emailNorm && existingEmail && emailNorm === existingEmail)
-      ) {
-        usersMap.set(existingId, {
-          ...existingUser,
-          ...resolvedUser,
-          id: existingId, // preserve canonical ID
-        });
-        return;
-      }
-    }
-    usersMap.set(resolvedUser.id, resolvedUser);
-  };
-
-  // 1. Seed all default registered agents, tenants, and administrators
-  DEFAULT_REGISTERED_USERS.forEach((user) => {
-    addOrMergeUser(user);
-  });
-
-  // 2. Load from localStorage registered users registry
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (raw) {
-      const parsed: UserProfile[] = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        parsed.forEach((user) => {
-          addOrMergeUser(user);
-        });
-      }
-    }
-  } catch (err) {
-    console.warn('[UserRegistry] Failed to parse registered users:', err);
-  }
-
-  // 3. Include super admin from setlla_user if present
+  if (typeof window === 'undefined') return [];
   try {
     const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
     if (rawCurrent) {
       const current: UserProfile = JSON.parse(rawCurrent);
-      if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
-        if (current.email && current.email.toLowerCase() === 'admin@setlla.com') {
-          unrecordDeletedUser(current);
-          addOrMergeUser(current);
-        }
+      if (current && current.email && current.email.toLowerCase() === 'admin@setlla.com') {
+        return [current];
       }
     }
-  } catch (err) {
-    // ignore
-  }
-
-  return Array.from(usersMap.values());
+  } catch (_) {}
+  return [];
 }
 
 
@@ -882,12 +801,12 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         });
       }
 
-      // 4. Ensure current active user session on this device persists in map so it is never dropped during sync
+      // 4. Ensure Super Admin session persists in map if active
       try {
         const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
         if (rawCurrent) {
           const current: UserProfile = JSON.parse(rawCurrent);
-          if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
+          if (current && current.email && current.email.toLowerCase() === 'admin@setlla.com') {
             unrecordDeletedUser(current);
             addOrMergeToDbMap(current);
           }
@@ -1552,68 +1471,15 @@ export function checkUserExists(
   email?: string,
   excludeUserId?: string
 ): DuplicateCheckResult {
-  // 1. Strict Blacklist check: If an admin banned this phone or email, registration is strictly prohibited
-  const banCheck = isCredentialBanned(phone, email);
-  if (banCheck.banned) {
+  const normEmail = normalizeEmail(email);
+  if (normEmail === 'admin@setlla.com') {
     return {
       exists: true,
-      isBanned: true,
-      reason: banCheck.reason || 'both',
-      field: banCheck.reason || 'both',
-      message: banCheck.message || 'This credential has been restricted by platform administration.',
+      reason: 'email',
+      field: 'email',
+      message: 'The official Super Admin account (admin@setlla.com) is reserved. Please sign in.',
     };
   }
-  const normPhone = normalizePhoneNumber(phone);
-  const normEmail = normalizeEmail(email);
-
-  if (!normPhone && !normEmail) {
-    return { exists: false };
-  }
-
-  const registeredUsers = getRegisteredUsers();
-
-  for (const user of registeredUsers) {
-    if (excludeUserId && user.id === excludeUserId) {
-      continue;
-    }
-
-    const userNormPhone = normalizePhoneNumber(user.phone);
-    const userNormEmail = normalizeEmail(user.email);
-
-    const phoneMatches = Boolean(normPhone && userNormPhone && normPhone === userNormPhone);
-    const emailMatches = Boolean(normEmail && userNormEmail && normEmail === userNormEmail);
-
-    if (phoneMatches && emailMatches) {
-      return {
-        exists: true,
-        reason: 'both',
-        field: 'both',
-        message: `An account with phone number "${phone}" and email "${email}" already exists.`,
-        matchedUser: user,
-      };
-    }
-
-    if (phoneMatches) {
-      return {
-        exists: true,
-        reason: 'phone',
-        field: 'phone',
-        message: `An account with phone number "${phone}" already exists.`,
-        matchedUser: user,
-      };
-    }
-
-    if (emailMatches) {
-      return {
-        exists: true,
-        reason: 'email',
-        field: 'email',
-        message: `An account with email "${email}" already exists.`,
-        matchedUser: user,
-      };
-    }
-  }
-
   return { exists: false };
 }
 
