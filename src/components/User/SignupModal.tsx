@@ -486,6 +486,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         resolvedPersona === 'employer' ? 'employer_signup' :
         'job_seeker_signup';
 
+      // Instantly synchronize newly submitted profile to cloud platform_users
+      // so it reflects immediately in real time on the Super Admin Console (private.setlla.com)
+      saveRegisteredUserAsync(updated, { allowReRegistration: true }).catch(() => {});
+
       // Send OTP to email and transition to verify_email screen for ALL signups
       try {
         const res = await sendEmailOTP(seekerEmail.trim(), otpPurpose, updated, seekerTurnstileToken || undefined);
@@ -619,6 +623,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         createdAt: new Date().toISOString(),
         isEmailVerified: false,
       };
+
+      // Instantly synchronize newly submitted profile to cloud platform_users
+      // so it reflects immediately in real time on the Super Admin Console (private.setlla.com)
+      saveRegisteredUserAsync(updated, { allowReRegistration: true }).catch(() => {});
 
       // Enforce email verification for Agents and Employers
       const otpPurpose: EmailOTPPurpose = resolvedPersona === 'employer' ? 'employer_signup' : 'agent_signup';
