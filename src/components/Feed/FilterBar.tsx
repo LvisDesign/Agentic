@@ -167,12 +167,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             {/* More Filters Modal Trigger */}
             <button
               onClick={() => setIsOpenModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#000004] text-white text-xs font-semibold hover:bg-[#1f2937] transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF9F6] hover:bg-[#EDE8DE] text-[#342A21] border border-[#E5E7EB] text-xs font-semibold transition-colors cursor-pointer"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#70798C]" />
               <span>Filter</span>
               {activeFiltersCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-white text-[#342A21] text-[10px] font-bold flex items-center justify-center">
+                <span className="w-4 h-4 rounded-full bg-[#FFAD05] text-[#000004] text-[10px] font-bold flex items-center justify-center">
                   {activeFiltersCount}
                 </span>
               )}
@@ -391,7 +391,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsOpenModal(false)}
-                className="py-2.5 px-5 rounded-lg bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] shadow-xs"
+                className="py-2.5 px-5 rounded-lg bg-[#FFAD05] text-[#000004] text-xs font-extrabold hover:bg-[#e69c04] shadow-xs cursor-pointer"
               >
                 Apply Filters ({totalFiltered} Available)
               </button>

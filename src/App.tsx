@@ -1849,17 +1849,9 @@ export function App() {
 
   const handleOpenSignup = () => {
     if (isAuthenticated || isAdminAuthenticated || currentRole === 'admin') return;
-    const isKnown = isStandalone() || 
-      localStorage.getItem('setlla_pwa_installed') === 'true' || 
-      Boolean(
-        localStorage.getItem('setlla_registered_users') || 
-        localStorage.getItem('setlla_user') || 
-        localStorage.getItem('setlla_last_email') || 
-        localStorage.getItem('setlla_last_phone')
-      );
     setSignupNotice(null);
     setSignupInitialRole('seeker');
-    setSignupInitialMode(isKnown ? 'login' : 'signup');
+    setSignupInitialMode('signup');
     setIsSignupOpen(true);
   };
 
@@ -1873,17 +1865,9 @@ export function App() {
 
   const handleOpenAgentSignup = () => {
     if (isAuthenticated || isAdminAuthenticated || currentRole === 'admin') return;
-    const isKnown = isStandalone() || 
-      localStorage.getItem('setlla_pwa_installed') === 'true' || 
-      Boolean(
-        localStorage.getItem('setlla_registered_users') || 
-        localStorage.getItem('setlla_user') || 
-        localStorage.getItem('setlla_last_email') || 
-        localStorage.getItem('setlla_last_phone')
-      );
     setSignupNotice(null);
     setSignupInitialRole('agent');
-    setSignupInitialMode(isKnown ? 'login' : 'signup');
+    setSignupInitialMode('signup');
     setIsSignupOpen(true);
   };
 
