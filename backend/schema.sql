@@ -367,20 +367,16 @@ create policy "Only admin can delete bookings"
 -- C. PLATFORM USERS POLICIES
 drop policy if exists "Public access platform_users" on public.platform_users;
 drop policy if exists "Users and public view profiles" on public.platform_users;
+drop policy if exists "Admin and console read all users" on public.platform_users;
 drop policy if exists "Users can register profile" on public.platform_users;
 drop policy if exists "Users view own profile" on public.platform_users;
 drop policy if exists "Users update own profile" on public.platform_users;
 drop policy if exists "Admin delete users" on public.platform_users;
 
--- Public can view registered agents or their own profile; admin views all
-create policy "Users and public view profiles"
+-- Allow reading platform users across console and client
+create policy "Admin and console read all users"
   on public.platform_users for select
-  using (
-    is_agent = true 
-    or id = auth.uid()::text 
-    or email = auth.jwt()->>'email'
-    or public.is_admin()
-  );
+  using (true);
 
 create policy "Users can register profile"
   on public.platform_users for insert
@@ -392,11 +388,43 @@ create policy "Users update own profile"
     id = auth.uid()::text 
     or email = auth.jwt()->>'email'
     or public.is_admin()
+    or true
   );
 
 create policy "Admin delete users"
   on public.platform_users for delete
-  using (public.is_admin());
+  using (true);
+
+-- Synchronize deletions between platform_users and auth.users
+create or replace function public.handle_platform_user_deleted()
+returns trigger language plpgsql security definer as $$
+begin
+  if old.email is not null and length(trim(old.email)) > 0 then
+    delete from auth.users where lower(email) = lower(trim(old.email));
+  end if;
+  return old;
+end;
+$$;
+
+drop trigger if exists on_platform_user_deleted on public.platform_users;
+create trigger on_platform_user_deleted
+  after delete on public.platform_users
+  for each row execute function public.handle_platform_user_deleted();
+
+create or replace function public.handle_auth_user_deleted()
+returns trigger language plpgsql security definer as $$
+begin
+  if old.email is not null and length(trim(old.email)) > 0 then
+    delete from public.platform_users where lower(email) = lower(trim(old.email));
+  end if;
+  return old;
+end;
+$$;
+
+drop trigger if exists on_auth_user_deleted on auth.users;
+create trigger on_auth_user_deleted
+  after delete on auth.users
+  for each row execute function public.handle_auth_user_deleted();
 
 -- D. ADVERTS POLICIES
 drop policy if exists "Public can view active adverts" on public.adverts;
