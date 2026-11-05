@@ -563,7 +563,9 @@ export function App() {
     }
   }, [currentUser]);
 
-  // Live Account Verification: Only log out if account was explicitly marked suspended by administrator
+  // Live Account Verification: Continuously verifies that the logged-in session genuinely exists in the cloud database.
+  // If the user was deleted by administrator from private.setlla.com, or does not exist in the central database, or was suspended,
+  // immediately purge the session from this device so ghost accounts can NEVER remain logged in!
   useEffect(() => {
     if (!currentUser || !currentUser.id || currentUser.id === 'GUEST_USER' || currentUser.id === 'DT-USR-GUEST' || isElvisSuperAdmin(currentUser)) {
       return;
@@ -575,15 +577,25 @@ export function App() {
       try {
         const client = getSupabaseClient();
         if (client) {
+          const userFilters: string[] = [`id.eq.${currentUser.id}`];
+          if (currentUser.email) {
+            userFilters.push(`email.eq.${currentUser.email.toLowerCase().trim()}`);
+          }
+          if (currentUser.phone) {
+            userFilters.push(`phone.eq.${currentUser.phone.trim()}`);
+          }
+
           const { data, error } = await client
             .from('platform_users')
             .select('id, is_suspended')
-            .eq('id', currentUser.id)
+            .or(userFilters.join(','))
             .maybeSingle();
 
-          if (!error && isMounted && data?.is_suspended === true) {
-            console.warn('[App] User account was suspended by administrator. Purging session from device...');
-            handleSignOut();
+          if (!error && isMounted) {
+            if (!data || data.is_suspended === true) {
+              console.warn('[App] User account does not exist in platform database or was suspended. Purging session from device...');
+              handleSignOut();
+            }
           }
         }
       } catch (_) {}
@@ -594,7 +606,7 @@ export function App() {
     return () => {
       isMounted = false;
     };
-  }, [currentUser.id]);
+  }, [currentUser.id, currentUser.email]);
 
   // Auto-heal agent status if current user has published listings on this device or in cloud
   useEffect(() => {
