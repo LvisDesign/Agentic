@@ -684,10 +684,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </div>
                   <div className="flex items-center justify-between text-xs py-1">
                     <span className="text-[#70798C] flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Account Status
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" /> Account Status
                     </span>
-                    <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
-                      Active
+                    <span className="font-semibold text-[#342A21] bg-[#FAF8F5] px-2.5 py-0.5 rounded-full border border-[#E5E7EB] text-[11px] inline-flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>Active</span>
                     </span>
                   </div>
                 </>
@@ -752,8 +753,9 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     <span className="text-[#70798C] flex items-center gap-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" /> Account Status
                     </span>
-                    <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
-                      Active Account
+                    <span className="font-semibold text-[#342A21] bg-[#FAF8F5] px-2.5 py-0.5 rounded-full border border-[#E5E7EB] text-[11px] inline-flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>Active Account</span>
                     </span>
                   </div>
                 </>
@@ -822,14 +824,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <p className="text-[11px] text-[#70798C] truncate">Push updates for inspection slots & agent updates</p>
                 </div>
               </div>
-              <span className={`shrink-0 whitespace-nowrap text-[10px] font-bold px-2.5 py-1 rounded-full border ${
+              <span className={`shrink-0 whitespace-nowrap text-[10px] font-semibold px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 ${
                 notificationPermission === 'granted'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  ? 'bg-[#FAF8F5] text-[#342A21] border-[#E5E7EB]'
                   : notificationPermission === 'denied'
                   ? 'bg-rose-50 text-rose-700 border-rose-200'
-                  : 'bg-emerald-50 text-emerald-700 border-emerald-200 animate-pulse'
+                  : 'bg-[#FAF8F5] text-[#342A21] border-[#E5E7EB]'
               }`}>
-                {notificationPermission === 'granted' ? '● Auto-Activated' : notificationPermission === 'denied' ? 'Blocked in Browser' : '● Auto-Activating...'}
+                {notificationPermission !== 'denied' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                )}
+                <span>
+                  {notificationPermission === 'granted' ? 'Auto-Activated' : notificationPermission === 'denied' ? 'Blocked in Browser' : 'Auto-Activating...'}
+                </span>
               </span>
             </div>
 
@@ -840,7 +847,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   onClick={handleSendTestNotification}
                   className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" />
                   <span>{testAlertSent ? 'Test Alert Sent (Badge Set)!' : 'Send Test Push Alert'}</span>
                 </button>
               ) : notificationPermission === 'denied' ? (
@@ -851,7 +858,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <button
                   type="button"
                   onClick={handleToggleAlerts}
-                  className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                  className="flex-1 py-2 px-3 rounded-xl bg-[#342A21] hover:bg-[#000004] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                 >
                   <BellRing className="w-3.5 h-3.5" />
                   <span>Auto-Activate Mobile Alerts</span>
@@ -862,17 +869,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           {/* PWA State: If already installed on device, do NOT show install option; show installed status & update options */}
           {isInstalled || isStandalone ? (
-            <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-emerald-200 transition-all space-y-2.5 shadow-xs">
+            <div className="p-3.5 rounded-2xl bg-white border border-[#E5E7EB] hover:border-[#342A21]/30 transition-all space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-200">
+                  <div className="w-8 h-8 rounded-xl bg-[#FAF8F5] text-[#342A21] flex items-center justify-center shrink-0 border border-[#E5E7EB]">
                     <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-xs text-[#000004] flex items-center gap-1.5 flex-wrap">
                       <span className="truncate">Setlla App Installed</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 shrink-0 whitespace-nowrap">
-                        PWA Active
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#342A21] border border-[#E5E7EB] shrink-0 whitespace-nowrap inline-flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span>PWA Active</span>
                       </span>
                     </div>
                     <p className="text-[11px] text-[#70798C] mt-0.5 truncate">
@@ -885,7 +893,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   <button
                     type="button"
                     onClick={applyUpdate}
-                    className="shrink-0 whitespace-nowrap py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5 animate-pulse"
+                    className="shrink-0 whitespace-nowrap py-1.5 px-3 rounded-xl bg-[#342A21] hover:bg-[#000004] text-[#FCF9F5] text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
                   >
                     <RotateCw className="w-3.5 h-3.5" />
                     <span>Update App</span>
