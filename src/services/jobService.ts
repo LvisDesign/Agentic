@@ -54,10 +54,6 @@ export function recordDeletedJobId(jobId: string): void {
 export const isDemoOrTestJob = (j: any): boolean => {
   if (!j) return true;
   const id = String(j.id || '').toLowerCase().trim();
-  const title = String(j.title || '').toLowerCase().trim();
-  const company = String(j.companyName || j.company_name || '').toLowerCase().trim();
-  const summary = String(j.summary || '').toLowerCase().trim();
-  const desc = String(j.description || '').toLowerCase().trim();
 
   return Boolean(
     id.startsWith('job-asaba-') ||
@@ -65,23 +61,102 @@ export const isDemoOrTestJob = (j: any): boolean => {
     id.startsWith('job-sapele-') ||
     id.startsWith('job-demo-') ||
     id.startsWith('demo-') ||
-    id.startsWith('mock-') ||
-    id.includes('test') ||
-    title === 'test' ||
-    title === 'test job' ||
-    title === 'demo' ||
-    title.startsWith('test ') ||
-    company === 'test' ||
-    company === 'test co' ||
-    company.includes('test co') ||
-    company === 'demo' ||
-    summary === 'summary' ||
-    (summary === 'test' && desc === 'test')
+    id.startsWith('mock-')
   );
 };
 
+function mapJobToListingsRow(job: JobListing) {
+  return {
+    id: job.id,
+    title: job.title,
+    state: job.state || 'Delta State',
+    city: job.city || 'Asaba',
+    neighborhood: job.address || job.city || 'Asaba',
+    full_address: job.address || job.city || 'Asaba',
+    property_type: '__JOB_LISTING__',
+    bedrooms: 0,
+    bathrooms: 0,
+    toilets: 0,
+    is_serviced: Boolean(job.isFeatured),
+    is_furnished: false,
+    electricity_status: job.workplaceType || 'On-Site',
+    water_supply: job.roleType || 'Full-Time',
+    description: job.description || job.summary || '',
+    media: job.companyLogo ? [{ type: 'image', url: job.companyLogo }] : [],
+    fees: {
+      baseRent: job.listingFeePaid || 0,
+      _jobData: job,
+    },
+    inspection_fee: job.listingFeePaid || 0,
+    agent: {
+      id: job.posterId || 'employer',
+      fullName: job.posterName || job.companyName,
+      agencyName: job.companyName,
+      email: job.posterEmail || job.contactEmail,
+      phone: job.contactPhone || '',
+    },
+    inspection_slots: [],
+    inspection_days: [],
+    tags: [job.category || 'General', job.roleType || 'Full-Time', job.workplaceType || 'On-Site'],
+    addons: [],
+    availability_status: job.status === 'closed' ? 'Rented Out' : job.status === 'expired' ? 'Expired' : 'Available',
+    created_at: job.createdAt || new Date().toISOString(),
+    last_confirmed_at: job.lastConfirmedAt || new Date().toISOString(),
+  };
+}
+
+function mapListingsRowToJob(row: any): JobListing | null {
+  if (!row || !row.id) return null;
+  const embedded = row.fees?._jobData;
+  if (embedded && typeof embedded === 'object' && embedded.id) {
+    const rowStatus = row.availability_status;
+    const resolvedStatus: 'active' | 'closed' | 'expired' =
+      rowStatus === 'Deleted'
+        ? 'expired'
+        : rowStatus === 'Rented Out'
+        ? 'closed'
+        : embedded.status || 'active';
+    return {
+      ...embedded,
+      status: resolvedStatus,
+      isFeatured: Boolean(row.is_serviced ?? embedded.isFeatured),
+      lastConfirmedAt: row.last_confirmed_at || embedded.lastConfirmedAt,
+    };
+  }
+  return {
+    id: row.id,
+    title: row.title || 'Open Role',
+    companyName: row.agent?.agencyName || row.agent?.fullName || 'Hiring Company',
+    companyLogo: row.media?.[0]?.url || undefined,
+    companyInitial: (row.agent?.agencyName || row.title || 'SJ').slice(0, 2).toUpperCase(),
+    state: row.state || 'Delta State',
+    city: row.city || 'Asaba',
+    address: row.full_address || row.neighborhood || '',
+    workplaceType: (row.electricity_status as any) || 'On-Site',
+    roleType: (row.water_supply as any) || 'Full-Time',
+    salaryRange: row.fees?.salaryRange || 'Negotiable',
+    postedDate: 'Recently Posted',
+    createdAt: row.created_at || new Date().toISOString(),
+    lastConfirmedAt: row.last_confirmed_at || row.created_at || new Date().toISOString(),
+    summary: (row.description || '').slice(0, 140),
+    description: row.description || '',
+    responsibilities: [],
+    requirements: [],
+    benefits: [],
+    category: row.tags?.[0] || 'General',
+    contactEmail: row.agent?.email,
+    contactPhone: row.agent?.phone,
+    posterId: row.agent?.id,
+    posterEmail: row.agent?.email,
+    posterName: row.agent?.fullName,
+    isFeatured: Boolean(row.is_serviced),
+    status: row.availability_status === 'Rented Out' ? 'closed' : 'active',
+  };
+}
+
 /**
- * Loads all available job listings.
+ * Loads all available job listings from Supabase (`listings` table where `property_type = '__JOB_LISTING__'`)
+ * and merges any unsynced local jobs.
  */
 export async function getAllJobs(): Promise<JobListing[]> {
   const deletedIds = getDeletedJobIds();
@@ -97,54 +172,34 @@ export async function getAllJobs(): Promise<JobListing[]> {
     }
   } catch (_) {}
 
-  // Save cleaned local jobs without demo items
-  try {
-    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(localJobs));
-  } catch (_) {}
-
-  // If Supabase is configured, fetch live jobs from `job_listings` table
   if (isSupabaseConfigured()) {
     try {
       const client = getSupabaseClient();
       if (client) {
-        const { data, error } = await client.from('job_listings').select('*');
+        const { data, error } = await client
+          .from('listings')
+          .select('*')
+          .eq('property_type', '__JOB_LISTING__')
+          .neq('availability_status', 'Deleted')
+          .order('created_at', { ascending: false });
+
         if (!error && Array.isArray(data)) {
           const cloudJobs: JobListing[] = data
-            .filter((d: any) => d && d.id && !deletedIds.has(d.id) && !isDemoOrTestJob(d))
-            .map((d: any) => ({
-              id: d.id,
-              title: d.title,
-              companyName: d.company_name || d.companyName,
-              companyLogo: d.company_logo || d.companyLogo,
-              companyInitial: d.company_initial || (d.company_name ? d.company_name.slice(0, 2).toUpperCase() : 'ST'),
-              state: d.state || 'Delta State',
-              city: d.city || 'Asaba',
-              address: d.address || '',
-              workplaceType: d.workplace_type || 'On-Site',
-              roleType: d.role_type || 'Full-Time',
-              salaryRange: d.salary_range || 'Negotiable',
-              postedDate: d.posted_date || 'Recently Posted',
-              createdAt: d.created_at || new Date().toISOString(),
-              summary: d.summary || '',
-              description: d.description || '',
-              responsibilities: Array.isArray(d.responsibilities) ? d.responsibilities : [],
-              requirements: Array.isArray(d.requirements) ? d.requirements : [],
-              benefits: Array.isArray(d.benefits) ? d.benefits : [],
-              category: d.category || 'General',
-              isFeatured: Boolean(d.is_featured)
-            }));
+            .map((row: any) => mapListingsRowToJob(row))
+            .filter((j): j is JobListing => Boolean(j && j.id && !deletedIds.has(j.id) && !isDemoOrTestJob(j)));
 
-          localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(cloudJobs));
+          try {
+            localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(cloudJobs));
+          } catch (_) {}
           return cloudJobs;
         }
       }
     } catch (e) {
       console.warn('[JobService] Cloud jobs sync notice:', e);
     }
-    return [];
   }
 
-  // Normalize freemium fields (Free Organic ₦0 vs Sponsored Spotlight ₦2,000)
+  // Fallback to local jobs if offline or network call failed
   return localJobs.map((j) => ({
     ...j,
     isFeatured: Boolean(j.isFeatured),
@@ -412,46 +467,22 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
     applicantsCount: 0,
   };
 
-  // 1. Prepend to local storage
-  const all = await getAllJobs();
-  const updated = [newJob, ...all];
+  // 1. Prepend to local storage immediately
   try {
-    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
+    const raw = localStorage.getItem(JOBS_STORAGE_KEY);
+    const existing: JobListing[] = raw ? JSON.parse(raw) : [];
+    localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify([newJob, ...existing.filter((j) => j.id !== newJob.id)]));
   } catch (_) {}
 
-  // 2. Sync to Supabase if configured
+  // 2. Sync to Supabase `listings` table (`property_type = '__JOB_LISTING__'`) so it persists across refreshes & devices
   if (isSupabaseConfigured()) {
     try {
       const client = getSupabaseClient();
       if (client) {
-        const baseRow = {
-          id: newJob.id,
-          title: newJob.title,
-          company_name: newJob.companyName,
-          company_logo: newJob.companyLogo || null,
-          company_initial: newJob.companyInitial,
-          state: newJob.state,
-          city: newJob.city,
-          address: newJob.address,
-          workplace_type: newJob.workplaceType,
-          role_type: newJob.roleType,
-          salary_range: newJob.salaryRange,
-          summary: newJob.summary,
-          description: newJob.description,
-          responsibilities: newJob.responsibilities,
-          requirements: newJob.requirements,
-          benefits: newJob.benefits,
-          category: newJob.category,
-          is_featured: newJob.isFeatured,
-          created_at: newJob.createdAt,
-        };
-
-        const fullRow = newJob.contactEmail ? { ...baseRow, contact_email: newJob.contactEmail } : baseRow;
-        const { error } = await client.from('job_listings').insert([fullRow]);
+        const row = mapJobToListingsRow(newJob);
+        const { error } = await client.from('listings').upsert([row]);
         if (error) {
-          // If contact_email or optional column isn't in DB schema, retry with base columns
-          console.warn('[JobService] Cloud job insert notice, retrying with core columns:', error.message);
-          await client.from('job_listings').insert([baseRow]);
+          console.warn('[JobService] Cloud job upsert notice:', error.message);
         }
       }
     } catch (e) {
@@ -486,11 +517,11 @@ export async function sponsorJobListing(jobId: string, paymentReference: string)
     localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
   } catch (_) {}
 
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && updatedJob) {
     try {
       const client = getSupabaseClient();
       if (client) {
-        await client.from('job_listings').update({ is_featured: true }).eq('id', jobId);
+        await client.from('listings').upsert([mapJobToListingsRow(updatedJob)]);
       }
     } catch (e) {
       console.warn('[JobService] Cloud sponsor update notice:', e);
@@ -505,27 +536,15 @@ export async function sponsorJobListing(jobId: string, paymentReference: string)
  */
 export async function getEmployerJobs(user?: UserProfile | null): Promise<JobListing[]> {
   const all = await getAllJobs();
-  if (!user) return all.slice(0, 3);
+  if (!user) return [];
 
   // Return jobs posted by this user
   const userJobs = all.filter((j) => {
     if (j.posterId && user.id && j.posterId === user.id) return true;
     if (j.posterEmail && user.email && j.posterEmail.toLowerCase() === user.email.toLowerCase()) return true;
+    if (j.companyName && (user.companyName || user.agencyName) && j.companyName.toLowerCase() === (user.companyName || user.agencyName || '').toLowerCase()) return true;
     return false;
   });
-
-  // If this employer hasn't posted a custom job yet, populate with 2 initial active mock jobs for their agency/company
-  if (userJobs.length === 0) {
-    return all.slice(0, 2).map((j, idx) => ({
-      ...j,
-      status: 'active' as const,
-      isFeatured: idx === 0,
-      listingFeePaid: idx === 0 ? 2000 : 0,
-      paymentReference: idx === 0 ? `SET-JOB-INIT-${1000 + idx}` : 'FREE_ORGANIC_POST',
-      posterId: user.id,
-      posterEmail: user.email,
-    }));
-  }
 
   return userJobs;
 }
@@ -538,6 +557,7 @@ export async function getEmployerJobs(user?: UserProfile | null): Promise<JobLis
 export async function toggleJobStatus(jobId: string, newStatus: 'active' | 'closed' | 'expired'): Promise<void> {
   const all = await getAllJobs();
   const now = new Date().toISOString();
+  let targetModified: JobListing | null = null;
   const updated = all.map((j) => {
     if (j.id !== jobId) return j;
     const modified: JobListing = { ...j, status: newStatus };
@@ -547,6 +567,7 @@ export async function toggleJobStatus(jobId: string, newStatus: 'active' | 'clos
       modified.lastConfirmedAt = now;
       modified.takenAt = undefined;
     }
+    targetModified = modified;
     return modified;
   });
 
@@ -554,17 +575,11 @@ export async function toggleJobStatus(jobId: string, newStatus: 'active' | 'clos
     localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
   } catch (_) {}
 
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && targetModified) {
     try {
       const client = getSupabaseClient();
       if (client) {
-        const updatePayload: Record<string, any> = { status: newStatus };
-        if (newStatus === 'closed') updatePayload.taken_at = now;
-        if (newStatus === 'active') {
-          updatePayload.last_confirmed_at = now;
-          updatePayload.taken_at = null;
-        }
-        await client.from('job_listings').update(updatePayload).eq('id', jobId);
+        await client.from('listings').upsert([mapJobToListingsRow(targetModified)]);
       }
     } catch (_) {}
   }
@@ -576,25 +591,23 @@ export async function toggleJobStatus(jobId: string, newStatus: 'active' | 'clos
 export async function confirmJobFreshness(jobId: string): Promise<void> {
   const all = await getAllJobs();
   const now = new Date().toISOString();
-  const updated = all.map((j) =>
-    j.id === jobId
-      ? { ...j, lastConfirmedAt: now, status: 'active' as const, takenAt: undefined }
-      : j
-  );
+  let targetModified: JobListing | null = null;
+  const updated = all.map((j) => {
+    if (j.id !== jobId) return j;
+    const mod: JobListing = { ...j, lastConfirmedAt: now, status: 'active' as const, takenAt: undefined };
+    targetModified = mod;
+    return mod;
+  });
 
   try {
     localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
   } catch (_) {}
 
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && targetModified) {
     try {
       const client = getSupabaseClient();
       if (client) {
-        await client.from('job_listings').update({
-          last_confirmed_at: now,
-          status: 'active',
-          taken_at: null
-        }).eq('id', jobId);
+        await client.from('listings').upsert([mapJobToListingsRow(targetModified)]);
       }
     } catch (_) {}
   }
@@ -633,12 +646,12 @@ export async function deleteJobListing(jobId: string): Promise<void> {
     }
   } catch (_) {}
 
-  // 3. Dispatch cloud delete to Supabase table
+  // 3. Dispatch cloud delete to Supabase `listings` table
   if (isSupabaseConfigured()) {
     try {
       const client = getSupabaseClient();
       if (client) {
-        await client.from('job_listings').delete().eq('id', jobId);
+        await client.from('listings').delete().eq('id', jobId);
       }
     } catch (e) {
       console.warn('[JobService] Cloud job delete notice:', e);

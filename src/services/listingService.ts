@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured, getSupabaseClient, fetchWithDeduplication } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured, getSupabaseClient, fetchWithDeduplication, invalidateCache } from '../utils/supabaseClient';
 import { PropertyListing, ListingAvailability } from '../types/marketplace';
 import { INITIAL_LISTINGS } from '../data/mockListings';
 import { FALLBACK_PROPERTY_IMAGES, DEFAULT_WALKTHROUGH_VIDEO, getBlobFromIDB, uploadMediaToSupabaseStorage } from '../utils/mediaStorage';
@@ -283,6 +283,8 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
         const deletedIds = getDeletedListingIds();
         const cloudListings: PropertyListing[] = data
           .filter((row) => {
+            if (!row || !row.id) return false;
+            if (row.property_type === '__JOB_LISTING__' || String(row.id).startsWith('job-')) return false;
             const status = row.availability_status || row.availabilityStatus;
             if (isNonActive(status)) return false;
             if (deletedIds.has(row.id)) return false;
@@ -403,6 +405,7 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
       };
 
       const { error } = await client.from('listings').upsert([row]);
+      invalidateCache('listings_');
       if (error) {
         console.error('[Setlla Supabase] Error saving listing to database:', error);
       } else {
@@ -589,6 +592,8 @@ export async function updateListing(listing: PropertyListing): Promise<void> {
     }
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
   } catch (e) {}
+
+  invalidateCache('listings_');
 }
 
 /**
@@ -600,6 +605,7 @@ export async function deleteListing(listingId: string): Promise<boolean> {
 
   // 1. Immediately record in persistent tombstone set so browser refreshes NEVER restore it
   recordDeletedListingId(listingId);
+  invalidateCache('listings_');
 
   // 2. Remove from local storage cache immediately
   try {
