@@ -606,25 +606,26 @@ export async function syncSingleUserProfile(userId: string): Promise<Partial<Use
   try {
     const { data, error } = await client
       .from('platform_users')
-      .select('id, full_name, email, phone, is_agent, is_admin, is_super_admin, is_suspended, kyc_status, avatar_url, agency_name, city, state')
+      .select('id, full_name, email, phone, is_agent, is_admin, is_super_admin, is_suspended, kyc_status, kyc_documents, avatar_url, agency_name, city, state')
       .eq('id', userId)
       .maybeSingle();
 
     if (!error && data) {
+      const meta = (data as any).kyc_documents?._meta || {};
       return {
         id: data.id,
         fullName: data.full_name,
         email: data.email,
         phone: data.phone,
         isAgent: data.is_agent,
-        isAdmin: data.is_admin,
-        isSuperAdmin: data.is_super_admin,
+        isAdmin: Boolean(data.is_admin),
+        isSuperAdmin: Boolean(data.is_super_admin),
         isSuspended: data.is_suspended,
         kycStatus: data.kyc_status,
         avatarUrl: sanitizeAvatarUrl(data.avatar_url),
-        agencyName: data.agency_name,
-        companyName: (data as any).company_name || data.agency_name,
-        persona: (data as any).persona,
+        agencyName: data.agency_name || meta.company_name,
+        companyName: (data as any).company_name || meta.company_name || data.agency_name,
+        persona: (data as any).persona || meta.persona || meta.role,
         city: data.city,
         state: data.state,
       };
@@ -697,7 +698,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
           user.isAdmin || 
           user.isSuperAdmin || 
           (user.email && user.email.toLowerCase() === 'admin@setlla.com') ||
-          (user.fullName && user.fullName.toLowerCase().includes('elvis'))
+          user.id === 'DT-ADMIN-ELVIS'
         );
         const resolved: UserProfile = {
           ...user,

@@ -323,6 +323,14 @@ export function App() {
               persona: 'admin',
             };
           }
+          // Strip any stale localStorage auto-admin flags for non-admin accounts (e.g. DT-AGT-7709)
+          if (parsed?.id === 'DT-AGT-7709' || (parsed?.persona && parsed.persona !== 'admin')) {
+            return {
+              ...parsed,
+              isAdmin: false,
+              isSuperAdmin: false,
+            };
+          }
           return parsed;
         }
       } catch (e) {
@@ -629,12 +637,13 @@ export function App() {
           const isAdmin = Boolean(
             profile.isAdmin || 
             profile.isSuperAdmin || 
-            isElvisSuperAdmin(profile as any) ||
-            isElvisSuperAdmin(currentUser)
+            isElvisSuperAdmin(profile as any)
           );
           setCurrentUser((prev) => ({ 
             ...prev, 
             ...profile,
+            isAdmin,
+            isSuperAdmin: Boolean(profile.isSuperAdmin || isElvisSuperAdmin(profile as any)),
             ...(isAdmin ? { isAgent: true, kycStatus: 'verified', isVerifiedTenant: false } : {})
           }));
         }
