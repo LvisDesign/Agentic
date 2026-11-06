@@ -1,105 +1,32 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const OFFICIAL_SUPABASE_URL = 'https://qxxheinizxyyrfcrijbs.supabase.co';
-const OFFICIAL_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4eGhlaW5penh5eXJmY3JpamJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyNjAzOTksImV4cCI6MjEwODgzNjM5OX0.xMzIyxs9JVluL5kmbcpLSyb1WKRcopnNzJhl8cB41PI';
-
-function isValidActiveSupabaseUrl(url?: string | null): boolean {
-  if (!url) return false;
-  const trimmed = url.trim();
-  // Reject decommissioned Oct 27 project iadzihievmbhssqycpol
-  if (trimmed.includes('iadzihievmbhssqycpol')) return false;
-  return trimmed === OFFICIAL_SUPABASE_URL;
-}
-
-function isValidActiveSupabaseKey(key?: string | null): boolean {
-  if (!key) return false;
-  const trimmed = key.trim();
-  if (trimmed.startsWith('sb_publishable_')) return false;
-  return trimmed === OFFICIAL_SUPABASE_KEY;
-}
-
-const rawEnvUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-const rawEnvKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
-
-const envUrl = isValidActiveSupabaseUrl(rawEnvUrl) ? rawEnvUrl : OFFICIAL_SUPABASE_URL;
-const envKey = isValidActiveSupabaseKey(rawEnvKey) ? rawEnvKey : OFFICIAL_SUPABASE_KEY;
+export const OFFICIAL_SUPABASE_URL = 'https://qxxheinizxyyrfcrijbs.supabase.co';
+export const OFFICIAL_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4eGhlaW5penh5eXJmY3JpamJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyNjAzOTksImV4cCI6MjEwODgzNjM5OX0.xMzIyxs9JVluL5kmbcpLSyb1WKRcopnNzJhl8cB41PI';
 
 export interface SupabaseConfig {
   url: string;
   key: string;
   isConfigured: boolean;
-  source: 'env' | 'localStorage' | 'default' | 'none';
+  source: 'default';
 }
 
-export const getSupabaseConfig = (): SupabaseConfig => {
-  if (typeof window !== 'undefined') {
-    try {
-      localStorage.removeItem('setlla_supabase_url');
-      localStorage.removeItem('deltarent_supabase_url');
-      localStorage.removeItem('setlla_supabase_key');
-      localStorage.removeItem('deltarent_supabase_key');
-    } catch (_) {}
-  }
+export const getSupabaseConfig = (): SupabaseConfig => ({
+  url: OFFICIAL_SUPABASE_URL,
+  key: OFFICIAL_SUPABASE_KEY,
+  isConfigured: true,
+  source: 'default',
+});
 
-  const url = envUrl || OFFICIAL_SUPABASE_URL;
-  const key = envKey || OFFICIAL_SUPABASE_KEY;
+export const isSupabaseConfigured = (): boolean => true;
 
-  if (url && key && url.startsWith('https://')) {
-    return { 
-      url, 
-      key, 
-      isConfigured: true, 
-      source: 'default'
-    };
-  }
+export const supabase: SupabaseClient = createClient(
+  OFFICIAL_SUPABASE_URL,
+  OFFICIAL_SUPABASE_KEY
+);
 
-  return {
-    url,
-    key,
-    isConfigured: false,
-    source: 'none',
-  };
-};
-
-export const isSupabaseConfigured = (): boolean => {
-  return getSupabaseConfig().isConfigured;
-};
-
-let clientInstance: SupabaseClient | null = null;
-let lastUrl = '';
-let lastKey = '';
-
-export function getSupabaseClient(): SupabaseClient | null {
-  const config = getSupabaseConfig();
-  if (!config.isConfigured) return null;
-
-  if (clientInstance && lastUrl === config.url && lastKey === config.key) {
-    return clientInstance;
-  }
-
-  try {
-    clientInstance = createClient(config.url, config.key);
-    lastUrl = config.url;
-    lastKey = config.key;
-    return clientInstance;
-  } catch (e) {
-    console.error('[Setlla Supabase] Failed to initialize client:', e);
-    return null;
-  }
+export function getSupabaseClient(): SupabaseClient {
+  return supabase;
 }
-
-/**
- * Dynamic Proxy export for supabase:
- * Always delegates to the active SupabaseClient instance (env or localStorage override).
- */
-export const supabase: SupabaseClient = new Proxy({} as any, {
-  get(_target, prop) {
-    const client = getSupabaseClient();
-    if (!client) return undefined;
-    const val = (client as any)[prop];
-    return typeof val === 'function' ? val.bind(client) : val;
-  },
-}) as SupabaseClient;
 
 export interface SupabaseHealth {
   configured: boolean;
