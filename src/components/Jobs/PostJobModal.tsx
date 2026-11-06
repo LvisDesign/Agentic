@@ -712,19 +712,19 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all shadow-xs cursor-pointer active:scale-95"
             >
               <span>Continue</span>
-              <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+              <ArrowRight className="w-3.5 h-3.5 text-[#000004]" />
             </button>
           ) : selectedPlan === 'free' ? (
             <button
               type="button"
               onClick={handlePublishFree}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50"
             >
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-4 h-4 text-[#000004]" />
               <span>{isSubmitting ? 'Publishing...' : 'Publish Free Vacancy (₦0)'}</span>
             </button>
           ) : (
@@ -732,9 +732,9 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
               type="button"
               onClick={handleInitiatePayment}
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50"
             >
-              <CreditCard className="w-4 h-4 text-amber-400" />
+              <CreditCard className="w-4 h-4 text-[#000004]" />
               <span>Pay ₦2,000 & Sponsor Vacancy</span>
             </button>
           )}

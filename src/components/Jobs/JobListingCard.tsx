@@ -149,7 +149,7 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
           <button
             type="button"
             onClick={() => onQuickApply(job)}
-            className="py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs hover:shadow-sm flex items-center gap-1.5"
+            className="py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all active:scale-95 cursor-pointer shadow-xs hover:shadow-sm flex items-center gap-1.5"
           >
             <span>Quick Apply</span>
             <ArrowRight className="w-3.5 h-3.5" />

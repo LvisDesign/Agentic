@@ -222,7 +222,7 @@ export const JobDetailsSheet: React.FC<JobDetailsSheetProps> = ({
                   onClose();
                   onQuickApply(job);
                 }}
-                className="flex-1 sm:flex-initial py-2.5 px-6 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-initial py-2.5 px-6 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all active:scale-95 cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2"
               >
                 <span>Quick Apply Now</span>
                 <ArrowRight className="w-4 h-4" />

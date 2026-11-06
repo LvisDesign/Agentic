@@ -456,7 +456,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   onClose();
                   onOpenBecomeAgent();
                 }}
-                className="w-full py-2 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                className="w-full py-2 px-3 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 <Building2 className="w-3.5 h-3.5" />
                 <span>Apply to Become an Agent</span>
@@ -610,7 +610,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2 rounded-xl bg-[#000004] hover:bg-[#1a2332] text-xs font-bold text-white transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                    className="flex-1 py-2 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-xs font-extrabold text-[#000004] transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Save Changes</span>

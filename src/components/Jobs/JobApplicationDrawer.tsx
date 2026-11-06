@@ -426,8 +426,8 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
                     </p>
                   </div>
 
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#000004] text-white text-xs font-bold shadow-2xs mt-1">
-                    <Upload className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#FFAD05] text-[#000004] text-xs font-extrabold shadow-2xs mt-1">
+                    <Upload className="w-3.5 h-3.5 text-[#000004]" />
                     <span>Choose File from Device</span>
                   </span>
                 </div>
@@ -468,7 +468,7 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
             <button
               type="submit"
               disabled={isSubmitting || Boolean(successToast)}
-              className="w-full py-3 px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] disabled:opacity-50 text-white font-bold text-xs sm:text-sm transition-all active:scale-95 cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+              className="w-full py-3 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] disabled:opacity-50 text-[#000004] font-extrabold text-xs sm:text-sm transition-all active:scale-95 cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
                 <>

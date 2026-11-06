@@ -279,10 +279,10 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
               <button
                 type="button"
                 onClick={onOpenPostAd}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all shadow-xs cursor-pointer active:scale-95"
                 title="Post an advert on Setlla"
               >
-                <Plus className="w-3 h-3 text-amber-400" />
+                <Plus className="w-3 h-3 text-[#000004]" />
                 <span>Post Ad</span>
               </button>
             </div>
@@ -386,7 +386,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
                   setSelectedCity('All Delta Cities');
                   setSelectedRoleType('All Types');
                 }}
-                className="mt-2 py-2 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                className="mt-2 py-2.5 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-colors cursor-pointer shadow-xs"
               >
                 View All Open Vacancies
               </button>
@@ -496,7 +496,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
 
                 <button
                   type="button"
-                  className="w-full py-2 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                  className="w-full py-2 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
                 >
                   <span>Learn More</span>
                   <ArrowUpRight className="w-3.5 h-3.5" />
@@ -539,9 +539,9 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
             <button
               type="button"
               onClick={onOpenPostAd}
-              className="w-full py-2.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer active:scale-95"
+              className="w-full py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer active:scale-95"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
+              <Plus className="w-3.5 h-3.5 text-[#000004]" />
               <span>Create An Advert</span>
             </button>
           </div>
@@ -574,9 +574,9 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
                   setTimeout(() => setToastMessage(null), 3500);
                 }
               }}
-              className="w-full py-2 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
+              className="w-full py-2 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-95"
             >
-              <Building2 className="w-3.5 h-3.5 text-amber-400" />
+              <Building2 className="w-3.5 h-3.5 text-[#000004]" />
               <span>Post a Vacancy</span>
             </button>
           </div>

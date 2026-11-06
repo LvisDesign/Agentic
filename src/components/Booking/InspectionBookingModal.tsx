@@ -168,7 +168,7 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
               <button
                 type="button"
                 onClick={handleRequestAlerts}
-                className="shrink-0 px-3 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-[11px] transition-colors cursor-pointer shadow-xs"
+                className="shrink-0 px-3 py-1.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-[11px] transition-colors cursor-pointer shadow-xs"
               >
                 Enable Alerts
               </button>
@@ -325,7 +325,7 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="w-full py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                  className="w-full py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all cursor-pointer shadow-xs"
                 >
                   Explore Other Properties
                 </button>
@@ -449,10 +449,10 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
                 <button
                   type="button"
                   onClick={handleInitiateBooking}
-                  className={`w-full py-3.5 px-4 rounded-xl text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer ${
+                  className={`w-full py-3.5 px-4 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer ${
                     isSlotFull
-                      ? 'bg-[#F0544F] hover:bg-[#d9433e]'
-                      : 'bg-[#000004] hover:bg-[#1f2937]'
+                      ? 'bg-[#F0544F] hover:bg-[#d9433e] text-white'
+                      : 'bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004]'
                   }`}
                 >
                   {isSlotFull ? (

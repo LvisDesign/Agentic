@@ -670,11 +670,11 @@ export const PartnerAdSubmissionModal: React.FC<PartnerAdSubmissionModalProps> =
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 sm:px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
+                  className="px-4 sm:px-5 py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 whitespace-nowrap shrink-0"
                 >
-                  <Lock className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <Lock className="w-3.5 h-3.5 text-[#000004] shrink-0" />
                   <span>Proceed to Pay {currentTier.price} via Paystack</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <ArrowRight className="w-3.5 h-3.5 text-[#000004] shrink-0" />
                 </button>
               </div>
             </div>

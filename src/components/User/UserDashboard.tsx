@@ -185,15 +185,15 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           {currentUser.isAgent ? (
             <button
               onClick={() => onSwitchToAgent?.()}
-              className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
+              className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
             >
-              <ShieldCheck className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4 text-[#000004]" />
               <span>Go to Agent Portal</span>
             </button>
           ) : (
             <button
               onClick={onOpenBecomeAgent}
-              className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#000004] to-[#1f2937] hover:from-[#1f2937] hover:to-[#374151] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
+              className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
             >
               <span>Become an Agent</span>
             </button>
@@ -242,9 +242,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           </div>
           <button
             onClick={() => onSwitchToAgent?.()}
-            className="shrink-0 px-3 py-1.5 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-amber-300 text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-[11px] font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
+            <ShieldCheck className="w-3.5 h-3.5 text-[#000004]" />
             <span>Open Agent Portal →</span>
           </button>
         </div>
@@ -741,7 +741,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                       <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
                           onClick={() => onOpenBookingModal(prop)}
-                          className="w-full sm:w-auto py-2 sm:py-1.5 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap text-center"
+                          className="w-full sm:w-auto py-2 sm:py-1.5 px-3 rounded-lg bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-1 shadow-xs transition-colors cursor-pointer whitespace-nowrap text-center"
                         >
                           <Calendar className="w-3.5 h-3.5" />
                           <span>{userHasBooking ? 'Manage Booking' : 'Book Free Slot'}</span>
@@ -768,7 +768,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </p>
               <button
                 onClick={() => setActiveTab('inventory')}
-                className="mt-3 py-2.5 px-4 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] cursor-pointer"
+                className="mt-3 py-2.5 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold cursor-pointer"
               >
                 Browse Agent Apartments
               </button>

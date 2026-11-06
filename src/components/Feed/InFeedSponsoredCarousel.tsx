@@ -385,9 +385,9 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
         {onOpenPostAd && (
           <button
             onClick={onOpenPostAd}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#342A21] hover:bg-[#231C16] text-white text-[11px] font-bold transition-all shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-[11px] font-extrabold transition-all shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5 text-amber-300" />
+            <Plus className="w-3.5 h-3.5 text-[#000004]" />
             <span>Post Ad</span>
           </button>
         )}
@@ -534,20 +534,20 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                       <>
                         <button
                           onClick={(e) => handleCTA(e, ad)}
-                          className="flex-1 py-2.5 px-3.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold text-xs flex items-center justify-between gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer group/cta"
+                          className="flex-1 py-2.5 px-3.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs flex items-center justify-between gap-2 shadow-xs transition-all active:scale-[0.98] cursor-pointer group/cta"
                         >
                           <span className="truncate">{cta.label}</span>
-                          <div className="flex items-center gap-1.5 text-white/70 group-hover/cta:text-white transition-colors shrink-0">
+                          <div className="flex items-center gap-1.5 text-[#000004]/80 group-hover/cta:text-[#000004] transition-colors shrink-0">
                             {cta.type === 'website' && (
                               <>
-                                <span className="text-[10px] font-normal opacity-70 hidden sm:inline truncate max-w-[110px]">
+                                <span className="text-[10px] font-normal opacity-80 hidden sm:inline truncate max-w-[110px]">
                                   {cta.destinationHint}
                                 </span>
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </>
                             )}
                             {cta.type === 'contact' && (
-                              <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-400" />
+                              <WhatsAppIcon className="w-3.5 h-3.5 text-[#000004]" />
                             )}
                             {cta.type === 'property' && (
                               <ChevronRight className="w-3.5 h-3.5" />
@@ -598,7 +598,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                 Reach thousands of verified house-hunters and tenants today.
               </p>
 
-              <span className="py-2 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold text-xs shadow-xs transition-colors">
+              <span className="py-2 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs shadow-xs transition-colors">
                 Post Sponsored Ad
               </span>
             </div>

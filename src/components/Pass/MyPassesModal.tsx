@@ -106,10 +106,10 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                     <div className="grid grid-cols-3 sm:flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-emerald-200/60">
                       <a
                         href={`tel:${rawPhone.replace(/[^0-9+]/g, '')}`}
-                        className="w-full sm:w-auto py-2 sm:py-2 px-2 sm:px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs whitespace-nowrap"
+                        className="w-full sm:w-auto py-2 sm:py-2 px-2 sm:px-3 rounded-lg bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all active:scale-[0.98] flex items-center justify-center gap-1 sm:gap-1.5 shadow-xs whitespace-nowrap"
                         title="Call Agent"
                       >
-                        <Phone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <Phone className="w-3.5 h-3.5 text-[#000004] shrink-0" />
                         <span>Call</span>
                       </a>
 
@@ -206,7 +206,7 @@ export const MyPassesModal: React.FC<MyPassesModalProps> = ({
                         onClose();
                         onOpenBookingModal(listing);
                       }}
-                      className="w-full sm:w-auto py-2.5 px-4 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors shadow-xs whitespace-nowrap cursor-pointer text-center"
+                      className="w-full sm:w-auto py-2.5 px-4 rounded-lg bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-colors shadow-xs whitespace-nowrap cursor-pointer text-center"
                     >
                       View Status Details
                     </button>

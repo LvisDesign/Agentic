@@ -256,7 +256,7 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting || !agencyName.trim() || !agreedToTerms}
-                className="w-2/3 py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md transition-all disabled:opacity-50 cursor-pointer"
+                className="w-2/3 py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-md transition-all disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? (
                   <span>Registering Agent Profile...</span>
