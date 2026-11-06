@@ -1,17 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Building2,
   MapPin,
   Briefcase,
   Banknote,
   Clock,
   CheckCircle2,
   ArrowRight,
-  ExternalLink,
   ChevronRight,
-  Share2
+  Share2,
+  Star,
 } from 'lucide-react';
 import { JobListing } from '../../types/jobs';
+import { getInitialStarCount, toggleStarReaction } from '../../services/reactionService';
 
 interface JobListingCardProps {
   job: JobListing;
@@ -28,9 +28,28 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
   onQuickApply,
   onShareJob,
 }) => {
+  const initialReaction = getInitialStarCount(job.id);
+  const [starCount, setStarCount] = useState<number>(initialReaction.count);
+  const [isStarred, setIsStarred] = useState<boolean>(initialReaction.isStarred);
+  const [isStarAnimating, setIsStarAnimating] = useState(false);
+
+  const handleToggleStar = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsStarAnimating(true);
+    setTimeout(() => setIsStarAnimating(false), 300);
+    const next = await toggleStarReaction(job.id, starCount);
+    setStarCount(next.count);
+    setIsStarred(next.isStarred);
+  };
+
   return (
-    <article className={`w-full bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group ${job.isFeatured ? 'border-amber-300/80 hover:border-amber-400 bg-gradient-to-b from-amber-50/20 to-white' : 'border-[#E5E7EB] hover:border-[#000004]/20'
-      }`}>
+    <article
+      className={`w-full bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group ${
+        job.isFeatured
+          ? 'border-amber-300/80 hover:border-amber-400 bg-gradient-to-b from-amber-50/20 to-white'
+          : 'border-[#E5E7EB] hover:border-[#000004]/20'
+      }`}
+    >
       {/* 1. Header: Company Logo / Avatar, Job Title, Company & Location */}
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">
@@ -66,27 +85,56 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
                 <span className="text-[#E5E7EB]">•</span>
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#FCF9F5] px-2 py-0.5 rounded-full border border-[#E5E7EB]">
                   <MapPin className="w-3 h-3 text-[#70798C]" />
-                  <span>{job.city}, {job.state}</span>
+                  <span>
+                    {job.city}, {job.state}
+                  </span>
                   <span className="text-[#70798C]">({job.workplaceType})</span>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Optional Share button */}
-          {onShareJob && (
+          {/* Star Reaction & Share buttons */}
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onShareJob(job);
-              }}
-              className="w-8 h-8 rounded-full hover:bg-slate-100 text-[#70798C] hover:text-[#000004] flex items-center justify-center transition-colors cursor-pointer shrink-0"
-              title="Share Job Opportunity"
+              onClick={handleToggleStar}
+              aria-label="Star this job"
+              className={`h-8 ${
+                starCount > 0 ? 'px-2.5' : 'w-8'
+              } rounded-full flex items-center justify-center gap-1 border transition-all cursor-pointer active:scale-95 ${
+                isStarred
+                  ? 'bg-[#FFFBEB] text-[#342A21] border-[#FFAD05]/50 shadow-2xs'
+                  : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#70798C] hover:text-[#342A21] border-[#E5E7EB]'
+              }`}
+              title={isStarred ? 'You starred this job' : 'Star this job'}
             >
-              <Share2 className="w-4 h-4" />
+              <Star
+                className={`w-4 h-4 transition-transform duration-200 ${
+                  isStarAnimating ? 'scale-125' : 'scale-100'
+                } ${isStarred ? 'fill-[#FFAD05] text-[#FFAD05]' : ''}`}
+              />
+              {starCount > 0 && (
+                <span className="text-xs font-bold text-[#342A21] leading-none">
+                  {starCount}
+                </span>
+              )}
             </button>
-          )}
+
+            {onShareJob && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShareJob(job);
+                }}
+                className="w-8 h-8 rounded-full bg-[#FCF9F5] hover:bg-[#E5E7EB] border border-[#E5E7EB] text-[#70798C] hover:text-[#000004] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                title="Share Job Opportunity"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 2. Quick Tags / Chips */}

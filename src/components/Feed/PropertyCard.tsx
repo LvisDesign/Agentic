@@ -14,7 +14,7 @@ import {
   Flag,
   CheckCircle2,
   AlertCircle,
-  Clock,
+  Clock, Star,
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, ListingAvailability } from '../../types/marketplace';
 import { formatNaira } from '../../utils/formatters';
@@ -24,6 +24,7 @@ import { ReportListingModal } from './ReportListingModal';
 import { QueueStatusBadge } from '../Booking/QueueStatusBadge';
 import { InspectionBookingModal } from '../Booking/InspectionBookingModal';
 import { UnlockedContactSheet } from '../Booking/UnlockedContactSheet';
+import { getInitialStarCount, toggleStarReaction } from '../../services/reactionService';
 
 interface PropertyCardProps {
   listing: PropertyListing;
@@ -59,6 +60,19 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [copiedShare, setCopiedShare] = useState(false);
   const [activeMediaRatio, setActiveMediaRatio] = useState<number | null>(null);
   const [isListingExpanded, setIsListingExpanded] = useState(false);
+  const initialReaction = getInitialStarCount(listing.id, listing.tags);
+  const [starCount, setStarCount] = useState<number>(initialReaction.count);
+  const [isStarred, setIsStarred] = useState<boolean>(initialReaction.isStarred);
+  const [isStarAnimating, setIsStarAnimating] = useState(false);
+
+  const handleToggleStar = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsStarAnimating(true);
+    setTimeout(() => setIsStarAnimating(false), 300);
+    const next = await toggleStarReaction(listing.id, starCount, listing.tags);
+    setStarCount(next.count);
+    setIsStarred(next.isStarred);
+  };
 
   // Dynamic aspect ratio calculation based on real uploaded dimensions
   const containerAspectRatio = activeMediaRatio
@@ -145,6 +159,30 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             )}
 
 
+
+            {/* Star Reaction Button (Facebook-style live counter) */}
+            <button
+              type="button"
+              onClick={handleToggleStar}
+              aria-label="Star this property"
+              className={`h-7 ${starCount > 0 ? 'px-2.5' : 'w-7'} rounded-full flex items-center justify-center gap-1 border transition-all cursor-pointer active:scale-95 ${
+                isStarred
+                  ? 'bg-[#FFFBEB] text-[#342A21] border-[#FFAD05]/50 shadow-2xs'
+                  : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#70798C] hover:text-[#342A21] border-[#E5E7EB]'
+              }`}
+              title={isStarred ? 'You starred this listing' : 'Star this listing'}
+            >
+              <Star
+                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                  isStarAnimating ? 'scale-125' : 'scale-100'
+                } ${isStarred ? 'fill-[#FFAD05] text-[#FFAD05]' : ''}`}
+              />
+              {starCount > 0 && (
+                <span className="text-[11px] font-bold text-[#342A21] leading-none">
+                  {starCount}
+                </span>
+              )}
+            </button>
 
             {/* Subtle Flag Report Button */}
             <button
@@ -255,7 +293,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               </div>
             </div>
 
-            {/* 3. Essential Quick Summary Pills (Bedrooms & Bathrooms) */}
+            {/* 3. Essential Quick Summary Pills (Bedrooms & Bathrooms) + Star Reaction */}
+            <div className="flex items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
               <span className="px-2 py-0.5 rounded-md bg-[#FCF9F5] border border-[#E5E7EB] text-[#000004] font-medium flex items-center gap-1">
                 <Bed className="w-3 h-3 text-[#70798C]" />
@@ -271,6 +310,29 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                   {listing.electricityStatus}
                 </span>
               )}
+            </div>
+
+              {/* Inline Star Reaction Pill */}
+              <button
+                type="button"
+                onClick={handleToggleStar}
+                aria-label="Star this listing"
+                className={`px-2.5 py-0.5 rounded-full border text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shrink-0 ${
+                  isStarred
+                    ? 'bg-[#FFFBEB] border-[#FFAD05]/50 text-[#342A21] shadow-2xs'
+                    : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] border-[#E5E7EB] text-[#70798C] hover:text-[#342A21]'
+                }`}
+                title={isStarred ? 'Starred' : 'Star this property'}
+              >
+                <Star
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    isStarAnimating ? 'scale-125' : 'scale-100'
+                  } ${isStarred ? 'fill-[#FFAD05] text-[#FFAD05]' : ''}`}
+                />
+                {starCount > 0 && (
+                  <span className="text-[#342A21] font-extrabold">{starCount}</span>
+                )}
+              </button>
             </div>
 
             {/* 4. Description Preview (1 line when collapsed, full text when expanded) */}
