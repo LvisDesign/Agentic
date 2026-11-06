@@ -1,10 +1,28 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const DEFAULT_SUPABASE_URL = 'https://qxxheinizxyyrfcrijbs.supabase.co';
-const DEFAULT_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4eGhlaW5penh5eXJmY3JpamJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyNjAzOTksImV4cCI6MjEwODgzNjM5OX0.xMzIyxs9JVluL5kmbcpLSyb1WKRcopnNzJhl8cB41PI';
+const OFFICIAL_SUPABASE_URL = 'https://qxxheinizxyyrfcrijbs.supabase.co';
+const OFFICIAL_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4eGhlaW5penh5eXJmY3JpamJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyNjAzOTksImV4cCI6MjEwODgzNjM5OX0.xMzIyxs9JVluL5kmbcpLSyb1WKRcopnNzJhl8cB41PI';
 
-const envUrl = (import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL).trim();
-const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_KEY).trim();
+function isValidActiveSupabaseUrl(url?: string | null): boolean {
+  if (!url) return false;
+  const trimmed = url.trim();
+  // Reject decommissioned Oct 27 project iadzihievmbhssqycpol
+  if (trimmed.includes('iadzihievmbhssqycpol')) return false;
+  return trimmed === OFFICIAL_SUPABASE_URL;
+}
+
+function isValidActiveSupabaseKey(key?: string | null): boolean {
+  if (!key) return false;
+  const trimmed = key.trim();
+  if (trimmed.startsWith('sb_publishable_')) return false;
+  return trimmed === OFFICIAL_SUPABASE_KEY;
+}
+
+const rawEnvUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
+const rawEnvKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+
+const envUrl = isValidActiveSupabaseUrl(rawEnvUrl) ? rawEnvUrl : OFFICIAL_SUPABASE_URL;
+const envKey = isValidActiveSupabaseKey(rawEnvKey) ? rawEnvKey : OFFICIAL_SUPABASE_KEY;
 
 export interface SupabaseConfig {
   url: string;
@@ -14,26 +32,24 @@ export interface SupabaseConfig {
 }
 
 export const getSupabaseConfig = (): SupabaseConfig => {
-  const localUrl = (
-    typeof window !== 'undefined'
-      ? localStorage.getItem('setlla_supabase_url') || localStorage.getItem('deltarent_supabase_url') || ''
-      : ''
-  ).trim();
-  const localKey = (
-    typeof window !== 'undefined'
-      ? localStorage.getItem('setlla_supabase_key') || localStorage.getItem('deltarent_supabase_key') || ''
-      : ''
-  ).trim();
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.removeItem('setlla_supabase_url');
+      localStorage.removeItem('deltarent_supabase_url');
+      localStorage.removeItem('setlla_supabase_key');
+      localStorage.removeItem('deltarent_supabase_key');
+    } catch (_) {}
+  }
 
-  const url = localUrl || envUrl || DEFAULT_SUPABASE_URL;
-  const key = localKey || envKey || DEFAULT_SUPABASE_KEY;
+  const url = envUrl || OFFICIAL_SUPABASE_URL;
+  const key = envKey || OFFICIAL_SUPABASE_KEY;
 
   if (url && key && url.startsWith('https://')) {
     return { 
       url, 
       key, 
       isConfigured: true, 
-      source: localUrl ? 'localStorage' : envUrl ? 'env' : 'default' 
+      source: 'default'
     };
   }
 
