@@ -171,7 +171,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-16 pb-20 px-3.5 sm:px-6 max-w-5xl mx-auto">
       {/* Top Banner / Agent Identity */}
-      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-br from-white via-[#FEFCFA] to-[#F7F3ED] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#E8E1D7] shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
           {agentProfile.avatarUrl ? (
             <img
@@ -234,54 +234,76 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5 mb-6">
-        <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-neutral-200/80 shadow-2xs min-w-0">
-          <div className="flex items-center justify-between text-xs text-neutral-500 gap-1">
-            <span className="truncate font-medium">Booked Inspections</span>
-            <CalendarCheck className="w-4 h-4 text-neutral-400 shrink-0" />
+        <div
+          onClick={() => setActiveTab('requests')}
+          className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-white via-[#F9FBFA] to-[#EFF5F2] border border-[#E0EBE6] shadow-2xs hover:shadow-sm transition-all min-w-0 cursor-pointer"
+        >
+          <div className="flex items-center justify-between text-xs text-[#4A5D54] gap-1.5">
+            <span className="truncate font-semibold">Booked Inspections</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#E5F0EC] text-[#285E4B] border border-[#D2E4DC] flex items-center justify-center shrink-0">
+              <CalendarCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
           </div>
-          <div className="font-display text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
+          <div className="font-display text-2xl sm:text-[26px] font-bold text-[#1C2A24] mt-1.5 leading-tight">
             {agentProfile.completedInspections + acceptedOrPaid.length}
           </div>
-          <span className="text-[10px] text-neutral-500 font-medium block truncate mt-0.5">
+          <span className="text-[11px] text-[#5B7066] font-medium block truncate mt-1">
             {agentProfile.completedInspections === 0 && acceptedOrPaid.length === 0
               ? 'No inspections yet'
               : 'Total scheduled'}
           </span>
         </div>
 
-        <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-neutral-200/80 shadow-2xs min-w-0">
-          <div className="flex items-center justify-between text-xs text-neutral-500 gap-1">
-            <span className="truncate font-medium">Pending Requests</span>
-            <Clock className="w-4 h-4 text-neutral-400 shrink-0" />
+        <div
+          onClick={() => setActiveTab('requests')}
+          className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-white via-[#FDFAF6] to-[#F7EFE4] border border-[#EBE0D0] shadow-2xs hover:shadow-sm transition-all min-w-0 cursor-pointer"
+        >
+          <div className="flex items-center justify-between text-xs text-[#63513D] gap-1.5">
+            <span className="truncate font-semibold">Pending Requests</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#F3E7D7] text-[#8A5A2B] border border-[#E5D3BC] flex items-center justify-center shrink-0">
+              <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
           </div>
-          <div className="font-display text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
+          <div className="font-display text-2xl sm:text-[26px] font-bold text-[#2A2118] mt-1.5 leading-tight">
             {pendingRequests.length}
           </div>
-          <span className="text-[10px] text-neutral-500 block truncate mt-0.5">
+          <span className="text-[11px] text-[#786550] font-medium block truncate mt-1">
             {pendingRequests.length === 0 ? 'All caught up' : 'Waiting for reply'}
           </span>
         </div>
 
-        <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-neutral-200/80 shadow-2xs min-w-0">
-          <div className="flex items-center justify-between text-xs text-neutral-500 gap-1">
-            <span className="truncate font-medium">Waiting List</span>
-            <Users className="w-4 h-4 text-neutral-400 shrink-0" />
+        <div
+          onClick={() => setActiveTab('requests')}
+          className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-white via-[#F9FAFC] to-[#EEF2F7] border border-[#DFE6F0] shadow-2xs hover:shadow-sm transition-all min-w-0 cursor-pointer"
+        >
+          <div className="flex items-center justify-between text-xs text-[#495668] gap-1.5">
+            <span className="truncate font-semibold">Waiting List</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#E4ECF5] text-[#38557E] border border-[#D0DCEC] flex items-center justify-center shrink-0">
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
           </div>
-          <div className="font-display text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
+          <div className="font-display text-2xl sm:text-[26px] font-bold text-[#1D2530] mt-1.5 leading-tight">
             {queuedRequests.length}
           </div>
-          <span className="text-[10px] text-neutral-500 block truncate mt-0.5">Max 5 per time slot</span>
+          <span className="text-[11px] text-[#606F82] font-medium block truncate mt-1">
+            Max 5 per time slot
+          </span>
         </div>
 
-        <div className="p-3.5 sm:p-4 rounded-xl bg-white border border-neutral-200/80 shadow-2xs min-w-0">
-          <div className="flex items-center justify-between text-xs text-neutral-500 gap-1">
-            <span className="truncate font-medium">My Listed Houses</span>
-            <Building className="w-4 h-4 text-neutral-400 shrink-0" />
+        <div
+          onClick={() => setActiveTab('listings')}
+          className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-white via-[#FAF8F6] to-[#F2ECE5] border border-[#E5DDD3] shadow-2xs hover:shadow-sm transition-all min-w-0 cursor-pointer"
+        >
+          <div className="flex items-center justify-between text-xs text-[#594A3E] gap-1.5">
+            <span className="truncate font-semibold">My Listed Houses</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#EAE1D8] text-[#543D2C] border border-[#DCD0C4] flex items-center justify-center shrink-0">
+              <Building className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
           </div>
-          <div className="font-display text-xl sm:text-2xl font-bold text-neutral-900 mt-1">
+          <div className="font-display text-2xl sm:text-[26px] font-bold text-[#241B14] mt-1.5 leading-tight">
             {agentListings.length}
           </div>
-          <span className="text-[10px] text-neutral-500 block truncate mt-0.5">
+          <span className="text-[11px] text-[#6E5D4F] font-medium block truncate mt-1">
             {agentListings.length === 0 ? 'No listings yet' : 'Live on platform'}
           </span>
         </div>
