@@ -647,6 +647,124 @@ export async function updateAdvertiserProfile(
 }
 
 /**
+ * Syncs an advertiser's wallet balance, totalSpent, and transactions ledger to both
+ * `public.advertisers` and `public.platform_users.kyc_documents._meta.ad_wallet` so it
+ * persists reliably across refreshes and devices.
+ */
+async function persistAdvertiserWalletToCloud(updated: AdvertiserUser): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    await saveRegisteredAdvertiser(updated);
+  } catch (_) {}
+
+  try {
+    const cleanEmail = updated.email?.toLowerCase().trim();
+    const { data: pUser } = await supabase
+      .from('platform_users')
+      .select('id, kyc_documents')
+      .or(`id.eq.${updated.id}${cleanEmail ? `,email.ilike.${cleanEmail}` : ''}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (pUser && pUser.id) {
+      const existingDocs = pUser.kyc_documents && typeof pUser.kyc_documents === 'object' ? pUser.kyc_documents : {};
+      const existingMeta = existingDocs._meta && typeof existingDocs._meta === 'object' ? existingDocs._meta : {};
+      const updatedDocs = {
+        ...existingDocs,
+        _meta: {
+          ...existingMeta,
+          ad_wallet: {
+            walletBalance: updated.walletBalance || 0,
+            totalSpent: updated.totalSpent || 0,
+            transactions: (updated.transactions || []).slice(0, 40),
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      };
+      await supabase
+        .from('platform_users')
+        .update({ kyc_documents: updatedDocs, updated_at: new Date().toISOString() })
+        .eq('id', pUser.id);
+    }
+  } catch (e) {
+    console.warn('[AdvertiserAuth] Platform user wallet backup notice:', e);
+  }
+}
+
+/**
+ * Fetches the latest wallet balance, totalSpent, and transactions from Supabase for an advertiser.
+ */
+export async function syncAdvertiserWalletFromCloud(advertiser: AdvertiserUser): Promise<AdvertiserUser> {
+  if (!advertiser || !isSupabaseConfigured()) return advertiser;
+
+  let merged: AdvertiserUser = { ...advertiser };
+  try {
+    const cleanEmail = advertiser.email?.toLowerCase().trim();
+
+    // 1. Check advertisers table
+    const { data: advRow } = await supabase
+      .from('advertisers')
+      .select('wallet_balance, total_spent')
+      .or(`id.eq.${advertiser.id}${cleanEmail ? `,email.ilike.${cleanEmail}` : ''}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (advRow) {
+      const cloudBal = Number(advRow.wallet_balance);
+      const cloudSpent = Number(advRow.total_spent);
+      if (!isNaN(cloudBal) && cloudBal > (merged.walletBalance || 0)) {
+        merged.walletBalance = cloudBal;
+      }
+      if (!isNaN(cloudSpent) && cloudSpent > (merged.totalSpent || 0)) {
+        merged.totalSpent = cloudSpent;
+      }
+    }
+
+    // 2. Check platform_users._meta.ad_wallet backup (includes full transactions ledger)
+    const { data: pUser } = await supabase
+      .from('platform_users')
+      .select('kyc_documents')
+      .or(`id.eq.${advertiser.id}${cleanEmail ? `,email.ilike.${cleanEmail}` : ''}`)
+      .limit(1)
+      .maybeSingle();
+
+    const adWallet = pUser?.kyc_documents?._meta?.ad_wallet;
+    if (adWallet && typeof adWallet === 'object') {
+      if (typeof adWallet.walletBalance === 'number') {
+        merged.walletBalance = adWallet.walletBalance;
+      }
+      if (typeof adWallet.totalSpent === 'number') {
+        merged.totalSpent = Math.max(merged.totalSpent || 0, adWallet.totalSpent);
+      }
+      if (Array.isArray(adWallet.transactions) && adWallet.transactions.length > (merged.transactions?.length || 0)) {
+        merged.transactions = adWallet.transactions;
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      const list = getRegisteredAdvertisers();
+      const idx = list.findIndex(
+        (a) => a.id === merged.id || (cleanEmail && a.email.toLowerCase() === cleanEmail)
+      );
+      if (idx >= 0) {
+        list[idx] = merged;
+      } else {
+        list.unshift(merged);
+      }
+      localStorage.setItem(ADVERTISERS_REGISTRY_KEY, JSON.stringify(list));
+      const active = getActiveAdvertiser();
+      if (active && (active.id === merged.id || active.email.toLowerCase() === cleanEmail)) {
+        localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(merged));
+      }
+    }
+  } catch (e) {
+    console.warn('[AdvertiserAuth] Cloud wallet sync notice:', e);
+  }
+
+  return merged;
+}
+
+/**
  * Tops up an advertiser's credit wallet balance.
  */
 export async function topUpAdvertiserWallet(
@@ -656,12 +774,12 @@ export async function topUpAdvertiserWallet(
   paymentMethod: string = 'Paystack'
 ): Promise<AdvertiserUser> {
   const list = getRegisteredAdvertisers();
-  const index = list.findIndex((a) => a.id === advertiserId);
-  if (index === -1) {
+  let index = list.findIndex((a) => a.id === advertiserId);
+  let user = index >= 0 ? list[index] : getActiveAdvertiser();
+  if (!user) {
     throw new Error('Advertiser account not found.');
   }
 
-  const user = list[index];
   const newBalance = (user.walletBalance || 0) + amount;
   const newTx: WalletTransaction = {
     id: `tx-topup-${Date.now()}`,
@@ -681,28 +799,21 @@ export async function topUpAdvertiserWallet(
     transactions: updatedTransactions,
   };
 
-  list[index] = updated;
+  if (index >= 0) {
+    list[index] = updated;
+  } else {
+    list.unshift(updated);
+  }
+
   if (typeof window !== 'undefined') {
     localStorage.setItem(ADVERTISERS_REGISTRY_KEY, JSON.stringify(list));
     const active = getActiveAdvertiser();
-    if (active && active.id === advertiserId) {
+    if (!active || active.id === advertiserId || active.email.toLowerCase() === updated.email.toLowerCase()) {
       localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(updated));
     }
   }
 
-  if (isSupabaseConfigured()) {
-    try {
-      await supabase
-        .from('advertisers')
-        .update({
-          wallet_balance: newBalance,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', advertiserId);
-    } catch (e) {
-      console.warn('[AdvertiserAuth] Wallet balance sync warning:', e);
-    }
-  }
+  await persistAdvertiserWalletToCloud(updated);
 
   return updated;
 }
@@ -716,12 +827,12 @@ export async function deductAdvertiserWallet(
   campaignTitle: string
 ): Promise<AdvertiserUser> {
   const list = getRegisteredAdvertisers();
-  const index = list.findIndex((a) => a.id === advertiserId);
-  if (index === -1) {
+  let index = list.findIndex((a) => a.id === advertiserId);
+  let user = index >= 0 ? list[index] : getActiveAdvertiser();
+  if (!user) {
     throw new Error('Advertiser account not found.');
   }
 
-  const user = list[index];
   const currentBalance = user.walletBalance || 0;
   if (currentBalance < amount) {
     throw new Error(
@@ -749,29 +860,21 @@ export async function deductAdvertiserWallet(
     transactions: updatedTransactions,
   };
 
-  list[index] = updated;
+  if (index >= 0) {
+    list[index] = updated;
+  } else {
+    list.unshift(updated);
+  }
+
   if (typeof window !== 'undefined') {
     localStorage.setItem(ADVERTISERS_REGISTRY_KEY, JSON.stringify(list));
     const active = getActiveAdvertiser();
-    if (active && active.id === advertiserId) {
+    if (!active || active.id === advertiserId || active.email.toLowerCase() === updated.email.toLowerCase()) {
       localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(updated));
     }
   }
 
-  if (isSupabaseConfigured()) {
-    try {
-      await supabase
-        .from('advertisers')
-        .update({
-          wallet_balance: newBalance,
-          total_spent: newTotalSpent,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', advertiserId);
-    } catch (e) {
-      console.warn('[AdvertiserAuth] Wallet deduction sync warning:', e);
-    }
-  }
+  await persistAdvertiserWalletToCloud(updated);
 
   return updated;
 }

@@ -50,7 +50,8 @@ import {
   logoutAdvertiser, 
   topUpAdvertiserWallet, 
   deductAdvertiserWallet, 
-  getActiveAdvertiser 
+  getActiveAdvertiser,
+  syncAdvertiserWalletFromCloud
 } from '../../services/advertiserAuthService';
 import { AdvertStory } from '../../data/mockAdverts';
 import { 
@@ -59,7 +60,8 @@ import {
   PartnerSubmissionPayload,
   togglePartnerApiKey,
   editAdvert,
-  toggleAdvertStatus
+  toggleAdvertStatus,
+  subscribeToAdvertChanges
 } from '../../services/adService';
 import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
@@ -255,6 +257,16 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
   useEffect(() => {
     loadCampaigns();
+    syncAdvertiserWalletFromCloud(currentAdvertiser)
+      .then((synced) => {
+        if (synced) setCurrentAdvertiser(synced);
+      })
+      .catch(() => {});
+
+    const unsub = subscribeToAdvertChanges(() => {
+      loadCampaigns();
+    });
+    return unsub;
   }, [advertiser.email, advertiser.companyName]);
 
   const loadCampaigns = async () => {
@@ -314,7 +326,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
     }
   };
 
-  const handleFundCampaignFromWallet = async (e?: React.FormEvent) => {
+  const handleFundCampaignFromWallet = async (e?: React.FormEvent, overrideUser?: AdvertiserUser) => {
     if (e) e.preventDefault();
     setFormError(null);
 
@@ -335,8 +347,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       return;
     }
 
+    const activeUser = overrideUser || currentAdvertiser;
     const cost = campaignCost;
-    const currentBalance = currentAdvertiser.walletBalance || 0;
+    const currentBalance = activeUser.walletBalance || 0;
 
     if (currentBalance < cost) {
       const shortfall = cost - currentBalance;
@@ -352,16 +365,15 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
     try {
       // 1. Deduct wallet credits
       const updatedUser = await deductAdvertiserWallet(
-        currentAdvertiser.id,
+        activeUser.id,
         cost,
         headline.trim()
       );
       setCurrentAdvertiser(updatedUser);
 
       // 2. Submit campaign
-      const trackingRef = `STLA-AD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       const payload: PartnerSubmissionPayload = {
-        companyName: currentAdvertiser.companyName,
+        companyName: activeUser.companyName,
         headline: headline.trim(),
         description: description.trim(),
         category,
@@ -370,11 +382,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
         ctaText: ctaText.trim() || (actionType === 'website' ? 'Visit Website' : 'Chat on WhatsApp'),
         actionType,
         websiteUrl: actionType === 'website' ? websiteUrl.trim() : undefined,
-        whatsappNumber: whatsappNumber.trim() || currentAdvertiser.whatsapp || currentAdvertiser.phone || undefined,
-        phone: phone.trim() || currentAdvertiser.phone || undefined,
-        location: location.trim() || currentAdvertiser.operatingCity || 'Nationwide',
+        whatsappNumber: whatsappNumber.trim() || activeUser.whatsapp || activeUser.phone || undefined,
+        phone: phone.trim() || activeUser.phone || undefined,
+        location: location.trim() || activeUser.operatingCity || 'Nationwide',
         price: price.trim() || undefined,
-        partnerEmail: currentAdvertiser.email,
+        partnerEmail: activeUser.email,
         packageTier: campaignPricing.packageTier,
         durationDays: adDurationDays,
         budgetAmount: cost,
@@ -426,9 +438,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
       // If user was creating a campaign and topped up to meet the shortfall, automatically launch now!
       if (pendingPostTopUp) {
         setPendingPostTopUp(false);
-        setTimeout(() => {
-          handleFundCampaignFromWallet();
-        }, 150);
+        await handleFundCampaignFromWallet(undefined, updatedUser);
       }
     } catch (e: any) {
       console.error('Top-up error:', e);

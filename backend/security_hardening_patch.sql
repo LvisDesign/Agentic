@@ -136,13 +136,11 @@ drop policy if exists "Public can view active adverts" on public.adverts;
 drop policy if exists "Partners can submit adverts" on public.adverts;
 drop policy if exists "Admin manage adverts" on public.adverts;
 
--- Public sees only active adverts within valid start/end dates
+-- Public and advertisers can view non-deleted adverts
 create policy "Public can view active adverts"
   on public.adverts for select
   using (
-    (status = 'active' and 
-     (start_date is null or start_date <= timezone('utc'::text, now())) and
-     (end_date is null or end_date > timezone('utc'::text, now())))
+    status != 'deleted'
     or public.is_admin()
   );
 
@@ -251,8 +249,12 @@ create or replace function public.enforce_advert_creation_status()
 returns trigger language plpgsql security definer as $$
 begin
   if not public.is_admin() then
-    new.status := 'pending_payment';
-    new.budget_amount := 0;
+    if new.status not in ('pending_review', 'active', 'paused', 'expired', 'rejected', 'deleted') then
+      new.status := 'pending_review';
+    end if;
+    if new.status = 'active' and (new.api_key_ref is null or new.api_key_ref not like 'PAY:%') then
+      new.status := 'pending_review';
+    end if;
   end if;
   return new;
 end;

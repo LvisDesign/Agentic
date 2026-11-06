@@ -1,5 +1,5 @@
 import { AdvertStory, AdvertPendingChanges } from '../data/mockAdverts';
-import { supabase, isSupabaseConfigured, getSupabaseClient, fetchWithDeduplication } from '../utils/supabaseClient';
+import { supabase, isSupabaseConfigured, getSupabaseClient, fetchWithDeduplication, invalidateCache } from '../utils/supabaseClient';
 import { isSuperAdminAuthenticated } from './adminAuthService';
 
 export interface PartnerApiKey {
@@ -281,6 +281,28 @@ export const mapDbToAdvert = (row: any): AdvertStory => {
     commentsCount: Number(row.comments_count ?? row.commentsCount ?? 0),
     sharesCount: Number(row.shares_count ?? row.sharesCount ?? 0),
     apiKeyRef: row.api_key_ref || row.apiKeyRef,
+    paymentReference:
+      row.payment_reference ||
+      row.paymentReference ||
+      (typeof (row.api_key_ref || row.apiKeyRef) === 'string' &&
+      (row.api_key_ref || row.apiKeyRef).startsWith('PAY:')
+        ? (row.api_key_ref || row.apiKeyRef).slice(4).split('|')[0]
+        : undefined),
+    paymentMethod:
+      row.payment_method ||
+      row.paymentMethod ||
+      (typeof (row.api_key_ref || row.apiKeyRef) === 'string' &&
+      (row.api_key_ref || row.apiKeyRef).startsWith('PAY:')
+        ? (row.api_key_ref || row.apiKeyRef).slice(4).split('|')[1] || 'Paystack'
+        : undefined),
+    paymentStatus:
+      row.payment_status ||
+      row.paymentStatus ||
+      (Number(row.budget_amount ?? row.budgetAmount ?? 0) > 0 ||
+      (typeof (row.api_key_ref || row.apiKeyRef) === 'string' &&
+        (row.api_key_ref || row.apiKeyRef).startsWith('PAY:'))
+        ? 'paid'
+        : undefined),
     createdAt: row.created_at || row.createdAt,
     hasPendingChanges: Boolean(row.has_pending_changes ?? row.hasPendingChanges ?? false),
     pendingChanges:
@@ -331,7 +353,9 @@ export const mapAdvertToDb = (ad: AdvertStory) => ({
   likes_count: ad.likesCount || 0,
   comments_count: ad.commentsCount || 0,
   shares_count: ad.sharesCount || 0,
-  api_key_ref: ad.apiKeyRef || null,
+  api_key_ref:
+    ad.apiKeyRef ||
+    (ad.paymentReference ? `PAY:${ad.paymentReference}|${ad.paymentMethod || 'Paystack'}` : null),
   has_pending_changes: Boolean(ad.hasPendingChanges),
   pending_changes: ad.pendingChanges ? ad.pendingChanges : null,
   changes_review_status: ad.changesReviewStatus || null,
@@ -350,79 +374,95 @@ export const isCampaignExpired = (ad: AdvertStory): boolean => {
 };
 
 /**
- * Public fields strictly required by the frontend UI feed.
- * Omits internal accounting, review metadata, rejection logs, and private keys.
+ * Columns required for both the frontend UI feed and advertiser campaign management.
  */
 export const PUBLIC_ADVERT_COLUMNS =
-  'id, title, headline, advertiser_name, advertiser_handle, avatar_url, category, badge_text, thumbnail_url, media_url, media_type, description, location, price, cta_text, website_url, action_type, whatsapp_number, phone, is_verified, status, start_date, end_date, impressions_count, clicks_count, created_at';
+  'id, title, headline, advertiser_name, advertiser_handle, avatar_url, category, badge_text, thumbnail_url, media_url, media_type, description, location, price, cta_text, website_url, action_type, whatsapp_number, phone, is_verified, property_id, status, submission_source, partner_email, package_tier, budget_amount, start_date, end_date, impressions_count, clicks_count, likes_count, comments_count, shares_count, api_key_ref, has_pending_changes, pending_changes, changes_review_status, changes_rejection_reason, rejection_reason, rejected_at, created_at';
 
 /**
- * Fetches active adverts for the frontend UI feed.
- * Data-minimized: selects ONLY the ~20% of fields needed for rendering.
- * Strictly filters to active campaigns only (never fetches deleted or internal rows).
+ * Fetches adverts for the frontend UI feed and advertiser portals.
+ * Merges cloud adverts with locally cached pending/paused/rejected campaigns
+ * so newly funded campaigns never disappear while awaiting admin approval.
  */
 export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
   const deletedIds = getDeletedAdvertIds();
 
-  let list: AdvertStory[] = [];
+  // 1. Read local cache first so pending_review / paused / rejected campaigns are preserved
+  let localAds: AdvertStory[] = [];
+  if (typeof window !== 'undefined') {
+    const raw = localStorage.getItem(ADVERTS_STORAGE_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          localAds = parsed
+            .map(mapDbToAdvert)
+            .filter(
+              (ad: AdvertStory) =>
+                ad &&
+                ad.id &&
+                !deletedIds.has(ad.id) &&
+                ad.status !== 'deleted' &&
+                ad.advertiserName !== 'Lvis Agency' &&
+                ad.title !== '3 Bed Room'
+            );
+        }
+      } catch {
+        localAds = [];
+      }
+    }
+  }
+
+  let cloudAds: AdvertStory[] = [];
   let fetchedFromCloud = false;
 
-  // 1. Fetch lightweight active adverts from Supabase with request deduplication
+  // 2. Fetch adverts from Supabase with request deduplication
   if (isSupabaseConfigured()) {
     try {
       const data = await fetchWithDeduplication('public_adverts_feed', async () => {
         const { data: resData, error: resErr } = await supabase
           .from('adverts')
           .select(PUBLIC_ADVERT_COLUMNS)
-          .eq('status', 'active')
+          .neq('status', 'deleted')
           .order('created_at', { ascending: false })
-          .limit(24);
+          .limit(48);
 
         if (resErr) throw resErr;
         return resData || [];
-      }, 15000);
+      }, 8000);
 
       if (Array.isArray(data)) {
         fetchedFromCloud = true;
-        list = data
+        cloudAds = data
           .map(mapDbToAdvert)
-          .filter((ad) => ad && ad.id && !deletedIds.has(ad.id) && ad.status === 'active');
-
-        // Immediately update localStorage with the clean cloud list (capped to 24 to protect browser quota)
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list.slice(0, 24)));
-          } catch (_) {}
-        }
+          .filter(
+            (ad) =>
+              ad &&
+              ad.id &&
+              !deletedIds.has(ad.id) &&
+              ad.status !== 'deleted' &&
+              ad.advertiserName !== 'Lvis Agency' &&
+              ad.title !== '3 Bed Room'
+          );
       }
     } catch (err) {
       console.warn('[AdService] Supabase fetch error, using local cache:', err);
     }
   }
 
-  // 2. Fallback to localStorage ONLY if Supabase is not configured at all
-  if (!isSupabaseConfigured() && !fetchedFromCloud) {
-    const raw = typeof window !== 'undefined' ? localStorage.getItem(ADVERTS_STORAGE_KEY) : null;
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          list = parsed
-            .map(mapDbToAdvert)
-            .filter(
-              (ad: AdvertStory) => ad && ad.id && !deletedIds.has(ad.id) && ad.status === 'active'
-            );
-        }
-      } catch {
-        list = [];
-      }
-    }
+  // 3. Merge cloudAds (authoritative for returned IDs) with any local non-active ads hidden by RLS
+  let list: AdvertStory[];
+  if (fetchedFromCloud) {
+    const cloudMap = new Map(cloudAds.map((a) => [a.id, a]));
+    const unsyncedOrPendingLocal = localAds.filter((a) => !cloudMap.has(a.id));
+    list = [...cloudAds, ...unsyncedOrPendingLocal];
+  } else {
+    list = localAds;
   }
 
-  // 3. Update localStorage with sanitized list (capped to 24 to prevent QuotaExceeded errors)
   if (typeof window !== 'undefined') {
     try {
-      localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list.slice(0, 24)));
+      localStorage.setItem(ADVERTS_STORAGE_KEY, JSON.stringify(list.slice(0, 48)));
     } catch (_) {}
   }
 
@@ -435,6 +475,7 @@ export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
 export const saveAdvert = async (ad: AdvertStory): Promise<AdvertStory> => {
   // If this ad ID was previously tombstoned, clear it
   unrecordDeletedAdvertId(ad.id);
+  invalidateCache('public_adverts_feed');
 
   const all = await loadAllAdverts();
   const existingIdx = all.findIndex((item) => item.id === ad.id);
@@ -462,6 +503,7 @@ export const saveAdvert = async (ad: AdvertStory): Promise<AdvertStory> => {
   if (isSupabaseConfigured()) {
     try {
       await supabase.from('adverts').upsert(mapAdvertToDb(advertToSave));
+      invalidateCache('public_adverts_feed');
     } catch (e) {
       console.warn('[AdService] Failed to upsert advert to Supabase:', e);
     }
@@ -477,6 +519,7 @@ export const saveAdvert = async (ad: AdvertStory): Promise<AdvertStory> => {
 export const removeAdvert = async (id: string): Promise<void> => {
   // 1. Record ID in tombstones (cloud + local)
   recordDeletedAdvertId(id);
+  invalidateCache('public_adverts_feed');
 
   // 2. Remove from local storage cache
   const raw = typeof window !== 'undefined' ? localStorage.getItem(ADVERTS_STORAGE_KEY) : null;

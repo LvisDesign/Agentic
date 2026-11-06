@@ -664,16 +664,23 @@ export async function deleteJobListing(jobId: string): Promise<void> {
  */
 export async function toggleJobFeatured(jobId: string, isFeatured: boolean): Promise<void> {
   const all = await getAllJobs();
-  const updated = all.map((j) => (j.id === jobId ? { ...j, isFeatured } : j));
+  let targetJob: JobListing | null = null;
+  const updated = all.map((j) => {
+    if (j.id === jobId) {
+      targetJob = { ...j, isFeatured };
+      return targetJob;
+    }
+    return j;
+  });
   try {
     localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(updated));
   } catch (_) {}
 
-  if (isSupabaseConfigured()) {
+  if (isSupabaseConfigured() && targetJob) {
     try {
       const client = getSupabaseClient();
       if (client) {
-        await client.from('job_listings').update({ is_featured: isFeatured }).eq('id', jobId);
+        await client.from('listings').upsert([mapJobToListingsRow(targetJob)]);
       }
     } catch (e) {
       console.warn('[JobService] Cloud job update notice:', e);

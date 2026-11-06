@@ -1,14 +1,14 @@
 import React from 'react';
-import { 
-  Building2, 
-  MapPin, 
-  Briefcase, 
-  Banknote, 
-  Clock, 
-  CheckCircle2, 
-  ArrowRight, 
-  ExternalLink, 
-  ChevronRight, 
+import {
+  Building2,
+  MapPin,
+  Briefcase,
+  Banknote,
+  Clock,
+  CheckCircle2,
+  ArrowRight,
+  ExternalLink,
+  ChevronRight,
   Share2
 } from 'lucide-react';
 import { JobListing } from '../../types/jobs';
@@ -29,9 +29,8 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
   onShareJob,
 }) => {
   return (
-    <article className={`w-full bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group ${
-      job.isFeatured ? 'border-amber-300/80 hover:border-amber-400 bg-gradient-to-b from-amber-50/20 to-white' : 'border-[#E5E7EB] hover:border-[#000004]/20'
-    }`}>
+    <article className={`w-full bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group ${job.isFeatured ? 'border-amber-300/80 hover:border-amber-400 bg-gradient-to-b from-amber-50/20 to-white' : 'border-[#E5E7EB] hover:border-[#000004]/20'
+      }`}>
       {/* 1. Header: Company Logo / Avatar, Job Title, Company & Location */}
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-3">

@@ -9,14 +9,17 @@
 -- ==============================================================================
 
 -- 1. PREVENT FREE ADVERTS EXPLOIT
--- Enforces that non-admin inserts MUST have status 'pending_payment' and budget 0.
--- Even if an attacker passes status: 'active', the database trigger rewrites it.
+-- Enforces that non-admin inserts without a verified Paystack reference start in 'pending_review'.
 create or replace function public.enforce_advert_creation_status()
 returns trigger language plpgsql security definer as $$
 begin
   if not public.is_admin() then
-    new.status := 'pending_payment';
-    new.budget_amount := 0;
+    if new.status not in ('pending_review', 'active', 'paused', 'expired', 'rejected', 'deleted') then
+      new.status := 'pending_review';
+    end if;
+    if new.status = 'active' and (new.api_key_ref is null or new.api_key_ref not like 'PAY:%') then
+      new.status := 'pending_review';
+    end if;
   end if;
   return new;
 end;

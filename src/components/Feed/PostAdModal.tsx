@@ -61,10 +61,23 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
   const [paymentRef, setPaymentRef] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [adPricing, setAdPricing] = useState(() => getAdPricing());
+  const [userEmail, setUserEmail] = useState('partner@setlla.com');
 
   React.useEffect(() => {
     if (!isOpen) return;
     setAdPricing(getAdPricing());
+    try {
+      const rawUser = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+      if (rawUser) {
+        const parsed = JSON.parse(rawUser);
+        if (parsed?.email) setUserEmail(parsed.email);
+        if (!advertiserName && (parsed?.agencyName || parsed?.companyName || parsed?.fullName)) {
+          setAdvertiserName(parsed.agencyName || parsed.companyName || parsed.fullName);
+        }
+        if (!phone && parsed?.phone) setPhone(parsed.phone);
+        if (!whatsapp && (parsed?.whatsapp || parsed?.phone)) setWhatsapp(parsed.whatsapp || parsed.phone);
+      }
+    } catch (_) {}
 
     const handler = (e: any) => {
       if (e?.detail) {
@@ -157,6 +170,10 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
       storeBlobInIDB(newAdId, uploadedMedia.file, { type: mediaType, name: uploadedMedia.file.name }).catch(() => {});
     }
 
+    const now = new Date();
+    const durationDays = selectedPlan === 'monthly' ? 30 : 7;
+    const end = new Date(now.getTime() + durationDays * 86400000);
+
     const newAd: AdvertStory = {
       id: newAdId,
       title: headline.slice(0, 14) || `${city} Rental`,
@@ -176,6 +193,17 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
       whatsappNumber: whatsapp.replace(/\D/g, ''),
       phone,
       isVerified: true,
+      status: 'active',
+      submissionSource: 'partner_portal',
+      partnerEmail: userEmail,
+      packageTier: selectedPlan === 'monthly' ? 'growth' : 'starter',
+      budgetAmount: advertCost,
+      paymentReference: ref,
+      paymentMethod: method,
+      paymentStatus: 'paid',
+      startDate: now.toISOString(),
+      endDate: end.toISOString(),
+      createdAt: now.toISOString(),
     };
 
     onAddAdvert(newAd);
@@ -565,7 +593,8 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
         isOpen={showPaystackModal}
         onClose={() => setShowPaystackModal(false)}
         amount={advertCost}
-        applicantEmail="partner@setlla.com"
+        applicantEmail={userEmail}
+        applicantPhone={phone || whatsapp}
         applicantName={advertiserName}
         merchantName="Setlla Advert Sponsorship"
         purposeTitle={`${selectedPlan === 'weekly' ? '7-Day' : '30-Day'} Feed Advert Placement`}
