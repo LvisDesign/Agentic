@@ -29,6 +29,8 @@ import { PropertyListing, BookingRecord, UserProfile } from '../../types/marketp
 import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 import { isElvisSuperAdmin } from '../../services/adminAuthService';
+import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
+import { ensureAdvertiserForUser } from '../../services/advertiserAuthService';
 
 interface UserDashboardProps {
   currentUser: UserProfile;
@@ -63,7 +65,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   onOpenAdsPortal,
   isAuthenticated = true,
 }) => {
-  const [activeTab, setActiveTab] = useState<'passes' | 'inventory' | 'saved'>('passes');
+  const [activeTab, setActiveTab] = useState<'passes' | 'inventory' | 'saved' | 'ads'>('passes');
+  const [adsInitialTab, setAdsInitialTab] = useState<'campaigns' | 'new-campaign'>('campaigns');
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
 
   // Identify platform administrator status
@@ -197,12 +200,19 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           )}
 
           <button
-            onClick={() => onOpenAdsPortal?.()}
+            onClick={() => {
+              if (!isAuthenticated) {
+                onOpenSignup();
+                return;
+              }
+              setAdsInitialTab('new-campaign');
+              setActiveTab('ads');
+            }}
             className="py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50/90 hover:bg-amber-100 text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-            title="Launch Customer Ads & Campaigns"
+            title="Run and manage adverts directly from your Setlla account"
           >
             <Megaphone className="w-3.5 h-3.5 text-amber-700" />
-            <span>Ads Portal</span>
+            <span>Run an Ad</span>
           </button>
 
           <button
@@ -356,6 +366,23 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         >
           <span>Saved / Watchlist ({savedListings.length})</span>
         </button>
+
+        {isAuthenticated && (
+          <button
+            onClick={() => {
+              setAdsInitialTab('campaigns');
+              setActiveTab('ads');
+            }}
+            className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap ${
+              activeTab === 'ads'
+                ? 'border-[#000004] text-[#000004]'
+                : 'border-transparent text-[#70798C] hover:text-[#000004]'
+            }`}
+          >
+            <Megaphone className="w-3.5 h-3.5 text-amber-600" />
+            <span>Promotions & Ads</span>
+          </button>
+        )}
       </div>
 
       {/* 5. TAB CONTENT */}
@@ -807,6 +834,16 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* TAB 4: EMBEDDED PROMOTIONS & ADS MANAGEMENT */}
+      {activeTab === 'ads' && isAuthenticated && (
+        <AdvertiserDashboard
+          advertiser={ensureAdvertiserForUser(currentUser)}
+          embedded
+          initialTab={adsInitialTab}
+          onLogout={() => setActiveTab('passes')}
+        />
       )}
     </div>
   );

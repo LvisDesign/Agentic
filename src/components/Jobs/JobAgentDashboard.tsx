@@ -23,10 +23,13 @@ import {
   CreditCard,
   ChevronRight,
   RotateCcw,
-  Radio
+  Radio,
+  Megaphone
 } from 'lucide-react';
 import { JobListing, JobApplication } from '../../types/jobs';
 import { UserProfile } from '../../types/marketplace';
+import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
+import { ensureAdvertiserForUser } from '../../services/advertiserAuthService';
 import { 
   getEmployerJobs, 
   getSavedApplications, 
@@ -56,7 +59,8 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
   onSwitchToRentals,
   isAuthenticated,
 }) => {
-  const [activeTab, setActiveTab] = useState<'listings' | 'applicants' | 'invoices'>('listings');
+  const [activeTab, setActiveTab] = useState<'listings' | 'applicants' | 'ads' | 'invoices'>('listings');
+  const [adsInitialTab, setAdsInitialTab] = useState<'campaigns' | 'new-campaign'>('campaigns');
   const [jobs, setJobs] = useState<JobListing[]>([]);
   const [applications, setApplications] = useState<JobApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -239,6 +243,18 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
           <div className="flex items-center gap-2.5 flex-wrap">
             <button
               type="button"
+              onClick={() => {
+                setAdsInitialTab('new-campaign');
+                setActiveTab('ads');
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[#342A21] text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer"
+              title="Post and manage adverts directly inside your Hiring Portal"
+            >
+              <Megaphone className="w-4 h-4 text-amber-700" />
+              <span>Post Ad / Promote</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setIsPostJobModalOpen(true)}
               className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs sm:text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95 group"
             >
@@ -345,6 +361,22 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
           >
             <Users className="w-4 h-4" />
             <span>Candidate Applications ({applications.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setAdsInitialTab('campaigns');
+              setActiveTab('ads');
+            }}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl sm:rounded-2xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'ads'
+                ? 'bg-[#000004] text-white shadow-xs'
+                : 'text-[#70798C] hover:text-[#000004] hover:bg-slate-50'
+            }`}
+          >
+            <Megaphone className="w-4 h-4 text-amber-500" />
+            <span>Promotions & Ads</span>
           </button>
 
           <button
@@ -894,6 +926,16 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* TAB 4: EMBEDDED PROMOTIONS & ADS MANAGEMENT */}
+        {activeTab === 'ads' && (
+          <AdvertiserDashboard
+            advertiser={ensureAdvertiserForUser(currentUser)}
+            embedded
+            initialTab={adsInitialTab}
+            onLogout={() => setActiveTab('listings')}
+          />
         )}
       </div>
 

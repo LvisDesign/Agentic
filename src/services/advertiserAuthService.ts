@@ -141,39 +141,128 @@ export async function saveRegisteredAdvertiser(advertiser: AdvertiserUser): Prom
         { onConflict: 'email' }
       );
 
-      // Also ensure unified visibility in central platform_users using verified schema columns
-      await supabase.from('platform_users').upsert(
-        {
-          id: advertiser.id,
-          full_name: advertiser.contactName || advertiser.companyName,
-          phone: advertiser.phone || '',
-          email: advertiser.email.toLowerCase(),
-          agency_name: advertiser.companyName,
-          city: advertiser.operatingCity || 'Asaba',
-          state: 'Delta State',
-          operating_city: advertiser.operatingCity || 'Asaba',
-          operating_state: 'Delta State',
-          is_agent: false,
-          is_admin: false,
-          is_super_admin: false,
-          is_verified_tenant: true,
-          kyc_status: 'verified',
-          kyc_documents: {
-            _meta: {
-              persona: 'advertiser',
-              role: 'advertiser',
-              company_name: advertiser.companyName,
+      // Only upsert standalone 'adv-' accounts into platform_users so existing Agents/Employers/Tenants keep their primary persona
+      if (advertiser.id.startsWith('adv-')) {
+        await supabase.from('platform_users').upsert(
+          {
+            id: advertiser.id,
+            full_name: advertiser.contactName || advertiser.companyName,
+            phone: advertiser.phone || '',
+            email: advertiser.email.toLowerCase(),
+            agency_name: advertiser.companyName,
+            city: advertiser.operatingCity || 'Asaba',
+            state: 'Delta State',
+            operating_city: advertiser.operatingCity || 'Asaba',
+            operating_state: 'Delta State',
+            is_agent: false,
+            is_admin: false,
+            is_super_admin: false,
+            is_verified_tenant: true,
+            kyc_status: 'verified',
+            kyc_documents: {
+              _meta: {
+                persona: 'advertiser',
+                role: 'advertiser',
+                company_name: advertiser.companyName,
+              },
             },
+            created_at: advertiser.createdAt,
+            updated_at: new Date().toISOString(),
           },
-          created_at: advertiser.createdAt,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'id' }
-      );
+          { onConflict: 'id' }
+        );
+      }
     } catch (e) {
       console.warn('[AdvertiserAuth] Supabase sync notice:', e);
     }
   }
+}
+
+/**
+ * Automatically resolves or provisions an AdvertiserUser profile directly from a signed-in
+ * Setlla UserProfile (Agent, Employer, Tenant, or Admin) so users never need a separate
+ * advertiser login to run or manage ads inside their portal.
+ */
+export function ensureAdvertiserForUser(user?: {
+  id?: string;
+  fullName?: string;
+  agencyName?: string;
+  companyName?: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  operatingCity?: string;
+  city?: string;
+  persona?: string;
+  isAgent?: boolean;
+} | null): AdvertiserUser {
+  const email = (user?.email || `${(user?.id || 'user').toLowerCase()}@setlla.com`).trim().toLowerCase();
+  const companyName = (user?.agencyName || user?.companyName || user?.fullName || 'Setlla Partner').trim();
+  const contactName = (user?.fullName || companyName).trim();
+  const phone = (user?.phone || '').trim();
+  const whatsapp = (user?.whatsapp || phone).trim();
+  const operatingCity = (user?.operatingCity || user?.city || 'Asaba').trim();
+  const industry =
+    user?.persona === 'employer'
+      ? 'Corporate & Recruitment'
+      : user?.isAgent
+      ? 'Real Estate & Properties'
+      : 'Local Business & Services';
+
+  const existingList = getRegisteredAdvertisers();
+  const existing = existingList.find(
+    (a) =>
+      (user?.id && a.id === user.id) ||
+      (email && a.email.toLowerCase() === email)
+  );
+
+  const existingKeys = getPartnerApiKeys();
+  let matchedKey = existingKeys.find((k) => k.contactEmail.toLowerCase() === email);
+  if (!matchedKey && typeof window !== 'undefined') {
+    matchedKey = createPartnerApiKey(companyName, email, phone || '08000000000');
+  }
+
+  const resolved: AdvertiserUser = existing
+    ? {
+        ...existing,
+        companyName: companyName || existing.companyName,
+        contactName: contactName || existing.contactName,
+        email: email || existing.email,
+        phone: phone || existing.phone,
+        whatsapp: whatsapp || existing.whatsapp,
+        operatingCity: operatingCity || existing.operatingCity,
+      }
+    : {
+        id: user?.id || `adv-${Date.now()}`,
+        companyName,
+        contactName,
+        email,
+        phone,
+        whatsapp,
+        industry,
+        operatingCity,
+        apiKey: matchedKey?.apiKey || 'stla_live_partner',
+        accountStatus: 'active',
+        totalSpent: 0,
+        walletBalance: 0,
+        transactions: [],
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString(),
+      };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const updatedList = existingList.filter(
+        (a) => a.id !== resolved.id && a.email.toLowerCase() !== resolved.email.toLowerCase()
+      );
+      updatedList.unshift(resolved);
+      localStorage.setItem(ADVERTISERS_REGISTRY_KEY, JSON.stringify(updatedList));
+      localStorage.setItem(ADVERTISER_AUTH_KEY, 'true');
+      localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(resolved));
+    } catch (_) {}
+  }
+
+  return resolved;
 }
 
 /**

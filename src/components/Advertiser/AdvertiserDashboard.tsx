@@ -135,6 +135,8 @@ interface AdvertiserDashboardProps {
   onBackToExplore?: () => void;
   onBackToPortal?: () => void;
   onCampaignCreated?: (ad: AdvertStory) => void;
+  embedded?: boolean;
+  initialTab?: 'campaigns' | 'new-campaign' | 'wallet' | 'api-keys' | 'guide';
 }
 
 export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
@@ -143,9 +145,15 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   onBackToExplore,
   onBackToPortal,
   onCampaignCreated,
+  embedded = false,
+  initialTab = 'campaigns',
 }) => {
   const [currentAdvertiser, setCurrentAdvertiser] = useState<AdvertiserUser>(() => getActiveAdvertiser() || advertiser);
-  const [activeTab, setActiveTab] = useState<'campaigns' | 'new-campaign' | 'wallet' | 'api-keys' | 'guide'>('campaigns');
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'new-campaign' | 'wallet' | 'api-keys' | 'guide'>(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
   const [adverts, setAdverts] = useState<AdvertStory[]>([]);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'queried' | 'declined' | 'expired'>('all');
   const [copiedKey, setCopiedKey] = useState(false);
@@ -529,130 +537,188 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   });
 
   return (
-    <div className="min-h-screen bg-[#FCF9F5] text-[#000004] font-body selection:bg-[#342A21]/10 selection:text-[#342A21]">
-      {/* 1. Header Bar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#342A21]/10">
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            {(onBackToPortal || onBackToExplore) && (
-              <button
-                onClick={onBackToPortal || onBackToExplore}
-                className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0"
-                title="Return to Partner Portal"
-              >
-                <ArrowLeft className="w-4 h-4 text-[#342A21]" />
-                <span className="font-semibold text-xs text-[#342A21]">Partner Portal</span>
-              </button>
-            )}
+    <div className={embedded ? 'text-[#000004] font-body selection:bg-[#342A21]/10 selection:text-[#342A21]' : 'min-h-screen bg-[#FCF9F5] text-[#000004] font-body selection:bg-[#342A21]/10 selection:text-[#342A21]'}>
+      {/* 1. Header Bar (Standalone Mode) or Inline Sub-Nav (Embedded Mode) */}
+      {!embedded ? (
+        <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#342A21]/10">
+          <div className="max-w-6xl mx-auto px-3.5 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              {(onBackToPortal || onBackToExplore) && (
+                <button
+                  onClick={onBackToPortal || onBackToExplore}
+                  className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] transition-colors cursor-pointer flex items-center gap-1.5 text-xs font-semibold shrink-0"
+                  title="Return to Partner Portal"
+                >
+                  <ArrowLeft className="w-4 h-4 text-[#342A21]" />
+                  <span className="font-semibold text-xs text-[#342A21]">Partner Portal</span>
+                </button>
+              )}
 
-            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-              <img src="/images/setlla-logo.png" alt="Setlla" className="h-5 sm:h-5.5 w-auto object-contain shrink-0" />
-              <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-md bg-[#342A21] text-[#FCF9F5] whitespace-nowrap">
-                <span className="hidden sm:inline">Customer Ads </span>Dashboard
-              </span>
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                <img src="/images/setlla-logo.png" alt="Setlla" className="h-5 sm:h-5.5 w-auto object-contain shrink-0" />
+                <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-md bg-[#342A21] text-[#FCF9F5] whitespace-nowrap">
+                  <span className="hidden sm:inline">Customer Ads </span>Dashboard
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <div className="hidden md:flex flex-col text-right">
+                <span className="font-semibold text-xs text-[#342A21] truncate max-w-[200px]">
+                  {currentAdvertiser.companyName}
+                </span>
+                <span className="text-[10px] text-[#70798C]">{currentAdvertiser.contactName}</span>
+              </div>
+
+              <button
+                onClick={onLogout}
+                className="py-1.5 px-2.5 sm:px-3 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F6F3EF] text-xs font-semibold text-[#70798C] hover:text-rose-700 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+                title="Sign out of advertiser account"
+              >
+                <LogOut className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="hidden md:flex flex-col text-right">
-              <span className="font-semibold text-xs text-[#342A21] truncate max-w-[200px]">
-                {currentAdvertiser.companyName}
-              </span>
-              <span className="text-[10px] text-[#70798C]">{currentAdvertiser.contactName}</span>
+          {/* Sub-Nav Tabs Bar */}
+          <div className="border-t border-[#342A21]/5 bg-[#FCF9F5] px-3 sm:px-6 py-2">
+            <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar scroll-smooth">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => setActiveTab('campaigns')}
+                  className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                    activeTab === 'campaigns'
+                      ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
+                  }`}
+                >
+                  My Campaigns ({adverts.length})
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('new-campaign')}
+                  className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                    activeTab === 'new-campaign'
+                      ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
+                  }`}
+                >
+                  <Plus className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>Create Campaign</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('wallet')}
+                  className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                    activeTab === 'wallet'
+                      ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
+                  }`}
+                >
+                  <Wallet className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>Credits Wallet (₦{(currentAdvertiser.walletBalance || 0).toLocaleString()})</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('api-keys')}
+                  className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                    activeTab === 'api-keys'
+                      ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
+                  }`}
+                >
+                  <KeyRound className="w-3.5 h-3.5 shrink-0" />
+                  <span>API Credentials</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('guide')}
+                  className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                    activeTab === 'guide'
+                      ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                      : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-[#B45309] shrink-0" />
+                  <span>Ads Setup Guide</span>
+                </button>
+              </div>
             </div>
+          </div>
+        </header>
+      ) : (
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] p-2 mb-6 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar shadow-2xs">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab('campaigns')}
+              className={`py-2 px-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                activeTab === 'campaigns'
+                  ? 'bg-[#000004] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#000004] hover:bg-[#FAF8F5]'
+              }`}
+            >
+              My Ad Campaigns ({adverts.length})
+            </button>
 
             <button
-              onClick={onLogout}
-              className="py-1.5 px-2.5 sm:px-3 rounded-xl border border-[#E5E7EB] bg-white hover:bg-[#F6F3EF] text-xs font-semibold text-[#70798C] hover:text-rose-700 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
-              title="Sign out of advertiser account"
+              type="button"
+              onClick={() => setActiveTab('new-campaign')}
+              className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                activeTab === 'new-campaign'
+                  ? 'bg-[#000004] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#000004] hover:bg-[#FAF8F5]'
+              }`}
             >
-              <LogOut className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Sign Out</span>
+              <Plus className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>Post New Ad</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('wallet')}
+              className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                activeTab === 'wallet'
+                  ? 'bg-[#000004] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#000004] hover:bg-[#FAF8F5]'
+              }`}
+            >
+              <Wallet className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>Ad Wallet (₦{(currentAdvertiser.walletBalance || 0).toLocaleString()})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('api-keys')}
+              className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                activeTab === 'api-keys'
+                  ? 'bg-[#000004] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#000004] hover:bg-[#FAF8F5]'
+              }`}
+            >
+              <KeyRound className="w-3.5 h-3.5 shrink-0" />
+              <span>API Keys</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('guide')}
+              className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
+                activeTab === 'guide'
+                  ? 'bg-[#000004] text-white shadow-xs'
+                  : 'text-[#70798C] hover:text-[#000004] hover:bg-[#FAF8F5]'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#B45309] shrink-0" />
+              <span>Ads Guide</span>
             </button>
           </div>
         </div>
-
-        {/* Sub-Nav Tabs Bar */}
-        <div className="border-t border-[#342A21]/5 bg-[#FCF9F5] px-3 sm:px-6 py-2">
-          <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 overflow-x-auto no-scrollbar scroll-smooth">
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => setActiveTab('campaigns')}
-                className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                  activeTab === 'campaigns'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
-                }`}
-              >
-                My Campaigns ({adverts.length})
-              </button>
-
-              <button
-                onClick={() => setActiveTab('new-campaign')}
-                className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                  activeTab === 'new-campaign'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
-                }`}
-              >
-                <Plus className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>Create Campaign</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('wallet')}
-                className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                  activeTab === 'wallet'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
-                }`}
-              >
-                <Wallet className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span>Credits Wallet (₦{(currentAdvertiser.walletBalance || 0).toLocaleString()})</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('api-keys')}
-                className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                  activeTab === 'api-keys'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
-                }`}
-              >
-                <KeyRound className="w-3.5 h-3.5 shrink-0" />
-                <span>API Credentials</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('guide')}
-                className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                  activeTab === 'guide'
-                    ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                    : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5 text-[#B45309] shrink-0" />
-                <span>Ads Setup Guide</span>
-              </button>
-            </div>
-
-            <a
-              href={`https://wa.me/2348000000000?text=${encodeURIComponent(
-                `Hello Setlla Team, I am logged in as advertiser "${currentAdvertiser.companyName}". I need assistance with my ad campaign.`
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden md:flex items-center gap-1.5 text-xs text-[#342A21] font-semibold hover:underline shrink-0"
-            >
-              <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600" />
-              <span>WhatsApp Ad Desk</span>
-            </a>
-          </div>
-        </div>
-      </header>
+      )}
 
       {/* 2. Main Content Body */}
-      <main className="max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <main className={embedded ? 'space-y-6' : 'max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8'}>
         {/* Top Banner Overview */}
         <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-[#342A21]/15 shadow-subtle flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
           <div>

@@ -50,7 +50,7 @@ import { CustomConfirmModal } from '../UI/CustomConfirmModal';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { getAdPricing, fetchPlatformSettingsAsync } from '../../services/adminService';
 import { formatNaira } from '../../utils/formatters';
-import { AdvertiserUser, getActiveAdvertiser, logoutAdvertiser } from '../../services/advertiserAuthService';
+import { AdvertiserUser, getActiveAdvertiser, logoutAdvertiser, ensureAdvertiserForUser } from '../../services/advertiserAuthService';
 import { isSuperAdminAuthenticated } from '../../services/adminAuthService';
 import { AdvertiserAuthModal } from '../Advertiser/AdvertiserAuthModal';
 import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
@@ -70,7 +70,18 @@ export const PartnerPortalPage: React.FC<PartnerPortalPageProps> = ({
   currentUser,
 }) => {
   const [activeTab, setActiveTab] = useState<'packages' | 'placements' | 'api' | 'guide'>('packages');
-  const [activeAdvertiser, setActiveAdvertiser] = useState<AdvertiserUser | null>(() => getActiveAdvertiser());
+  const [activeAdvertiser, setActiveAdvertiser] = useState<AdvertiserUser | null>(() => {
+    if (currentUser && currentUser.id && currentUser.id !== 'GUEST_USER' && currentUser.id !== 'DT-USR-GUEST') {
+      return ensureAdvertiserForUser(currentUser);
+    }
+    return getActiveAdvertiser();
+  });
+
+  useEffect(() => {
+    if (currentUser && currentUser.id && currentUser.id !== 'GUEST_USER' && currentUser.id !== 'DT-USR-GUEST') {
+      setActiveAdvertiser(ensureAdvertiserForUser(currentUser));
+    }
+  }, [currentUser]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalInitialMode, setAuthModalInitialMode] = useState<'login' | 'signup'>('login');
   const [viewMode, setViewMode] = useState<'landing' | 'advertiser-dashboard'>(() => {

@@ -29,6 +29,8 @@ import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 import { syncLocalListingsToCloud } from '../../services/listingService';
 import { isSupabaseConfigured } from '../../utils/supabaseClient';
 import { getListingLifecycleInfo } from '../../utils/listingLifecycle';
+import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
+import { ensureAdvertiserForUser } from '../../services/advertiserAuthService';
 
 interface AgentDashboardProps {
   currentUser?: UserProfile;
@@ -65,7 +67,8 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);
   const [listingToDelete, setListingToDelete] = useState<PropertyListing | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'requests' | 'listings'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'listings' | 'ads'>('requests');
+  const [adsInitialTab, setAdsInitialTab] = useState<'campaigns' | 'new-campaign'>('campaigns');
   const [dashboardToast, setDashboardToast] = useState<string | null>(null);
 
   // Automatically sync local listings to cloud database on mount
@@ -204,16 +207,17 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]">
-          {onOpenAdsPortal && (
-            <button
-              onClick={onOpenAdsPortal}
-              className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-              title="Open Customer Ads Dashboard to promote listings & reach more tenants"
-            >
-              <Megaphone className="w-3.5 h-3.5 text-amber-700" />
-              <span>Ads Portal</span>
-            </button>
-          )}
+          <button
+            onClick={() => {
+              setAdsInitialTab('new-campaign');
+              setActiveTab('ads');
+            }}
+            className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            title="Post and manage adverts directly inside your Agent Portal"
+          >
+            <Megaphone className="w-3.5 h-3.5 text-amber-700" />
+            <span>Post Ad / Promote</span>
+          </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer"
@@ -306,6 +310,21 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           }`}
         >
           <span>My Properties ({agentListings.length})</span>
+        </button>
+
+        <button
+          onClick={() => {
+            setAdsInitialTab('campaigns');
+            setActiveTab('ads');
+          }}
+          className={`pb-3 text-xs font-bold border-b-2 flex items-center gap-1.5 transition-colors shrink-0 whitespace-nowrap cursor-pointer ${
+            activeTab === 'ads'
+              ? 'border-[#000004] text-[#000004]'
+              : 'border-transparent text-[#70798C] hover:text-[#000004]'
+          }`}
+        >
+          <Megaphone className="w-3.5 h-3.5 text-amber-600" />
+          <span>Promotions & Ads</span>
         </button>
       </div>
 
@@ -810,6 +829,16 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             </div>
           )}
         </div>
+      )}
+
+      {/* TAB 3: EMBEDDED PROMOTIONS & ADS MANAGEMENT */}
+      {activeTab === 'ads' && (
+        <AdvertiserDashboard
+          advertiser={ensureAdvertiserForUser(currentUser || agentProfile)}
+          embedded
+          initialTab={adsInitialTab}
+          onLogout={() => setActiveTab('requests')}
+        />
       )}
 
       {/* Create or Edit Listing Modal */}
