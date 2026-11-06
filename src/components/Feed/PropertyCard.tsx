@@ -226,7 +226,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <div className="space-y-2">
             {/* Large Pricing & Title */}
             <div>
-              <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center justify-between gap-x-2 gap-y-2 flex-wrap pb-1">
                 <div className="flex items-baseline gap-1.5">
                   <span className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-[#000004] tracking-tight">
                     {formatNaira(listing.fees.baseRent)}
@@ -236,27 +236,27 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[#70798C] text-[10px] flex items-center gap-1 font-medium bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#70798C] text-[10px] flex items-center gap-1 font-medium bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
                     <Lock className="w-2.5 h-2.5 text-[#70798C]" />
                     <span className="hidden sm:inline">Contact Protected (Reveals on Confirmation)</span>
                     <span className="sm:hidden">Contact Protected</span>
                   </span>
 
-                  {/* [Fees] Trigger Button */}
+                  {/* Total Package Breakdown Trigger Button */}
                   <button
                     type="button"
                     onClick={() => setShowFeeDrawer(true)}
-                    className="px-2.5 py-1 rounded-[8px] bg-[#342A21]/10 hover:bg-[#342A21]/20 text-[#342A21] text-xs font-bold transition-colors cursor-pointer border border-[#342A21]/25 active:scale-95 flex items-center gap-1 shadow-2xs"
-                    title="View move-in fee breakdown"
+                    className="px-2.5 py-1 rounded-[8px] bg-[#342A21]/10 hover:bg-[#342A21]/20 text-[#342A21] text-xs font-bold transition-colors cursor-pointer border border-[#342A21]/25 active:scale-95 flex items-center gap-1.5 shadow-2xs"
+                    title="View total package & rent breakdown"
                   >
                     <ReceiptText className="w-3.5 h-3.5" />
-                    <span>[Fees]</span>
+                    <span>Total Package</span>
                   </button>
                 </div>
               </div>
 
-              <h2 className="font-display text-sm sm:text-base font-bold text-[#000004] mt-0.5 line-clamp-2 break-words leading-snug">
+              <h2 className="font-display text-sm sm:text-base font-bold text-[#000004] mt-2.5 sm:mt-3 line-clamp-2 break-words leading-snug">
                 {listing.title}
               </h2>
               <div className="flex items-center gap-1 text-[11px] sm:text-xs text-[#70798C] font-medium mt-1">
@@ -372,7 +372,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                       <ReceiptText className="w-3 h-3" />
                     </div>
                     <span className="text-[#000004] text-[11px] sm:text-xs">
-                      Total Move-in Package:{' '}
+                      Total Package:{' '}
                       <strong className="text-[#000004] font-display text-xs sm:text-sm">
                         {formatNaira(listing.fees.totalMoveInPackage)}
                       </strong>

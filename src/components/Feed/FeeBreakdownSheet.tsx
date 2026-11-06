@@ -68,7 +68,7 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
         <div className="px-5 pt-3 sm:pt-5 pb-3 border-b border-[rgba(112,121,140,0.15)] flex items-start justify-between gap-3 bg-[#FCF9F5]">
           <div className="min-w-0 flex-1">
             <h3 className="font-display text-lg sm:text-xl font-bold text-[#000004] leading-tight">
-              Total Move-in Breakdown
+              Total Package Breakdown
             </h3>
             <p className="text-xs text-[#70798C] truncate mt-0.5" title={title}>
               {title}
@@ -201,7 +201,7 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
           <div className="p-4 rounded-[12px] bg-[#FCF9F5] border border-[#342A21]/20 flex items-center justify-between">
             <div>
               <span className="text-xs uppercase tracking-wider font-bold text-[#70798C] block">
-                Total Move-in Package
+                Total Package
               </span>
               <span className="text-xs text-[#70798C] mt-0.5 block">
                 Total required to secure the keys.
