@@ -850,17 +850,6 @@ export function saveRegisteredUser(
         .catch((err: any) => {
           console.warn('[UserRegistry] Network error syncing user to DB:', err);
         });
-
-      // Synchronize to Supabase `profiles` table (profiles.role)
-      const resolvedRole = user.persona || (user.isAgent ? 'lister' : 'tenant');
-      Promise.resolve(client.from('profiles').upsert({
-        id: user.id,
-        role: resolvedRole,
-        full_name: user.fullName,
-        phone: user.phone,
-        email: user.email || null,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' })).catch(() => {});
     }
   }
 }

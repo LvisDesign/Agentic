@@ -141,21 +141,32 @@ export async function saveRegisteredAdvertiser(advertiser: AdvertiserUser): Prom
         { onConflict: 'email' }
       );
 
-      // Also ensure unified visibility in central platform_users
+      // Also ensure unified visibility in central platform_users using verified schema columns
       await supabase.from('platform_users').upsert(
         {
           id: advertiser.id,
           full_name: advertiser.contactName || advertiser.companyName,
-          phone: advertiser.phone,
+          phone: advertiser.phone || '',
           email: advertiser.email.toLowerCase(),
-          persona: 'advertiser',
           agency_name: advertiser.companyName,
           city: advertiser.operatingCity || 'Asaba',
           state: 'Delta State',
+          operating_city: advertiser.operatingCity || 'Asaba',
+          operating_state: 'Delta State',
           is_agent: false,
           is_admin: false,
-          is_email_verified: true,
+          is_super_admin: false,
+          is_verified_tenant: true,
+          kyc_status: 'verified',
+          kyc_documents: {
+            _meta: {
+              persona: 'advertiser',
+              role: 'advertiser',
+              company_name: advertiser.companyName,
+            },
+          },
           created_at: advertiser.createdAt,
+          updated_at: new Date().toISOString(),
         },
         { onConflict: 'id' }
       );
