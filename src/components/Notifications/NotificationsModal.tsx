@@ -210,7 +210,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 flex-1">
           {/* Temporary Feedback Notification Toast */}
           {feedbackToast && (
-            <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2 shadow-xs animate-fade-in">
+            <div className="p-3 rounded-2xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] text-xs font-bold flex items-center gap-2 shadow-xs animate-fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{feedbackToast}</span>
             </div>

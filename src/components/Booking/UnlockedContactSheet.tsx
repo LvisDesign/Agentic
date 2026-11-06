@@ -110,10 +110,10 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
         {/* Scrollable Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-4 no-scrollbar">
           {/* Confirmed Slot Summary Card */}
-          <div className="p-4 rounded-[12px] bg-gradient-to-br from-emerald-50 via-[#FCF9F5] to-amber-50/40 border border-emerald-200/80 shadow-2xs">
+          <div className="p-4 rounded-[12px] bg-[#FAF8F5] border border-[#E5E7EB] shadow-2xs">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-[8px] bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-[8px] bg-[#342A21] text-white flex items-center justify-center shrink-0">
                   <Calendar className="w-4 h-4" />
                 </div>
                 <div>
@@ -125,7 +125,7 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
               </div>
 
               {/* Slot Badge */}
-              <span className="px-2.5 py-1 rounded-[8px] bg-emerald-600 text-white text-xs font-bold shadow-2xs">
+              <span className="px-2.5 py-1 rounded-[8px] bg-[#342A21] text-white text-xs font-bold shadow-2xs">
                 Confirmed for {startTime}
               </span>
             </div>

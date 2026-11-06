@@ -178,7 +178,7 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
           {/* STATE 1: UNLOCKED FREE INSPECTION PASS */}
           {activeBooking && (activeBooking.status === 'CONFIRMED_UNLOCKED' || activeBooking.status === 'ACCEPTED_PENDING_PAYMENT') && (
             <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center gap-2">
+              <div className="p-3 rounded-lg bg-[#FAF8F5] border border-[#E5E7EB] text-xs text-[#342A21] font-medium flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>Your free physical inspection pass is active and confirmed!</span>
               </div>

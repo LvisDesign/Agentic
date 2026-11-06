@@ -235,7 +235,7 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
 
         {/* Success Banner */}
         {successToast && (
-          <div className="p-4 bg-emerald-50 border-b border-emerald-200 text-emerald-800 text-xs sm:text-sm font-bold flex items-center gap-2 animate-in slide-in-from-top">
+          <div className="p-4 bg-[#FAF8F5] border-b border-[#E5E7EB] text-[#342A21] text-xs sm:text-sm font-bold flex items-center gap-2 animate-in slide-in-from-top">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>{successToast}</span>
           </div>
@@ -332,7 +332,7 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
 
             {/* If user has saved CV and is choosing to use it */}
             {isUsingSavedCV && savedCV ? (
-              <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between gap-3">
+              <div className="p-3.5 rounded-2xl bg-[#FAF8F5] border border-[#E5E7EB] flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
                     <FileText className="w-4 h-4" />
@@ -353,7 +353,7 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
                     setIsUsingSavedCV(false);
                     fileInputRef.current?.click();
                   }}
-                  className="py-1 px-2.5 rounded-lg bg-white border border-emerald-300 text-emerald-900 text-xs font-bold hover:bg-emerald-100/60 transition-colors cursor-pointer shrink-0"
+                  className="py-1 px-2.5 rounded-lg bg-white border border-[#E5E7EB] text-[#000004] text-xs font-bold hover:bg-[#F0ECE1] transition-colors cursor-pointer shrink-0"
                 >
                   Replace
                 </button>

@@ -521,12 +521,12 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                     {acceptedOrPaid.map((b) => (
                       <div
                         key={b.id}
-                        className="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs overflow-hidden"
+                        className="p-3.5 rounded-xl border border-[#E5E7EB] bg-[#FAF8F5] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs overflow-hidden"
                       >
                         <div className="space-y-1 flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-bold text-[#000004] line-clamp-1 break-words">{b.applicantName}</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-600 text-white shrink-0">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#342A21] text-white shrink-0">
                               CONFIRMED
                             </span>
                           </div>
@@ -535,7 +535,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                           </div>
                         </div>
 
-                        <div className="text-left sm:text-right shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-emerald-200/60">
+                        <div className="text-left sm:text-right shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-[#E5E7EB]">
                           <div className="font-display text-sm font-bold text-emerald-600">
                             CONFIRMED
                           </div>

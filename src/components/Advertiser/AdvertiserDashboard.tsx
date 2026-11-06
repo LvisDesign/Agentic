@@ -1265,7 +1265,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                           </span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium shadow-2xs">
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] text-xs font-medium shadow-2xs">
                           <Wallet className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <span>Wallet: <strong className="text-emerald-950 font-mono">₦{walletBalance.toLocaleString()}</strong></span>
                           <span className="text-[10px] text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded-full font-bold">
@@ -2207,7 +2207,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   ? 'bg-rose-50 border border-rose-200 text-rose-800'
                   : editStatusMessage.type === 'warning'
                   ? 'bg-amber-50 border border-amber-200 text-amber-900'
-                  : 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+                  : 'bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21]'
               }`}>
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{editStatusMessage.text}</span>

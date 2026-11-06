@@ -390,7 +390,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       {activeTab === 'passes' && (
         <div className="space-y-6">
           {/* Confirmed Passes Section */}
-          <div className="bg-white rounded-2xl border border-emerald-200 p-3.5 sm:p-5 shadow-xs">
+          <div className="bg-white rounded-2xl border border-[#E5E7EB] p-3.5 sm:p-5 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
               <div className="min-w-0 flex-1">
                 <h3 className="font-display text-base font-bold text-[#000004] flex items-center gap-2">
@@ -431,11 +431,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   return (
                     <div
                       key={b.id}
-                      className="p-3.5 sm:p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5 overflow-hidden"
+                      className="p-3.5 sm:p-4 rounded-xl border border-[#E5E7EB] bg-[#FAF8F5] flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3.5 overflow-hidden"
                     >
                       <div className="space-y-1.5 flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white shrink-0">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#342A21] text-white shrink-0">
                             CONFIRMED & UNLOCKED
                           </span>
                           <span className="text-[10px] font-mono text-[#70798C] shrink-0">
@@ -464,7 +464,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-emerald-100">
+                      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-[#E5E7EB]">
                         <a
                           href={`tel:${rawPhone.replace(/[^0-9+]/g, '')}`}
                           className="w-full sm:w-auto py-2.5 px-3 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap min-w-0"
@@ -478,7 +478,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                           href={`https://wa.me/${property.agent.whatsapp}?text=Hello%20${encodeURIComponent(property.agent.fullName)},%20I%20have%20a%20confirmed%20inspection%20pass%20(${b.id})%20for%20${encodeURIComponent(property.title)}.`}
                           target="_blank"
                           rel="noreferrer"
-                          className="w-full sm:w-auto py-2.5 px-3 rounded-lg border border-emerald-300 bg-white hover:bg-emerald-50 text-xs font-semibold text-emerald-800 transition-colors flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap min-w-0"
+                          className="w-full sm:w-auto py-2.5 px-3 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#F0ECE1] text-xs font-semibold text-[#000004] transition-colors flex items-center justify-center gap-1.5 shadow-xs whitespace-nowrap min-w-0"
                         >
                           <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <span className="truncate">WhatsApp</span>

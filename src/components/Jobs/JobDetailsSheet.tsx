@@ -96,7 +96,7 @@ export const JobDetailsSheet: React.FC<JobDetailsSheetProps> = ({
                 <span>{job.roleType}</span>
               </span>
 
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold flex items-center gap-1.5">
+              <span className="px-2.5 py-1 rounded-lg bg-[#FAF8F5] border border-[#E5E7EB] text-[#000004] font-bold flex items-center gap-1.5">
                 <Banknote className="w-3.5 h-3.5 text-emerald-600" />
                 <span>{job.salaryRange}</span>
               </span>
@@ -157,7 +157,7 @@ export const JobDetailsSheet: React.FC<JobDetailsSheetProps> = ({
               <ul className="space-y-2.5">
                 {job.requirements.map((req, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-[#70798C] leading-relaxed">
-                    <span className="w-4 h-4 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5 border border-emerald-200">
+                    <span className="w-4 h-4 rounded-full bg-[#FAF8F5] text-[#342A21] flex items-center justify-center shrink-0 mt-0.5 border border-[#E5E7EB]">
                       <Check className="w-2.5 h-2.5" />
                     </span>
                     <span>{req}</span>
@@ -211,7 +211,7 @@ export const JobDetailsSheet: React.FC<JobDetailsSheetProps> = ({
             </button>
 
             {hasApplied ? (
-              <div className="flex-1 sm:flex-initial py-2.5 px-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-center gap-2 shadow-2xs">
+              <div className="flex-1 sm:flex-initial py-2.5 px-5 rounded-xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] text-xs font-bold flex items-center justify-center gap-2 shadow-2xs">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Application Submitted ✓</span>
               </div>

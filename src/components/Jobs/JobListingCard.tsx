@@ -152,8 +152,8 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
           </span>
 
           {/* Compensation Range */}
-          <span className="px-2.5 py-1 rounded-lg bg-emerald-50/80 border border-emerald-200 text-emerald-800 font-bold flex items-center gap-1">
-            <Banknote className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="px-2.5 py-1 rounded-lg bg-[#FAF8F5] border border-[#E5E7EB] text-[#000004] font-bold flex items-center gap-1">
+            <Banknote className="w-3.5 h-3.5 text-[#342A21]" />
             <span>{job.salaryRange}</span>
           </span>
 
@@ -187,9 +187,9 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
         </button>
 
         {hasApplied ? (
-          <div className="py-2 sm:py-2.5 px-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Application Submitted ✓</span>
+          <div className="py-2 sm:py-2.5 px-4 rounded-xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+            <CheckCircle2 className="w-4 h-4 text-[#342A21] shrink-0" />
+            <span>Application Submitted</span>
           </div>
         ) : (
           <button

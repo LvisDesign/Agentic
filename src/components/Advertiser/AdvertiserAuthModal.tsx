@@ -480,7 +480,7 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
             )}
 
             {successNotice && (
-              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium flex items-center gap-2">
+              <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] text-xs font-medium flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>{successNotice}</span>
               </div>

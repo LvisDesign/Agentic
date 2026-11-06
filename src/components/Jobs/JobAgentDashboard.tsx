@@ -315,11 +315,11 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
           <div className="bg-white rounded-2xl sm:rounded-3xl border border-[#E5E7EB] p-4 sm:p-5 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-[#70798C]">
               <span className="text-xs font-bold uppercase tracking-wider">Shortlisted</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] flex items-center justify-center">
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-emerald-700">
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#000004]">
               {shortlistedCount}
             </div>
             <p className="text-[11px] text-[#70798C]">
@@ -465,149 +465,156 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                   const jobApps = applications.filter((a) => a.jobId === job.id);
                   const isClosed = job.status === 'closed';
                   const lifecycle = getListingLifecycleInfo(job);
+                  const isRawOrganicRef =
+                    !job.paymentReference || job.paymentReference === 'FREE_ORGANIC_POST';
 
                   return (
                     <div
                       key={job.id}
-                      className={`bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-3 ${
+                      className={`bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-3.5 ${
                         lifecycle.stage === 'expired'
-                          ? 'border-rose-300 ring-1 ring-rose-200 bg-rose-50/10'
+                          ? 'border-rose-300'
                           : lifecycle.stage === 'needs_confirmation'
-                          ? 'border-amber-300 ring-1 ring-amber-200 bg-amber-50/10'
+                          ? 'border-amber-300'
                           : 'border-[#E5E7EB]'
                       }`}
                     >
-                      {/* Top Row: Title, Company, Status Badge */}
+                      {/* Top Row: Avatar, Full Role Title, Company + Location, and Compact Status Badge */}
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 min-w-0">
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#000004] text-white flex items-center justify-center font-bold text-sm sm:text-base shrink-0 shadow-xs">
+                        <div className="flex items-start gap-3 min-w-0 flex-1">
+                          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#000004] text-white flex items-center justify-center font-display font-bold text-sm sm:text-base shrink-0 shadow-2xs">
                             {job.companyInitial || 'SJ'}
                           </div>
 
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="font-display font-bold text-sm sm:text-base text-[#000004] truncate">
+                              <h3 className="font-display font-bold text-base sm:text-lg text-[#000004] leading-snug break-words">
                                 {job.title}
                               </h3>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-[#000004] border border-[#E5E7EB]">
-                                {job.roleType}
-                              </span>
                               {lifecycle.stage === 'expired' && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
                                   Delisted (72h)
                                 </span>
                               )}
                               {lifecycle.stage === 'needs_confirmation' && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
-                                  Needs Check ({Math.ceil(lifecycle.hoursUntilDelist)}h left)
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  Check Required ({Math.ceil(lifecycle.hoursUntilDelist)}h left)
                                 </span>
                               )}
                             </div>
 
-                            <p className="text-xs text-[#70798C] mt-0.5 flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-[#000004]">{job.companyName}</span>
-                              <span>&bull;</span>
-                              <span className="flex items-center gap-0.5">
-                                <MapPin className="w-3 h-3 text-[#342A21]" />
+                            <div className="text-xs text-[#70798C] mt-1 flex items-center gap-1.5 flex-wrap">
+                              <span className="font-semibold text-[#342A21]">{job.companyName}</span>
+                              <span className="text-[#D1D5DB]">&bull;</span>
+                              <span className="inline-flex items-center gap-1 text-[#70798C] whitespace-nowrap">
+                                <MapPin className="w-3 h-3 text-[#70798C] shrink-0" />
                                 <span>{job.city} ({job.workplaceType})</span>
                               </span>
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Status & Listing Settlement Lockup */}
-                        <div className="shrink-0 flex items-center justify-end">
-                          <div className="inline-flex items-center rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] p-1 shadow-2xs">
-                            {/* Operational Status */}
-                            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                              isClosed 
-                                ? 'bg-slate-100 text-[#70798C]' 
-                                : 'bg-white text-[#000004] shadow-2xs'
-                            }`}>
-                              {isClosed ? (
-                                <Clock className="w-3.5 h-3.5 text-[#70798C]" />
-                              ) : (
-                                <Radio className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                              )}
-                              <span>{isClosed ? 'Closed' : 'Published'}</span>
                             </div>
-
-                            {/* Verification & Fee Status */}
-                            {job.isFeatured ? (
-                              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold text-amber-900 bg-amber-100/70 rounded-lg border border-amber-200">
-                                <span>Sponsored</span>
-                                <span className="text-[10px] opacity-75 font-mono">(₦2,000)</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-[#70798C]">
-                                <ReceiptText className="w-3.5 h-3.5 text-[#70798C]" />
-                                <span className="font-mono text-[#000004] font-semibold">₦0</span>
-                                <span className="text-[10px] text-[#70798C] hidden sm:inline">Organic Free</span>
-                              </div>
-                            )}
                           </div>
                         </div>
+
+                        {/* Compact Editorial Status Pill */}
+                        <div className="shrink-0">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
+                              isClosed
+                                ? 'bg-[#F4F5F7] text-[#70798C] border-[#E5E7EB]'
+                                : 'bg-[#FAF8F5] text-[#000004] border-[#E5E7EB]'
+                            }`}
+                          >
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                isClosed ? 'bg-[#70798C]' : 'bg-[#000004]'
+                              }`}
+                            />
+                            <span>{isClosed ? 'Closed' : 'Published'}</span>
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Middle Row: Salary, Summary */}
-                      <div className="bg-[#FCF9F5] rounded-xl p-3 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 border border-[#E5E7EB]">
-                        <div>
-                          <span className="text-[#70798C]">Compensation: </span>
-                          <span className="font-bold text-[#000004]">{job.salaryRange}</span>
+                      {/* Middle Row: Role Type, Compensation & Plan Details */}
+                      <div className="bg-[#FAF8F5] rounded-xl px-3.5 py-2.5 text-xs flex flex-wrap items-center justify-between gap-2 border border-[#E5E7EB]">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-md bg-white border border-[#E5E7EB] text-[#342A21] text-[11px] font-semibold">
+                            {job.roleType}
+                          </span>
+                          <div>
+                            <span className="text-[#70798C]">Pay: </span>
+                            <span className="font-bold text-[#000004]">{job.salaryRange}</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-[#70798C]">Reference: </span>
-                          <span className="font-mono text-[11px] font-bold text-[#342A21]">{job.paymentReference || (job.isFeatured ? `SET-JOB-${job.id.slice(-6)}` : 'FREE_ORGANIC_POST')}</span>
+
+                        <div className="flex items-center gap-1.5 text-[11px]">
+                          {job.isFeatured ? (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-900 font-semibold">
+                              Sponsored &bull; {job.paymentReference || `SET-JOB-${job.id.slice(-6)}`}
+                            </span>
+                          ) : (
+                            <span className="text-[#70798C] font-medium">
+                              {isRawOrganicRef ? 'Standard Listing (Free)' : `Ref: ${job.paymentReference}`}
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      {/* 48-Hour Availability Check & 72-Hour Lifecycle Engine */}
-                      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] p-2.5 rounded-xl border transition-colors ${
-                        lifecycle.stage === 'expired'
-                          ? 'bg-rose-50 border-rose-200 text-rose-900'
-                          : lifecycle.stage === 'needs_confirmation'
-                          ? 'bg-amber-50 border-amber-200 text-amber-900'
-                          : lifecycle.stage === 'taken_grace'
-                          ? 'bg-slate-50 border-slate-200 text-slate-800'
-                          : 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
-                      }`}>
-                        {lifecycle.stage === 'expired' ? (
-                          <span className="font-semibold flex items-center gap-1 text-rose-800">
-                            <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                            Delisted from public job seekers feed (72h expired without confirmation)
-                          </span>
-                        ) : lifecycle.stage === 'needs_confirmation' ? (
-                          <span className="font-semibold flex items-center gap-1 text-amber-800">
-                            <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0 animate-spin-slow" />
-                            48h Check: Is this role still open? ({Math.ceil(lifecycle.hoursUntilDelist)}h until auto-delist)
-                          </span>
-                        ) : lifecycle.stage === 'taken_grace' ? (
-                          <span className="font-medium flex items-center gap-1 text-slate-700">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                            Closed role ({Math.ceil(lifecycle.hoursUntilTakenCleanup || 24)}h display left before auto-delete)
-                          </span>
-                        ) : (
-                          <span className="font-medium flex items-center gap-1 text-emerald-800">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                            Live on Setlla Jobs ({Math.ceil(48 - lifecycle.hoursSinceConfirmed)}h until availability check)
-                          </span>
-                        )}
+                      {/* 48-Hour Availability Check & 72-Hour Lifecycle Bar (Editorial Warm Neutral) */}
+                      <div
+                        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs px-3.5 py-2.5 rounded-xl border transition-colors ${
+                          lifecycle.stage === 'expired'
+                            ? 'bg-rose-50/70 border-rose-200 text-rose-900'
+                            : lifecycle.stage === 'needs_confirmation'
+                            ? 'bg-amber-50/70 border-amber-200 text-amber-900'
+                            : 'bg-[#FAF8F5] border-[#E5E7EB] text-[#342A21]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {lifecycle.stage === 'expired' ? (
+                            <>
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                              <span className="font-semibold text-rose-800 text-[11px]">
+                                Delisted from public job feed (72h unconfirmed)
+                              </span>
+                            </>
+                          ) : lifecycle.stage === 'needs_confirmation' ? (
+                            <>
+                              <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                              <span className="font-semibold text-amber-900 text-[11px]">
+                                48h Check: Is this role still open? ({Math.ceil(lifecycle.hoursUntilDelist)}h left)
+                              </span>
+                            </>
+                          ) : lifecycle.stage === 'taken_grace' ? (
+                            <>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#70798C] shrink-0" />
+                              <span className="font-medium text-[#70798C] text-[11px]">
+                                Closed role ({Math.ceil(lifecycle.hoursUntilTakenCleanup || 24)}h display left)
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#342A21] shrink-0" />
+                              <span className="font-medium text-[#342A21] text-[11px]">
+                                Active on Setlla Jobs &bull; Next check in {Math.ceil(48 - lifecycle.hoursSinceConfirmed)}h
+                              </span>
+                            </>
+                          )}
+                        </div>
 
                         <button
                           type="button"
                           onClick={() => handleConfirmFreshness(job)}
-                          className={`w-full sm:w-auto text-center px-3 py-1.5 sm:py-1 rounded-lg font-bold text-[10px] transition-all cursor-pointer shadow-2xs whitespace-nowrap active:scale-95 ${
+                          className={`w-full sm:w-auto text-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer whitespace-nowrap active:scale-95 shrink-0 ${
                             lifecycle.stage === 'expired'
-                              ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-2xs'
                               : lifecycle.stage === 'needs_confirmation'
-                              ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                              : 'bg-[#000004] hover:bg-[#1f2937] text-white'
+                              ? 'bg-[#000004] hover:bg-[#1f2937] text-white shadow-2xs'
+                              : 'bg-white hover:bg-[#F0ECE1] text-[#000004] border border-[#E5E7EB] shadow-2xs'
                           }`}
                         >
                           {lifecycle.stage === 'expired'
-                            ? 'Relist & Renew (1-Tap)'
+                            ? 'Relist & Renew'
                             : lifecycle.stage === 'needs_confirmation'
-                            ? '✓ Yes, Still Open'
+                            ? 'Yes, Still Open'
                             : 'Confirm Still Open'}
                         </button>
                       </div>
@@ -621,11 +628,11 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                             setSelectedJobFilterForApps(job.id);
                             setActiveTab('applicants');
                           }}
-                          className="flex items-center gap-1.5 text-xs font-bold text-[#342A21] hover:underline cursor-pointer"
+                          className="flex items-center gap-1.5 text-xs font-bold text-[#342A21] hover:text-[#000004] hover:underline cursor-pointer"
                         >
-                          <Users className="w-3.5 h-3.5 text-emerald-600" />
+                          <Users className="w-3.5 h-3.5 text-[#342A21]" />
                           <span>{jobApps.length} {jobApps.length === 1 ? 'Applicant' : 'Applicants'}</span>
-                          <ChevronRight className="w-3 h-3" />
+                          <ChevronRight className="w-3 h-3 text-[#70798C]" />
                         </button>
 
                         <div className="flex items-center gap-2 flex-wrap">
@@ -633,10 +640,10 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                             <button
                               type="button"
                               onClick={() => setJobToSponsor(job)}
-                              className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer active:scale-95"
+                              className="px-3 py-1.5 rounded-lg bg-[#342A21] hover:bg-[#000004] text-white text-xs font-bold transition-all shadow-2xs flex items-center gap-1 cursor-pointer active:scale-95"
                               title="Pin this vacancy to the top of Setlla Jobs with 5x reach"
                             >
-                              <TrendingUp className="w-3.5 h-3.5" />
+                              <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
                               <span>Boost ({formatNaira(jobBoostFee)})</span>
                             </button>
                           )}
@@ -644,7 +651,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                           <button
                             type="button"
                             onClick={() => handleShareJob(job)}
-                            className="p-1.5 rounded-lg border border-[#E5E7EB] hover:bg-slate-50 text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg border border-[#E5E7EB] hover:bg-[#FAF8F5] text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer"
                             title="Share vacancy"
                           >
                             <Share2 className="w-3.5 h-3.5" />
@@ -653,7 +660,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                           <button
                             type="button"
                             onClick={() => setSelectedJobForDetails(job)}
-                            className="px-3 py-1.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#000004] text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-lg border border-[#E5E7EB] bg-white hover:bg-[#FAF8F5] text-[#000004] text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
                           >
                             <Eye className="w-3 h-3 text-[#70798C]" />
                             <span>Preview</span>
@@ -664,8 +671,8 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                             onClick={() => handleToggleStatus(job)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                               isClosed
-                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
-                                : 'bg-slate-100 hover:bg-slate-200 text-[#000004] border border-[#E5E7EB]'
+                                ? 'bg-[#000004] hover:bg-[#1f2937] text-white shadow-2xs'
+                                : 'bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#000004] border border-[#E5E7EB]'
                             }`}
                           >
                             {isClosed ? 'Reopen Vacancy' : 'Close Vacancy'}

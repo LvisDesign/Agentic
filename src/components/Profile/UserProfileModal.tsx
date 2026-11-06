@@ -466,7 +466,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
           {/* Success Banner */}
           {saveSuccessMessage && (
-            <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+            <div className="p-3 rounded-2xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] text-xs font-semibold flex items-center gap-2 animate-fade-in">
               <Check className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{saveSuccessMessage}</span>
             </div>
@@ -858,7 +858,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <button
                   type="button"
                   onClick={handleSendTestNotification}
-                  className="flex-1 py-2 px-3 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="flex-1 py-2 px-3 rounded-xl border border-[#E5E7EB] bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   <span>{testAlertSent ? 'Test Alert Sent (Badge Set)!' : 'Send Test Push Alert'}</span>
@@ -924,7 +924,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </div>
 
               {updateStatusNotice && (
-                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center gap-1.5 animate-fade-in">
+                <div className="p-2 rounded-xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] text-[11px] font-semibold flex items-center gap-1.5 animate-fade-in">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>{updateStatusNotice}</span>
                 </div>
@@ -962,7 +962,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
               {/* Install success notification */}
               {installSuccessNotice && (
-                <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold flex items-center gap-1.5 animate-fade-in">
+                <div className="p-2 rounded-xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] text-[11px] font-semibold flex items-center gap-1.5 animate-fade-in">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>App successfully added to your home screen!</span>
                 </div>

@@ -148,7 +148,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
                     Administrator
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase tracking-wide border border-emerald-300">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#FAF8F5] text-[#342A21] text-[10px] font-bold uppercase tracking-wide border border-[#E5E7EB]">
                     Setlla Jobs
                   </span>
                 )}
