@@ -395,7 +395,9 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         responseTime: 'Responds within 10 mins',
         phone: currentUser?.phone || '',
         whatsapp: currentUser?.whatsapp || currentUser?.phone || '',
-        avatarUrl: currentUser?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+        avatarUrl: currentUser?.avatarUrl && !currentUser.avatarUrl.includes('/images/properties/') && !currentUser.avatarUrl.includes('images.unsplash.com')
+          ? currentUser.avatarUrl
+          : '',
       },
       inspectionSlots: timeSlots.map((window, idx) => ({
         id: `slot-new-${idx}-${Date.now().toString().slice(-4)}`,

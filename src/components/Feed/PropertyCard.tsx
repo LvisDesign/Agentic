@@ -98,11 +98,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         <div className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-white border-b border-[#E5E7EB] flex items-center justify-between gap-2 shrink-0">
           {/* User/Agent Profile & Name */}
           <div className="flex items-center gap-2 min-w-0">
-            <img
-              src={listing.agent.avatarUrl}
-              alt={listing.agent.fullName}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-[#E5E7EB] shrink-0 shadow-2xs"
-            />
+            {listing.agent.avatarUrl && !listing.agent.avatarUrl.includes('/images/properties/') && !listing.agent.avatarUrl.includes('images.unsplash.com') ? (
+              <img
+                src={listing.agent.avatarUrl}
+                alt={listing.agent.fullName}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-[#E5E7EB] shrink-0 shadow-2xs"
+              />
+            ) : (
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#342A21] text-white flex items-center justify-center font-bold text-[10px] sm:text-xs border border-[#E5E7EB] shrink-0 shadow-2xs">
+                {(listing.agent.fullName || 'AG').trim().split(/\s+/).filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'AG'}
+              </div>
+            )}
             <span className="font-bold text-xs sm:text-sm text-[#000004] truncate">
               {listing.agent.fullName}
             </span>

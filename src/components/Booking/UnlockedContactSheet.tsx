@@ -136,11 +136,17 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="relative">
-                  <img
-                    src={listing.agent.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                    alt={listing.agent.fullName}
-                    className="w-12 h-12 rounded-full object-cover border border-[#342A21]/20"
-                  />
+                  {listing.agent.avatarUrl && !listing.agent.avatarUrl.includes('/images/properties/') && !listing.agent.avatarUrl.includes('images.unsplash.com') ? (
+                    <img
+                      src={listing.agent.avatarUrl}
+                      alt={listing.agent.fullName}
+                      className="w-12 h-12 rounded-full object-cover border border-[#342A21]/20"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-[#342A21] text-white flex items-center justify-center font-bold text-sm border border-[#342A21]/20 shrink-0">
+                      {(listing.agent.fullName || 'AG').trim().split(/\s+/).filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'AG'}
+                    </div>
+                  )}
                 </div>
 
                 <div className="min-w-0">

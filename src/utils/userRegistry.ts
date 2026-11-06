@@ -442,6 +442,25 @@ export const SAFE_BASE_PLATFORM_USER_COLUMNS = [
 ];
 
 /**
+ * Strips any legacy demo or stock profile picture URLs so users only display
+ * an image they explicitly uploaded themselves (or fall back to clean initials).
+ */
+export function sanitizeAvatarUrl(url?: string | null): string | undefined {
+  if (!url || typeof url !== 'string') return undefined;
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  if (
+    trimmed.includes('asaba_gra_exterior.jpg') ||
+    trimmed.includes('/images/properties/') ||
+    trimmed.includes('images.unsplash.com') ||
+    trimmed.includes('pravatar.cc')
+  ) {
+    return undefined;
+  }
+  return trimmed;
+}
+
+/**
  * Maps a raw Supabase platform_users database record into a clean UserProfile object.
  */
 export function mapDbToUserProfile(row: any): UserProfile {
@@ -467,7 +486,7 @@ export function mapDbToUserProfile(row: any): UserProfile {
     budget: row.budget !== null && row.budget !== undefined ? Number(row.budget) : undefined,
     nin: row.nin || meta.nin || undefined,
     isVerifiedTenant: Boolean(row.is_verified_tenant),
-    avatarUrl: row.avatar_url || undefined,
+    avatarUrl: sanitizeAvatarUrl(row.avatar_url),
     isAgent: isAgent,
     agencyName: row.agency_name || meta.company_name || (isAdmin ? 'Setlla Executive Office' : undefined),
     cacNumber: row.cac_number || undefined,
@@ -533,7 +552,7 @@ export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
     preferred_property_type: user.preferredPropertyType || null,
     budget: user.budget ?? 0,
     is_verified_tenant: Boolean(user.isVerifiedTenant),
-    avatar_url: user.avatarUrl || null,
+    avatar_url: sanitizeAvatarUrl(user.avatarUrl) || null,
     is_agent: isAgent,
     agency_name: user.agencyName || user.companyName || (isAdmin ? 'Setlla Executive Office' : null),
     cac_number: user.cacNumber || null,
@@ -602,7 +621,7 @@ export async function syncSingleUserProfile(userId: string): Promise<Partial<Use
         isSuperAdmin: data.is_super_admin,
         isSuspended: data.is_suspended,
         kycStatus: data.kyc_status,
-        avatarUrl: data.avatar_url,
+        avatarUrl: sanitizeAvatarUrl(data.avatar_url),
         agencyName: data.agency_name,
         companyName: (data as any).company_name || data.agency_name,
         persona: (data as any).persona,

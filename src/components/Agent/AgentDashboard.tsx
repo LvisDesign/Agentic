@@ -82,6 +82,12 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   );
 
   // Active Agent Profile
+  const cleanUserAvatar = currentUser?.avatarUrl &&
+    !currentUser.avatarUrl.includes('/images/properties/') &&
+    !currentUser.avatarUrl.includes('images.unsplash.com')
+    ? currentUser.avatarUrl
+    : '';
+
   const defaultAgent = listings[0]?.agent || {
     id: 'agent-verified',
     fullName: currentUser?.fullName || 'Verified Agent Partner',
@@ -94,7 +100,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     responseTime: 'Responds within 10 mins',
     phone: currentUser?.phone || '',
     whatsapp: currentUser?.whatsapp || currentUser?.phone || '',
-    avatarUrl: currentUser?.avatarUrl || '/images/properties/asaba_gra_exterior.jpg',
+    avatarUrl: cleanUserAvatar,
   };
 
   // Filter listings and bookings for this specific agent (or show all if platform admin)
@@ -125,10 +131,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     responseTime: 'Responds within 10 mins',
     phone: currentUser.phone || '',
     whatsapp: currentUser.whatsapp || currentUser.phone || '',
-    avatarUrl: currentUser.avatarUrl || defaultAgent.avatarUrl,
+    avatarUrl: cleanUserAvatar,
   } : {
     ...defaultAgent,
-    avatarUrl: currentUser?.avatarUrl || defaultAgent.avatarUrl,
+    avatarUrl: cleanUserAvatar,
   };
 
   // Compute metrics from actual live data
@@ -148,16 +154,33 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     (b) => b.status === 'ACCEPTED_PENDING_PAYMENT' || b.status === 'CONFIRMED_UNLOCKED'
   );
 
+  const agentInitials = agentProfile.fullName
+    ? agentProfile.fullName
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase() || 'AG'
+    : 'AG';
+
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-16 pb-20 px-3.5 sm:px-6 max-w-5xl mx-auto">
       {/* Top Banner / Agent Identity */}
       <div className="bg-white rounded-2xl p-4 sm:p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-          <img
-            src={agentProfile.avatarUrl}
-            alt={agentProfile.fullName}
-            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-[#342A21] shrink-0"
-          />
+          {agentProfile.avatarUrl ? (
+            <img
+              src={agentProfile.avatarUrl}
+              alt={agentProfile.fullName}
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-[#342A21] shrink-0"
+            />
+          ) : (
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#342A21] to-[#1f1914] text-white flex items-center justify-center font-display font-bold text-lg sm:text-xl shadow-xs border-2 border-white ring-2 ring-[#342A21]/20 shrink-0">
+              {agentInitials}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h1 className="font-display text-xl sm:text-2xl font-bold text-[#000004] truncate">

@@ -89,11 +89,17 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
         {/* Revealed Agent Contact Box */}
         <div className="p-3.5 sm:p-4 rounded-2xl bg-white border-2 border-[#342A21]/20 shadow-sm space-y-3.5">
           <div className="flex items-center gap-3">
-            <img
-              src={listing.agent.avatarUrl}
-              alt={listing.agent.fullName}
-              className="w-12 h-12 sm:w-13 sm:h-13 rounded-full object-cover border-2 border-[#342A21] shrink-0"
-            />
+            {listing.agent.avatarUrl && !listing.agent.avatarUrl.includes('/images/properties/') && !listing.agent.avatarUrl.includes('images.unsplash.com') ? (
+              <img
+                src={listing.agent.avatarUrl}
+                alt={listing.agent.fullName}
+                className="w-12 h-12 sm:w-13 sm:h-13 rounded-full object-cover border-2 border-[#342A21] shrink-0"
+              />
+            ) : (
+              <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-full bg-[#342A21] text-white flex items-center justify-center font-bold text-sm border-2 border-[#342A21] shrink-0">
+                {(listing.agent.fullName || 'AG').trim().split(/\s+/).filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'AG'}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm sm:text-base text-[#000004] truncate">

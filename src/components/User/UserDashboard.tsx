@@ -685,11 +685,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     {/* Agent attribution banner */}
                     <div className="p-2.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] flex items-center justify-between gap-2 overflow-hidden">
                       <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <img
-                          src={prop.agent.avatarUrl}
-                          alt={prop.agent.fullName}
-                          className="w-6 h-6 rounded-full object-cover border border-[#342A21] shrink-0"
-                        />
+                        {prop.agent.avatarUrl && !prop.agent.avatarUrl.includes('/images/properties/') && !prop.agent.avatarUrl.includes('images.unsplash.com') ? (
+                          <img
+                            src={prop.agent.avatarUrl}
+                            alt={prop.agent.fullName}
+                            className="w-6 h-6 rounded-full object-cover border border-[#342A21] shrink-0"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-[#342A21] text-white flex items-center justify-center font-bold text-[9px] shrink-0">
+                            {(prop.agent.fullName || 'AG').trim().split(/\s+/).filter(Boolean).map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'AG'}
+                          </div>
+                        )}
                         <div className="text-[11px] min-w-0 flex-1 truncate">
                           <span className="font-bold text-[#000004]">{prop.agent.fullName}</span>
                           <span className="text-[#70798C] ml-1">({prop.agent.agencyName})</span>
