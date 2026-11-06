@@ -1086,6 +1086,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Support & Contact Row */}
+          <div className="pt-1 flex items-center justify-between text-[11px] text-[#70798C] px-1">
+            <span>Support &amp; Enquiries</span>
+            <a
+              href="mailto:contact@setlla.com"
+              className="font-semibold text-[#342A21] hover:text-[#000004] hover:underline transition-colors"
+            >
+              contact@setlla.com
+            </a>
+          </div>
         </div>
 
         {/* Footer */}

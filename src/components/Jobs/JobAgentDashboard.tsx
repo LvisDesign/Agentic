@@ -949,6 +949,17 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
             onLogout={() => setActiveTab('listings')}
           />
         )}
+
+        {/* Platform Support & Contact Footer */}
+        <div className="mt-10 pt-5 border-t border-[#E5E7EB]/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#70798C]">
+          <span>Need help or have questions about Setlla?</span>
+          <a
+            href="mailto:contact@setlla.com"
+            className="inline-flex items-center gap-1.5 font-semibold text-[#342A21] hover:text-[#000004] bg-white hover:bg-[#FAF8F5] px-3.5 py-1.5 rounded-full border border-[#E5E7EB] shadow-2xs transition-colors"
+          >
+            <span>contact@setlla.com</span>
+          </a>
+        </div>
       </div>
 
       {/* Post a Job Modal (Supports Free & ₦2,000 Sponsored) */}
