@@ -450,7 +450,7 @@ export function mapDbToUserProfile(row: any): UserProfile {
     row.is_admin || 
     row.is_super_admin || 
     (row.email && row.email.toLowerCase() === 'admin@setlla.com') ||
-    (row.full_name && row.full_name.toLowerCase().includes('elvis'))
+    row.id === 'DT-ADMIN-ELVIS'
   );
   const isAgent = Boolean(row.is_agent || isAdmin);
   const persona = row.persona || row.role || meta.persona || meta.role || (isAdmin ? 'admin' : isAgent ? 'lister' : 'tenant');
@@ -503,7 +503,7 @@ export function mapUserProfileToDb(user: UserProfile): Record<string, any> {
     user.isAdmin || 
     user.isSuperAdmin || 
     (user.email && user.email.toLowerCase() === 'admin@setlla.com') ||
-    (user.fullName && user.fullName.toLowerCase().includes('elvis'))
+    user.id === 'DT-ADMIN-ELVIS'
   );
   const isAgent = Boolean(user.isAgent || isAdmin);
   const resolvedRole = user.persona || (isAdmin ? 'admin' : isAgent ? 'lister' : 'tenant');
@@ -975,12 +975,10 @@ export async function deleteUserFromRegistryAsync(
 
   // Strictly protect Super Admin Elvis from accidental deletion
   const isTargetElvis = Boolean(
-    (targetId && (targetId.toLowerCase().includes('elvis') || targetId === 'dt-admin-elvis')) ||
+    (targetId && targetId.toLowerCase() === 'dt-admin-elvis') ||
     (resolvedUser && (
       (resolvedUser.email && resolvedUser.email.toLowerCase() === 'admin@setlla.com') ||
-      (resolvedUser.fullName && resolvedUser.fullName.toLowerCase().includes('elvis')) ||
-      (resolvedUser.phone && (resolvedUser.phone.includes('9077056351') || resolvedUser.phone.includes('7056351'))) ||
-      resolvedUser.id === 'dt-admin-elvis'
+      resolvedUser.id?.toLowerCase() === 'dt-admin-elvis'
     ))
   );
 
