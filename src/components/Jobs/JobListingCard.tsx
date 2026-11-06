@@ -82,13 +82,12 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
                 <span className="font-semibold text-[#000004] truncate max-w-[180px] sm:max-w-none">
                   {job.companyName}
                 </span>
-                <span className="text-[#E5E7EB]">•</span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#FCF9F5] px-2 py-0.5 rounded-full border border-[#E5E7EB]">
-                  <MapPin className="w-3 h-3 text-[#70798C]" />
-                  <span>
-                    {job.city}, {job.state}
+                <span className="text-[#E5E7EB] hidden sm:inline">•</span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium bg-[#FCF9F5] px-2 py-0.5 rounded-full border border-[#E5E7EB] whitespace-nowrap max-w-full">
+                  <MapPin className="w-3 h-3 text-[#70798C] shrink-0" />
+                  <span className="truncate">
+                    {job.city}, {job.state} ({job.workplaceType})
                   </span>
-                  <span className="text-[#70798C]">({job.workplaceType})</span>
                 </span>
               </div>
             </div>
