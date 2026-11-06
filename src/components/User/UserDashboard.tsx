@@ -164,7 +164,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     {isAdmin
                       ? 'Platform Governance & Management'
                       : currentUser.isAgent
-                      ? `CAC: ${currentUser.cacNumber || 'Registered Agent'}`
+                      ? currentUser.agencyName || 'Partner Agent'
                       : `Seeking: ${currentUser.preferredPropertyType || 'Any Rental'}`}
                   </span>
                 </>

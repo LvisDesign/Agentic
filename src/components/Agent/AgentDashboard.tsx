@@ -171,37 +171,43 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-16 pb-20 px-3.5 sm:px-6 max-w-5xl mx-auto">
       {/* Top Banner / Agent Identity */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
           {agentProfile.avatarUrl ? (
             <img
               src={agentProfile.avatarUrl}
               alt={agentProfile.fullName}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-[#342A21] shrink-0"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border border-[#E5E7EB] shrink-0 shadow-2xs"
             />
           ) : (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#342A21] to-[#1f1914] text-white flex items-center justify-center font-display font-bold text-lg sm:text-xl shadow-xs border-2 border-white ring-2 ring-[#342A21]/20 shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#000004] text-white flex items-center justify-center font-display font-bold text-lg sm:text-xl shadow-xs shrink-0">
               {agentInitials}
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-display text-xl sm:text-2xl font-bold text-[#000004] truncate">
                 {agentProfile.fullName}
               </h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FAF8F5] text-[#342A21] border border-[#E5E7EB] shrink-0">
+                Partner Agent
+              </span>
             </div>
-            <p className="text-xs text-[#70798C] mt-0.5 truncate">
-              {agentProfile.agencyName} • CAC: {agentProfile.cacNumber} •{' '}
-              {agentProfile.reviewCount > 0 ? (
-                <span>Rating {agentProfile.rating}★ ({agentProfile.reviewCount} reviews)</span>
-              ) : (
-                <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">Partner Agent</span>
+
+            <p className="text-xs text-[#70798C] font-medium truncate">
+              <span className="text-[#342A21] font-semibold">{agentProfile.agencyName || 'Independent Partner Agency'}</span>
+              {agentProfile.reviewCount > 0 && (
+                <span> &bull; Rating {agentProfile.rating}★ ({agentProfile.reviewCount} reviews)</span>
               )}
             </p>
-            <div className="flex items-center gap-2 mt-1.5 sm:mt-2 text-xs text-[#70798C] flex-wrap">
+
+            <div className="flex items-center gap-2 text-xs text-[#70798C] flex-wrap pt-0.5">
               <span className="font-mono text-[#000004] font-semibold">{formatNigerianPhone(agentProfile.phone)}</span>
-              <span>•</span>
-              <span className="text-emerald-600 font-medium">Online & Available</span>
+              <span className="text-[#D1D5DB]">&bull;</span>
+              <span className="inline-flex items-center gap-1.5 text-[#342A21] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#342A21] shrink-0" />
+                <span>Online &amp; Available</span>
+              </span>
             </div>
           </div>
         </div>

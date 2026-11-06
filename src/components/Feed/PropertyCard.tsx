@@ -126,11 +126,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             <span className="font-bold text-xs sm:text-sm text-[#000004] truncate">
               {listing.agent.fullName}
             </span>
-            {listing.agent.cacNumber && (
-              <span className="text-[#70798C] text-[10px] hidden sm:inline font-medium shrink-0">
-                • {listing.agent.cacNumber}
-              </span>
-            )}
           </div>
 
           {/* Capacity Badge, Report Flag & Share */}

@@ -522,18 +522,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                         placeholder="e.g. Apex Real Estate Ltd"
                       />
                     </div>
-
-                    {/* CAC Number */}
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#70798C] mb-1">CAC Registration</label>
-                      <input
-                        type="text"
-                        value={editCacNumber}
-                        onChange={(e) => setEditCacNumber(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#000004] focus:border-[#000004] outline-none"
-                        placeholder="e.g. RC-1849204"
-                      />
-                    </div>
                   </>
                 )}
 
@@ -711,14 +699,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     </span>
                     <span className="font-semibold text-[#000004]">
                       {currentUser.agencyName || 'Independent Partner Agent'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">
-                    <span className="text-[#70798C] flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#342A21]" /> CAC / Registration
-                    </span>
-                    <span className="font-semibold text-[#000004]">
-                      {currentUser.cacNumber || 'Not provided'}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs py-1 border-b border-[#F4F5F7]">

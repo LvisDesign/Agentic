@@ -107,7 +107,7 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
                 </span>
               </div>
               <div className="text-xs text-[#70798C] truncate">
-                {listing.agent.agencyName} • CAC: {listing.agent.cacNumber}
+                {listing.agent.agencyName || 'Partner Real Estate Agency'}
               </div>
             </div>
           </div>

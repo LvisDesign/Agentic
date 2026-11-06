@@ -167,39 +167,21 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
               </div>
             </div>
 
-            {/* CAC Number & Business Phone */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                  CAC Number <span className="text-[10px] text-[#70798C] font-normal">(Optional / Pending)</span>
-                </label>
-                <div className="relative">
-                  <FileCheck2 className="w-4 h-4 text-[#70798C] absolute left-3 top-3" />
-                  <input
-                    type="text"
-                    placeholder="e.g. RC-1849204"
-                    value={cacNumber}
-                    onChange={(e) => setCacNumber(e.target.value)}
-                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] focus:ring-1 focus:ring-[#000004] text-xs text-[#000004] outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-[#000004] mb-1">
-                  Dispatch Phone <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-3" />
-                  <input
-                    type="tel"
-                    required
-                    placeholder="0803..."
-                    value={businessPhone}
-                    onChange={(e) => setBusinessPhone(e.target.value)}
-                    className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] focus:ring-1 focus:ring-[#000004] text-xs text-[#000004] outline-none"
-                  />
-                </div>
+            {/* Business Phone */}
+            <div>
+              <label className="block text-[11px] font-bold text-[#000004] mb-1">
+                Dispatch Phone <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <Phone className="w-4 h-4 text-[#70798C] absolute left-3 top-3" />
+                <input
+                  type="tel"
+                  required
+                  placeholder="0803..."
+                  value={businessPhone}
+                  onChange={(e) => setBusinessPhone(e.target.value)}
+                  className="w-full pl-9.5 pr-3.5 py-2.5 rounded-xl border border-[#E5E7EB] focus:border-[#000004] focus:ring-1 focus:ring-[#000004] text-xs text-[#000004] outline-none"
+                />
               </div>
             </div>
 
