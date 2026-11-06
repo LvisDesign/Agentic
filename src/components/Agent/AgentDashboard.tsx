@@ -212,18 +212,18 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               setAdsInitialTab('new-campaign');
               setActiveTab('ads');
             }}
-            className="w-full sm:w-auto py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl border border-[#342A21]/15 bg-[#F6F3EF] hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap group"
             title="Post and manage adverts directly inside your Agent Portal"
           >
-            <Megaphone className="w-3.5 h-3.5 text-amber-700" />
-            <span>Post Ad / Promote</span>
+            <Megaphone className="w-3.5 h-3.5 text-[#342A21] group-hover:text-[#FCF9F5] transition-colors shrink-0" />
+            <span>Promote</span>
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#342A21] hover:bg-[#000004] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
-            <span>Add New Property</span>
+            <span>Property</span>
           </button>
         </div>
       </div>

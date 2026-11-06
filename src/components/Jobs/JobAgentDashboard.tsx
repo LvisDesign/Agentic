@@ -247,19 +247,19 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                 setAdsInitialTab('new-campaign');
                 setActiveTab('ads');
               }}
-              className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[#342A21] text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl border border-[#342A21]/15 bg-[#F6F3EF] hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] text-xs sm:text-sm font-bold transition-all shadow-2xs cursor-pointer whitespace-nowrap group"
               title="Post and manage adverts directly inside your Hiring Portal"
             >
-              <Megaphone className="w-4 h-4 text-amber-700" />
-              <span>Post Ad / Promote</span>
+              <Megaphone className="w-4 h-4 text-[#342A21] group-hover:text-[#FCF9F5] transition-colors shrink-0" />
+              <span>Promote</span>
             </button>
             <button
               type="button"
               onClick={() => setIsPostJobModalOpen(true)}
-              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs sm:text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95 group"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#000004] text-[#FCF9F5] text-xs sm:text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95 whitespace-nowrap group"
             >
               <Plus className="w-4 h-4 text-amber-400 group-hover:rotate-90 transition-transform duration-200" />
-              <span>Post a Job</span>
+              <span>Job</span>
             </button>
           </div>
         </div>

@@ -188,14 +188,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>Go to Agent Portal</span>
+              <span>Portal</span>
             </button>
           ) : (
             <button
               onClick={onOpenBecomeAgent}
               className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#000004] to-[#1f2937] hover:from-[#1f2937] hover:to-[#374151] text-amber-300 hover:text-amber-200 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all border border-amber-400/30 cursor-pointer"
             >
-              <span>Become an Agent</span>
+              <span>Agent</span>
             </button>
           )}
 
@@ -208,18 +208,18 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               setAdsInitialTab('new-campaign');
               setActiveTab('ads');
             }}
-            className="py-2.5 px-3.5 rounded-xl border border-amber-300 bg-amber-50/90 hover:bg-amber-100 text-[#342A21] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+            className="py-2.5 px-3.5 rounded-xl border border-[#342A21]/15 bg-[#F6F3EF] hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs whitespace-nowrap group"
             title="Run and manage adverts directly from your Setlla account"
           >
-            <Megaphone className="w-3.5 h-3.5 text-amber-700" />
-            <span>Run an Ad</span>
+            <Megaphone className="w-3.5 h-3.5 text-[#342A21] group-hover:text-[#FCF9F5] transition-colors shrink-0" />
+            <span>Promote</span>
           </button>
 
           <button
             onClick={onSwitchToFeed}
             className="py-2.5 px-4 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-xs font-semibold text-[#000004] transition-colors cursor-pointer"
           >
-            Explore Feed
+            Explore
           </button>
         </div>
       </div>
