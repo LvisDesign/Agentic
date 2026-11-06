@@ -1606,19 +1606,13 @@ export async function findUserByCredentialAsync(query: string): Promise<UserProf
   if (!query || !query.trim()) return null;
   const trimmed = query.trim();
 
-  // 1. Check local cache first
-  const localMatch = findUserByCredential(trimmed);
-  if (localMatch) {
-    return localMatch;
-  }
-
-  // 2. Query Supabase database
+  // 1. If Supabase is not configured, fall back to local cache
   if (!isSupabaseConfigured()) {
-    return null;
+    return findUserByCredential(trimmed);
   }
 
   const client = getSupabaseClient();
-  if (!client) return null;
+  if (!client) return findUserByCredential(trimmed);
 
   const isEmail = trimmed.includes('@');
   const normPhone = normalizePhoneNumber(trimmed);

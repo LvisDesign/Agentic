@@ -1088,12 +1088,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     setLoginError(null);
 
     try {
-      // 1. Check local registry first for fast response
-      let registeredMatch = findUserByCredential(query);
-
-      // 2. If not found in local cache, query central Supabase platform_users database across mobile & desktop!
+      // 1. Query central Supabase platform_users database first (single source of truth across mobile & desktop)
+      let registeredMatch = await findUserByCredentialAsync(query);
       if (!registeredMatch) {
-        registeredMatch = await findUserByCredentialAsync(query);
+        registeredMatch = findUserByCredential(query);
       }
 
       if (registeredMatch) {

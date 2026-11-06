@@ -95,15 +95,16 @@ export async function sendEmailOTP(
     throw new Error('This email address has been restricted by platform administration. Please contact support@setlla.com.');
   }
 
-  // If forgot password, check if account exists (or allow if Supabase configured)
+  // If forgot password, strictly verify that the account exists in Supabase platform_users
   if (purpose === 'forgot_password') {
-    let existingUser = findUserByCredential(cleanEmail);
+    const existingUser = await findUserByCredentialAsync(cleanEmail);
     if (!existingUser) {
-      existingUser = await findUserByCredentialAsync(cleanEmail);
-    }
-    // If not found in local/cache and Supabase is not configured, abort
-    if (!existingUser && !isSupabaseConfigured()) {
       throw new Error(`No account registered with ${cleanEmail}. Please check your email or create an account.`);
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('setlla_last_email', cleanEmail);
+      } catch (_) {}
     }
   }
 
@@ -134,19 +135,21 @@ export async function sendEmailOTP(
 
   // Supabase Auth Email Delivery via Hostinger custom SMTP
   if (isSupabaseConfigured()) {
-    const redirectUrl = typeof window !== 'undefined' && window.location?.origin
+    const baseRedirectUrl = typeof window !== 'undefined' && window.location?.origin
       ? `${window.location.origin}${window.location.pathname}`
       : 'https://setlla.com';
+    const redirectUrl = purpose === 'forgot_password'
+      ? `${baseRedirectUrl}?type=recovery`
+      : baseRedirectUrl;
 
     // Primary OTP Dispatch via Supabase signInWithOtp:
     // This is the dedicated Supabase API that dispatches 6-digit email OTPs via SMTP.
-    // Setting shouldCreateUser: true ensures both brand-new signups and existing accounts receive the code.
     try {
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: cleanEmail,
         options: {
           emailRedirectTo: redirectUrl,
-          shouldCreateUser: true,
+          shouldCreateUser: purpose !== 'forgot_password',
         },
       });
 
@@ -390,10 +393,10 @@ export async function resetUserPassword(
     }
   }
 
-  // 2. Locate profile in local cache or platform_users
-  let user = findUserByCredential(cleanEmail);
+  // 2. Locate profile in central platform_users first (single source of truth)
+  let user = await findUserByCredentialAsync(cleanEmail);
   if (!user) {
-    user = await findUserByCredentialAsync(cleanEmail);
+    user = findUserByCredential(cleanEmail);
   }
 
   if (!user) {
