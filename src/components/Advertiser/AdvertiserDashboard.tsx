@@ -67,6 +67,7 @@ import { AdsSetupGuide } from '../Adverts/AdsSetupGuide';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { processUploadedFile } from '../../utils/mediaStorage';
 import { PaystackModal } from '../Booking/PaystackModal';
+import { SimpleCampaignForm } from './SimpleCampaignForm';
 
 export function calculateCampaignCost(days: number): {
   totalCost: number;
@@ -190,9 +191,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
   const [previewDraftAdId, setPreviewDraftAdId] = useState<string | null>(null);
 
   // New Campaign Form State (Prefilled from Advertiser profile)
-  const [adDurationDays, setAdDurationDays] = useState<number>(30);
-  const [manualDaysInput, setManualDaysInput] = useState<string>('30');
-  const [packageTier, setPackageTier] = useState<'starter' | 'growth' | 'corporate'>('growth');
+  const [adDurationDays, setAdDurationDays] = useState<number>(7);
+  const [manualDaysInput, setManualDaysInput] = useState<string>('7');
+  const [packageTier, setPackageTier] = useState<'starter' | 'growth' | 'corporate'>('starter');
   const [submittedCampaignDetails, setSubmittedCampaignDetails] = useState<{ cost: number; days: number; ref: string } | null>(null);
   const [headline, setHeadline] = useState('');
   const [description, setDescription] = useState('');
@@ -1105,6 +1106,66 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
         {/* TAB 2: CREATE NEW CAMPAIGN                                            */}
         {/* ===================================================================== */}
         {activeTab === 'new-campaign' && (
+          <SimpleCampaignForm
+            companyName={advertiser.companyName}
+            walletBalance={walletBalance}
+            adDurationDays={adDurationDays}
+            manualDaysInput={manualDaysInput}
+            onSelectDuration={(days) => {
+              setAdDurationDays(days);
+              setManualDaysInput(days.toString());
+              setPackageTier(calculateCampaignCost(days).packageTier);
+            }}
+            onManualDaysChange={handleManualDaysChange}
+            onManualDaysBlur={handleManualDaysBlur}
+            headline={headline}
+            setHeadline={setHeadline}
+            category={category}
+            setCategory={setCategory}
+            location={location}
+            setLocation={setLocation}
+            price={price}
+            setPrice={setPrice}
+            description={description}
+            setDescription={setDescription}
+            mediaSourceMode={mediaSourceMode}
+            setMediaSourceMode={setMediaSourceMode}
+            mediaUrl={mediaUrl}
+            setMediaUrl={setMediaUrl}
+            mediaType={mediaType}
+            setMediaType={setMediaType}
+            isUploadingMedia={isUploadingMedia}
+            uploadedFileName={uploadedFileName}
+            setUploadedFileName={setUploadedFileName}
+            fileInputRef={fileInputRef}
+            handleFileUpload={handleFileUpload}
+            handleClearMedia={handleClearMedia}
+            actionType={actionType}
+            setActionType={setActionType}
+            ctaText={ctaText}
+            setCtaText={setCtaText}
+            websiteUrl={websiteUrl}
+            setWebsiteUrl={setWebsiteUrl}
+            whatsappNumber={whatsappNumber}
+            setWhatsappNumber={setWhatsappNumber}
+            formError={formError}
+            isSubmitting={isSubmitting}
+            submissionSuccess={submissionSuccess}
+            submittedCampaignDetails={submittedCampaignDetails}
+            onResetSuccess={() => {
+              setSubmissionSuccess(null);
+              setActiveTab('campaigns');
+            }}
+            onSubmit={handleFundCampaignFromWallet}
+            onOpenTopUp={(shortfall) => {
+              setTopUpAmount(shortfall);
+              setTopUpPack('custom');
+              setPendingPostTopUp(true);
+              setShowTopUpModal(true);
+            }}
+          />
+        )}
+        {false && activeTab === 'new-campaign' && (
           <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#342A21]/15 shadow-card space-y-6 animate-fade-in">
             <div className="max-w-xl">
               <h3 className="font-display text-2xl text-[#342A21] font-normal">
