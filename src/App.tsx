@@ -596,9 +596,19 @@ export function App() {
             .maybeSingle();
 
           if (!error && isMounted) {
-            if (!data || data.is_suspended === true) {
-              console.warn('[App] User account does not exist in platform database or was suspended. Purging session from device...');
+            if (data?.is_suspended === true) {
+              console.warn('[App] User account was suspended. Purging session from device...');
               handleSignOut();
+            } else if (!data) {
+              // If missing from platform_users, verify with active Supabase auth session:
+              // If genuinely authenticated, self-heal to platform_users rather than kicking the user out!
+              const { data: sess } = await supabase.auth.getSession();
+              if (sess?.session?.user) {
+                saveRegisteredUserAsync(currentUser, { allowReRegistration: true }).catch(() => {});
+              } else {
+                console.warn('[App] User account does not exist in platform database. Purging stale session...');
+                handleSignOut();
+              }
             }
           }
         }
@@ -2057,8 +2067,8 @@ export function App() {
               .eq('email', clean)
               .maybeSingle();
 
-            if (!dbUser || dbUser.is_suspended) {
-              console.warn('[App] Ghost or purged account detected for:', clean, '- Terminating session.');
+            if (dbUser?.is_suspended) {
+              console.warn('[App] Suspended account detected for:', clean, '- Terminating session.');
               try {
                 await supabase.auth.signOut();
                 clearPendingEmailOTP();
@@ -2070,6 +2080,30 @@ export function App() {
               setCurrentUser(GUEST_USER);
               setIsAuthenticated(false);
               return;
+            }
+
+            // Self-healing: If user is authenticated in Supabase Auth but profile row is missing from platform_users,
+            // automatically create and sync the profile so they appear in admin and stay logged in!
+            if (!dbUser && isSupabaseConfigured()) {
+              const { data: sessData } = await supabase.auth.getSession();
+              const authUser = sessData?.session?.user;
+              if (authUser && normalizeEmail(authUser.email || '') === clean) {
+                const healedUser: UserProfile = {
+                  id: authUser.id,
+                  fullName: authUser.user_metadata?.full_name || clean.split('@')[0],
+                  phone: authUser.phone || authUser.user_metadata?.phone || '',
+                  email: clean,
+                  state: 'Delta State',
+                  city: 'Asaba',
+                  persona: 'tenant',
+                  isVerifiedTenant: true,
+                  isAgent: false,
+                  kycStatus: 'verified',
+                  savedListingIds: [],
+                  createdAt: authUser.created_at || new Date().toISOString()
+                };
+                saveRegisteredUserAsync(healedUser, { allowReRegistration: true }).catch(() => {});
+              }
             }
           } catch (_) {}
         }
