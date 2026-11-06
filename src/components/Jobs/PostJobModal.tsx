@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Briefcase, 
@@ -18,6 +18,7 @@ import {
 import { JobListing, JobRoleType, JobWorkplaceType } from '../../types/jobs';
 import { UserProfile } from '../../types/marketplace';
 import { createJobListing } from '../../services/jobService';
+import { getAdPricing, fetchPlatformSettingsAsync } from '../../services/adminService';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { formatNaira } from '../../utils/formatters';
 import { AdminCustomSelect, AdminSelectOption } from '../UI/AdminCustomSelect';
@@ -80,8 +81,6 @@ const CITY_OPTIONS: AdminSelectOption[] = DELTA_CITIES.map((c) => ({
 
 const WORKPLACE_TYPES: JobWorkplaceType[] = ['On-Site', 'Hybrid', 'Remote'];
 
-const JOB_LISTING_FEE = 2000; // ₦2,000 Fair Pricing
-
 export const PostJobModal: React.FC<PostJobModalProps> = ({
   isOpen,
   onClose,
@@ -92,6 +91,14 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'sponsored'>('free');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPaystackModal, setShowPaystackModal] = useState(false);
+  const [jobListingFee, setJobListingFee] = useState<number>(() => getAdPricing().jobPromotionFee);
+
+  useEffect(() => {
+    const handleUpdate = () => setJobListingFee(getAdPricing().jobPromotionFee);
+    window.addEventListener('setlla:platform_settings_updated', handleUpdate);
+    fetchPlatformSettingsAsync().then(() => setJobListingFee(getAdPricing().jobPromotionFee)).catch(() => {});
+    return () => window.removeEventListener('setlla:platform_settings_updated', handleUpdate);
+  }, []);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -216,7 +223,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
 
   const handlePaymentSuccess = async (paymentReference: string) => {
     setShowPaystackModal(false);
-    await submitJob(true, JOB_LISTING_FEE, paymentReference);
+    await submitJob(true, jobListingFee, paymentReference);
   };
 
   if (!isOpen) return null;
@@ -609,7 +616,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
 
                     <div>
                       <div className="flex items-baseline gap-1.5">
-                        <span className="text-xl font-display font-black text-[#000004]">₦2,000</span>
+                        <span className="text-xl font-display font-black text-[#000004]">{formatNaira(jobListingFee)}</span>
                         <span className="text-xs font-bold text-amber-800">Flat 30 Days</span>
                       </div>
                       <h5 className="font-bold text-xs text-[#000004] mt-0.5">Sponsored Spotlight</h5>
@@ -671,7 +678,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-[#E5E7EB]">
                   <span className="font-bold text-[#000004]">Total Amount Due:</span>
                   <span className={`font-display font-bold text-sm ${selectedPlan === 'sponsored' ? 'text-amber-800' : 'text-emerald-700'}`}>
-                    {selectedPlan === 'sponsored' ? formatNaira(JOB_LISTING_FEE) : '₦0 (Free)'}
+                    {selectedPlan === 'sponsored' ? formatNaira(jobListingFee) : '₦0 (Free)'}
                   </span>
                 </div>
               </div>
@@ -735,7 +742,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50"
             >
               <CreditCard className="w-4 h-4 text-amber-400" />
-              <span>Pay ₦2,000 & Sponsor Vacancy</span>
+              <span>Pay {formatNaira(jobListingFee)} & Sponsor Vacancy</span>
             </button>
           )}
         </div>
@@ -745,13 +752,13 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
       <PaystackModal
         isOpen={showPaystackModal}
         onClose={() => setShowPaystackModal(false)}
-        amount={JOB_LISTING_FEE}
+        amount={jobListingFee}
         applicantEmail={contactEmail || currentUser.email || 'employer@setlla.com'}
         applicantPhone={contactPhone || currentUser.phone}
         applicantName={companyName || currentUser.fullName}
         merchantName="Setlla Jobs Employer Portal"
-        purposeTitle={`Listing Fee: ${title} (₦2,000 / 30 Days)`}
-        buttonText="Pay ₦2,000 & Publish Vacancy"
+        purposeTitle={`Listing Fee: ${title} (${formatNaira(jobListingFee)} / 30 Days)`}
+        buttonText={`Pay ${formatNaira(jobListingFee)} & Publish Vacancy`}
         onSuccess={handlePaymentSuccess}
       />
     </div>

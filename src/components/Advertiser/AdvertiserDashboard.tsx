@@ -69,6 +69,7 @@ import { processUploadedFile } from '../../utils/mediaStorage';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { SimpleCampaignForm } from './SimpleCampaignForm';
 import { launchPaystackCheckout } from '../../utils/paystack';
+import { getAdPricing, fetchPlatformSettingsAsync } from '../../services/adminService';
 
 export function calculateCampaignCost(days: number): {
   totalCost: number;
@@ -77,44 +78,52 @@ export function calculateCampaignCost(days: number): {
   tierName: string;
 } {
   const safeDays = Math.max(1, Math.min(365, Math.round(days || 1)));
+  const pricing = getAdPricing();
+  const dailyBase = pricing.daily || 2500;
+  const starter7d = pricing.starter || 15000;
+  const growth30d = pricing.growth || 45000;
+  const corporate90d = pricing.corporate || 120000;
+
   let totalCost: number;
   let packageTier: 'starter' | 'growth' | 'corporate';
   let tierName: string;
 
   if (safeDays === 1) {
-    totalCost = 2500;
+    totalCost = dailyBase;
     packageTier = 'starter';
     tierName = '1-Day Flash Spotlight';
   } else if (safeDays < 7) {
-    totalCost = safeDays * 2200;
+    const ratePerExtraDay = Math.max(500, (starter7d - dailyBase) / 6);
+    totalCost = Math.round(dailyBase + (safeDays - 1) * ratePerExtraDay);
     packageTier = 'starter';
     tierName = 'Starter Spotlight';
   } else if (safeDays === 7) {
-    totalCost = 15000;
+    totalCost = starter7d;
     packageTier = 'starter';
     tierName = 'Starter Spotlight';
   } else if (safeDays < 30) {
     const extraDays = safeDays - 7;
-    const ratePerExtraDay = (45000 - 15000) / (30 - 7);
-    totalCost = Math.round(15000 + extraDays * ratePerExtraDay);
+    const ratePerExtraDay = Math.max(500, (growth30d - starter7d) / (30 - 7));
+    totalCost = Math.round(starter7d + extraDays * ratePerExtraDay);
     packageTier = safeDays < 14 ? 'starter' : 'growth';
     tierName = safeDays < 14 ? 'Growth Spotlight' : 'Growth Partner';
   } else if (safeDays === 30) {
-    totalCost = 45000;
+    totalCost = growth30d;
     packageTier = 'growth';
     tierName = 'Growth Partner';
   } else if (safeDays < 90) {
     const extraDays = safeDays - 30;
-    const ratePerExtraDay = (120000 - 45000) / (90 - 30);
-    totalCost = Math.round(45000 + extraDays * ratePerExtraDay);
+    const ratePerExtraDay = Math.max(500, (corporate90d - growth30d) / (90 - 30));
+    totalCost = Math.round(growth30d + extraDays * ratePerExtraDay);
     packageTier = safeDays < 60 ? 'growth' : 'corporate';
     tierName = safeDays < 60 ? 'Growth Partner Extended' : 'Corporate Leader';
   } else if (safeDays === 90) {
-    totalCost = 120000;
+    totalCost = corporate90d;
     packageTier = 'corporate';
     tierName = 'Corporate Leader';
   } else {
-    totalCost = Math.round(120000 + (safeDays - 90) * 1200);
+    const extraDailyRate = Math.max(500, Math.round(corporate90d / 90));
+    totalCost = Math.round(corporate90d + (safeDays - 90) * extraDailyRate);
     packageTier = 'corporate';
     tierName = 'Enterprise Network Leader';
   }
@@ -287,9 +296,22 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
     setTimeout(() => setCopiedKey(false), 2000);
   };
 
+  const [livePricing, setLivePricing] = useState(() => getAdPricing());
+
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      setLivePricing(getAdPricing());
+    };
+    window.addEventListener('setlla:platform_settings_updated', handleSettingsUpdate);
+    fetchPlatformSettingsAsync()
+      .then(() => setLivePricing(getAdPricing()))
+      .catch(() => {});
+    return () => window.removeEventListener('setlla:platform_settings_updated', handleSettingsUpdate);
+  }, []);
+
   const campaignPricing = useMemo(() => {
     return calculateCampaignCost(adDurationDays);
-  }, [adDurationDays]);
+  }, [adDurationDays, livePricing]);
 
   const campaignCost = campaignPricing.totalCost;
   const walletBalance = currentAdvertiser.walletBalance || 0;
@@ -2032,9 +2054,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
             <div className="grid grid-cols-3 gap-2">
               {[
-                { amount: 15000, label: '₦15,000' },
-                { amount: 45000, label: '₦45,000' },
-                { amount: 120000, label: '₦120,000' },
+                { amount: livePricing.starter, label: `₦${livePricing.starter.toLocaleString()}` },
+                { amount: livePricing.growth, label: `₦${livePricing.growth.toLocaleString()}` },
+                { amount: livePricing.corporate, label: `₦${livePricing.corporate.toLocaleString()}` },
               ].map((p) => (
                 <button
                   key={p.amount}

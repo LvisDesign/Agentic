@@ -79,36 +79,13 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
       }
     } catch (_) {}
 
-    const handler = (e: any) => {
-      if (e?.detail) {
-        const d = e.detail;
-        const starter = Number(d.adPricingStarter) || 15000;
-        const growth = Number(d.adPricingGrowth) || 45000;
-        const corporate = Number(d.adPricingCorporate) || 120000;
-        let feedWeekly = Number(d.adPricingFeedWeekly) || 5000;
-        let feedMonthly = Number(d.adPricingFeedMonthly) || 15000;
-        if (feedWeekly === 5000 && starter !== 15000) feedWeekly = starter;
-        if (feedMonthly === 15000 && growth !== 45000) feedMonthly = growth;
-        setAdPricing({ starter, growth, corporate, feedWeekly, feedMonthly });
-      } else {
-        setAdPricing(getAdPricing());
-      }
+    const handler = () => {
+      setAdPricing(getAdPricing());
     };
     window.addEventListener('setlla:platform_settings_updated', handler);
 
-    fetchPlatformSettingsAsync().then((latest) => {
-      if (latest) {
-        const starter = Number(latest.adPricingStarter) || 15000;
-        const growth = Number(latest.adPricingGrowth) || 45000;
-        const corporate = Number(latest.adPricingCorporate) || 120000;
-        let feedWeekly = Number(latest.adPricingFeedWeekly) || 5000;
-        let feedMonthly = Number(latest.adPricingFeedMonthly) || 15000;
-        if (feedWeekly === 5000 && starter !== 15000) feedWeekly = starter;
-        if (feedMonthly === 15000 && growth !== 45000) feedMonthly = growth;
-        setAdPricing({ starter, growth, corporate, feedWeekly, feedMonthly });
-      } else {
-        setAdPricing(getAdPricing());
-      }
+    fetchPlatformSettingsAsync().then(() => {
+      setAdPricing(getAdPricing());
     }).catch(() => {});
 
     return () => window.removeEventListener('setlla:platform_settings_updated', handler);

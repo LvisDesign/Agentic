@@ -45,6 +45,7 @@ import { PaystackModal } from '../Booking/PaystackModal';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { formatNaira } from '../../utils/formatters';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
+import { getAdPricing, fetchPlatformSettingsAsync } from '../../services/adminService';
 
 interface JobAgentDashboardProps {
   currentUser: UserProfile;
@@ -70,6 +71,14 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
   const [isPostJobModalOpen, setIsPostJobModalOpen] = useState(false);
   const [selectedJobForDetails, setSelectedJobForDetails] = useState<JobListing | null>(null);
   const [jobToSponsor, setJobToSponsor] = useState<JobListing | null>(null);
+  const [jobBoostFee, setJobBoostFee] = useState<number>(() => getAdPricing().jobPromotionFee);
+
+  useEffect(() => {
+    const handleUpdate = () => setJobBoostFee(getAdPricing().jobPromotionFee);
+    window.addEventListener('setlla:platform_settings_updated', handleUpdate);
+    fetchPlatformSettingsAsync().then(() => setJobBoostFee(getAdPricing().jobPromotionFee)).catch(() => {});
+    return () => window.removeEventListener('setlla:platform_settings_updated', handleUpdate);
+  }, []);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -628,7 +637,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                               title="Pin this vacancy to the top of Setlla Jobs with 5x reach"
                             >
                               <TrendingUp className="w-3.5 h-3.5" />
-                              <span>Boost (₦2,000)</span>
+                              <span>Boost ({formatNaira(jobBoostFee)})</span>
                             </button>
                           )}
 
@@ -952,13 +961,13 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
         <PaystackModal
           isOpen={Boolean(jobToSponsor)}
           onClose={() => setJobToSponsor(null)}
-          amount={2000}
+          amount={jobBoostFee}
           applicantEmail={jobToSponsor.contactEmail || currentUser.email || 'employer@setlla.com'}
           applicantPhone={jobToSponsor.contactPhone || currentUser.phone}
           applicantName={jobToSponsor.companyName || currentUser.fullName}
           merchantName="Setlla Jobs Employer Portal"
-          purposeTitle={`Spotlight Boost: ${jobToSponsor.title} (₦2,000 / 30 Days)`}
-          buttonText="Pay ₦2,000 & Boost to Spotlight"
+          purposeTitle={`Spotlight Boost: ${jobToSponsor.title} (${formatNaira(jobBoostFee)} / 30 Days)`}
+          buttonText={`Pay ${formatNaira(jobBoostFee)} & Boost to Spotlight`}
           onSuccess={handleSponsorSuccess}
         />
       )}

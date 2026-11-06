@@ -21,6 +21,7 @@ import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
 import { DELTA_CITY_OPTIONS } from '../../data/deltaCities';
 import { processUploadedFile, DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 import { ModalPortal } from '../UI/ModalPortal';
+import { getAdPricing } from '../../services/adminService';
 
 const NIGERIAN_STATE_OPTIONS: DropdownOption[] = [
   { value: 'Delta State', label: 'Delta State' },
@@ -208,7 +209,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   const legalFeeNum = parseCurrencyInput(legalFeeInput);
   const agencyFeeNum = parseCurrencyInput(agencyFeeInput);
   const serviceChargeNum = parseCurrencyInput(serviceChargeInput);
-  const inspectionFeeNum = parseCurrencyInput(inspectionFeeInput) || 2500;
+  const inspectionFeeNum = parseCurrencyInput(inspectionFeeInput) || getAdPricing().defaultInspectionFee || 2500;
   const totalMoveIn = baseRentNum + cautionNum + legalFeeNum + agencyFeeNum + serviceChargeNum;
 
   const handleToggleAddon = (item: string) => {

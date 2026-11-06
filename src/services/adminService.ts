@@ -13,11 +13,13 @@ export const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   emergencyAnnouncement: 'Delta State real estate regulatory compliance active. All inspection fees protected by Setlla Escrow.',
   emergencyAnnouncementActive: false,
   autoApproveVerifiedAgentListings: true,
+  adPricingDaily: 2500,
   adPricingStarter: 15000,
   adPricingGrowth: 45000,
   adPricingCorporate: 120000,
   adPricingFeedWeekly: 5000,
   adPricingFeedMonthly: 15000,
+  jobPromotionFee: 2000,
 };
 
 export const INITIAL_AUDIT_LOGS: AdminAuditLog[] = [
@@ -80,11 +82,14 @@ export async function fetchPlatformSettingsAsync(): Promise<PlatformSettings> {
 
       const settingsData = (globalRow as any)?.settings_data || {};
 
+      const daily = Number((globalRow as any)?.ad_pricing_daily ?? parsedPricing.adPricingDaily ?? parsedPricing.daily ?? settingsData.adPricingDaily ?? current.adPricingDaily ?? 2500);
       const starter = Number((globalRow as any)?.ad_pricing_starter ?? parsedPricing.adPricingStarter ?? parsedPricing.starter ?? settingsData.adPricingStarter ?? current.adPricingStarter ?? 15000);
       const growth = Number((globalRow as any)?.ad_pricing_growth ?? parsedPricing.adPricingGrowth ?? parsedPricing.growth ?? settingsData.adPricingGrowth ?? current.adPricingGrowth ?? 45000);
       const corporate = Number((globalRow as any)?.ad_pricing_corporate ?? parsedPricing.adPricingCorporate ?? parsedPricing.corporate ?? settingsData.adPricingCorporate ?? current.adPricingCorporate ?? 120000);
       let feedWeekly = Number((globalRow as any)?.ad_pricing_feed_weekly ?? parsedPricing.adPricingFeedWeekly ?? parsedPricing.feedWeekly ?? settingsData.adPricingFeedWeekly ?? current.adPricingFeedWeekly ?? 5000);
       let feedMonthly = Number((globalRow as any)?.ad_pricing_feed_monthly ?? parsedPricing.adPricingFeedMonthly ?? parsedPricing.feedMonthly ?? settingsData.adPricingFeedMonthly ?? current.adPricingFeedMonthly ?? 15000);
+      const jobFee = Number((globalRow as any)?.job_promotion_fee ?? parsedPricing.jobPromotionFee ?? parsedPricing.jobFee ?? settingsData.jobPromotionFee ?? current.jobPromotionFee ?? 2000);
+      const rawInspFee = Number(globalRow.default_inspection_fee || parsedPricing.defaultInspectionFee || pricingRow?.default_inspection_fee || current.defaultInspectionFee || 2500);
 
       // Harmonization: If the admin customized 7-Day or 30-Day under Starter/Growth but left feedWeekly/feedMonthly at defaults (or vice versa), keep them aligned
       if (feedWeekly === 5000 && starter !== 15000) {
@@ -97,19 +102,21 @@ export async function fetchPlatformSettingsAsync(): Promise<PlatformSettings> {
       const merged: PlatformSettings = {
         ...DEFAULT_PLATFORM_SETTINGS,
         ...current,
-        defaultInspectionFee: Number(globalRow.default_inspection_fee ?? current.defaultInspectionFee),
+        defaultInspectionFee: rawInspFee > 0 ? rawInspFee : 2500,
         maxQueueLimitPerSlot: Number(globalRow.max_queue_limit_per_slot ?? current.maxQueueLimitPerSlot),
         maintenanceMode: Boolean(globalRow.maintenance_mode ?? current.maintenanceMode),
-        emergencyAnnouncement: globalRow.emergency_announcement ?? current.emergencyAnnouncement,
+        emergencyAnnouncement: globalRow.id === 'global_config' ? (globalRow.emergency_announcement ?? current.emergencyAnnouncement) : current.emergencyAnnouncement,
         emergencyAnnouncementActive: Boolean(globalRow.emergency_announcement_active ?? current.emergencyAnnouncementActive),
         autoApproveVerifiedAgentListings: Boolean(globalRow.auto_approve_verified_agent_listings ?? current.autoApproveVerifiedAgentListings),
         
-        // Dynamic ad pricing from cloud database (strictly synchronized across all devices)
-        adPricingStarter: starter,
-        adPricingGrowth: growth,
-        adPricingCorporate: corporate,
-        adPricingFeedWeekly: feedWeekly,
-        adPricingFeedMonthly: feedMonthly,
+        // Dynamic ad & platform pricing from cloud database (strictly synchronized across all devices)
+        adPricingDaily: daily > 0 ? daily : 2500,
+        adPricingStarter: starter > 0 ? starter : 15000,
+        adPricingGrowth: growth > 0 ? growth : 45000,
+        adPricingCorporate: corporate > 0 ? corporate : 120000,
+        adPricingFeedWeekly: feedWeekly > 0 ? feedWeekly : 5000,
+        adPricingFeedMonthly: feedMonthly > 0 ? feedMonthly : 15000,
+        jobPromotionFee: jobFee > 0 ? jobFee : 2000,
       };
 
       if (typeof window !== 'undefined') {
@@ -142,21 +149,27 @@ export function isAuthorizedAdmin(): boolean {
 }
 
 /**
- * Returns dynamic ad pricing rates set by Super Admin (with sensible defaults)
+ * Returns dynamic ad and platform pricing rates set by Super Admin (with sensible defaults)
  */
 export function getAdPricing(): {
+  daily: number;
   starter: number;
   growth: number;
   corporate: number;
   feedWeekly: number;
   feedMonthly: number;
+  jobPromotionFee: number;
+  defaultInspectionFee: number;
 } {
   const settings = getPlatformSettings();
+  const daily = Number(settings.adPricingDaily) > 0 ? Number(settings.adPricingDaily) : 2500;
   const starter = Number(settings.adPricingStarter) > 0 ? Number(settings.adPricingStarter) : 15000;
   const growth = Number(settings.adPricingGrowth) > 0 ? Number(settings.adPricingGrowth) : 45000;
   const corporate = Number(settings.adPricingCorporate) > 0 ? Number(settings.adPricingCorporate) : 120000;
   let feedWeekly = Number(settings.adPricingFeedWeekly) > 0 ? Number(settings.adPricingFeedWeekly) : 5000;
   let feedMonthly = Number(settings.adPricingFeedMonthly) > 0 ? Number(settings.adPricingFeedMonthly) : 15000;
+  const jobPromotionFee = Number(settings.jobPromotionFee) > 0 ? Number(settings.jobPromotionFee) : 2000;
+  const defaultInspectionFee = Number(settings.defaultInspectionFee) > 0 ? Number(settings.defaultInspectionFee) : 2500;
 
   // Harmonization fallback: if starter was customized, ensure feed story advert follows
   if (feedWeekly === 5000 && starter !== 15000) {
@@ -167,11 +180,14 @@ export function getAdPricing(): {
   }
 
   return {
+    daily,
     starter,
     growth,
     corporate,
     feedWeekly,
     feedMonthly,
+    jobPromotionFee,
+    defaultInspectionFee,
   };
 }
 
@@ -207,11 +223,15 @@ export async function savePlatformSettingsAsync(settings: PlatformSettings): Pro
 
     // 2. Sync ad pricing config row so devices without custom columns read updated rates
     const adPricingData = {
+      daily: settings.adPricingDaily ?? 2500,
       starter: settings.adPricingStarter ?? 15000,
       growth: settings.adPricingGrowth ?? 45000,
       corporate: settings.adPricingCorporate ?? 120000,
       feedWeekly: settings.adPricingFeedWeekly ?? 5000,
       feedMonthly: settings.adPricingFeedMonthly ?? 15000,
+      jobPromotionFee: settings.jobPromotionFee ?? 2000,
+      defaultInspectionFee: settings.defaultInspectionFee ?? 2500,
+      adPricingDaily: settings.adPricingDaily ?? 2500,
       adPricingStarter: settings.adPricingStarter ?? 15000,
       adPricingGrowth: settings.adPricingGrowth ?? 45000,
       adPricingCorporate: settings.adPricingCorporate ?? 120000,
@@ -221,6 +241,7 @@ export async function savePlatformSettingsAsync(settings: PlatformSettings): Pro
 
     const { error: err2 } = await supabase.from('platform_settings').upsert({
       id: 'ad_pricing_config',
+      default_inspection_fee: settings.defaultInspectionFee ?? 2500,
       emergency_announcement: JSON.stringify(adPricingData),
       emergency_announcement_active: false,
       updated_at: new Date().toISOString(),

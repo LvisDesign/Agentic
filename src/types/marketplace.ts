@@ -252,11 +252,13 @@ export interface PlatformSettings {
   emergencyAnnouncement?: string;
   emergencyAnnouncementActive?: boolean;
   autoApproveVerifiedAgentListings?: boolean;
-  // Dynamic Ad Campaign Pricing Rates (in Naira)
+  // Dynamic Ad Campaign & Platform Pricing Rates (in Naira)
+  adPricingDaily?: number;        // 1-Day Flash Spotlight (1 Day) - default 2,500
   adPricingStarter?: number;      // Starter Spotlight (7 Days) - default 15,000
   adPricingGrowth?: number;       // Growth Partner (30 Days) - default 45,000
   adPricingCorporate?: number;    // Corporate Leader (90 Days) - default 120,000
   adPricingFeedWeekly?: number;   // Feed Quick Ad (7 Days) - default 5,000
   adPricingFeedMonthly?: number;  // Feed Quick Ad (30 Days) - default 15,000
+  jobPromotionFee?: number;       // Sponsored Job Listing Fee (30 Days) - default 2,000
 }
 
