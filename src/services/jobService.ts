@@ -141,6 +141,7 @@ export async function getAllJobs(): Promise<JobListing[]> {
     } catch (e) {
       console.warn('[JobService] Cloud jobs sync notice:', e);
     }
+    return [];
   }
 
   // Normalize freemium fields (Free Organic ₦0 vs Sponsored Spotlight ₦2,000)

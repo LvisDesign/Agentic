@@ -400,8 +400,8 @@ export const loadAllAdverts = async (): Promise<AdvertStory[]> => {
     }
   }
 
-  // 2. Fallback to localStorage ONLY if cloud was unreachable/offline
-  if (!fetchedFromCloud) {
+  // 2. Fallback to localStorage ONLY if Supabase is not configured at all
+  if (!isSupabaseConfigured() && !fetchedFromCloud) {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(ADVERTS_STORAGE_KEY) : null;
     if (raw) {
       try {

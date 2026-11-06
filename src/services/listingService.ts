@@ -156,45 +156,9 @@ export async function forceSyncLocalListings(): Promise<ForceSyncResult> {
  * Runs when an agent opens the app so existing listings are uploaded to cloud
  */
 export async function syncLocalListingsToCloud(): Promise<void> {
-  const client = getSupabaseClient();
-  if (!isSupabaseConfigured() || !client) return;
-
-  try {
-    const saved = getLocalSavedListings();
-    if (!saved) return;
-    const localListings: PropertyListing[] = JSON.parse(saved);
-    if (!Array.isArray(localListings) || localListings.length === 0) return;
-
-    const deletedIds = getDeletedListingIds();
-    // Filter to real agent listings (exclude any mock/demo listings and any deleted listings)
-    const agentListings = localListings.filter(
-      (item) =>
-        item.id &&
-        !deletedIds.has(item.id) &&
-        item.availabilityStatus !== 'Deleted' &&
-        (item.id.startsWith('prop-agent-') || !INITIAL_LISTINGS.some((m) => m.id === item.id))
-    );
-    if (agentListings.length === 0) return;
-
-    // Check which listings already exist in Supabase
-    const { data: cloudData, error } = await client.from('listings').select('id');
-    if (error) {
-      console.warn('[Setlla Supabase] Table check error (table may need creation):', error.message);
-      return;
-    }
-
-    const cloudIdSet = new Set((cloudData || []).map((r) => r.id));
-    const unuploaded = agentListings.filter((item) => !cloudIdSet.has(item.id));
-
-    if (unuploaded.length > 0) {
-      console.log(`[Setlla Supabase] Syncing ${unuploaded.length} local listing(s) to cloud database...`);
-      for (const item of unuploaded) {
-        await saveNewListing(item);
-      }
-    }
-  } catch (err) {
-    console.warn('[Setlla Supabase] Auto-sync error:', err);
-  }
+  // Disabled: Supabase is the strict single source of truth.
+  // Never re-upload cached localStorage listings back to the database so deleted listings never resurrect.
+  return;
 }
 
 /**
@@ -362,9 +326,6 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
           (l) => !INITIAL_LISTINGS.some((m) => m.id === l.id) && !deletedIds.has(l.id) && !isNonActive(l.availabilityStatus)
         );
 
-        // Check if any real listings have local video blobs on this machine waiting to upload
-        syncLocalVideosToCloudStorage(realCloudListings).catch(() => {});
-
         // Synchronize local cache to match cloud database (capped to 30 most recent to prevent browser quota exhaustion)
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(realCloudListings.slice(0, 30)));
@@ -375,9 +336,10 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
     } catch (err) {
       console.warn('[Setlla Supabase] Failed to fetch cloud listings:', err);
     }
+    return [];
   }
 
-  // Fallback: Local storage (strictly real agent listings, no demo listings, no deleted listings)
+  // Fallback: Local storage only when Supabase is not configured
   const saved = getLocalSavedListings();
   if (saved) {
     try {
@@ -445,26 +407,6 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
         console.error('[Setlla Supabase] Error saving listing to database:', error);
       } else {
         console.log('[Setlla Supabase] Listing saved to cloud successfully:', sanitized.id);
-      }
-
-      // Guarantee the listing agent is captured in platform_users (unless deleted by admin)
-      if (sanitized.agent && sanitized.agent.id && !isDeletedUserRecord(sanitized.agent)) {
-        Promise.resolve(
-          client.from('platform_users').upsert({
-            id: sanitized.agent.id,
-            full_name: sanitized.agent.fullName || 'Verified Agent',
-            phone: sanitized.agent.phone || '',
-            whatsapp: sanitized.agent.whatsapp || sanitized.agent.phone || '',
-            agency_name: sanitized.agent.agencyName || sanitized.agent.fullName,
-            cac_number: sanitized.agent.cacNumber || 'VERIFIED-REG',
-            is_agent: true,
-            persona: 'lister',
-            city: sanitized.city || 'Asaba',
-            state: sanitized.state || 'Delta State',
-            kyc_status: sanitized.agent.isVerified ? 'verified' : 'pending',
-            created_at: sanitized.createdAt || new Date().toISOString(),
-          }, { onConflict: 'id' })
-        ).catch(() => {});
       }
     } catch (err) {
       console.warn('[Setlla Supabase] Network exception saving listing:', err);

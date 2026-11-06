@@ -9,7 +9,7 @@ export const DEFAULT_REGISTERED_USERS: UserProfile[] = [];
 
 const STORAGE_KEY = 'setlla_registered_users';
 const LEGACY_STORAGE_KEY = 'deltarent_registered_users';
-const CLEAN_SLATE_KEY = 'setlla_v20_clean_slate_wiped_2026';
+const CLEAN_SLATE_KEY = 'setlla_v26_clean_slate_wiped_2026';
 
 /**
  * Automatically purges all legacy test accounts, ghost sessions, test adverts, and temporary data
@@ -630,10 +630,9 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
     const client = getSupabaseClient();
     if (!client) return localUsers;
 
-    const [usersRes, advertisersRes, listingsRes, cloudTombstonesRes] = await Promise.all([
+    const [usersRes, advertisersRes, cloudTombstonesRes] = await Promise.all([
       client.from('platform_users').select('*').order('created_at', { ascending: false }),
       Promise.resolve(client.from('advertisers').select('*').order('created_at', { ascending: false })).catch(() => ({ data: null, error: null })),
-      Promise.resolve(client.from('listings').select('id, title, city, state, agent, availability_status, created_at').in('availability_status', ['Available', 'Under Inspection'])).catch(() => ({ data: null, error: null })),
       Promise.resolve(client.from('deleted_adverts').select('id').like('id', 'usr_%')).catch(() => ({ data: null, error: null })),
     ]);
 
@@ -744,64 +743,7 @@ export async function fetchRegisteredUsersFromDb(): Promise<UserProfile[]> {
         });
       }
 
-      // 3. FAILSAFE: Ensure any agent who has an active published listing is ALWAYS captured (unless deleted)
-      if (listingsRes && 'data' in listingsRes && Array.isArray(listingsRes.data)) {
-        listingsRes.data.forEach((listing: any) => {
-          const ag = listing.agent;
-          if (ag && (ag.id || ag.phone)) {
-            // Never harvest or re-upsert an agent that was explicitly deleted
-            if (isDeletedUserRecord({ id: ag.id, phone: ag.phone, email: ag.email })) {
-              if (listing.id) {
-                Promise.resolve(client.from('listings').update({ availability_status: 'Deleted' }).eq('id', listing.id)).catch(() => {});
-                Promise.resolve(client.from('listings').delete().eq('id', listing.id)).catch(() => {});
-              }
-              return;
-            }
-            const agentId = ag.id || (ag.phone ? `DT-AGT-${normalizePhoneNumber(ag.phone).slice(-4)}` : `DT-AGT-${Date.now()}`);
-            const agentPhoneNorm = ag.phone ? normalizePhoneNumber(ag.phone) : '';
-            
-            let found = false;
-            for (const existingUser of dbUsersMap.values()) {
-              const existingPhoneNorm = existingUser.phone ? normalizePhoneNumber(existingUser.phone) : '';
-              if (
-                existingUser.id === agentId ||
-                (agentPhoneNorm && existingPhoneNorm && agentPhoneNorm === existingPhoneNorm)
-              ) {
-                found = true;
-                existingUser.isAgent = true;
-                if (!existingUser.persona || existingUser.persona === 'tenant') {
-                  existingUser.persona = 'lister';
-                }
-                if (ag.agencyName && !existingUser.agencyName) existingUser.agencyName = ag.agencyName;
-                if (ag.cacNumber && !existingUser.cacNumber) existingUser.cacNumber = ag.cacNumber;
-                break;
-              }
-            }
-
-            if (!found) {
-              const activeAgentUser: UserProfile = {
-                id: agentId,
-                fullName: ag.fullName || ag.name || 'Verified Agent',
-                phone: ag.phone || '',
-                whatsapp: ag.whatsapp || ag.phone || '',
-                agencyName: ag.agencyName || ag.fullName || 'Agency',
-                cacNumber: ag.cacNumber || 'VERIFIED-REG',
-                isAgent: true,
-                persona: 'lister',
-                state: listing.state || 'Delta State',
-                city: listing.city || 'Asaba',
-                kycStatus: ag.isVerified ? 'verified' : 'pending',
-                isVerifiedTenant: false,
-                savedListingIds: [],
-                createdAt: listing.created_at || new Date().toISOString(),
-              };
-              addOrMergeToDbMap(activeAgentUser);
-            }
-          }
-        });
-      }
-
-      // 4. Ensure Super Admin session persists in map if active
+      // 3. Ensure Super Admin session persists in map if active
       try {
         const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
         if (rawCurrent) {

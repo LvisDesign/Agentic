@@ -210,88 +210,8 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
 }
 
 export function App() {
-  const [listings, setListings] = useState<PropertyListing[]>(() => {
-    const saved = localStorage.getItem('setlla_listings') || localStorage.getItem('deltarent_listings');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Keep custom agent listings created on this device, and sanitize any expired blob URLs
-          const deletedIds = getDeletedListingIds();
-          const customAgentListings = parsed
-            .filter((item: PropertyListing) => 
-              item.id && 
-              !deletedIds.has(item.id) &&
-              item.availabilityStatus !== 'Deleted' &&
-              item.id.startsWith('prop-agent-') &&
-              !(item.agent && isDeletedUserRecord(item.agent))
-            )
-            .map((item: PropertyListing, idx: number) => {
-              const sanitizedMedia = (item.media || []).map((m, mIdx) => {
-                const isBlob = typeof m.url === 'string' && m.url.startsWith('blob:');
-                if (isBlob) {
-                  const fallback = FALLBACK_PROPERTY_IMAGES[(idx + mIdx) % FALLBACK_PROPERTY_IMAGES.length];
-                  return {
-                    ...m,
-                    url: m.poster || fallback,
-                    poster: m.poster || fallback,
-                  };
-                }
-                return m;
-              });
-
-              return {
-                ...item,
-                media: sanitizedMedia.length > 0 ? sanitizedMedia : [{
-                  type: 'image' as const,
-                  url: FALLBACK_PROPERTY_IMAGES[idx % FALLBACK_PROPERTY_IMAGES.length],
-                  caption: 'Property Exterior',
-                }],
-              };
-            });
-
-          // Only return real listings created by agents (exclude all mock/demo listings)
-          return customAgentListings;
-        }
-      } catch (e) {
-        console.error('Failed to parse saved listings', e);
-      }
-    }
-    return [];
-  });
-
-  const [bookings, setBookings] = useState<BookingRecord[]>(() => {
-    const saved = localStorage.getItem('setlla_bookings') || localStorage.getItem('deltarent_bookings');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.filter((b: BookingRecord) =>
-            b && b.id && !b.id.startsWith('DT-ABK-5120') && !b.id.startsWith('DT-ASB-8492') && b.applicantName !== 'Chinedu Okafor'
-          );
-        }
-      } catch (e) {
-        // fallback
-      }
-    }
-    return [];
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('setlla_listings', JSON.stringify(listings));
-    } catch (e) {
-      // ignore
-    }
-  }, [listings]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('setlla_bookings', JSON.stringify(bookings));
-    } catch (e) {
-      // ignore
-    }
-  }, [bookings]);
+  const [listings, setListings] = useState<PropertyListing[]>([]);
+  const [bookings, setBookings] = useState<BookingRecord[]>([]);
 
   // Seamless auto-activation of mobile alerts on user interaction
   useEffect(() => {
@@ -621,40 +541,6 @@ export function App() {
       isMounted = false;
     };
   }, [currentUser.id, currentUser.email]);
-
-  // Auto-heal agent status if current user has published listings on this device or in cloud
-  useEffect(() => {
-    if (!currentUser || currentUser.id === 'GUEST_USER' || currentUser.isAgent || isElvisSuperAdmin(currentUser)) return;
-    if (isDeletedUserRecord(currentUser)) return;
-    const phoneNorm = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
-    const myListing = listings.find(
-      (l) =>
-        l.availabilityStatus !== 'Deleted' &&
-        ((l.agent?.id && l.agent.id === currentUser.id) ||
-          (phoneNorm && l.agent?.phone && normalizePhoneNumber(l.agent.phone) === phoneNorm))
-    );
-
-    if (myListing) {
-      console.log('[App] Detected active agent listing for current user - auto-upgrading user profile to Agent.');
-      const healedAgent: UserProfile = {
-        ...currentUser,
-        isAgent: true,
-        isVerifiedTenant: false,
-        agencyName: myListing.agent?.agencyName || currentUser.agencyName || currentUser.fullName,
-        cacNumber: myListing.agent?.cacNumber || currentUser.cacNumber || 'VERIFIED-REG',
-        agentType: 'agency',
-        phone: myListing.agent?.phone || currentUser.phone,
-        operatingCity: myListing.city || currentUser.city || 'Asaba',
-        operatingState: myListing.state || currentUser.state || 'Delta State',
-      };
-      setCurrentUser(healedAgent);
-      // Auto-heal agent permissions without disrupting the user's active page/role
-      localStorage.setItem('setlla_user', JSON.stringify(healedAgent));
-      localStorage.setItem('deltarent_user', JSON.stringify(healedAgent));
-      saveRegisteredUser(healedAgent, { skipBroadcast: true });
-      saveRegisteredUserAsync(healedAgent, { skipBroadcast: true });
-    }
-  }, [listings, currentUser]);
 
   // 1. Keep active view, role & room in sync with localStorage and URL Hash on every navigation
   useEffect(() => {

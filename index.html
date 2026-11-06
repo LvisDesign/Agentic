@@ -32,11 +32,11 @@
     <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64x64.png?v=3" />
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg?v=3" />
     <link rel="shortcut icon" href="/favicon.ico?v=3" />
-    <!-- Clean-Slate Account Enforcement: Run once to purge stale pre-wipe test accounts -->
+    <!-- Clean-Slate Account Enforcement: Run once to purge stale pre-wipe test accounts & cached listings -->
     <script>
       (function() {
         try {
-          if (localStorage.getItem('setlla_clean_slate_wiped_v25') !== 'true') {
+          if (localStorage.getItem('setlla_clean_slate_wiped_v26') !== 'true') {
             var raw = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
             var isSuperAdmin = false;
             if (raw) {
@@ -48,17 +48,26 @@
                 }
               } catch(e) {}
             }
+            // Always clear cached listings, bookings, jobs, adverts, and user lists so Supabase is 100% single source of truth
+            var cachedDataKeys = [
+              'setlla_listings', 'deltarent_listings',
+              'setlla_bookings', 'deltarent_bookings',
+              'setlla_adverts', 'deltarent_adverts',
+              'setlla_jobs', 'deltarent_jobs', 'setlla_job_listings',
+              'setlla_registered_users', 'deltarent_registered_users'
+            ];
+            cachedDataKeys.forEach(function(k) { localStorage.removeItem(k); });
             if (!isSuperAdmin) {
               var keysToDrop = [];
               for (var i = 0; i < localStorage.length; i++) {
                 var k = localStorage.key(i);
-                if (k && k !== 'setlla_clean_slate_wiped_v25') {
+                if (k && k !== 'setlla_clean_slate_wiped_v26') {
                   keysToDrop.push(k);
                 }
               }
               keysToDrop.forEach(function(k) { localStorage.removeItem(k); });
             }
-            localStorage.setItem('setlla_clean_slate_wiped_v25', 'true');
+            localStorage.setItem('setlla_clean_slate_wiped_v26', 'true');
           }
         } catch(e) {}
       })();

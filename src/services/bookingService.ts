@@ -49,6 +49,7 @@ export async function fetchAllBookings(): Promise<BookingRecord[]> {
     } catch (err) {
       console.warn('[Setlla Supabase] Failed fetching bookings from cloud:', err);
     }
+    return [];
   }
 
   // Fallback: Local storage
