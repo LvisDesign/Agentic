@@ -194,15 +194,18 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               </span>
             </div>
 
-            <p className="text-xs text-[#70798C] font-medium truncate">
-              <span className="text-[#342A21] font-semibold">{agentProfile.agencyName || 'Independent Partner Agency'}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2.5 text-xs text-[#70798C] flex-wrap pt-0.5">
+              <span className="text-[#342A21] font-semibold truncate">
+                {agentProfile.agencyName || 'Independent Partner Agency'}
+              </span>
               {agentProfile.reviewCount > 0 && (
-                <span> &bull; Rating {agentProfile.rating}★ ({agentProfile.reviewCount} reviews)</span>
+                <>
+                  <span className="hidden sm:inline text-[#D1D5DB]">&bull;</span>
+                  <span>Rating {agentProfile.rating}★ ({agentProfile.reviewCount} reviews)</span>
+                </>
               )}
-            </p>
-
-            <div className="flex items-center gap-2 text-xs text-[#70798C] flex-wrap pt-0.5">
-              <span className="inline-flex items-center gap-1.5 text-[#342A21] font-medium">
+              <span className="hidden sm:inline text-[#D1D5DB]">&bull;</span>
+              <span className="inline-flex items-center gap-1.5 text-[#342A21] font-medium shrink-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                 <span>Online &amp; Available</span>
               </span>
