@@ -22,9 +22,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'Token is required' });
     }
 
-    const secretKey =
-      process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY ||
-      '0x4AAAAAAF0F0REUM9f2DCH_AeFS3ZQAKbY';
+    const secretKey = process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY;
+    if (!secretKey) {
+      console.error('[Turnstile] Missing CLOUDFLARE_TURNSTILE_SECRET_KEY environment variable');
+      return res.status(500).json({ success: false, error: 'Security verification unavailable' });
+    }
 
     const formData = new URLSearchParams();
     formData.append('secret', secretKey);
