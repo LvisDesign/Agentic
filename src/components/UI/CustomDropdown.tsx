@@ -49,16 +49,18 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [coords, setCoords] = useState<{
     top: number;
+    bottom: number;
     left: number;
     width: number;
     openUpwards: boolean;
     maxHeight: number;
   }>({
     top: 0,
+    bottom: 0,
     left: 0,
     width: 0,
     openUpwards: false,
-    maxHeight: 260,
+    maxHeight: 360,
   });
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -97,23 +99,19 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
 
     const isMobile = viewportWidth < 768;
 
-    // On mobile screens, move UP into the signup container whenever space above is adequate (>= 160px)
-    // or larger than space below. This keeps the dropdown neatly inside the upper half of the signup card
-    // rather than bleeding off the bottom of the container or phone screen.
-    const openUpwards = isMobile
-      ? (spaceAbove >= 160 || spaceAbove > spaceBelow)
-      : (spaceBelow < 280 && spaceAbove > spaceBelow);
+    // Open upwards only when space below is tight (< 260px) and there is more space above
+    const openUpwards = spaceBelow < 260 && spaceAbove > spaceBelow;
 
-    // Maximum height for the dropdown card:
-    // On mobile, cap it to roughly half of the signup screen (around 220px - 250px)
-    // so it is neatly housed inside the container, and as users scroll more cities are displayed.
+    // On mobile screens, allow the dropdown to expand up to half (50%) of the user's screen
     const availableVerticalSpace = openUpwards ? spaceAbove - 16 : spaceBelow - 16;
-    const mobileHalfScreen = Math.min(250, Math.max(160, Math.round(viewportHeight * 0.40)));
+    const mobileHalfScreen = Math.max(260, Math.round(viewportHeight * 0.50));
     const maxMenuHeight = isMobile
-      ? Math.min(mobileHalfScreen, Math.max(120, availableVerticalSpace))
-      : Math.min(280, Math.max(120, availableVerticalSpace));
+      ? Math.min(mobileHalfScreen, Math.max(200, availableVerticalSpace))
+      : Math.min(340, Math.max(160, availableVerticalSpace));
 
-    let menuWidth = variant === 'form' ? Math.max(rect.width, 210) : Math.max(rect.width, 240);
+    let menuWidth = variant === 'form'
+      ? Math.max(rect.width, isMobile ? Math.min(260, viewportWidth - 24) : 220)
+      : Math.max(rect.width, 240);
     let left = rect.left;
 
     if (variant === 'form') {
@@ -140,10 +138,12 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       }
     }
 
-    const top = openUpwards ? rect.top - 6 : rect.bottom + 6;
+    const top = rect.bottom + 6;
+    const bottom = window.innerHeight - rect.top + 6;
 
     setCoords({
       top,
+      bottom,
       left,
       width: menuWidth,
       openUpwards,
@@ -353,11 +353,10 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
             role="listbox"
             style={{
               position: 'fixed',
-              top: coords.top,
+              ...(coords.openUpwards ? { bottom: coords.bottom } : { top: coords.top }),
               left: coords.left,
               width: `${coords.width}px`,
               maxHeight: `${coords.maxHeight}px`,
-              transform: coords.openUpwards ? 'translateY(-100%)' : 'none',
               zIndex: 99999,
             }}
             className={`bg-white/98 backdrop-blur-md rounded-2xl shadow-elevated border border-[#E5E7EB] p-1.5 flex flex-col overflow-hidden animate-dropdown ${
