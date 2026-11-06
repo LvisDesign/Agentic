@@ -398,7 +398,7 @@ export function getRegisteredUsers(): UserProfile[] {
     const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
     if (rawCurrent) {
       const current: UserProfile = JSON.parse(rawCurrent);
-      if (current && current.email && current.email.toLowerCase() === 'admin@setlla.com') {
+      if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
         return [current];
       }
     }
