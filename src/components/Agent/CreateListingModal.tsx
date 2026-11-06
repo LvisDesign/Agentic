@@ -505,7 +505,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
 
                 {/* State & City */}
                 <div className="grid grid-cols-2 gap-2.5 relative z-30">
-                  <div>
+                  <div className="min-w-0">
                     <label className="text-[11px] font-semibold text-[#70798C] block mb-1">State</label>
                     <CustomDropdown
                       options={NIGERIAN_STATE_OPTIONS}
@@ -517,7 +517,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                     />
                   </div>
 
-                  <div>
+                  <div className="min-w-0">
                     <label className="text-[11px] font-semibold text-[#70798C] block mb-1">City / Town</label>
                     <CustomDropdown
                       options={DELTA_CITY_OPTIONS}
@@ -581,43 +581,43 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                 </div>
 
                 {/* Bedrooms & Bathrooms Steppers (Clean 2-Column Row) */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5]/60 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#000004]">Bedrooms</span>
-                    <div className="flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="min-w-0 overflow-hidden p-2 sm:p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5]/60 flex items-center justify-between gap-1.5">
+                    <span className="text-[11px] sm:text-xs font-semibold text-[#000004] truncate">Bedrooms</span>
+                    <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                       <button
                         type="button"
                         onClick={() => setBedrooms((b) => Math.max(1, b - 1))}
-                        className="w-7 h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95"
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="w-4 text-center font-bold text-xs text-[#000004]">{bedrooms}</span>
+                      <span className="w-3.5 sm:w-4 text-center font-bold text-[11px] sm:text-xs text-[#000004]">{bedrooms}</span>
                       <button
                         type="button"
                         onClick={() => setBedrooms((b) => Math.min(10, b + 1))}
-                        className="w-7 h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95"
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5]/60 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#000004]">Bathrooms</span>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0 overflow-hidden p-2 sm:p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5]/60 flex items-center justify-between gap-1.5">
+                    <span className="text-[11px] sm:text-xs font-semibold text-[#000004] truncate">Bathrooms</span>
+                    <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                       <button
                         type="button"
                         onClick={() => setBathrooms((b) => Math.max(1, b - 1))}
-                        className="w-7 h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95"
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <span className="w-4 text-center font-bold text-xs text-[#000004]">{bathrooms}</span>
+                      <span className="w-3.5 sm:w-4 text-center font-bold text-[11px] sm:text-xs text-[#000004]">{bathrooms}</span>
                       <button
                         type="button"
                         onClick={() => setBathrooms((b) => Math.min(10, b + 1))}
-                        className="w-7 h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95"
+                        className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
@@ -672,7 +672,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                         }
                       }}
                       placeholder="Add custom feature (e.g. Starlink, Boys Quarters)..."
-                      className="flex-1 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[11px] text-[#000004] focus:outline-none focus:border-[#342A21]"
+                      className="flex-1 min-w-0 px-3 py-1.5 rounded-xl border border-[#E5E7EB] text-[11px] text-[#000004] focus:outline-none focus:border-[#342A21]"
                     />
                     <button
                       type="button"
