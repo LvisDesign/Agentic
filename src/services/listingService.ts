@@ -258,6 +258,7 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
           .from('listings')
           .select('*')
           .neq('availability_status', 'Deleted')
+          .neq('availability_status', 'Archived')
           .order('created_at', { ascending: false });
 
         if (options?.city && options.city !== 'All Cities' && options.city.trim()) {
@@ -622,12 +623,16 @@ export async function deleteListing(listingId: string): Promise<boolean> {
     try {
       await client
         .from('listings')
-        .update({ availability_status: 'Archived' })
+        .update({ availability_status: 'Archived', last_confirmed_at: new Date().toISOString() })
         .eq('id', listingId);
       console.log('[Setlla Supabase] Listing marked as Archived in cloud database:', listingId);
     } catch (err) {
       console.warn('[Setlla Supabase] Soft delete notice:', err);
     }
+
+    try {
+      await client.from('deleted_adverts').upsert({ id: listingId, deleted_at: new Date().toISOString() });
+    } catch (_) {}
 
     // 4. Also attempt hard DELETE from Supabase database
     try {

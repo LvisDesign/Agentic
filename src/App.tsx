@@ -87,7 +87,7 @@ import {
 import { getPlatformSettings, fetchPlatformSettingsAsync } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
 import { fetchAllBookings, saveNewBooking, updateBookingStatus, deleteBooking } from './services/bookingService';
-import { supabase, isSupabaseConfigured, getSupabaseClient } from './utils/supabaseClient';
+import { supabase, isSupabaseConfigured, getSupabaseClient, invalidateCache } from './utils/supabaseClient';
 import { broadcastRealtimeEvent, subscribeToRealtimeEvents } from './services/realtimeSync';
 import { playNotificationSound, showDeviceNotification, requestDeviceNotificationPermission } from './utils/realtimeNotifications';
 
@@ -897,6 +897,26 @@ export function App() {
           { event: '*', schema: 'public', table: 'listings' },
           (payload) => {
             if (!isMounted) return;
+            invalidateCache('listings_');
+
+            if (payload.eventType === 'DELETE' && payload.old) {
+              const oldRow = payload.old as any;
+              if (oldRow?.id) {
+                recordDeletedListingId(String(oldRow.id));
+                setListings((prev) => prev.filter((l) => l.id !== String(oldRow.id)));
+              }
+            } else if (payload.new) {
+              const changedRow = payload.new as any;
+              const rowStatus = changedRow?.availability_status || changedRow?.availabilityStatus;
+              if (
+                changedRow?.id &&
+                (rowStatus === 'Deleted' || rowStatus === 'Archived' || rowStatus === 'Inactive' || rowStatus === 'Removed')
+              ) {
+                recordDeletedListingId(String(changedRow.id));
+                setListings((prev) => prev.filter((l) => l.id !== String(changedRow.id)));
+              }
+            }
+
             fetchAllListings().then((updated) => {
               if (!isMounted || !updated) return;
               setListings(updated);

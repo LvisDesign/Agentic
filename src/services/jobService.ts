@@ -107,13 +107,20 @@ function mapJobToListingsRow(job: JobListing) {
 
 function mapListingsRowToJob(row: any): JobListing | null {
   if (!row || !row.id) return null;
+  const rowStatus = row.availability_status;
+  if (
+    rowStatus === 'Deleted' ||
+    rowStatus === 'Archived' ||
+    rowStatus === 'Inactive' ||
+    rowStatus === 'Removed'
+  ) {
+    recordDeletedJobId(String(row.id));
+    return null;
+  }
   const embedded = row.fees?._jobData;
   if (embedded && typeof embedded === 'object' && embedded.id) {
-    const rowStatus = row.availability_status;
     const resolvedStatus: 'active' | 'closed' | 'expired' =
-      rowStatus === 'Deleted'
-        ? 'expired'
-        : rowStatus === 'Rented Out'
+      rowStatus === 'Rented Out'
         ? 'closed'
         : embedded.status || 'active';
     return {
@@ -181,6 +188,7 @@ export async function getAllJobs(): Promise<JobListing[]> {
           .select('*')
           .eq('property_type', '__JOB_LISTING__')
           .neq('availability_status', 'Deleted')
+          .neq('availability_status', 'Archived')
           .order('created_at', { ascending: false });
 
         if (!error && Array.isArray(data)) {
@@ -651,6 +659,14 @@ export async function deleteJobListing(jobId: string): Promise<void> {
     try {
       const client = getSupabaseClient();
       if (client) {
+        const now = new Date().toISOString();
+        await client
+          .from('listings')
+          .update({ availability_status: 'Archived', last_confirmed_at: now })
+          .eq('id', jobId);
+        try {
+          await client.from('deleted_adverts').upsert({ id: jobId, deleted_at: now });
+        } catch (_) {}
         await client.from('listings').delete().eq('id', jobId);
       }
     } catch (e) {
