@@ -46,7 +46,7 @@ export interface PaystackPaymentOptions {
  * Check if a valid Paystack Public Key is configured in environment variables
  */
 export const isPaystackConfigured = (): boolean => {
-  const key = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+  const key = getPaystackPublicKey();
   return Boolean(key && typeof key === 'string' && key.trim().startsWith('pk_'));
 };
 
@@ -54,7 +54,7 @@ export const isPaystackConfigured = (): boolean => {
  * Get the configured Paystack Public Key
  */
 export const getPaystackPublicKey = (): string => {
-  return (import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '').trim();
+  return (import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_live_38edc397efe69ff5708fe1a70bbeb6395be04903').trim();
 };
 
 /**

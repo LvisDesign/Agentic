@@ -1,31 +1,17 @@
 import React, { useState } from 'react';
-import { 
-  CreditCard, 
-  Building2, 
-  Smartphone, 
-  Lock, 
-  X, 
-  CheckCircle2, 
-  ArrowRight, 
-  Copy, 
-  Check, 
-  ShieldCheck, 
+import {
+  Lock,
+  X,
+  ArrowRight,
+  ShieldCheck,
   Loader2,
-  AlertCircle 
+  AlertCircle,
+  ReceiptText,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { formatNaira } from '../../utils/formatters';
-import { CustomDropdown, DropdownOption } from '../UI/CustomDropdown';
 import { ModalPortal } from '../UI/ModalPortal';
-import { isPaystackConfigured, getPaystackPublicKey, launchPaystackCheckout } from '../../utils/paystack';
-
-const BANK_OPTIONS: DropdownOption[] = [
-  { value: 'GTBank', label: 'Guaranty Trust Bank (*737*)', subtitle: 'GTCO Instant USSD' },
-  { value: 'Zenith', label: 'Zenith Bank (*966*)', subtitle: 'Zenith Direct Banking' },
-  { value: 'Access', label: 'Access Bank (*901*)', subtitle: 'Access / Diamond Mobile' },
-  { value: 'UBA', label: 'United Bank for Africa (*919*)', subtitle: 'UBA Magic Banking' },
-  { value: 'FirstBank', label: 'First Bank of Nigeria (*894*)', subtitle: 'FirstBank FirstMonie' },
-];
+import { launchPaystackCheckout } from '../../utils/paystack';
 
 interface PaystackModalProps {
   isOpen: boolean;
@@ -56,363 +42,176 @@ export const PaystackModal: React.FC<PaystackModalProps> = ({
   buttonText,
   onSuccess,
 }) => {
-  const [activeTab, setActiveTab] = useState<'card' | 'bank' | 'ussd'>('card');
-  const [cardNumber, setCardNumber] = useState('4084 0821 9920 4812');
-  const [cardExpiry, setCardExpiry] = useState('11/28');
-  const [cardCvv, setCardCvv] = useState('419');
-  const [selectedBank, setSelectedBank] = useState('GTBank');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [copiedAccount, setCopiedAccount] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  const isConfigured = isPaystackConfigured();
-  const publicKey = getPaystackPublicKey();
-  const isTestMode = publicKey.startsWith('pk_test_');
 
   if (!isOpen) return null;
 
-  const handleCopyAccount = () => {
-    navigator.clipboard.writeText('0293810291');
-    setCopiedAccount(true);
-    setTimeout(() => setCopiedAccount(false), 2000);
-  };
+  const summaryTitle =
+    purposeTitle ||
+    (propertyTitle ? `Inspection Pass • ${propertyTitle}` : 'Setlla Ad Credits Top-Up');
 
-  const handleSimulatePayment = (method: 'Card' | 'Bank Transfer' | 'USSD') => {
+  const summaryRecipient =
+    merchantName || (agentName ? `Setlla • ${agentName}` : 'Setlla Platform');
+
+  const handleProceedToPaystack = async () => {
     setIsProcessing(true);
     setErrorMsg('');
 
-    // Simulate Paystack NIBSS bank gateway authorization
-    setTimeout(() => {
-      setIsProcessing(false);
-      
-      // Fire confetti celebration
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#342A21', '#10B981', '#FCF9F5', '#000004']
-        });
-      } catch (err) {
-        // Fallback if confetti context not available
-      }
-
-      const generatedRef = `PSK_${Date.now().toString().slice(-8)}`;
-      onSuccess(generatedRef, method);
-    }, 1400);
-  };
-
-  const handleInitiatePayment = async (method: 'Card' | 'Bank Transfer' | 'USSD') => {
-    setIsProcessing(true);
-    setErrorMsg('');
-
-    if (isConfigured) {
-      const launched = await launchPaystackCheckout({
-        email: applicantEmail || 'customer@setlla.com',
-        amountNaira: amount,
-        applicantName,
-        applicantPhone,
-        purposeTitle: purposeTitle || 'Setlla Campaign Sponsorship',
-        merchantName: merchantName || 'Setlla',
-        onSuccess: (paymentReference, resolvedMethod) => {
-          setIsProcessing(false);
-          try {
-            confetti({
-              particleCount: 80,
-              spread: 70,
-              origin: { y: 0.6 },
-              colors: ['#342A21', '#10B981', '#FCF9F5', '#000004'],
-            });
-          } catch (err) {}
-          onSuccess(paymentReference, resolvedMethod || method);
-        },
-        onClose: () => {
-          setIsProcessing(false);
-        },
-        onError: (err) => {
-          setIsProcessing(false);
-          setErrorMsg(typeof err === 'string' ? err : err.message || 'Payment initiation failed.');
-        },
-      });
-
-      if (!launched) {
+    const launched = await launchPaystackCheckout({
+      email: applicantEmail || 'customer@setlla.com',
+      amountNaira: amount,
+      applicantName,
+      applicantPhone,
+      purposeTitle: summaryTitle,
+      merchantName: summaryRecipient,
+      onSuccess: (paymentReference, resolvedMethod) => {
         setIsProcessing(false);
-      }
-      return;
-    }
+        try {
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#342A21', '#10B981', '#FCF9F5', '#000004'],
+          });
+        } catch (err) {}
+        onSuccess(paymentReference, resolvedMethod || 'Card');
+      },
+      onClose: () => {
+        setIsProcessing(false);
+      },
+      onError: (err) => {
+        setIsProcessing(false);
+        setErrorMsg(
+          typeof err === 'string' ? err : err.message || 'Could not open Paystack checkout. Please check your connection.'
+        );
+      },
+    });
 
-    // Fallback: If not configured with a live/test key, use simulated payment
-    handleSimulatePayment(method);
+    if (!launched) {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <ModalPortal>
-      <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div 
-        className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-[#E5E7EB] animate-slide-up"
-        onClick={(e) => e.stopPropagation()}
+      <div
+        className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+        onClick={onClose}
       >
-        {/* Paystack Official Header */}
-        <div className="bg-[#0D233A] p-4 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#00C3F7] flex items-center justify-center text-xs font-bold text-[#0D233A]">
-              P
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-xs text-white/70">
-                <span>Secured by</span>
-                <span className="font-semibold text-white">paystack</span>
-                <Lock className="w-3 h-3 text-[#00C3F7]" />
-                {isConfigured ? (
-                  <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 uppercase">
-                    {isTestMode ? 'Test Mode' : 'Live Gateway'}
-                  </span>
-                ) : (
-                  <span className="ml-1 px-1.5 py-0.5 rounded text-[9px] font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30">
-                    Demo Mode
-                  </span>
-                )}
+        <div
+          className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-[#E5E7EB] animate-slide-up"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Clean Header */}
+          <div className="px-5 py-4 bg-[#FCF9F5] border-b border-[#E5E7EB] flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#342A21] text-[#FCF9F5] flex items-center justify-center shadow-2xs shrink-0">
+                <ReceiptText className="w-4 h-4" />
               </div>
-              <div className="text-[11px] text-white/50 truncate max-w-[200px]">
-                {merchantName || (agentName ? `Setlla • ${agentName}` : 'Setlla Ad Sponsorship')}
-              </div>
-            </div>
-          </div>
-
-          <div className="text-right">
-            <div className="text-xs text-white/70">Amount Due</div>
-            <div className="text-base font-bold text-white tracking-wide">
-              {formatNaira(amount)}
-            </div>
-          </div>
-        </div>
-
-        {/* User Context Strip */}
-        <div className="bg-[#FCF9F5] px-4 py-2 border-b border-[#E5E7EB] flex items-center justify-between text-xs text-[#70798C]">
-          <span className="truncate max-w-[200px]">{applicantEmail || 'partner@setlla.com'}</span>
-          <span className="font-medium text-[#342A21]">{purposeTitle || 'Advert Placement Sponsorship'}</span>
-        </div>
-
-        {!isConfigured && (
-          <div className="bg-amber-50/80 px-4 py-1.5 border-b border-amber-100 flex items-center justify-between text-[11px] text-amber-800">
-            <span>Simulation Mode Active</span>
-            <span className="text-[10px] text-amber-700">Add Paystack Key for live charges</span>
-          </div>
-        )}
-
-        {/* Payment Methods Nav */}
-        <div className="flex border-b border-[#E5E7EB] bg-white">
-          <button
-            onClick={() => setActiveTab('card')}
-            className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
-              activeTab === 'card'
-                ? 'border-[#342A21] text-[#342A21] bg-[#342A21]/5'
-                : 'border-transparent text-[#70798C] hover:text-[#000004]'
-            }`}
-          >
-            <CreditCard className="w-3.5 h-3.5" />
-            Card
-          </button>
-          <button
-            onClick={() => setActiveTab('bank')}
-            className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
-              activeTab === 'bank'
-                ? 'border-[#342A21] text-[#342A21] bg-[#342A21]/5'
-                : 'border-transparent text-[#70798C] hover:text-[#000004]'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            Transfer
-          </button>
-          <button
-            onClick={() => setActiveTab('ussd')}
-            className={`flex-1 py-3 text-xs font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors ${
-              activeTab === 'ussd'
-                ? 'border-[#342A21] text-[#342A21] bg-[#342A21]/5'
-                : 'border-transparent text-[#70798C] hover:text-[#000004]'
-            }`}
-          >
-            <Smartphone className="w-3.5 h-3.5" />
-            USSD
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div className="p-5 flex-1 min-h-[260px] flex flex-col justify-between">
-          {/* TAB 1: CARD */}
-          {activeTab === 'card' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-[#70798C]">
-                  Card Details (Verve, Mastercard, Visa)
-                </label>
-                <span className="text-[11px] text-[#70798C] font-medium flex items-center gap-1">
-                  <Lock className="w-3 h-3 text-emerald-600" />
-                  256-bit Encrypted
-                </span>
-              </div>
-
               <div>
-                <input
-                  type="text"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value)}
-                  placeholder="0000 0000 0000 0000"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] font-mono focus:outline-none focus:border-[#342A21] focus:ring-1 focus:ring-[#342A21]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-[#70798C] block mb-1">Expiry</label>
-                  <input
-                    type="text"
-                    value={cardExpiry}
-                    onChange={(e) => setCardExpiry(e.target.value)}
-                    placeholder="MM / YY"
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] font-mono focus:outline-none focus:border-[#342A21]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-[#70798C] block mb-1">CVV</label>
-                  <input
-                    type="password"
-                    maxLength={3}
-                    value={cardCvv}
-                    onChange={(e) => setCardCvv(e.target.value)}
-                    placeholder="123"
-                    className="w-full px-3 py-2 rounded-lg border border-[#E5E7EB] text-sm text-[#000004] font-mono focus:outline-none focus:border-[#342A21]"
-                  />
-                </div>
-              </div>
-
-              <div className="p-2.5 rounded-lg bg-[#FCF9F5] border border-[#E5E7EB] text-[11px] text-[#70798C] flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#342A21] shrink-0" />
-                <span>
-                  {purposeTitle ? `Secured by Paystack · ${purposeTitle}` : 'Zero Risk: Held in Setlla Escrow until physical inspection takes place.'}
-                </span>
+                <h3 className="font-display font-bold text-base text-[#000004]">
+                  Payment Summary
+                </h3>
+                <p className="text-[11px] text-[#70798C]">
+                  Review details before proceeding to Paystack
+                </p>
               </div>
             </div>
-          )}
-
-          {/* TAB 2: BANK TRANSFER */}
-          {activeTab === 'bank' && (
-            <div className="space-y-4">
-              <div className="p-3.5 rounded-xl bg-[#342A21]/5 border border-[#342A21]/20 text-center">
-                <div className="text-xs text-[#70798C]">Transfer exactly</div>
-                <div className="text-xl font-bold text-[#000004] font-display">
-                  {formatNaira(amount)}
-                </div>
-                <div className="text-xs text-[#70798C] mt-0.5">
-                  to the dedicated Wema / Titan Bank checkout account below:
-                </div>
-              </div>
-
-              <div className="p-3 rounded-lg border border-[#E5E7EB] bg-white space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#70798C]">Bank:</span>
-                  <span className="font-semibold text-[#000004]">Wema Bank / Titan Trust</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#70798C]">Account Number:</span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-mono font-bold text-sm text-[#000004]">
-                      0293810291
-                    </span>
-                    <button
-                      onClick={handleCopyAccount}
-                      className="text-[#342A21] hover:text-[#251E17] p-1"
-                      title="Copy account number"
-                    >
-                      {copiedAccount ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#70798C]">Beneficiary:</span>
-                  <span className="font-semibold text-[#000004]">Setlla Escrow Ltd</span>
-                </div>
-              </div>
-
-              <div className="text-[11px] text-center text-[#70798C]">
-                Expires in <span className="font-mono font-bold text-[#000004]">29:45</span> minutes. Automatic confirmation.
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: USSD */}
-          {activeTab === 'ussd' && (
-            <div className="space-y-4">
-              <label className="text-xs font-medium text-[#70798C] block">
-                Select your Nigerian Bank
-              </label>
-              <CustomDropdown
-                options={BANK_OPTIONS}
-                value={selectedBank}
-                onChange={(val) => setSelectedBank(val)}
-                headerTitle="Select Nigerian Bank"
-                variant="form"
-              />
-
-              <div className="p-4 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] text-center">
-                <div className="text-xs text-[#70798C]">Dial this code on your mobile phone:</div>
-                <div className="font-mono text-base font-bold text-[#342A21] my-1.5 select-all">
-                  *737*000*2500#
-                </div>
-                <div className="text-[11px] text-[#70798C]">
-                  Authenticate with your 4-digit USSD security PIN
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Error Banner */}
-          {errorMsg && (
-            <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
-              <div className="flex-1">
-                <span className="font-semibold">Payment Error:</span> {errorMsg}
-              </div>
-            </div>
-          )}
-
-          {/* Action Button */}
-          <div className="mt-5 pt-3 border-t border-[#E5E7EB] space-y-2">
-            <button
-              onClick={() => {
-                const method = activeTab === 'card' ? 'Card' : activeTab === 'bank' ? 'Bank Transfer' : 'USSD';
-                handleInitiatePayment(method);
-              }}
-              disabled={isProcessing}
-              className="w-full py-3 px-4 rounded-lg bg-[#00C3F7] hover:bg-[#00a8d4] text-[#0D233A] font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md disabled:opacity-50 cursor-pointer"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#0D233A]" />
-                  <span>{isConfigured ? 'Opening Paystack Checkout...' : 'Settling with Paystack NIBSS...'}</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>
-                    {buttonText || (purposeTitle ? `Pay ${formatNaira(amount)} & Activate` : `Pay ${formatNaira(amount)} & Unlock Contact`)}
-                  </span>
-                </>
-              )}
-            </button>
 
             <button
               type="button"
               onClick={onClose}
               disabled={isProcessing}
-              className="w-full py-2 text-xs text-[#70798C] hover:text-[#000004] transition-colors"
+              aria-label="Close payment summary"
+              className="w-8 h-8 rounded-full bg-white hover:bg-[#F4F5F7] border border-[#E5E7EB] text-[#70798C] hover:text-[#000004] flex items-center justify-center transition-colors cursor-pointer"
             >
-              Cancel Payment
+              <X className="w-4 h-4" />
             </button>
+          </div>
+
+          {/* Summary Body */}
+          <div className="p-5 sm:p-6 space-y-5">
+            {/* Total Amount Highlight */}
+            <div className="p-4 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] text-center space-y-1">
+              <span className="text-[11px] uppercase tracking-wider font-bold text-[#70798C] block">
+                Total Amount to Pay
+              </span>
+              <div className="font-display text-3xl sm:text-4xl font-extrabold text-[#000004] tracking-tight">
+                {formatNaira(amount)}
+              </div>
+            </div>
+
+            {/* Line Items */}
+            <div className="rounded-2xl border border-[#E5E7EB] divide-y divide-[#E5E7EB] text-xs">
+              <div className="px-4 py-3 flex items-center justify-between gap-3">
+                <span className="text-[#70798C]">Payment For</span>
+                <span className="font-bold text-[#000004] text-right truncate max-w-[220px]">
+                  {summaryTitle}
+                </span>
+              </div>
+
+              {propertyTitle && purposeTitle && propertyTitle !== purposeTitle && (
+                <div className="px-4 py-3 flex items-center justify-between gap-3">
+                  <span className="text-[#70798C]">Item</span>
+                  <span className="font-semibold text-[#000004] text-right truncate max-w-[220px]">
+                    {propertyTitle}
+                  </span>
+                </div>
+              )}
+
+              <div className="px-4 py-3 flex items-center justify-between gap-3">
+                <span className="text-[#70798C]">Account Email</span>
+                <span className="font-medium text-[#000004] truncate max-w-[220px]">
+                  {applicantEmail || 'customer@setlla.com'}
+                </span>
+              </div>
+
+              <div className="px-4 py-3 flex items-center justify-between gap-3">
+                <span className="text-[#70798C]">Gateway</span>
+                <span className="font-semibold text-[#342A21] flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-emerald-600" />
+                  <span>Paystack Checkout (Card, Transfer, USSD)</span>
+                </span>
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {/* Next / Proceed to Paystack Button */}
+            <div className="space-y-2.5 pt-1">
+              <button
+                type="button"
+                onClick={handleProceedToPaystack}
+                disabled={isProcessing}
+                className="w-full py-3.5 px-5 rounded-xl bg-[#342A21] hover:bg-[#000004] disabled:opacity-60 text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99] cursor-pointer"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Opening Paystack Checkout...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{buttonText || `Proceed to Paystack • ${formatNaira(amount)}`}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#70798C]">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>256-bit SSL encrypted checkout powered by Paystack</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </ModalPortal>
+    </ModalPortal>
   );
 };

@@ -68,6 +68,7 @@ import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { processUploadedFile } from '../../utils/mediaStorage';
 import { PaystackModal } from '../Booking/PaystackModal';
 import { SimpleCampaignForm } from './SimpleCampaignForm';
+import { launchPaystackCheckout } from '../../utils/paystack';
 
 export function calculateCampaignCost(days: number): {
   totalCost: number;
@@ -620,18 +621,6 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('wallet')}
-                  className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                    activeTab === 'wallet'
-                      ? 'bg-[#342A21] text-[#FCF9F5] shadow-xs'
-                      : 'text-[#70798C] hover:text-[#342A21] bg-white border border-[#E5E7EB]'
-                  }`}
-                >
-                  <Wallet className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span>Credits Wallet (₦{(currentAdvertiser.walletBalance || 0).toLocaleString()})</span>
-                </button>
-
-                <button
                   onClick={() => setActiveTab('api-keys')}
                   className={`py-1.5 px-3 sm:px-3.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                     activeTab === 'api-keys'
@@ -688,19 +677,6 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
             <button
               type="button"
-              onClick={() => setActiveTab('wallet')}
-              className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
-                activeTab === 'wallet'
-                  ? 'bg-[#000004] text-white shadow-xs'
-                  : 'text-[#70798C] hover:text-[#000004] hover:bg-[#FAF8F5]'
-              }`}
-            >
-              <Wallet className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>Ad Wallet (₦{(currentAdvertiser.walletBalance || 0).toLocaleString()})</span>
-            </button>
-
-            <button
-              type="button"
               onClick={() => setActiveTab('api-keys')}
               className={`py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 activeTab === 'api-keys'
@@ -746,20 +722,34 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
           {/* Quick Metrics */}
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap lg:flex-nowrap items-stretch gap-2 sm:gap-2.5 text-center shrink-0">
             <div 
-              onClick={() => setActiveTab('wallet')}
-              className="col-span-2 sm:col-span-1 bg-gradient-to-br from-amber-50/95 via-amber-50/80 to-orange-50/70 p-3 sm:py-3.5 sm:px-4 rounded-2xl border border-amber-200/90 min-w-[145px] sm:min-w-[170px] lg:min-w-[190px] cursor-pointer hover:border-amber-400 hover:shadow-xs transition-all text-left group active:scale-[0.99]"
-              title="Click to view Ad Credits & Wallet ledger"
+              onClick={() => {
+                setTopUpAmount(15000);
+                setTopUpPack(15000);
+                setShowTopUpModal(true);
+              }}
+              className="col-span-2 sm:col-span-1 bg-[#FCF9F5] p-4 sm:py-4 sm:px-5 rounded-2xl border border-[#342A21]/20 min-w-[175px] sm:min-w-[200px] lg:min-w-[220px] cursor-pointer hover:border-[#342A21]/40 shadow-xs transition-all text-left flex flex-col justify-between group"
+              title="Top up Ad Credits"
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] sm:text-[11px] uppercase font-bold text-amber-900 tracking-wider">Credits</span>
-                <Wallet className="w-3.5 h-3.5 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase font-bold text-[#70798C] tracking-wider">Credits Balance</span>
+                <Wallet className="w-4 h-4 text-[#342A21] group-hover:scale-110 transition-transform shrink-0" />
               </div>
-              <span className="text-base sm:text-lg font-black text-[#342A21] font-mono block whitespace-nowrap tracking-tight">
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#000004] font-mono block whitespace-nowrap tracking-tight my-1.5">
                 ₦{(currentAdvertiser.walletBalance || 0).toLocaleString()}
               </span>
-              <span className="text-[10px] sm:text-[11px] font-semibold text-amber-700 block mt-1 group-hover:text-amber-900 transition-colors">
-                + Top Up →
-              </span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTopUpAmount(15000);
+                  setTopUpPack(15000);
+                  setShowTopUpModal(true);
+                }}
+                className="w-full py-2 px-3.5 rounded-xl bg-[#342A21] hover:bg-[#000004] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Top Up Credit</span>
+              </button>
             </div>
             <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1">
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Active</span>
@@ -1946,180 +1936,6 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
         )}
 
         {/* ===================================================================== */}
-        {/* TAB 3: AD CREDITS & WALLET LEDGER                                     */}
-        {/* ===================================================================== */}
-        {activeTab === 'wallet' && (
-          <div className="space-y-6 animate-fade-in">
-            {/* Wallet Balance Hero Card */}
-            <div className="bg-white rounded-3xl p-6 sm:p-10 border border-[#342A21]/15 shadow-card space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-200">
-                    Setlla Ads Wallet
-                  </span>
-                  <h3 className="font-display text-3xl sm:text-4xl text-[#342A21] font-bold mt-2">
-                    ₦{(currentAdvertiser.walletBalance || 0).toLocaleString()}
-                  </h3>
-                  <p className="text-xs text-[#70798C] mt-1">
-                    Available Ad Credits for running and extending sponsored campaigns across the network.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => {
-                      setTopUpAmount(45000);
-                      setTopUpPack(45000);
-                      setShowTopUpModal(true);
-                    }}
-                    className="py-3 px-6 rounded-2xl bg-[#342A21] hover:bg-[#231C16] text-white text-xs font-bold flex items-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99]"
-                  >
-                    <Plus className="w-4 h-4 text-amber-300" />
-                    <span>Buy Ad Credits / Top Up</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Quick Top Up Tier Cards */}
-              <div className="pt-6 border-t border-[#E5E7EB]">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-[#70798C]">
-                    Instant Credit Top-Up Packages
-                  </label>
-                  <span className="text-[11px] text-[#70798C]">Secured by Paystack</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                  <div
-                    onClick={() => {
-                      setTopUpAmount(15000);
-                      setTopUpPack(15000);
-                      setShowTopUpModal(true);
-                    }}
-                    className="p-4 rounded-2xl border border-[#E5E7EB] hover:border-[#342A21] bg-[#FCF9F5] transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[#342A21]">Starter Pack</span>
-                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">7 Days</span>
-                    </div>
-                    <span className="text-xl font-bold text-[#342A21] mt-1 block">₦15,000</span>
-                    <p className="text-[11px] text-[#70798C] mt-0.5">Top up ₦15,000 credits for single property highlight.</p>
-                    <span className="inline-block text-[11px] font-semibold text-amber-700 mt-2 group-hover:underline">
-                      Top Up ₦15,000 →
-                    </span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      setTopUpAmount(45000);
-                      setTopUpPack(45000);
-                      setShowTopUpModal(true);
-                    }}
-                    className="p-4 rounded-2xl border-2 border-amber-400 bg-amber-50/50 shadow-subtle transition-all cursor-pointer group relative overflow-hidden"
-                  >
-                    <span className="absolute top-2 right-2 text-[9px] uppercase font-black bg-amber-500 text-white px-2 py-0.5 rounded">
-                      Popular
-                    </span>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#342A21]">Growth Partner Pack</span>
-                    </div>
-                    <span className="text-xl font-black text-[#342A21] mt-1 block">₦45,000</span>
-                    <p className="text-[11px] text-[#70798C] mt-0.5">Top up ₦45,000 credits for 30-day verified campaigns.</p>
-                    <span className="inline-block text-[11px] font-bold text-amber-800 mt-2 group-hover:underline">
-                      Top Up ₦45,000 →
-                    </span>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      setTopUpAmount(120000);
-                      setTopUpPack(120000);
-                      setShowTopUpModal(true);
-                    }}
-                    className="p-4 rounded-2xl border border-[#E5E7EB] hover:border-[#342A21] bg-[#FCF9F5] transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-[#342A21]">Corporate Booster</span>
-                      <span className="text-[10px] font-bold text-slate-700 bg-slate-200 px-2 py-0.5 rounded">90 Days</span>
-                    </div>
-                    <span className="text-xl font-bold text-[#342A21] mt-1 block">₦120,000</span>
-                    <p className="text-[11px] text-[#70798C] mt-0.5">Top up ₦120,000 credits for multi-campaign corporate runtime.</p>
-                    <span className="inline-block text-[11px] font-semibold text-amber-700 mt-2 group-hover:underline">
-                      Top Up ₦120,000 →
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Transactions Ledger */}
-              <div className="pt-6 border-t border-[#E5E7EB] space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-display font-medium text-base text-[#342A21]">
-                    Wallet Transactions Ledger
-                  </h4>
-                  <span className="text-xs text-[#70798C]">
-                    {(currentAdvertiser.transactions || []).length} recorded transactions
-                  </span>
-                </div>
-
-                {(!currentAdvertiser.transactions || currentAdvertiser.transactions.length === 0) ? (
-                  <div className="p-8 text-center bg-[#FCF9F5] rounded-2xl border border-[#E5E7EB] text-xs text-[#70798C]">
-                    No wallet transactions recorded yet. Buy ad credits to fund your first campaign.
-                  </div>
-                ) : (
-                  <div className="space-y-2.5">
-                    {currentAdvertiser.transactions.map((tx) => (
-                      <div
-                        key={tx.id}
-                        className="p-3.5 bg-[#FCF9F5] rounded-2xl border border-[#E5E7EB] flex items-center justify-between gap-3 text-xs"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                            tx.type === 'credit_purchase'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-stone-200 text-stone-700'
-                          }`}>
-                            {tx.type === 'credit_purchase' ? (
-                              <ArrowDownLeft className="w-4 h-4" />
-                            ) : (
-                              <ArrowUpRight className="w-4 h-4" />
-                            )}
-                          </div>
-                          <div>
-                            <span className="font-bold text-[#342A21] block">{tx.description}</span>
-                            <span className="text-[11px] text-[#70798C]">
-                              {new Date(tx.createdAt).toLocaleDateString('en-GB', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                              {tx.reference && ` · Ref: ${tx.reference}`}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <span className={`font-mono font-bold text-sm block ${
-                            tx.type === 'credit_purchase' ? 'text-emerald-700' : 'text-[#342A21]'
-                          }`}>
-                            {tx.type === 'credit_purchase' ? '+' : '-'}₦{tx.amount.toLocaleString()}
-                          </span>
-                          <span className="text-[10px] text-[#70798C] uppercase font-semibold">
-                            {tx.type === 'credit_purchase' ? 'Credit Added' : 'Campaign Runtime'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================================== */}
         {/* TAB 3: API CREDENTIALS                                                */}
         {/* ===================================================================== */}
         {activeTab === 'api-keys' && (
@@ -2187,17 +2003,20 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
         )}
       </main>
 
-      {/* Top Up Wallet Modal */}
+      {/* Top Up Wallet Modal (Clean Summary -> Direct Paystack Checkout UI) */}
       {showTopUpModal && (
         <ModalPortal>
           <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto animate-fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 border border-[#342A21]/20 shadow-2xl space-y-5 animate-scale-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-7 border border-[#E5E7EB] shadow-2xl space-y-4 animate-scale-in">
             <div className="flex items-center justify-between pb-3 border-b border-[#E5E7EB]">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#342A21] text-[#FCF9F5] flex items-center justify-center shrink-0">
                   <Wallet className="w-4 h-4" />
                 </div>
-                <h3 className="font-display font-bold text-lg text-[#342A21]">Top Up Ad Credits</h3>
+                <div>
+                  <h3 className="font-display font-bold text-base sm:text-lg text-[#000004]">Top Up Ad Credits</h3>
+                  <p className="text-[11px] text-[#70798C]">Select amount and proceed to Paystack</p>
+                </div>
               </div>
               <button
                 type="button"
@@ -2205,15 +2024,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   setShowTopUpModal(false);
                   setPendingPostTopUp(false);
                 }}
-                className="p-1 rounded-xl text-[#70798C] hover:text-[#342A21] hover:bg-[#F6F3EF] cursor-pointer"
+                className="w-8 h-8 rounded-full bg-[#FCF9F5] hover:bg-[#F4F5F7] border border-[#E5E7EB] text-[#70798C] hover:text-[#000004] flex items-center justify-center cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
-
-            <p className="text-xs text-[#70798C]">
-              Select an Ad Credit package or enter custom amount to fund your Setlla advertising wallet via Paystack.
-            </p>
 
             <div className="grid grid-cols-3 gap-2">
               {[
@@ -2231,8 +2046,8 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   }}
                   className={`py-2.5 px-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     topUpPack === p.amount
-                      ? 'border-[#342A21] bg-[#342A21] text-white shadow-xs'
-                      : 'border-[#E5E7EB] bg-[#FCF9F5] text-[#342A21] hover:bg-[#F6F3EF]'
+                      ? 'border-[#342A21] bg-[#342A21] text-[#FCF9F5] shadow-xs'
+                      : 'border-[#E5E7EB] bg-[#FCF9F5] text-[#000004] hover:border-[#342A21]/40'
                   }`}
                 >
                   {p.label}
@@ -2241,12 +2056,12 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-medium text-[#342A21] block mb-1">Custom Top Up Amount (₦)</label>
+              <label className="text-[11px] font-semibold text-[#70798C] block mb-1">Or Enter Custom Amount (₦)</label>
               <input
                 type="number"
-                min={5000}
-                step={1000}
-                placeholder="e.g. 30000"
+                min={2500}
+                step={500}
+                placeholder="e.g. 20000"
                 value={customTopUpAmount}
                 onChange={(e) => {
                   setCustomTopUpAmount(e.target.value);
@@ -2258,35 +2073,60 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 }}
                 className="w-full px-3.5 py-2.5 bg-[#FCF9F5] border border-[#E5E7EB] rounded-xl text-xs font-mono font-bold text-[#000004] focus:outline-none focus:border-[#342A21]"
               />
-              <span className="text-[10px] text-[#70798C] block mt-1">Minimum top-up amount: ₦5,000</span>
             </div>
 
-            <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs flex justify-between items-center">
-              <span>Amount to Charge:</span>
-              <span className="font-bold text-base text-[#342A21] font-mono">₦{topUpAmount.toLocaleString()}</span>
+            {/* Clean Payment Summary Card */}
+            <div className="rounded-2xl border border-[#E5E7EB] bg-[#FCF9F5] divide-y divide-[#E5E7EB] text-xs">
+              <div className="px-4 py-2.5 flex items-center justify-between">
+                <span className="text-[#70798C]">Payment For</span>
+                <span className="font-bold text-[#000004]">Setlla Ad Credits Top-Up</span>
+              </div>
+              <div className="px-4 py-2.5 flex items-center justify-between">
+                <span className="text-[#70798C]">Account</span>
+                <span className="font-medium text-[#000004] truncate max-w-[200px]">{currentAdvertiser.email}</span>
+              </div>
+              <div className="px-4 py-3 flex items-center justify-between bg-white rounded-b-2xl">
+                <span className="font-semibold text-[#000004]">Total to Pay</span>
+                <span className="font-display font-extrabold text-lg text-[#000004] font-mono">
+                  ₦{topUpAmount.toLocaleString()}
+                </span>
+              </div>
             </div>
 
-            <div className="pt-2 flex items-center justify-end gap-2">
+            <div className="pt-1 flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setShowTopUpModal(false);
                   setPendingPostTopUp(false);
                 }}
-                className="px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#70798C] hover:bg-[#F6F3EF] cursor-pointer"
+                className="px-4 py-3 rounded-xl border border-[#E5E7EB] text-xs font-semibold text-[#70798C] hover:text-[#000004] cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   setShowTopUpModal(false);
-                  setShowPaystackModal(true);
+                  await launchPaystackCheckout({
+                    email: currentAdvertiser.email || 'partner@setlla.com',
+                    amountNaira: topUpAmount,
+                    applicantName: currentAdvertiser.companyName,
+                    applicantPhone: whatsappNumber || phone || currentAdvertiser.phone,
+                    purposeTitle: `Wallet Top Up · ₦${topUpAmount.toLocaleString()} Ad Credits`,
+                    merchantName: 'Setlla Ad Credits Wallet',
+                    onSuccess: (ref, method) => {
+                      handleWalletTopUpSuccess(ref, method);
+                    },
+                    onClose: () => {
+                      setPendingPostTopUp(false);
+                    },
+                  });
                 }}
-                className="px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="flex-1 py-3 px-5 rounded-xl bg-[#342A21] hover:bg-[#000004] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-95"
               >
-                <Lock className="w-3.5 h-3.5 text-amber-300" />
-                <span>Pay ₦{topUpAmount.toLocaleString()} via Paystack</span>
+                <span>Next • Proceed to Paystack</span>
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>

@@ -169,34 +169,14 @@ export const SimpleCampaignForm: React.FC<SimpleCampaignFormProps> = ({
 
   return (
     <div className="bg-white rounded-3xl p-4 sm:p-7 border border-[#E5E7EB] shadow-card max-w-2xl mx-auto animate-fade-in">
-      {/* Compact Header with Calm Wallet Pill */}
-      <div className="flex items-center justify-between gap-3 pb-4 border-b border-[#E5E7EB]">
-        <div>
-          <h3 className="font-display text-lg sm:text-xl font-bold text-[#000004]">
-            New Ad Campaign
-          </h3>
-          <p className="text-[11px] text-[#70798C]">
-            Posting as <strong className="text-[#342A21]">{companyName}</strong>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="px-3 py-1.5 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] flex items-center gap-1.5 text-xs">
-            <Wallet className="w-3.5 h-3.5 text-[#342A21]" />
-            <span className="text-[#70798C]">Wallet:</span>
-            <strong className="font-mono font-bold text-[#000004]">
-              ₦{walletBalance.toLocaleString()}
-            </strong>
-          </div>
-          <button
-            type="button"
-            onClick={() => onOpenTopUp(balanceShortfall > 5000 ? balanceShortfall : 15000)}
-            className="px-3 py-1.5 rounded-xl bg-[#F6F3EF] hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] border border-[#342A21]/15 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
-          >
-            <Plus className="w-3 h-3" />
-            <span>Top Up</span>
-          </button>
-        </div>
+      {/* Compact Header */}
+      <div className="pb-4 border-b border-[#E5E7EB]">
+        <h3 className="font-display text-lg sm:text-xl font-bold text-[#000004]">
+          New Ad Campaign
+        </h3>
+        <p className="text-[11px] text-[#70798C]">
+          Posting as <strong className="text-[#342A21]">{companyName}</strong>
+        </p>
       </div>
 
       <form onSubmit={onSubmit} className="space-y-5 pt-4 text-xs">
@@ -608,3 +588,4 @@ export const SimpleCampaignForm: React.FC<SimpleCampaignFormProps> = ({
     </div>
   );
 };
+
