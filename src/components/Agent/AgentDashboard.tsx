@@ -22,7 +22,7 @@ import {
   Megaphone
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, AgentProfile, UserProfile, ListingAvailability } from '../../types/marketplace';
-import { formatNaira, formatNigerianPhone } from '../../utils/formatters';
+import { formatNaira } from '../../utils/formatters';
 import { CreateListingModal } from './CreateListingModal';
 import { ModalPortal } from '../UI/ModalPortal';
 import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
@@ -202,10 +202,8 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
             </p>
 
             <div className="flex items-center gap-2 text-xs text-[#70798C] flex-wrap pt-0.5">
-              <span className="font-mono text-[#000004] font-semibold">{formatNigerianPhone(agentProfile.phone)}</span>
-              <span className="text-[#D1D5DB]">&bull;</span>
               <span className="inline-flex items-center gap-1.5 text-[#342A21] font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#342A21] shrink-0" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                 <span>Online &amp; Available</span>
               </span>
             </div>
