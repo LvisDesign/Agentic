@@ -113,14 +113,16 @@ export const CustomDropdown: React.FC<CustomDropdownProps> = ({
       ? Math.min(mobileHalfScreen, Math.max(120, availableVerticalSpace))
       : Math.min(280, Math.max(120, availableVerticalSpace));
 
-    let menuWidth = variant === 'form' ? rect.width : Math.max(rect.width, 240);
+    let menuWidth = variant === 'form' ? Math.max(rect.width, 210) : Math.max(rect.width, 240);
     let left = rect.left;
 
     if (variant === 'form') {
-      // In form variant, align precisely with the input field
-      // If modal or field extends beyond viewport on very small screens, keep it inside
-      if (left + menuWidth > viewportWidth - 8) {
-        menuWidth = Math.max(160, viewportWidth - left - 8);
+      // In form variant, align with the input field and ensure minimum readable width inside viewport
+      if (left + menuWidth > viewportWidth - 12) {
+        left = Math.max(12, viewportWidth - menuWidth - 12);
+      }
+      if (left + menuWidth > viewportWidth - 12) {
+        menuWidth = Math.max(180, viewportWidth - left - 12);
       }
     } else {
       if (align === 'right') {
