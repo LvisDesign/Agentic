@@ -35,6 +35,7 @@ import {
 } from '../../services/jobService';
 import { isListingVisibleInPublicFeed } from '../../utils/listingLifecycle';
 import { CustomDropdown } from '../UI/CustomDropdown';
+import { ShareSheetModal, SharePayload } from '../UI/ShareSheetModal';
 
 interface JobsFeedProps {
   currentUser: UserProfile;
@@ -70,6 +71,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
   const [activeJobDetails, setActiveJobDetails] = useState<JobListing | null>(null);
   const [activeQuickApplyJob, setActiveQuickApplyJob] = useState<JobListing | null>(null);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
 
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -108,12 +110,13 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
   };
 
   const handleShareJob = (job: JobListing) => {
-    const shareUrl = `${window.location.origin}/#/jobs?id=${job.id}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareUrl);
-      setToastMessage('Job link copied to clipboard!');
-      setTimeout(() => setToastMessage(null), 3000);
-    }
+    const shareUrl = `${window.location.origin}/#/jobs?id=${encodeURIComponent(job.id)}`;
+    setSharePayload({
+      title: job.title,
+      subtitle: `${job.companyName} • ${job.city} (${job.workplaceType})`,
+      text: `Hiring: ${job.title} at ${job.companyName} (${job.salaryRange}) on Setlla Jobs`,
+      url: shareUrl,
+    });
   };
 
   // Filter jobs based on search query, city, and role type with 72h-lifecycle enforcement
@@ -606,6 +609,12 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
         currentUser={currentUser}
         onApplicationSuccess={handleApplicationSuccess}
         onTriggerSignup={onTriggerSignup}
+      />
+
+      <ShareSheetModal
+        isOpen={Boolean(sharePayload)}
+        onClose={() => setSharePayload(null)}
+        payload={sharePayload}
       />
     </div>
   );

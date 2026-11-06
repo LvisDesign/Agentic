@@ -25,6 +25,7 @@ import { QueueStatusBadge } from '../Booking/QueueStatusBadge';
 import { InspectionBookingModal } from '../Booking/InspectionBookingModal';
 import { UnlockedContactSheet } from '../Booking/UnlockedContactSheet';
 import { getInitialStarCount, toggleStarReaction } from '../../services/reactionService';
+import { ShareSheetModal, SharePayload } from '../UI/ShareSheetModal';
 
 interface PropertyCardProps {
   listing: PropertyListing;
@@ -57,7 +58,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [showUnlockedContact, setShowUnlockedContact] = useState(false);
   const [isReported, setIsReported] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [copiedShare, setCopiedShare] = useState(false);
+  const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [activeMediaRatio, setActiveMediaRatio] = useState<number | null>(null);
   const [isListingExpanded, setIsListingExpanded] = useState(false);
   const initialReaction = getInitialStarCount(listing.id, listing.tags);
@@ -90,9 +91,13 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(window.location.href);
-    setCopiedShare(true);
-    setTimeout(() => setCopiedShare(false), 2000);
+    const shareUrl = `${window.location.origin}/#/explore?property=${encodeURIComponent(listing.id)}`;
+    setSharePayload({
+      title: listing.title,
+      subtitle: `${formatNaira(listing.fees.baseRent)}/${listing.fees.rentPeriod} • ${listing.neighborhood}, ${listing.city}`,
+      text: `${listing.title} (${formatNaira(listing.fees.baseRent)}/${listing.fees.rentPeriod}) in ${listing.neighborhood}, ${listing.city} on Setlla`,
+      url: shareUrl,
+    });
   };
 
   const handleReportSubmitted = (_propertyId: string, _reason: string, _notes?: string) => {
@@ -155,30 +160,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
 
 
-            {/* Star Reaction Button (Facebook-style live counter) */}
-            <button
-              type="button"
-              onClick={handleToggleStar}
-              aria-label="Star this property"
-              className={`h-7 ${starCount > 0 ? 'px-2.5' : 'w-7'} rounded-full flex items-center justify-center gap-1 border transition-all cursor-pointer active:scale-95 ${
-                isStarred
-                  ? 'bg-[#FFFBEB] text-[#342A21] border-[#FFAD05]/50 shadow-2xs'
-                  : 'bg-[#FCF9F5] hover:bg-[#F6F3EF] text-[#70798C] hover:text-[#342A21] border-[#E5E7EB]'
-              }`}
-              title={isStarred ? 'You starred this listing' : 'Star this listing'}
-            >
-              <Star
-                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                  isStarAnimating ? 'scale-125' : 'scale-100'
-                } ${isStarred ? 'fill-[#FFAD05] text-[#FFAD05]' : ''}`}
-              />
-              {starCount > 0 && (
-                <span className="text-[11px] font-bold text-[#342A21] leading-none">
-                  {starCount}
-                </span>
-              )}
-            </button>
-
             {/* Subtle Flag Report Button */}
             <button
               type="button"
@@ -205,11 +186,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               className="w-7 h-7 rounded-full bg-[#FCF9F5] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#000004] flex items-center justify-center border border-[#E5E7EB] transition-colors cursor-pointer"
               title="Share listing"
             >
-              {copiedShare ? (
-                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-              ) : (
-                <Share2 className="w-3.5 h-3.5" />
-              )}
+              <Share2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -579,6 +556,12 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           booking={activeBooking}
         />
       )}
+
+      <ShareSheetModal
+        isOpen={Boolean(sharePayload)}
+        onClose={() => setSharePayload(null)}
+        payload={sharePayload}
+      />
 
       {/* Quick Success Toast for Feedback / Reporting */}
       {toastMessage && (

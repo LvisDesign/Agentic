@@ -46,6 +46,7 @@ import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { formatNaira } from '../../utils/formatters';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { getAdPricing, fetchPlatformSettingsAsync } from '../../services/adminService';
+import { ShareSheetModal, SharePayload } from '../UI/ShareSheetModal';
 
 interface JobAgentDashboardProps {
   currentUser: UserProfile;
@@ -71,6 +72,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
   const [isPostJobModalOpen, setIsPostJobModalOpen] = useState(false);
   const [selectedJobForDetails, setSelectedJobForDetails] = useState<JobListing | null>(null);
   const [jobToSponsor, setJobToSponsor] = useState<JobListing | null>(null);
+  const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
   const [jobBoostFee, setJobBoostFee] = useState<number>(() => getAdPricing().jobPromotionFee);
 
   useEffect(() => {
@@ -154,20 +156,14 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
     showToast(`Applicant status marked as ${newStatus}.`);
   };
 
-  const handleShareJob = async (job: JobListing) => {
-    const shareData = {
+  const handleShareJob = (job: JobListing) => {
+    const shareUrl = `${window.location.origin}/#/jobs?id=${encodeURIComponent(job.id)}`;
+    setSharePayload({
       title: job.title,
-      text: `Hiring: ${job.title} at ${job.companyName} on Setlla Jobs!`,
-      url: window.location.href,
-    };
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-      } catch (_) {}
-    } else {
-      await navigator.clipboard.writeText(`${job.title} at ${job.companyName} — Apply on Setlla: ${window.location.href}`);
-      showToast('Vacancy link copied to clipboard!');
-    }
+      subtitle: `${job.companyName} • ${job.city} (${job.workplaceType})`,
+      text: `Hiring: ${job.title} at ${job.companyName} (${job.salaryRange}) on Setlla Jobs`,
+      url: shareUrl,
+    });
   };
 
   // KPIs
@@ -986,6 +982,12 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
         job={selectedJobForDetails}
         hasApplied={false}
         onQuickApply={() => {}}
+      />
+
+      <ShareSheetModal
+        isOpen={Boolean(sharePayload)}
+        onClose={() => setSharePayload(null)}
+        payload={sharePayload}
       />
     </div>
   );

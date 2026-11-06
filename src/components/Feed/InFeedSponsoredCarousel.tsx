@@ -19,6 +19,7 @@ import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertStory, getAdvertCtaConfig } from '../../data/mockAdverts';
 import { isVideoMediaUrl } from '../../services/adService';
 import { PropertyListing } from '../../types/marketplace';
+import { ShareSheetModal, SharePayload } from '../UI/ShareSheetModal';
 
 interface InFeedSponsoredCarouselProps {
   adverts: AdvertStory[];
@@ -233,6 +234,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
 }) => {
   const [expandedAdIds, setExpandedAdIds] = useState<Record<string, boolean>>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [sharePayload, setSharePayload] = useState<SharePayload | null>(null);
 
   // Carousel track scroll reference and scroll states
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -279,24 +281,15 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
     setTimeout(() => setToastMessage(null), 2500);
   };
 
-  const handleShare = async (e: React.MouseEvent, ad: AdvertStory) => {
+  const handleShare = (e: React.MouseEvent, ad: AdvertStory) => {
     e.stopPropagation();
-    const shareData = {
+    const shareUrl = ad.websiteUrl || window.location.href;
+    setSharePayload({
       title: ad.headline,
-      text: `${ad.headline} - Sponsored on Setlla`,
-      url: window.location.href,
-    };
-
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-      } catch {
-        // User dismissed share dialog
-      }
-    } else {
-      await navigator.clipboard.writeText(`${ad.headline} — Check it on Setlla: ${window.location.href}`);
-      showToast('Link copied to clipboard!');
-    }
+      subtitle: `${ad.advertiserName} • Sponsored on Setlla`,
+      text: `${ad.headline} by ${ad.advertiserName} on Setlla`,
+      url: shareUrl,
+    });
   };
 
   const handleCTA = (e: React.MouseEvent | React.SyntheticEvent, ad: AdvertStory) => {
@@ -605,6 +598,12 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
           )}
         </div>
       </div>
+
+      <ShareSheetModal
+        isOpen={Boolean(sharePayload)}
+        onClose={() => setSharePayload(null)}
+        payload={sharePayload}
+      />
     </div>
   );
 };
