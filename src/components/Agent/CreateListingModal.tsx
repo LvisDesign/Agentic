@@ -969,7 +969,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
             </button>
             <button
               type="submit"
-              className="py-2.5 px-6 rounded-lg bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold shadow-md transition-colors cursor-pointer"
+              className="py-2.5 px-6 rounded-lg bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-md transition-colors cursor-pointer"
             >
               {isEditing ? 'Save Changes' : 'Publish Property'}
             </button>

@@ -225,7 +225,7 @@ export const FeeBreakdownSheet: React.FC<FeeBreakdownSheetProps> = ({
         <div className="p-4 sm:p-5 border-t border-[rgba(112,121,140,0.15)] bg-[#FCF9F5] shrink-0">
           <button
             onClick={handleProceed}
-            className="w-full py-3.5 px-4 rounded-[12px] bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99] cursor-pointer"
+            className="w-full py-3.5 px-4 rounded-[12px] bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.99] cursor-pointer"
           >
             Proceed to Book Inspection
           </button>

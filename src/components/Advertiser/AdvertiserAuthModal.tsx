@@ -456,14 +456,14 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                className="w-full py-3 px-5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? (
                   <span>Generating Verification OTP...</span>
                 ) : (
                   <>
                     <span>Send Email Verification OTP</span>
-                    <ArrowRight className="w-4 h-4 text-[#000004]" />
+                    <ArrowRight className="w-4 h-4 text-amber-300" />
                   </>
                 )}
               </button>
@@ -536,14 +536,14 @@ export const AdvertiserAuthModal: React.FC<AdvertiserAuthModalProps> = ({
               <button
                 type="submit"
                 disabled={isLoading || otpCode.length < 6}
-                className="w-full py-3.5 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                className="w-full py-3.5 px-5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? (
                   <span>Verifying Code & Unlocking Dashboard...</span>
                 ) : (
                   <>
                     <span>Verify & Access Ads Dashboard</span>
-                    <ArrowRight className="w-4 h-4 text-[#000004]" />
+                    <ArrowRight className="w-4 h-4 text-amber-300" />
                   </>
                 )}
               </button>

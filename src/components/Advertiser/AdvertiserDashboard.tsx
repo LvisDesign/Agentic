@@ -845,9 +845,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 </div>
                 <button
                   onClick={() => setActiveTab('new-campaign')}
-                  className="py-2.5 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  className="py-2.5 px-5 rounded-xl bg-[#342A21] text-[#FCF9F5] text-xs font-semibold inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
-                  <Plus className="w-4 h-4 text-[#000004]" />
+                  <Plus className="w-4 h-4 text-amber-300" />
                   <span>Create New Campaign</span>
                 </button>
               </div>
@@ -1157,7 +1157,7 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 </p>
                 <button
                   onClick={() => { setSubmissionSuccess(null); setActiveTab('campaigns'); }}
-                  className="py-2.5 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold cursor-pointer"
+                  className="py-2.5 px-5 rounded-xl bg-[#342A21] text-white text-xs font-semibold cursor-pointer"
                 >
                   View in My Campaigns
                 </button>
@@ -1850,11 +1850,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="py-3 px-6 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-2 shadow-card cursor-pointer disabled:opacity-50 transition-all active:scale-[0.99] whitespace-nowrap"
+                        className="py-3 px-6 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-semibold flex items-center justify-center gap-2 shadow-card cursor-pointer disabled:opacity-50 transition-all active:scale-[0.99] whitespace-nowrap"
                       >
-                        <Wallet className="w-3.5 h-3.5 text-[#000004] shrink-0" />
+                        <Wallet className="w-3.5 h-3.5 text-amber-300 shrink-0" />
                         <span>Launch Campaign (Deduct ₦{campaignCost.toLocaleString()} Credits)</span>
-                        <ChevronRight className="w-4 h-4 text-[#000004] shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-amber-300 shrink-0" />
                       </button>
                     ) : (
                       <button
@@ -1866,11 +1866,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                           setShowTopUpModal(true);
                           setToastMessage(`Please top up ₦${balanceShortfall.toLocaleString()} to publish this ${adDurationDays}-day ad.`);
                         }}
-                        className="py-3 px-6 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99] whitespace-nowrap"
+                        className="py-3 px-6 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99] whitespace-nowrap"
                       >
-                        <Plus className="w-3.5 h-3.5 text-[#000004] shrink-0" />
+                        <Plus className="w-3.5 h-3.5 text-white shrink-0" />
                         <span>Top Up Wallet (₦{balanceShortfall.toLocaleString()}) & Publish Ad</span>
-                        <ChevronRight className="w-4 h-4 text-[#000004] shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-white shrink-0" />
                       </button>
                     )}
                     <span className="text-[10px] text-[#70798C] flex items-center gap-1.5 self-center sm:self-end">
@@ -1911,9 +1911,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                       setTopUpPack(45000);
                       setShowTopUpModal(true);
                     }}
-                    className="py-3 px-6 rounded-2xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99]"
+                    className="py-3 px-6 rounded-2xl bg-[#342A21] hover:bg-[#231C16] text-white text-xs font-bold flex items-center gap-2 shadow-card cursor-pointer transition-all active:scale-[0.99]"
                   >
-                    <Plus className="w-4 h-4 text-[#000004]" />
+                    <Plus className="w-4 h-4 text-amber-300" />
                     <span>Buy Ad Credits / Top Up</span>
                   </button>
                 </div>
@@ -2222,9 +2222,9 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   setShowTopUpModal(false);
                   setShowPaystackModal(true);
                 }}
-                className="px-5 py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
-                <Lock className="w-3.5 h-3.5 text-[#000004]" />
+                <Lock className="w-3.5 h-3.5 text-amber-300" />
                 <span>Pay ₦{topUpAmount.toLocaleString()} via Paystack</span>
               </button>
             </div>
@@ -2506,17 +2506,17 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   <button
                     type="submit"
                     disabled={isSavingEdit}
-                    className={`px-5 py-2.5 rounded-xl text-xs font-extrabold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5 transition-colors ${
+                    className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5 transition-colors ${
                       editingAdvert.status === 'rejected'
-                        ? 'bg-rose-600 hover:bg-rose-700 text-white'
-                        : 'bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004]'
+                        ? 'bg-rose-600 hover:bg-rose-700'
+                        : 'bg-[#342A21] hover:bg-[#231C16]'
                     }`}
                   >
                     {isSavingEdit ? (
                       <span>{editingAdvert.status === 'rejected' ? 'Resubmitting Campaign...' : 'Saving Changes...'}</span>
                     ) : (
                       <>
-                        <Check className="w-3.5 h-3.5" />
+                        <Check className="w-3.5 h-3.5 text-white" />
                         <span>{editingAdvert.status === 'rejected' ? 'Update & Resubmit for Review' : 'Save Changes'}</span>
                       </>
                     )}

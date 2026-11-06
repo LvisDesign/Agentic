@@ -37,9 +37,9 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             onClick={onOpenPostAd}
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-[11px] font-extrabold transition-all shadow-xs active:scale-95 cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#F6F3EF] hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] border border-[#342A21]/15 text-[11px] font-bold transition-all shadow-2xs active:scale-95 cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5 text-[#000004]" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Post Ad</span>
           </button>
         </div>
@@ -59,9 +59,9 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
           </div>
           <button
             onClick={onOpenPostAd}
-            className="py-2 px-3.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-[11px] font-extrabold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+            className="py-2 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-[11px] font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
           >
-            <Plus className="w-3.5 h-3.5 text-[#000004]" />
+            <Plus className="w-3.5 h-3.5 text-[#FCF9F5]" />
             <span>Post First Ad</span>
           </button>
         </div>
@@ -163,7 +163,7 @@ export const DesktopAdvertSidebar: React.FC<DesktopAdvertSidebarProps> = ({
           </div>
           <button
             onClick={onOpenPostAd}
-            className="px-2.5 py-1 rounded-lg bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-[10px] font-extrabold shrink-0 transition-colors shadow-xs cursor-pointer"
+            className="px-2.5 py-1 rounded-lg bg-white hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] border border-[#342A21]/20 text-[10px] font-bold shrink-0 transition-colors shadow-2xs cursor-pointer"
           >
             Promote
           </button>

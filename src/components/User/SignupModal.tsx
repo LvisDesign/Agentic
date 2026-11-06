@@ -1523,7 +1523,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           }}
                           className={`group relative py-3 px-3.5 sm:py-3.5 sm:px-4 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 select-none ${
                             isSelected
-                              ? 'border-2 border-[#000004] bg-white ring-2 ring-[#FFAD05]/20 shadow-xs'
+                              ? 'border-2 border-[#342A21] bg-white ring-2 ring-[#342A21]/10 shadow-xs'
                               : 'border-[#E5E7EB] bg-white hover:border-[#CBD5E1] hover:bg-[#FAF9F6]'
                           }`}
                         >
@@ -1572,10 +1572,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       setFormStep(1);
                       setSignupStep('form');
                     }}
-                    className="w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                    className="w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
                   >
                     <span>Continue</span>
-                    <ArrowRight className="w-4 h-4 text-[#000004]" />
+                    <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
                   </button>
                 </div>
               ) : (
@@ -1614,8 +1614,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
                   {/* 2-Step Progress Indicator */}
                   <div className="flex items-center gap-1.5 mb-2.5">
-                    <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${formStep >= 1 ? 'bg-[#FFAD05]' : 'bg-[#E5E7EB]'}`} />
-                    <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${formStep >= 2 ? 'bg-[#FFAD05]' : 'bg-[#E5E7EB]'}`} />
+                    <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${formStep >= 1 ? 'bg-[#342A21]' : 'bg-[#E5E7EB]'}`} />
+                    <div className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${formStep >= 2 ? 'bg-[#342A21]' : 'bg-[#E5E7EB]'}`} />
                   </div>
 
                   <div className="mb-2.5">
@@ -1672,7 +1672,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               setLoginPhoneOrEmail(otpEmail);
                               setAuthMode('login');
                             }}
-                            className="px-2.5 py-1 rounded-md bg-[#FFAD05] text-[#000004] text-[11px] font-bold hover:bg-[#e69c04] cursor-pointer"
+                            className="px-2.5 py-1 rounded-md bg-[#342A21] text-[#FCF9F5] text-[11px] font-bold hover:bg-[#231C16] cursor-pointer"
                           >
                             Sign In with Password
                           </button>
@@ -1740,16 +1740,16 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <button
                         type="submit"
                         disabled={isVerifyingOtp || otpDigits.filter(Boolean).length !== 6}
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
                       >
                         {isVerifyingOtp ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
                             <span>Verifying Code...</span>
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="w-4 h-4 text-[#000004]" />
+                            <CheckCircle2 className="w-4 h-4 text-[#FCF9F5]" />
                             <span>{otpPurpose === 'forgot_password' ? 'Confirm Code & Continue' : 'Confirm & Activate Account'}</span>
                           </>
                         )}
@@ -1799,7 +1799,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setForgotPasswordEmail(e.target.value);
                             if (forgotPasswordError) setForgotPasswordError(null);
                           }}
-                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                         />
                       </div>
                       <p className="text-[11px] text-[#70798C] mt-1.5 leading-snug">
@@ -1820,17 +1820,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <button
                         type="submit"
                         disabled={isSendingResetOtp || !forgotPasswordEmail.trim()}
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                       >
                         {isSendingResetOtp ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
                             <span>Sending Security Code...</span>
                           </>
                         ) : (
                           <>
                             <span>Send Recovery Code</span>
-                            <ArrowRight className="w-4 h-4 text-[#000004]" />
+                            <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
                           </>
                         )}
                       </button>
@@ -1863,7 +1863,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setNewPassword(e.target.value);
                             if (resetPasswordError) setResetPasswordError(null);
                           }}
-                          className="w-full pl-9 pr-10 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                          className="w-full pl-9 pr-10 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                         />
                         <button
                           type="button"
@@ -1893,7 +1893,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setConfirmNewPassword(e.target.value);
                             if (resetPasswordError) setResetPasswordError(null);
                           }}
-                          className="w-full pl-9 pr-10 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                          className="w-full pl-9 pr-10 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                         />
                       </div>
                     </div>
@@ -1902,16 +1902,16 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <button
                         type="submit"
                         disabled={isResettingPassword || !newPassword.trim() || !confirmNewPassword.trim()}
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                       >
                         {isResettingPassword ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
                             <span>Updating Password...</span>
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="w-4 h-4 text-[#000004]" />
+                            <CheckCircle2 className="w-4 h-4 text-[#FCF9F5]" />
                             <span>Save Password & Sign In</span>
                           </>
                         )}
@@ -1962,7 +1962,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setLoginPhoneOrEmail(e.target.value);
                             if (loginError) setLoginError(null);
                           }}
-                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                          className="w-full pl-9 pr-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                         />
                       </div>
                     </div>
@@ -1995,7 +1995,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             setLoginPassword(e.target.value);
                             if (loginError) setLoginError(null);
                           }}
-                          className="w-full pl-9 pr-10 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                          className="w-full pl-9 pr-10 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                         />
                         <button
                           type="button"
@@ -2013,17 +2013,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <button
                         type="submit"
                         disabled={isLoggingIn}
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                       >
                         {isLoggingIn ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
                             <span>Verifying Account...</span>
                           </>
                         ) : (
                           <>
                             <span>Sign In</span>
-                            <ArrowRight className="w-4 h-4 text-[#000004]" />
+                            <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
                           </>
                         )}
                       </button>
@@ -2061,9 +2061,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                              className="px-3 py-1 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                              className="px-3 py-1 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
                             >
-                              <LogIn className="w-3.5 h-3.5 text-[#000004]" />
+                              <LogIn className="w-3.5 h-3.5 text-[#FCF9F5]" />
                               <span>Sign In With This Account</span>
                             </button>
                           </div>
@@ -2092,7 +2092,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 setSeekerFullName(e.target.value);
                                 if (signupError) setSignupError(null);
                               }}
-                              className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                              className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                             />
                           </div>
                         </div>
@@ -2148,7 +2148,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   setSeekerCity(e.target.value);
                                   if (signupError) setSignupError(null);
                                 }}
-                                className="w-full px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                                className="w-full px-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                               />
                             )}
                           </div>
@@ -2159,10 +2159,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="button"
                             onClick={handleSeekerNextStep}
-                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
+                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
                             <span>Next</span>
-                            <ArrowRight className="w-4 h-4 text-[#000004]" />
+                            <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
                           </button>
                         </div>
                       </div>
@@ -2193,7 +2193,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 if (duplicateError) setDuplicateError(null);
                                 if (signupError) setSignupError(null);
                               }}
-                              className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium ${
+                              className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium ${
                                 duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
                                   ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                   : 'border-[#E5E7EB]'
@@ -2232,7 +2232,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 if (duplicateError) setDuplicateError(null);
                                 if (signupError) setSignupError(null);
                               }}
-                              className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium ${
+                              className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium ${
                                 duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
                                   ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                   : 'border-[#E5E7EB]'
@@ -2265,7 +2265,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 setSeekerPassword(e.target.value);
                                 if (signupError) setSignupError(null);
                               }}
-                              className="w-full pl-9 pr-10 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                              className="w-full pl-9 pr-10 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                             />
                             <button
                               type="button"
@@ -2304,10 +2304,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 setSeekerConfirmPassword(e.target.value);
                                 if (signupError) setSignupError(null);
                               }}
-                              className={`w-full pl-9 pr-10 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 transition-all font-medium ${
+                              className={`w-full pl-9 pr-10 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 transition-all font-medium ${
                                 seekerConfirmPassword && seekerPassword !== seekerConfirmPassword
                                   ? 'border-[#F0544F] focus:border-[#F0544F]'
-                                  : 'border-[#E5E7EB] focus:border-[#FFAD05]'
+                                  : 'border-[#E5E7EB] focus:border-[#342A21]'
                               }`}
                             />
                             <button
@@ -2349,17 +2349,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="submit"
                             disabled={isSubmittingSeeker}
-                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                           >
                             {isSubmittingSeeker ? (
                               <>
-                                <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
+                                <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
                                 <span>Registering...</span>
                               </>
                             ) : (
                               <>
                                 <span>Register</span>
-                                <ArrowRight className="w-4 h-4 text-[#000004]" />
+                                <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
                               </>
                             )}
                           </button>
@@ -2399,9 +2399,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                             <button
                               type="button"
                               onClick={() => handleSwitchToLoginWithDuplicate(duplicateError)}
-                              className="px-3 py-1 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
+                              className="px-3 py-1 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] text-xs font-bold transition-all cursor-pointer shadow-xs inline-flex items-center gap-1.5 active:scale-95"
                             >
-                              <LogIn className="w-3.5 h-3.5 text-[#000004]" />
+                              <LogIn className="w-3.5 h-3.5 text-[#FCF9F5]" />
                               <span>Sign In With This Account</span>
                             </button>
                           </div>
@@ -2473,7 +2473,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   setAgentFullName(e.target.value);
                                   if (signupError) setSignupError(null);
                                 }}
-                                className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                                className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                               />
                             </div>
                           </div>
@@ -2494,7 +2494,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   setAgencyName(e.target.value);
                                   if (signupError) setSignupError(null);
                                 }}
-                                className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                                className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                               />
                             </div>
                           </div>
@@ -2562,7 +2562,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                         setAgentCity(e.target.value);
                                         if (signupError) setSignupError(null);
                                       }}
-                                      className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#FFAD05] text-xs sm:text-sm text-[#000004] outline-none bg-white font-medium"
+                                      className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#342A21] text-xs sm:text-sm text-[#000004] outline-none bg-white font-medium"
                                     />
                                   </div>
                                 )}
@@ -2577,7 +2577,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   setAgentCity(e.target.value);
                                   if (signupError) setSignupError(null);
                                 }}
-                                className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#FFAD05] text-xs sm:text-sm text-[#000004] outline-none bg-white font-medium"
+                                className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] focus:border-[#342A21] text-xs sm:text-sm text-[#000004] outline-none bg-white font-medium"
                               />
                             )}
                           </div>
@@ -2588,10 +2588,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="button"
                             onClick={handleAgentNextStep}
-                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
+                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
                             <span>Next</span>
-                            <ArrowRight className="w-4 h-4 text-[#000004]" />
+                            <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
                           </button>
                         </div>
                       </div>
@@ -2623,7 +2623,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 if (duplicateError) setDuplicateError(null);
                                 if (signupError) setSignupError(null);
                               }}
-                              className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium ${
+                              className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium ${
                                 duplicateError && (duplicateError.field === 'email' || duplicateError.field === 'both')
                                   ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                   : 'border-[#E5E7EB]'
@@ -2656,7 +2656,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 setAgentPassword(e.target.value);
                                 if (signupError) setSignupError(null);
                               }}
-                              className="w-full pl-9 pr-10 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium"
+                              className="w-full pl-9 pr-10 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium"
                             />
                             <button
                               type="button"
@@ -2695,10 +2695,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                 setAgentConfirmPassword(e.target.value);
                                 if (signupError) setSignupError(null);
                               }}
-                              className={`w-full pl-9 pr-10 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 transition-all font-medium ${
+                              className={`w-full pl-9 pr-10 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 transition-all font-medium ${
                                 agentConfirmPassword && agentPassword !== agentConfirmPassword
                                   ? 'border-[#F0544F] focus:border-[#F0544F]'
-                                  : 'border-[#E5E7EB] focus:border-[#FFAD05]'
+                                  : 'border-[#E5E7EB] focus:border-[#342A21]'
                               }`}
                             />
                             <button
@@ -2743,7 +2743,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               placeholder="0803 123 4567"
                               value={agentPhone}
                               onChange={(e) => handleAgentPhoneChange(e.target.value)}
-                              className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] transition-all font-medium ${
+                              className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium ${
                                 duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
                                   ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
                                   : 'border-[#E5E7EB]'
@@ -2773,7 +2773,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   placeholder="0803 000 0000"
                                   value={agentWhatsapp}
                                   onChange={(e) => setAgentWhatsapp(e.target.value)}
-                                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#FFAD05]/30 focus:border-[#FFAD05] font-medium"
+                                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] font-medium"
                                 />
                               </div>
                             </div>
@@ -2807,17 +2807,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="submit"
                             disabled={isSubmittingAgent}
-                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                           >
                             {isSubmittingAgent ? (
                               <>
-                                <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
+                                <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
                                 <span>Registering...</span>
                               </>
                             ) : (
                               <>
                                 <span>Register</span>
-                                <ArrowRight className="w-4 h-4 text-[#000004]" />
+                                <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
                               </>
                             )}
                           </button>

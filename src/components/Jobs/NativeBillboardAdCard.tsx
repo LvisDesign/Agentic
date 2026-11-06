@@ -115,10 +115,10 @@ export const NativeBillboardAdCard: React.FC<NativeBillboardAdCardProps> = ({
             e.stopPropagation();
             handleClick();
           }}
-          className="py-2 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all active:scale-95 cursor-pointer shadow-xs flex items-center gap-1.5"
+          className="py-2 px-4 rounded-xl bg-[#000004] group-hover:bg-[#201914] text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs flex items-center gap-1.5"
         >
           <span>{advert.ctaText || 'Learn More'}</span>
-          <ArrowUpRight className="w-3.5 h-3.5 text-[#000004]" />
+          <ArrowUpRight className="w-3.5 h-3.5 text-amber-400" />
         </button>
       </div>
     </article>

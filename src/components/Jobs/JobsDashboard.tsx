@@ -172,18 +172,18 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
             <button
               type="button"
               onClick={onSwitchToFeed}
-              className="px-4 py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+              className="px-4 py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
-              <Search className="w-3.5 h-3.5 text-[#000004]" />
+              <Search className="w-3.5 h-3.5" />
               <span>Browse Vacancies</span>
             </button>
             {onOpenPostAd && (
               <button
                 type="button"
                 onClick={onOpenPostAd}
-                className="px-3.5 py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                className="px-3.5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
               >
-                <Plus className="w-3.5 h-3.5 text-[#000004]" />
+                <Plus className="w-3.5 h-3.5 text-amber-400" />
                 <span>Post Ad</span>
               </button>
             )}
@@ -302,7 +302,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
                 <button
                   type="button"
                   onClick={onSwitchToFeed}
-                  className="mt-2 py-2.5 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-colors cursor-pointer shadow-xs"
+                  className="mt-2 py-2.5 px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
                 >
                   Browse Vacancies in Delta State
                 </button>
@@ -409,7 +409,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
                       <span>Download</span>
                     </button>
 
-                    <label className="px-3.5 py-1.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs">
+                    <label className="px-3.5 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs">
                       <Upload className="w-3.5 h-3.5" />
                       <span>{isUploadingCV ? 'Uploading...' : 'Replace CV'}</span>
                       <input
@@ -432,7 +432,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
                   <p className="text-xs text-[#70798C] max-w-sm mx-auto">
                     Supported formats: PDF, DOCX (Max 10MB). Upload once and apply to multiple jobs instantly.
                   </p>
-                  <label className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold cursor-pointer transition-colors shadow-xs">
+                  <label className="inline-flex items-center gap-1.5 py-2 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold cursor-pointer transition-colors shadow-xs">
                     <Upload className="w-3.5 h-3.5" />
                     <span>Upload Resume</span>
                     <input
@@ -502,7 +502,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
                     <button
                       type="button"
                       onClick={onSwitchToFeed}
-                      className="px-3 py-1.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-colors cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors cursor-pointer"
                     >
                       Quick Apply
                     </button>

@@ -220,9 +220,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer"
+            className="w-full sm:w-auto py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-2xs transition-colors cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-[#000004]" />
+            <Plus className="w-4 h-4" />
             <span>Add New Property</span>
           </button>
         </div>
@@ -347,9 +347,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               <div className="pt-2">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold shadow-md transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-md transition-all cursor-pointer"
                 >
-                  <Plus className="w-4 h-4 text-[#000004]" />
+                  <Plus className="w-4 h-4" />
                   <span>Add Your First Property</span>
                 </button>
               </div>
@@ -570,9 +570,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               <div className="pt-2">
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold shadow-md transition-all cursor-pointer"
+                  className="inline-flex items-center gap-2 py-2.5 px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-md transition-all cursor-pointer"
                 >
-                  <Plus className="w-4 h-4 text-[#000004]" />
+                  <Plus className="w-4 h-4" />
                   <span>Add Your First Property</span>
                 </button>
               </div>

@@ -102,9 +102,9 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
           {onOpenBecomeAgent && (
             <button
               onClick={onOpenBecomeAgent}
-              className="mt-5 py-2.5 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+              className="mt-5 py-2.5 px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 text-[#000004]" />
+              <Plus className="w-3.5 h-3.5 text-amber-400" />
               <span>List Property as Agent</span>
             </button>
           )}
@@ -125,7 +125,7 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
         </p>
         <button
           onClick={onResetFilters}
-          className="mt-5 py-2.5 px-5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+          className="mt-5 py-2.5 px-5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
         >
           <RefreshCcw className="w-3.5 h-3.5" />
           <span>Reset Rental Filters</span>

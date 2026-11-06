@@ -137,9 +137,9 @@ export const InspectionPassCard: React.FC<InspectionPassCardProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
             <a
               href={`tel:${rawPhone}`}
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold shadow-md transition-all active:scale-[0.98]"
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold shadow-md transition-all active:scale-[0.98]"
             >
-              <Phone className="w-4 h-4 text-[#000004]" />
+              <Phone className="w-4 h-4 text-emerald-400" />
               <span>Call Agent Directly</span>
             </a>
 

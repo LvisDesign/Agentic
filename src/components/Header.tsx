@@ -330,12 +330,12 @@ export const Header: React.FC<HeaderProps> = ({
 
               <button
                 onClick={onOpenSignup}
-                className="relative h-8 sm:h-10 md:h-11 px-2.5 sm:px-3.5 md:px-4 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] transition-all duration-200 active:scale-95 group cursor-pointer shadow-xs shrink-0"
+                className="relative h-8 sm:h-10 md:h-11 px-2.5 sm:px-3.5 md:px-4 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] transition-all duration-200 active:scale-95 group cursor-pointer shadow-xs shrink-0"
                 aria-label="Create Account"
                 title="Create Account"
               >
-                <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#000004] shrink-0" />
-                <span className="font-extrabold text-[11px] sm:text-xs whitespace-nowrap text-[#000004]">
+                <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#FCF9F5] shrink-0" />
+                <span className="font-bold text-[11px] sm:text-xs whitespace-nowrap text-[#FCF9F5]">
                   Signup
                 </span>
               </button>

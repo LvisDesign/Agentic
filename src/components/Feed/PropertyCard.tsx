@@ -469,7 +469,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                   setShowBookingModal(true);
                 }
               }}
-              className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.99] cursor-pointer bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004]"
+              className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.99] cursor-pointer bg-[#000004] hover:bg-[#1f2937] text-white"
             >
               <span>Book Inspection</span>
             </button>

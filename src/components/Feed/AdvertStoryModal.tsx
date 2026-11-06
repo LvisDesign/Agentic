@@ -230,7 +230,7 @@ export const AdvertStoryModal: React.FC<AdvertStoryModalProps> = ({
           <div className="flex items-center gap-2 pt-1">
             <button
               onClick={handleCtaClick}
-              className="flex-1 py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer"
+              className="flex-1 py-3 px-4 rounded-xl bg-[#000004] hover:bg-neutral-900 border border-white/20 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95"
             >
               <span>{activeAd.ctaText}</span>
             </button>

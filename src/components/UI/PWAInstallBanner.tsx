@@ -254,9 +254,9 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser:
                 <button
                   type="button"
                   onClick={handleInstallClick}
-                  className="py-2.5 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
+                  className="py-2.5 px-4 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold flex items-center gap-2 shadow-sm transition-all active:scale-95 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#000004]" />
+                  <Download className="w-3.5 h-3.5 text-[#F95700]" />
                   <span>{isIOSDevice ? 'Add to Home Screen' : 'Install App'}</span>
                 </button>
 
@@ -353,7 +353,7 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser:
                   setShowIOSModal(false);
                   handleInstallSuccess();
                 }}
-                className="w-full py-3 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-md"
+                className="w-full py-3 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-md"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Got It</span>
@@ -433,7 +433,7 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ currentUser:
                   setShowAndroidModal(false);
                   handleInstallSuccess();
                 }}
-                className="w-full py-3 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-md"
+                className="w-full py-3 rounded-xl bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95 shadow-md"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Got It</span>

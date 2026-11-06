@@ -170,9 +170,9 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
               {/* Direct Phone Call Button */}
               <a
                 href={`tel:${rawPhone}`}
-                className="py-2.5 px-3 rounded-[8px] bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                className="py-2.5 px-3 rounded-[8px] bg-[#000004] hover:bg-[#1f2937] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
               >
-                <Phone className="w-3.5 h-3.5 text-[#000004]" />
+                <Phone className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Call {formattedPhone}</span>
               </a>
 
@@ -242,7 +242,7 @@ export const UnlockedContactSheet: React.FC<UnlockedContactSheetProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="py-2.5 px-6 rounded-[8px] bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-colors cursor-pointer shadow-xs"
+            className="py-2.5 px-6 rounded-[8px] bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
           >
             Done
           </button>

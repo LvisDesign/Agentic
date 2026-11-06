@@ -276,7 +276,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 setIsSuccess(false);
                 onClose();
               }}
-              className="mt-2 py-2.5 px-6 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-colors cursor-pointer"
+              className="mt-2 py-2.5 px-6 rounded-xl bg-[#000004] hover:bg-neutral-800 text-white text-xs font-bold transition-colors cursor-pointer"
             >
               View in Feed
             </button>
@@ -572,9 +572,9 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
             <div className="pt-3 border-t border-[#E5E7EB]">
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                className="w-full py-3.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] cursor-pointer"
               >
-                <CreditCard className="w-4 h-4 text-[#000004]" />
+                <CreditCard className="w-4 h-4" />
                 <span>
                   Proceed to Pay {formatNaira(advertCost)} via Paystack & Publish Ad
                 </span>

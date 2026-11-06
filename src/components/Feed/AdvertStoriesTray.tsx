@@ -105,7 +105,7 @@ export const AdvertStoriesTray: React.FC<AdvertStoriesTrayProps> = ({
           className="w-[110px] shrink-0 h-[116px] rounded-2xl border-2 border-dashed border-[#342A21]/30 hover:border-[#342A21] bg-[#FCF9F5] hover:bg-[#342A21]/5 flex flex-col items-center justify-center gap-1.5 transition-all snap-start cursor-pointer shadow-xs active:scale-95"
           title="Post your advert"
         >
-          <div className="w-7 h-7 rounded-full bg-[#FFAD05] text-[#000004] flex items-center justify-center shadow-xs">
+          <div className="w-7 h-7 rounded-full bg-[#000004] text-white flex items-center justify-center shadow-xs">
             <Plus className="w-3.5 h-3.5" />
           </div>
           <span className="text-[10px] font-bold text-[#000004]">Post Ad</span>

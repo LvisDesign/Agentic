@@ -256,9 +256,9 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
             <button
               type="button"
               onClick={() => setIsPostJobModalOpen(true)}
-              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs sm:text-sm font-extrabold transition-all shadow-md cursor-pointer active:scale-95 group"
+              className="flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs sm:text-sm font-bold transition-all shadow-md cursor-pointer active:scale-95 group"
             >
-              <Plus className="w-4 h-4 text-[#000004] group-hover:rotate-90 transition-transform duration-200" />
+              <Plus className="w-4 h-4 text-amber-400 group-hover:rotate-90 transition-transform duration-200" />
               <span>Post a Job</span>
             </button>
           </div>
@@ -444,9 +444,9 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsPostJobModalOpen(true)}
-                  className="mt-2 px-4 py-2 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                  className="mt-2 px-4 py-2 rounded-xl bg-[#342A21] hover:bg-[#251E17] text-white text-xs font-bold transition-all shadow-xs cursor-pointer inline-flex items-center gap-1.5"
                 >
-                  <Plus className="w-3.5 h-3.5 text-[#000004]" />
+                  <Plus className="w-3.5 h-3.5 text-amber-400" />
                   <span>Post Your First Job</span>
                 </button>
               </div>
@@ -624,7 +624,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                             <button
                               type="button"
                               onClick={() => setJobToSponsor(job)}
-                              className="px-3 py-1.5 rounded-lg bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] text-xs font-extrabold transition-all shadow-xs flex items-center gap-1 cursor-pointer active:scale-95"
+                              className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer active:scale-95"
                               title="Pin this vacancy to the top of Setlla Jobs with 5x reach"
                             >
                               <TrendingUp className="w-3.5 h-3.5" />
