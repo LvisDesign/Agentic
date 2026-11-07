@@ -129,28 +129,28 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     <ModalPortal>
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-fade-in">
       <div 
-        className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-[#E5E7EB] overflow-hidden flex flex-col max-h-[90vh] animate-slide-up"
+        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-[#EFE3C6] overflow-hidden flex flex-col max-h-[88vh] animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header Bar */}
-        <div className="p-4 sm:p-5 border-b border-[#E5E7EB] flex items-center justify-between bg-[#FCF9F5]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#342A21] text-white flex items-center justify-center shadow-xs shrink-0">
-              <Bell className="w-5 h-5" />
+        <div className="px-4 sm:px-5 py-4 border-b border-[#EFE3C6] flex items-center justify-between gap-3 bg-gradient-to-r from-white via-[#FFFDF8] to-[#FFF7E2]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-[#342A21] text-[#FFAD05] border border-[#FFAD05]/35 flex items-center justify-center shadow-xs shrink-0">
+              <Bell className="w-4.5 h-4.5" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="font-display text-base sm:text-lg font-bold text-[#342A21]">
+                <h3 className="font-display text-base sm:text-lg font-bold text-[#000004] truncate">
                   Notifications & Activity
                 </h3>
                 {totalCount > 0 && (
-                  <span className="px-2 py-0.5 rounded-full bg-[#342A21] text-white text-[10px] font-bold">
-                    {totalCount} Active
+                  <span className="px-2 py-0.5 rounded-full bg-[#FFAD05] text-[#000004] text-[10px] font-extrabold shrink-0">
+                    {totalCount}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#70798C] mt-0.5">
-                Real-time updates on your rental inspections, job applications & listings
+              <p className="text-xs text-[#70798C] truncate mt-0.5">
+                Inspections, job applications & listing updates
               </p>
             </div>
           </div>
@@ -158,111 +158,116 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F4F5F7] hover:bg-[#E5E7EB] text-[#70798C] hover:text-[#342A21] flex items-center justify-center cursor-pointer transition-colors"
+            className="w-8 h-8 rounded-full bg-[#FFF8E6] hover:bg-[#FFEFCA] border border-[#EDDAA6] text-[#342A21] flex items-center justify-center cursor-pointer transition-colors shrink-0"
             title="Close"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Tab Filters */}
-        <div className="flex items-center gap-1.5 px-4 sm:px-5 py-2.5 bg-white border-b border-[#E5E7EB] overflow-x-auto no-scrollbar shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab('all')}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'all'
-                ? 'bg-[#342A21] text-white shadow-2xs'
-                : 'bg-[#F4F5F7] text-[#70798C] hover:text-[#342A21]'
-            }`}
-          >
-            All Activity ({totalCount})
-          </button>
+        {/* Symmetrical Segmented Tab Filters */}
+        <div className="px-4 sm:px-5 py-2.5 bg-[#FCF9F5] border-b border-[#EFE3C6] shrink-0">
+          <div className="grid grid-cols-3 gap-1 p-1 rounded-2xl bg-[#F4EFE4] border border-[#E6D7B2]">
+            <button
+              type="button"
+              onClick={() => setActiveTab('all')}
+              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center truncate ${
+                activeTab === 'all'
+                  ? 'bg-[#342A21] text-[#FAF8F5] shadow-2xs'
+                  : 'text-[#6B6257] hover:text-[#000004]'
+              }`}
+            >
+              All ({totalCount})
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('inspections')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'inspections'
-                ? 'bg-[#342A21] text-white shadow-2xs'
-                : 'bg-[#F4F5F7] text-[#70798C] hover:text-[#342A21]'
-            }`}
-          >
-            <CalendarCheck className="w-3.5 h-3.5" />
-            <span>Inspections ({inspectionsCount})</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('inspections')}
+              className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer truncate ${
+                activeTab === 'inspections'
+                  ? 'bg-[#342A21] text-[#FAF8F5] shadow-2xs'
+                  : 'text-[#6B6257] hover:text-[#000004]'
+              }`}
+            >
+              <CalendarCheck className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'inspections' ? 'text-[#FFAD05]' : 'text-[#8C7A5B]'}`} />
+              <span className="truncate">Inspections ({inspectionsCount})</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('jobs')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-              activeTab === 'jobs'
-                ? 'bg-[#342A21] text-white shadow-2xs'
-                : 'bg-[#F4F5F7] text-[#70798C] hover:text-[#342A21]'
-            }`}
-          >
-            <Briefcase className="w-3.5 h-3.5" />
-            <span>Jobs ({jobsCount})</span>
-          </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('jobs')}
+              className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer truncate ${
+                activeTab === 'jobs'
+                  ? 'bg-[#342A21] text-[#FAF8F5] shadow-2xs'
+                  : 'text-[#6B6257] hover:text-[#000004]'
+              }`}
+            >
+              <Briefcase className={`w-3.5 h-3.5 shrink-0 ${activeTab === 'jobs' ? 'text-[#FFAD05]' : 'text-[#8C7A5B]'}`} />
+              <span className="truncate">Jobs ({jobsCount})</span>
+            </button>
+          </div>
         </div>
 
         {/* Content Body */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 flex-1">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-3.5 flex-1 bg-white">
           {/* Temporary Feedback Notification Toast */}
           {feedbackToast && (
-            <div className="p-3 rounded-2xl bg-[#FAF8F5] border border-[#E5E7EB] text-[#342A21] text-xs font-bold flex items-center gap-2 shadow-xs animate-fade-in">
+            <div className="p-3 rounded-2xl bg-[#FFF9EB] border border-[#EDDAA6] text-[#342A21] text-xs font-bold flex items-center gap-2 shadow-2xs animate-fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>{feedbackToast}</span>
             </div>
           )}
 
-          {/* SIMPLIFIED POLICY ANNOUNCEMENT FOR ALL LISTERS & AGENTS (NO BLINKING) */}
+          {/* STRUCTURED POLICY ANNOUNCEMENT FOR LISTERS & AGENTS */}
           {isLister && !isAnnouncementDismissed && (
             <aside 
               aria-label="Setlla Freshness Policy"
-              className="p-3.5 sm:p-4 rounded-2xl bg-[#FCF9F5] border border-[#342A21]/15 text-[#342A21] shadow-2xs relative animate-fade-in"
+              className="p-4 rounded-2xl bg-gradient-to-br from-[#FFFDF8] via-[#FFF9EB] to-[#FFF5DC] border border-[#EDDAA6] text-[#342A21] shadow-2xs animate-fade-in space-y-3"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-[#342A21] text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <Clock className="w-4 h-4 text-amber-400" />
+              {/* Top Row: Badge + Title on Left, Dismiss Button on Right */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-[#342A21] text-[#FFAD05] flex items-center justify-center shrink-0">
+                    <Clock className="w-3.5 h-3.5" />
                   </div>
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#70798C]">
-                        Platform Update
-                      </span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#342A21]/30" />
-                      <span className="text-[11px] font-bold text-[#342A21]">
-                        72h Freshness Guarantee
-                      </span>
-                    </div>
-                    <p className="text-xs text-[#70798C] leading-snug">
-                      Listings require a 1-tap availability check every 48h to prevent ghost posts. Unconfirmed listings automatically delist after 72h.
-                    </p>
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-900 border border-amber-500/20 text-[10px] font-bold">
-                        48h Check Alert
-                      </span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-900 border border-rose-500/20 text-[10px] font-bold">
-                        72h Auto-Delist
-                      </span>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-900 border border-emerald-500/20 text-[10px] font-bold">
-                        24h Taken Cleanup
-                      </span>
-                    </div>
-                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-[#FFF3D1] border border-[#E8CC88] text-[#8A5A00] text-[10px] font-extrabold uppercase tracking-wider shrink-0">
+                    Platform Policy
+                  </span>
+                  <h4 className="text-xs sm:text-sm font-bold text-[#000004] truncate">
+                    72h Freshness Guarantee
+                  </h4>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleDismissAnnouncement}
-                  className="p-1 rounded-lg text-[#70798C] hover:text-[#000004] hover:bg-black/5 transition-colors shrink-0 cursor-pointer"
+                  className="w-6 h-6 rounded-full bg-white/80 hover:bg-white border border-[#EDDAA6] text-[#70798C] hover:text-[#000004] flex items-center justify-center transition-colors shrink-0 cursor-pointer"
                   title="Dismiss announcement"
                   aria-label="Dismiss announcement"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
+              </div>
+
+              {/* Body Copy */}
+              <p className="text-xs text-[#5B5349] leading-relaxed">
+                Listings require a 1-tap availability check every 48 hours to prevent ghost posts. Unconfirmed listings automatically delist after 72 hours.
+              </p>
+
+              {/* Uniform 3-Column Timeline Row */}
+              <div className="grid grid-cols-3 gap-2 pt-0.5">
+                <div className="px-2.5 py-2 rounded-xl bg-white/90 border border-[#EDDAA6] text-center">
+                  <div className="text-[11px] font-extrabold text-[#342A21]">48 Hours</div>
+                  <div className="text-[10px] font-medium text-[#70798C] truncate">Check Alert</div>
+                </div>
+                <div className="px-2.5 py-2 rounded-xl bg-white/90 border border-[#EDDAA6] text-center">
+                  <div className="text-[11px] font-extrabold text-[#342A21]">72 Hours</div>
+                  <div className="text-[10px] font-medium text-[#70798C] truncate">Auto-Delist</div>
+                </div>
+                <div className="px-2.5 py-2 rounded-xl bg-white/90 border border-[#EDDAA6] text-center">
+                  <div className="text-[11px] font-extrabold text-[#342A21]">24 Hours</div>
+                  <div className="text-[10px] font-medium text-[#70798C] truncate">Taken Cleanup</div>
+                </div>
               </div>
             </aside>
           )}
@@ -396,24 +401,29 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
           {/* Empty State */}
           {!selectedPassBooking && totalCount === 0 && (
-            <div className="p-10 text-center bg-[#FCF9F5] rounded-3xl border border-dashed border-[#E5E7EB] space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-white border border-[#E5E7EB] flex items-center justify-center mx-auto text-[#70798C] shadow-2xs">
-                <Bell className="w-6 h-6" />
+            <div className="py-7 px-5 text-center bg-gradient-to-b from-[#FFFDF9] to-[#FCF9F5] rounded-2xl border border-[#EFE3C6] space-y-2.5">
+              <div className="w-11 h-11 rounded-2xl bg-[#FFF8E6] border border-[#EDDAA6] flex items-center justify-center mx-auto text-[#C68400] shadow-2xs">
+                <Bell className="w-5 h-5" />
               </div>
-              <h4 className="font-bold text-sm text-[#000004]">You are all caught up!</h4>
-              <p className="text-xs text-[#70798C] max-w-sm mx-auto leading-relaxed">
-                When you request property inspections or apply for open vacancies on Setlla, your notifications and status passes will appear here.
-              </p>
+              <div className="space-y-1">
+                <h4 className="font-bold text-sm text-[#000004]">You are all caught up!</h4>
+                <p className="text-xs text-[#70798C] max-w-xs mx-auto leading-relaxed">
+                  Property inspection passes, job application statuses, and listing alerts will appear here.
+                </p>
+              </div>
             </div>
           )}
 
           {/* 1. INSPECTIONS SECTION */}
           {!selectedPassBooking && (activeTab === 'all' || activeTab === 'inspections') && bookings.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {activeTab === 'all' && (
-                <div className="flex items-center gap-1.5 px-1 pt-1">
+                <div className="flex items-center justify-between px-1 pt-1">
                   <span className="text-[11px] font-bold text-[#70798C] uppercase tracking-wider">
-                    Rental Inspections ({bookings.length})
+                    Rental Inspections
+                  </span>
+                  <span className="text-[11px] font-bold text-[#342A21]">
+                    {bookings.length}
                   </span>
                 </div>
               )}
@@ -426,80 +436,80 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 return (
                   <article 
                     key={`notif-booking-${booking.id}`}
-                    className={`p-4 rounded-2xl border transition-all ${
+                    className={`p-3.5 sm:p-4 rounded-2xl border transition-all space-y-3 ${
                       isRejected
-                        ? 'bg-rose-50/30 border-rose-200'
-                        : 'bg-[#FCF9F5] border-[#E5E7EB] shadow-xs'
+                        ? 'bg-rose-50/40 border-rose-200'
+                        : 'bg-[#FFFDF9] border-[#EFE3C6] shadow-2xs'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-start gap-2.5 min-w-0">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                           isRejected 
                             ? 'bg-rose-700 text-white' 
-                            : 'bg-[#342A21] text-white'
+                            : 'bg-[#342A21] text-[#FFAD05]'
                         }`}>
-                          <CalendarCheck className="w-4.5 h-4.5" />
+                          <CalendarCheck className="w-4 h-4" />
                         </div>
 
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-bold text-xs sm:text-sm text-[#342A21] truncate">
-                              {listing?.title || 'Property Inspection'}
-                            </h4>
-                            <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                              isConfirmed
-                                ? 'bg-[#EFE9E1] text-[#342A21] border border-[#E5E7EB]'
-                                : isRejected
-                                ? 'bg-rose-100 text-rose-800 border border-rose-300'
-                                : 'bg-amber-100 text-amber-800 border border-amber-300'
-                            }`}>
-                              {isConfirmed ? 'Confirmed & Unlocked' : isRejected ? 'Declined' : 'Pending Confirmation'}
-                            </span>
-                          </div>
-
-                          <p className="text-[11px] text-[#70798C] mt-0.5">
+                          <h4 className="font-bold text-xs sm:text-sm text-[#000004] truncate">
+                            {listing?.title || 'Property Inspection'}
+                          </h4>
+                          <p className="text-[11px] text-[#70798C] truncate mt-0.5">
                             {listing ? `${listing.neighborhood ? `${listing.neighborhood}, ` : ''}${listing.city}` : 'Scheduled Inspection'} • {booking.slotTimeWindow}
                           </p>
-
-                          {/* Agent Unlocked Details if Confirmed */}
-                          {isConfirmed && listing && (
-                            <div className="mt-2.5 pt-2.5 border-t border-[#E5E7EB] flex items-center gap-2 flex-wrap text-xs">
-                              <span className="font-bold text-[#342A21]">Agent: {listing.agent.fullName}</span>
-                              <div className="flex items-center gap-1.5 ml-auto">
-                                <a
-                                  href={`tel:${listing.agent.phone}`}
-                                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#342A21] hover:bg-[#231C16] text-white text-[11px] font-bold transition-colors shadow-2xs"
-                                >
-                                  <Phone className="w-3 h-3" />
-                                  <span>Call</span>
-                                </a>
-
-                                {listing.agent.whatsapp && (
-                                  <a
-                                    href={getWhatsAppUrl(listing.agent.whatsapp, listing.title, booking.id)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#1ebd5a] text-white text-[11px] font-bold transition-colors shadow-2xs"
-                                  >
-                                    <WhatsAppIcon className="w-3 h-3 fill-current" />
-                                    <span>WhatsApp</span>
-                                  </a>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() => setSelectedPassBooking({ booking, listing })}
-                                  className="px-3 py-1.5 rounded-lg bg-white border border-[#E5E7EB] text-[#342A21] hover:bg-[#F6F3EF] text-[11px] font-bold transition-colors cursor-pointer"
-                                >
-                                  View Pass
-                                </button>
-                              </div>
-                            </div>
-                          )}
                         </div>
                       </div>
+
+                      <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full shrink-0 ${
+                        isConfirmed
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : isRejected
+                          ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                          : 'bg-[#FFF8E6] text-[#8A5A00] border border-[#EDDAA6]'
+                      }`}>
+                        {isConfirmed ? 'Unlocked' : isRejected ? 'Declined' : 'Pending'}
+                      </span>
                     </div>
+
+                    {/* Agent Unlocked Details if Confirmed */}
+                    {isConfirmed && listing && (
+                      <div className="pt-2.5 border-t border-[#EFE3C6] flex items-center justify-between gap-2 flex-wrap text-xs">
+                        <span className="font-bold text-[#342A21] truncate">
+                          Agent: {listing.agent.fullName}
+                        </span>
+                        <div className="flex items-center gap-1.5 ml-auto">
+                          <a
+                            href={`tel:${listing.agent.phone}`}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#342A21] hover:bg-[#231C16] text-white text-[11px] font-bold transition-colors shadow-2xs"
+                          >
+                            <Phone className="w-3 h-3" />
+                            <span>Call</span>
+                          </a>
+
+                          {listing.agent.whatsapp && (
+                            <a
+                              href={getWhatsAppUrl(listing.agent.whatsapp, listing.title, booking.id)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#1ebd5a] text-white text-[11px] font-bold transition-colors shadow-2xs"
+                            >
+                              <WhatsAppIcon className="w-3 h-3 fill-current" />
+                              <span>WhatsApp</span>
+                            </a>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPassBooking({ booking, listing })}
+                            className="px-2.5 py-1.5 rounded-lg bg-[#FFF8E6] border border-[#EDDAA6] text-[#342A21] hover:bg-[#FFEFCA] text-[11px] font-bold transition-colors cursor-pointer"
+                          >
+                            View Pass
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </article>
                 );
               })}
@@ -508,11 +518,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
           {/* 2. JOBS SECTION */}
           {!selectedPassBooking && (activeTab === 'all' || activeTab === 'jobs') && jobApplications.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {activeTab === 'all' && (
-                <div className="flex items-center gap-1.5 px-1 pt-2">
+                <div className="flex items-center justify-between px-1 pt-2">
                   <span className="text-[11px] font-bold text-[#70798C] uppercase tracking-wider">
-                    Job Applications ({jobApplications.length})
+                    Job Applications
+                  </span>
+                  <span className="text-[11px] font-bold text-[#342A21]">
+                    {jobApplications.length}
                   </span>
                 </div>
               )}
@@ -521,41 +534,39 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 return (
                   <article 
                     key={`notif-job-${app.id}`}
-                    className="p-4 rounded-2xl bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs hover:shadow-sm transition-all space-y-2.5"
+                    className="p-3.5 sm:p-4 rounded-2xl bg-[#FFFDF9] border border-[#EFE3C6] shadow-2xs hover:shadow-xs transition-all space-y-2.5"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-[#342A21] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                          <Briefcase className="w-4.5 h-4.5 text-white" />
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-[#342A21] text-[#FFAD05] flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                          <Briefcase className="w-4 h-4" />
                         </div>
 
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-bold text-xs sm:text-sm text-[#342A21] truncate">
-                              {app.jobTitle}
-                            </h4>
-                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#EFE9E1] text-[#342A21] border border-[#E5E7EB]">
-                              {app.status === 'shortlisted' 
-                                ? 'Shortlisted' 
-                                : app.status === 'reviewed' 
-                                ? 'Viewed by Employer' 
-                                : 'Application Sent'}
-                            </span>
-                          </div>
-
-                          <p className="text-[11px] text-[#70798C] mt-0.5">
+                          <h4 className="font-bold text-xs sm:text-sm text-[#000004] truncate">
+                            {app.jobTitle}
+                          </h4>
+                          <p className="text-[11px] text-[#70798C] truncate mt-0.5">
                             {app.companyName} • Applied {new Date(app.appliedAt).toLocaleDateString()}
                           </p>
-
-                          <div className="flex items-center gap-2 mt-2 text-[11px] text-[#342A21] bg-white p-2 rounded-xl border border-[#E5E7EB]">
-                            <FileText className="w-3.5 h-3.5 text-[#70798C] shrink-0" />
-                            <span className="truncate font-medium">{app.cvFileName}</span>
-                            <span className="text-[10px] font-bold text-[#342A21] bg-[#EFE9E1] px-1.5 py-0.5 rounded ml-auto shrink-0 border border-[#E5E7EB]">
-                              Attached
-                            </span>
-                          </div>
                         </div>
                       </div>
+
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#FFF8E6] text-[#8A5A00] border border-[#EDDAA6] shrink-0">
+                        {app.status === 'shortlisted' 
+                          ? 'Shortlisted' 
+                          : app.status === 'reviewed' 
+                          ? 'Viewed' 
+                          : 'Sent'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-[11px] text-[#342A21] bg-white px-3 py-2 rounded-xl border border-[#EFE3C6]">
+                      <FileText className="w-3.5 h-3.5 text-[#C68400] shrink-0" />
+                      <span className="truncate font-medium">{app.cvFileName}</span>
+                      <span className="text-[10px] font-bold text-[#342A21] bg-[#FFF8E6] px-2 py-0.5 rounded-md ml-auto shrink-0 border border-[#EDDAA6]">
+                        CV Attached
+                      </span>
                     </div>
                   </article>
                 );
@@ -565,14 +576,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 sm:p-4 bg-[#FCF9F5] border-t border-[#E5E7EB] flex items-center justify-between text-xs text-[#70798C]">
-          <span className="text-[11px]">
-            Showing all notifications for Delta State
+        <div className="px-4 sm:px-5 py-3 bg-[#FCF9F5] border-t border-[#EFE3C6] flex items-center justify-between text-xs text-[#70798C]">
+          <span className="text-[11px] font-medium">
+            Showing activity for Delta State
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-white font-bold transition-colors cursor-pointer shadow-xs"
+            className="px-4 py-2 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FAF8F5] text-xs font-bold transition-colors cursor-pointer shadow-2xs"
           >
             Done
           </button>
