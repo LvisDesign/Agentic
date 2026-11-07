@@ -685,6 +685,7 @@ export function App() {
   const [selectedType, setSelectedType] = useState('All Property Types');
   const [selectedState, setSelectedState] = useState('Delta State');
   const [maxRent, setMaxRent] = useState(5000000);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Modals & Navigation state
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -1371,6 +1372,7 @@ export function App() {
 
   // Smart Location & Word-Similarity Filter Logic with 48h-Check / 72h-Lifecycle Engine
   const filteredListings = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     const list = listings.filter((item) => {
       // 1. Lifecycle verification: hide listings older than 72h without confirmation, or taken > 24h
       if (!isListingVisibleInPublicFeed(item)) {
@@ -1385,6 +1387,26 @@ export function App() {
       }
       if (item.fees.baseRent > maxRent) {
         return false;
+      }
+      // 3. Search by User/Agent or Listing
+      if (q) {
+        const agentName = (item.agent?.fullName || '').toLowerCase();
+        const agencyName = (item.agent?.agencyName || '').toLowerCase();
+        const agentEmail = (item.agent?.email || '').toLowerCase();
+        const matchesSearch =
+          item.title.toLowerCase().includes(q) ||
+          item.propertyType.toLowerCase().includes(q) ||
+          item.city.toLowerCase().includes(q) ||
+          item.neighborhood.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q) ||
+          agentName.includes(q) ||
+          agencyName.includes(q) ||
+          agentEmail.includes(q) ||
+          (item.tags || []).some((t) => t.toLowerCase().includes(q)) ||
+          (item.addons || []).some((a) => a.toLowerCase().includes(q));
+        if (!matchesSearch) {
+          return false;
+        }
       }
       return true;
     });
@@ -1401,7 +1423,7 @@ export function App() {
       if (aInfo.stage === 'needs_confirmation' && bInfo.stage === 'fresh') return 1;
       return 0;
     });
-  }, [listings, selectedCity, selectedState, selectedType, maxRent]);
+  }, [listings, selectedCity, selectedState, selectedType, maxRent, searchQuery]);
 
   // Handler: Update listing availability status (Available, Under Inspection, Rented Out)
   const handleUpdateListingAvailability = (listingId: string, status: ListingAvailability) => {
@@ -2274,6 +2296,7 @@ export function App() {
     setSelectedCity('All Delta Cities');
     setSelectedType('All Property Types');
     setMaxRent(5000000);
+    setSearchQuery('');
   };
 
   // Determine root container layout:
@@ -2481,6 +2504,8 @@ export function App() {
               onSelectState={setSelectedState}
               maxRent={maxRent}
               onSelectMaxRent={setMaxRent}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
               totalFiltered={filteredListings.length}
               listings={listings}
               adverts={activePublicAdverts}
