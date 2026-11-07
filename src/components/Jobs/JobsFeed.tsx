@@ -192,17 +192,17 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
   return (
     <div className="w-full h-full flex flex-col items-center bg-[#FCF9F5] overflow-hidden">
       {/* Pinned Top Filter & Search Bar */}
-      <div className="w-full bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] shrink-0 z-30 py-2.5 px-3 sm:px-6 shadow-2xs">
+      <div className="w-full bg-gradient-to-r from-[#FCF9F5]/95 via-[#FFFDF9]/95 to-[#FFF9EB]/95 backdrop-blur-md border-b border-[#EFE3C6] shrink-0 z-30 py-2.5 px-3 sm:px-6 shadow-2xs">
         <div className="max-w-2xl lg:max-w-5xl xl:max-w-7xl mx-auto space-y-2.5">
           {/* Search Input Bar */}
           <div className="relative w-full">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#70798C]" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#C68400]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search job titles, skills, or companies in Delta State..."
-              className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-xl sm:rounded-2xl border border-[#E5E7EB] focus:outline-none focus:border-[#000004] focus:ring-1 focus:ring-[#000004] bg-[#FCF9F5]/70 placeholder:text-[#70798C]"
+              className="w-full pl-10 pr-9 py-2.5 text-xs sm:text-sm rounded-xl sm:rounded-2xl border border-[#EDDAA6] focus:outline-none focus:border-[#FFAD05] focus:ring-2 focus:ring-[#FFAD05]/15 bg-gradient-to-r from-white via-[#FFFDF8] to-[#FFF7E2] placeholder:text-[#70798C]"
             />
             {searchQuery && (
               <button
@@ -282,7 +282,7 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
               <button
                 type="button"
                 onClick={onOpenPostAd}
-                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F6F3EF] hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] border border-[#342A21]/15 text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#FFF8E6] to-[#FFEFCA] hover:from-[#FFAD05] hover:to-[#F59E0B] text-[#342A21] hover:text-[#000004] border border-[#EDD595] text-xs font-bold transition-all shadow-2xs cursor-pointer active:scale-95"
                 title="Post an advert on Setlla"
               >
                 <Plus className="w-3 h-3" />

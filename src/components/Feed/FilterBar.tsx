@@ -250,14 +250,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       {/* Sub-Header Container docked directly below Header */}
       <div
         ref={searchContainerRef}
-        className="fixed top-16 left-0 right-0 z-30 bg-[#FCF9F5]/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs flex flex-col items-center justify-center"
+        className="fixed top-16 left-0 right-0 z-30 bg-gradient-to-r from-[#FCF9F5]/95 via-[#FFFDF9]/95 to-[#FFF9EB]/95 backdrop-blur-md border-b border-[#EFE3C6] shadow-xs flex flex-col items-center justify-center"
       >
         {/* Filter Pill Row */}
         <div className="h-11 w-full flex items-center justify-center px-3 relative">
           {isSearchExpanded ? (
             /* Expanded Search Input Pill */
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#342A21]/40 shadow-sm w-full max-w-md transition-all">
-              <Search className="w-3.5 h-3.5 text-[#342A21] shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#FFAD05]/60 ring-2 ring-[#FFAD05]/15 shadow-sm w-full max-w-md transition-all">
+              <Search className="w-3.5 h-3.5 text-[#C68400] shrink-0" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -278,7 +278,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                     onSearchChange?.('');
                     searchInputRef.current?.focus();
                   }}
-                  className="px-1.5 py-0.5 rounded-full bg-slate-100 hover:bg-slate-200 text-[10px] font-bold text-[#70798C] hover:text-[#000004] transition-colors cursor-pointer shrink-0"
+                  className="px-1.5 py-0.5 rounded-full bg-[#FFF8E6] hover:bg-[#FFEFCA] text-[10px] font-bold text-[#342A21] border border-[#F0D9A0] transition-colors cursor-pointer shrink-0"
                 >
                   Clear
                 </button>
@@ -287,14 +287,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 type="button"
                 onClick={() => setIsSearchExpanded(false)}
                 aria-label="Close search"
-                className="w-6 h-6 rounded-full bg-[#FAF9F6] hover:bg-[#EDE8DE] text-[#342A21] border border-[#E5E7EB] flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                className="w-6 h-6 rounded-full bg-[#FFF9EB] hover:bg-[#FFEFCA] text-[#342A21] border border-[#EDDAA6] flex items-center justify-center transition-colors cursor-pointer shrink-0"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
             /* Default Filter Pill with Search Icon */
-            <div className="flex items-center gap-1.5 p-1 rounded-full bg-gradient-to-r from-white via-[#FDFBF7] to-[#FAF5ED] border border-[#E5DEC9] shadow-xs max-w-full">
+            <div className="flex items-center gap-1.5 p-1 rounded-full bg-gradient-to-r from-white via-[#FFFDF8] to-[#FFF6DF] border border-[#EDDAA6] shadow-xs max-w-full">
               {/* City & Area Quick Selector (Dynamic with agent-posted locations & custom entry) */}
               <CustomDropdown
                 options={locationDropdownOptions}
@@ -302,14 +302,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 onChange={onSelectCity}
                 onClear={() => onSelectCity('All Delta Cities')}
                 headerTitle="Cities & Areas"
-                icon={<MapPin className="w-3.5 h-3.5 text-[#5C4938]" />}
+                icon={<MapPin className="w-3.5 h-3.5 text-[#C68400]" />}
                 align="left"
                 variant="pill"
                 allowCustomInput={true}
                 customSearchSubtitle="Search listings with this location name or similar words"
               />
 
-              <span className="w-px h-4 bg-[#E5DEC9]" />
+              <span className="w-px h-4 bg-[#EDDAA6]" />
 
               {/* Property Type Quick Selector */}
               <div className="hidden sm:inline-block">
@@ -318,7 +318,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   value={selectedType}
                   onChange={onSelectType}
                   headerTitle="Property Types"
-                  icon={<Home className="w-3.5 h-3.5 text-[#6E5D4E]" />}
+                  icon={<Home className="w-3.5 h-3.5 text-[#C68400]" />}
                   align="center"
                   variant="pill"
                 />
@@ -327,29 +327,29 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               {/* More Filters Modal Trigger */}
               <button
                 onClick={() => setIsOpenModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5EFE6]/90 hover:bg-[#EBE2D5] text-[#342A21] border border-[#E2D9C8] text-xs font-semibold transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FFF8E6] hover:bg-[#FFEFCA] text-[#342A21] border border-[#EDDAA6] text-xs font-semibold transition-colors cursor-pointer"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[#5C4938]" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#C68400]" />
                 <span>Filter</span>
                 {activeFiltersCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-[#342A21] text-[#FAF8F5] text-[10px] font-bold flex items-center justify-center">
+                  <span className="w-4 h-4 rounded-full bg-[#FFAD05] text-[#000004] text-[10px] font-bold flex items-center justify-center">
                     {activeFiltersCount}
                   </span>
                 )}
               </button>
 
-              <span className="w-px h-4 bg-[#E5DEC9]" />
+              <span className="w-px h-4 bg-[#EDDAA6]" />
 
               {/* Search User or Listing Trigger */}
               {searchQuery.trim() ? (
-                <div className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full bg-[#342A21] text-white text-xs font-semibold max-w-[140px] sm:max-w-[180px]">
+                <div className="flex items-center gap-1 pl-2.5 pr-1.5 py-1 rounded-full bg-[#342A21] text-white text-xs font-semibold max-w-[140px] sm:max-w-[180px] border border-[#FFAD05]/40">
                   <button
                     type="button"
                     onClick={() => setIsSearchExpanded(true)}
                     className="flex items-center gap-1.5 truncate cursor-pointer"
                     title="Edit search"
                   >
-                    <Search className="w-3 h-3 text-[#F3D5A5] shrink-0" />
+                    <Search className="w-3 h-3 text-[#FFAD05] shrink-0" />
                     <span className="truncate">{searchQuery}</span>
                   </button>
                   <button
@@ -370,9 +370,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   onClick={() => setIsSearchExpanded(true)}
                   aria-label="Search user or listing"
                   title="Search user or listing"
-                  className="flex items-center justify-center w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1.5 sm:gap-1.5 rounded-full bg-[#F5EFE6]/90 hover:bg-[#EBE2D5] text-[#342A21] border border-[#E2D9C8] text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                  className="flex items-center justify-center w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1.5 sm:gap-1.5 rounded-full bg-[#FFF8E6] hover:bg-[#FFEFCA] text-[#342A21] border border-[#EDDAA6] text-xs font-semibold transition-colors cursor-pointer shrink-0"
                 >
-                  <Search className="w-3.5 h-3.5 text-[#5C4938]" />
+                  <Search className="w-3.5 h-3.5 text-[#C68400]" />
                   <span className="hidden sm:inline">Search</span>
                 </button>
               )}

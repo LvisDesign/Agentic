@@ -93,9 +93,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-20 pb-20 px-3.5 sm:px-6 max-w-5xl mx-auto">
       {/* 1. Top Banner / User Identity */}
-      <div className="bg-white rounded-2xl p-6 border border-[#E5E7EB] shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-br from-white via-[#FFFDF8] to-[#FFF7E2] rounded-2xl p-6 border border-[#EDDAA6] shadow-xs mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#342A21] to-[#1f1914] text-white flex items-center justify-center font-bold text-xl shadow-xs border-2 border-white ring-2 ring-[#342A21]/20 shrink-0 overflow-hidden">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#342A21] to-[#1f1914] text-[#FFAD05] flex items-center justify-center font-bold text-xl shadow-xs border-2 border-[#FFF8E6] ring-2 ring-[#FFAD05]/35 shrink-0 overflow-hidden">
             {isAuthenticated && currentUser.avatarUrl ? (
               <img
                 src={currentUser.avatarUrl}

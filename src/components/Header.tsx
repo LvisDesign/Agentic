@@ -109,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E5E7EB] shadow-xs">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-white/95 via-[#FFFDF9]/95 to-[#FFF9EB]/95 backdrop-blur-md border-b border-[#EFE3C6] shadow-xs">
       <div className="max-w-6xl mx-auto px-2 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-1 sm:gap-2">
         {/* Left: Brand Identity & Global Room Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
@@ -131,14 +131,14 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Segmented Pill-Style Global Room Switcher (Auto-fits on small screens) */}
-          <div className="flex items-center p-0.5 sm:p-1 bg-[#F5EFE6] rounded-full border border-[#E5DACB] shadow-2xs shrink-0">
+          <div className="flex items-center p-0.5 sm:p-1 bg-gradient-to-r from-[#FAF4E4] via-[#FFF8E6] to-[#FAF4E4] rounded-full border border-[#EDDAA6]/80 shadow-2xs shrink-0">
             <button
               type="button"
               onClick={() => onChangeRoom('rentals')}
               className={`px-2 sm:px-3.5 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all cursor-pointer select-none ${
                 activeRoom === 'rentals'
-                  ? 'bg-gradient-to-r from-[#342A21] via-[#3D3126] to-[#342A21] text-[#FAF8F5] shadow-xs border border-[#4A3C30]/60'
-                  : 'text-[#7A6C5D] hover:text-[#342A21]'
+                  ? 'bg-gradient-to-r from-[#342A21] via-[#3E3227] to-[#342A21] text-[#FFF9EB] shadow-xs border border-[#FFAD05]/40'
+                  : 'text-[#6E5D4E] hover:text-[#342A21]'
               }`}
               title="Accommodations & Rental Inspections"
               aria-label="Rentals Room"
@@ -150,8 +150,8 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onChangeRoom('jobs')}
               className={`px-2 sm:px-3.5 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all cursor-pointer select-none ${
                 activeRoom === 'jobs'
-                  ? 'bg-gradient-to-r from-[#342A21] via-[#3D3126] to-[#342A21] text-[#FAF8F5] shadow-xs border border-[#4A3C30]/60'
-                  : 'text-[#7A6C5D] hover:text-[#342A21]'
+                  ? 'bg-gradient-to-r from-[#342A21] via-[#3E3227] to-[#342A21] text-[#FFF9EB] shadow-xs border border-[#FFAD05]/40'
+                  : 'text-[#6E5D4E] hover:text-[#342A21]'
               }`}
               title="Setlla Jobs - Careers & Vacancies"
               aria-label="Setlla Jobs Room"
@@ -163,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center / Right: Squircle Navigation Island (Zero Overflow on Mobile) */}
-        <div className="flex items-center gap-0.5 sm:gap-1.5 p-0.5 sm:p-1 rounded-[16px] sm:rounded-[22px] bg-[#FAF6F0] border border-[#E6DEC8] shadow-xs shrink-0 max-w-full">
+        <div className="flex items-center gap-0.5 sm:gap-1.5 p-0.5 sm:p-1 rounded-[16px] sm:rounded-[22px] bg-gradient-to-r from-[#FCF9F2] via-[#FFFDF7] to-[#FFF6E0] border border-[#EDDAA6]/75 shadow-xs shrink-0 max-w-full">
           {/* TAB 1: Seeker Live Snap Feed (Explore) */}
           <button
             onClick={() => {
@@ -172,13 +172,13 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
               ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')
-                ? 'bg-gradient-to-b from-[#3D3126] to-[#342A21] text-[#FAF8F5] shadow-md border-2 border-white ring-2 ring-[#342A21]/10 z-10 scale-[1.02]'
-                : 'bg-white/85 hover:bg-white text-[#7A6C5D] hover:text-[#342A21] border border-[#E6DEC8]/80 hover:shadow-xs'
+                ? 'bg-gradient-to-b from-[#3D3126] to-[#342A21] text-[#FFFDF7] shadow-md border-2 border-[#FFF9EB] ring-2 ring-[#FFAD05]/25 z-10 scale-[1.02]'
+                : 'bg-white/90 hover:bg-[#FFFDF7] text-[#6E5D4E] hover:text-[#342A21] border border-[#E8DAB8]/80 hover:shadow-xs'
             }`}
             aria-label="Explore"
             title="Explore"
           >
-            <Compass className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')) ? 'text-[#F3D5A5]' : ''}`} />
+            <Compass className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')) ? 'text-[#FFAD05]' : ''}`} />
             
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
@@ -204,13 +204,13 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
                 currentRole === 'agent'
-                  ? 'bg-gradient-to-b from-[#3D3126] to-[#342A21] text-[#FAF8F5] shadow-md border-2 border-white ring-2 ring-[#342A21]/10 z-10 scale-[1.02]'
-                  : 'bg-white/85 hover:bg-white text-[#7A6C5D] hover:text-[#342A21] border border-[#E6DEC8]/80 hover:shadow-xs'
+                  ? 'bg-gradient-to-b from-[#3D3126] to-[#342A21] text-[#FFFDF7] shadow-md border-2 border-[#FFF9EB] ring-2 ring-[#FFAD05]/25 z-10 scale-[1.02]'
+                  : 'bg-white/90 hover:bg-[#FFFDF7] text-[#6E5D4E] hover:text-[#342A21] border border-[#E8DAB8]/80 hover:shadow-xs'
               }`}
               aria-label={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
               title={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
             >
-              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-[#F3D5A5]' : 'text-[#7A6C5D]'}`} />
+              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-[#FFAD05]' : 'text-[#6E5D4E]'}`} />
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
                 {activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
               </span>
@@ -226,13 +226,13 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={onOpenNotifications || onOpenMyPasses}
               className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3.5 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
                 totalNotificationsCount > 0
-                  ? 'bg-white hover:bg-[#F6F3EF] text-[#342A21] border border-[#E5E7EB] shadow-xs'
-                  : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#342A21] border border-[#E5E7EB]/80'
+                  ? 'bg-[#FFF9EB] hover:bg-[#FFF3D6] text-[#342A21] border border-[#EDDAA6] shadow-xs'
+                  : 'bg-white/90 hover:bg-[#FFFDF7] text-[#6E5D4E] hover:text-[#342A21] border border-[#E8DAB8]/80'
               }`}
               aria-label="Notifications"
               title="Notifications"
             >
-              <Bell className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${totalNotificationsCount > 0 ? 'text-[#342A21]' : ''}`} />
+              <Bell className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${totalNotificationsCount > 0 ? 'text-[#C68400]' : ''}`} />
 
               {/* Desktop Label */}
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
@@ -242,10 +242,10 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Notification Badge */}
               {totalNotificationsCount > 0 && (
                 <>
-                  <span className="md:hidden absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-[#342A21] text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center ring-1.5 sm:ring-2 ring-white shadow-xs animate-pulse-subtle">
+                  <span className="md:hidden absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-[#FFAD05] text-[#000004] text-[9px] sm:text-[10px] font-extrabold flex items-center justify-center ring-1.5 sm:ring-2 ring-white shadow-xs animate-pulse-subtle">
                     {totalNotificationsCount}
                   </span>
-                  <span className="hidden md:inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-[#342A21] text-white text-[10px] font-bold shadow-xs animate-pulse-subtle ml-0.5">
+                  <span className="hidden md:inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-[#FFAD05] text-[#000004] text-[10px] font-extrabold shadow-xs animate-pulse-subtle ml-0.5">
                     {totalNotificationsCount}
                   </span>
                 </>

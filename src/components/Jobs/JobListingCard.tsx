@@ -46,8 +46,8 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
     <article
       className={`w-full bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between group ${
         job.isFeatured
-          ? 'border-amber-300/80 hover:border-amber-400 bg-gradient-to-b from-amber-50/20 to-white'
-          : 'border-[#E5E7EB] hover:border-[#000004]/20'
+          ? 'border-[#FFAD05]/70 hover:border-[#FFAD05] bg-gradient-to-b from-[#FFF9EB] to-white'
+          : 'border-[#EFE3C8] hover:border-[#FFAD05]/45'
       }`}
     >
       {/* 1. Header: Company Logo / Avatar, Job Title, Company & Location */}
@@ -152,8 +152,8 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
           </span>
 
           {/* Compensation Range */}
-          <span className="px-2.5 py-1 rounded-lg bg-[#FAF8F5] border border-[#E5E7EB] text-[#000004] font-bold flex items-center gap-1">
-            <Banknote className="w-3.5 h-3.5 text-[#342A21]" />
+          <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#FFF8E6] to-[#FFEFCA] border border-[#EDD595] text-[#342A21] font-bold flex items-center gap-1">
+            <Banknote className="w-3.5 h-3.5 text-[#C68400]" />
             <span>{job.salaryRange}</span>
           </span>
 
@@ -195,10 +195,10 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
           <button
             type="button"
             onClick={() => onQuickApply(job)}
-            className="py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl bg-gradient-to-r from-[#342A21] via-[#3E3227] to-[#342A21] hover:from-[#282019] hover:to-[#282019] text-[#FAF8F5] border border-[#4A3C30]/60 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs hover:shadow-sm flex items-center gap-1.5"
+            className="py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl bg-gradient-to-r from-[#342A21] via-[#3E3227] to-[#342A21] hover:from-[#282019] hover:to-[#282019] text-[#FAF8F5] border border-[#FFAD05]/35 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs hover:shadow-sm flex items-center gap-1.5"
           >
             <span>Quick Apply</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#F3D5A5]" />
+            <ArrowRight className="w-3.5 h-3.5 text-[#FFAD05]" />
           </button>
         )}
       </div>

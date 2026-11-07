@@ -171,16 +171,16 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-16 pb-20 px-3.5 sm:px-6 max-w-5xl mx-auto">
       {/* Top Banner / Agent Identity */}
-      <div className="bg-gradient-to-br from-white via-[#FEFCFA] to-[#F7F3ED] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#E8E1D7] shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-br from-white via-[#FFFDF8] to-[#FFF7E2] rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-[#EDDAA6] shadow-xs mb-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3.5 sm:gap-4 min-w-0 flex-1">
           {agentProfile.avatarUrl ? (
             <img
               src={agentProfile.avatarUrl}
               alt={agentProfile.fullName}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border border-[#E5E7EB] shrink-0 shadow-2xs"
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border border-[#FFAD05]/45 shrink-0 shadow-2xs"
             />
           ) : (
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#000004] text-white flex items-center justify-center font-display font-bold text-lg sm:text-xl shadow-xs shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#342A21] text-[#FFAD05] border border-[#FFAD05]/40 flex items-center justify-center font-display font-bold text-lg sm:text-xl shadow-xs shrink-0">
               {agentInitials}
             </div>
           )}
@@ -189,7 +189,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               <h1 className="font-display text-xl sm:text-2xl font-bold text-[#000004] truncate">
                 {agentProfile.fullName}
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FAF8F5] text-[#342A21] border border-[#E5E7EB] shrink-0">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#FFF8E6] text-[#342A21] border border-[#EDD595] shrink-0">
                 Partner Agent
               </span>
             </div>
@@ -219,10 +219,10 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               setAdsInitialTab('new-campaign');
               setActiveTab('ads');
             }}
-            className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl border border-[#342A21]/15 bg-[#F6F3EF] hover:bg-[#342A21] text-[#342A21] hover:text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer whitespace-nowrap group"
+            className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl border border-[#EDD595] bg-gradient-to-r from-[#FFF8E6] to-[#FFEFCA] hover:from-[#FFAD05] hover:to-[#F59E0B] text-[#342A21] hover:text-[#000004] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap group"
             title="Post and manage adverts directly inside your Agent Portal"
           >
-            <Megaphone className="w-3.5 h-3.5 text-[#342A21] group-hover:text-[#FCF9F5] transition-colors shrink-0" />
+            <Megaphone className="w-3.5 h-3.5 text-[#C68400] group-hover:text-[#000004] transition-colors shrink-0" />
             <span>Promote</span>
           </button>
           <button
