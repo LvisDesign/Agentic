@@ -59,10 +59,10 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
               <img
                 src={job.companyLogo}
                 alt={job.companyName}
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl object-cover border border-[#E5E7EB] shrink-0"
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl object-cover border border-[#E6DEC8] shrink-0"
               />
             ) : (
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#000004] text-white flex items-center justify-center font-bold text-sm sm:text-base tracking-wider shrink-0 shadow-2xs">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-[#342A21] text-[#FAF8F5] flex items-center justify-center font-bold text-sm sm:text-base tracking-wider shrink-0 shadow-2xs">
                 {job.companyInitial}
               </div>
             )}
@@ -195,10 +195,10 @@ export const JobListingCard: React.FC<JobListingCardProps> = ({
           <button
             type="button"
             onClick={() => onQuickApply(job)}
-            className="py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs hover:shadow-sm flex items-center gap-1.5"
+            className="py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl bg-gradient-to-r from-[#342A21] via-[#3E3227] to-[#342A21] hover:from-[#282019] hover:to-[#282019] text-[#FAF8F5] border border-[#4A3C30]/60 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs hover:shadow-sm flex items-center gap-1.5"
           >
             <span>Quick Apply</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-3.5 h-3.5 text-[#F3D5A5]" />
           </button>
         )}
       </div>

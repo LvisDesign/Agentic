@@ -131,14 +131,14 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Segmented Pill-Style Global Room Switcher (Auto-fits on small screens) */}
-          <div className="flex items-center p-0.5 sm:p-1 bg-[#F4F5F7] rounded-full border border-[#E5E7EB] shadow-2xs shrink-0">
+          <div className="flex items-center p-0.5 sm:p-1 bg-[#F5EFE6] rounded-full border border-[#E5DACB] shadow-2xs shrink-0">
             <button
               type="button"
               onClick={() => onChangeRoom('rentals')}
               className={`px-2 sm:px-3.5 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all cursor-pointer select-none ${
                 activeRoom === 'rentals'
-                  ? 'bg-[#000004] text-white shadow-xs'
-                  : 'text-[#70798C] hover:text-[#000004]'
+                  ? 'bg-gradient-to-r from-[#342A21] via-[#3D3126] to-[#342A21] text-[#FAF8F5] shadow-xs border border-[#4A3C30]/60'
+                  : 'text-[#7A6C5D] hover:text-[#342A21]'
               }`}
               title="Accommodations & Rental Inspections"
               aria-label="Rentals Room"
@@ -150,8 +150,8 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => onChangeRoom('jobs')}
               className={`px-2 sm:px-3.5 py-0.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold transition-all cursor-pointer select-none ${
                 activeRoom === 'jobs'
-                  ? 'bg-[#000004] text-white shadow-xs'
-                  : 'text-[#70798C] hover:text-[#000004]'
+                  ? 'bg-gradient-to-r from-[#342A21] via-[#3D3126] to-[#342A21] text-[#FAF8F5] shadow-xs border border-[#4A3C30]/60'
+                  : 'text-[#7A6C5D] hover:text-[#342A21]'
               }`}
               title="Setlla Jobs - Careers & Vacancies"
               aria-label="Setlla Jobs Room"
@@ -163,7 +163,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center / Right: Squircle Navigation Island (Zero Overflow on Mobile) */}
-        <div className="flex items-center gap-0.5 sm:gap-1.5 p-0.5 sm:p-1 rounded-[16px] sm:rounded-[22px] bg-[#FCF9F5] border border-[#E5E7EB] shadow-xs shrink-0 max-w-full">
+        <div className="flex items-center gap-0.5 sm:gap-1.5 p-0.5 sm:p-1 rounded-[16px] sm:rounded-[22px] bg-[#FAF6F0] border border-[#E6DEC8] shadow-xs shrink-0 max-w-full">
           {/* TAB 1: Seeker Live Snap Feed (Explore) */}
           <button
             onClick={() => {
@@ -172,13 +172,13 @@ export const Header: React.FC<HeaderProps> = ({
             }}
             className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
               ((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')
-                ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
-                : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
+                ? 'bg-gradient-to-b from-[#3D3126] to-[#342A21] text-[#FAF8F5] shadow-md border-2 border-white ring-2 ring-[#342A21]/10 z-10 scale-[1.02]'
+                : 'bg-white/85 hover:bg-white text-[#7A6C5D] hover:text-[#342A21] border border-[#E6DEC8]/80 hover:shadow-xs'
             }`}
             aria-label="Explore"
             title="Explore"
           >
-            <Compass className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')) ? 'text-white' : ''}`} />
+            <Compass className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')) ? 'text-[#F3D5A5]' : ''}`} />
             
             {/* Desktop Label */}
             <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
@@ -186,11 +186,11 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
 
             {(((currentRole === 'seeker' || currentRole === 'tenant') && userView === 'feed') || (!isAuthenticated && userView !== 'dashboard')) && (
-              <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+              <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#342A21] rotate-45 rounded-[1px] pointer-events-none" />
             )}
 
             {/* Mobile Tooltip */}
-            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#000004] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
+            <span className="md:hidden absolute -bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#342A21] text-white text-[10px] font-semibold py-0.5 px-2 rounded-md whitespace-nowrap pointer-events-none shadow-md z-50">
               Explore
             </span>
           </button>
@@ -204,18 +204,18 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-auto md:px-3 md:h-11 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 group shrink-0 ${
                 currentRole === 'agent'
-                  ? 'bg-[#000004] text-white shadow-md border-2 border-white ring-2 ring-[#000004]/10 z-10 scale-[1.02]'
-                  : 'bg-white/80 hover:bg-white text-[#70798C] hover:text-[#000004] border border-[#E5E7EB]/80 hover:shadow-xs'
+                  ? 'bg-gradient-to-b from-[#3D3126] to-[#342A21] text-[#FAF8F5] shadow-md border-2 border-white ring-2 ring-[#342A21]/10 z-10 scale-[1.02]'
+                  : 'bg-white/85 hover:bg-white text-[#7A6C5D] hover:text-[#342A21] border border-[#E6DEC8]/80 hover:shadow-xs'
               }`}
               aria-label={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
               title={activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
             >
-              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-amber-300' : 'text-[#70798C]'}`} />
+              <Briefcase className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 shrink-0 ${currentRole === 'agent' ? 'text-[#F3D5A5]' : 'text-[#7A6C5D]'}`} />
               <span className="hidden md:inline font-semibold text-xs whitespace-nowrap">
                 {activeRoom === 'jobs' ? 'Job Agent Portal' : 'Agent Portal'}
               </span>
               {currentRole === 'agent' && (
-                <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#000004] rotate-45 rounded-[1px] pointer-events-none" />
+                <div className="hidden md:block absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-[#342A21] rotate-45 rounded-[1px] pointer-events-none" />
               )}
             </button>
           )}

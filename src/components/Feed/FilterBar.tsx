@@ -294,7 +294,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             </div>
           ) : (
             /* Default Filter Pill with Search Icon */
-            <div className="flex items-center gap-1.5 p-1 rounded-full bg-white border border-[#E5E7EB] shadow-xs max-w-full">
+            <div className="flex items-center gap-1.5 p-1 rounded-full bg-gradient-to-r from-white via-[#FDFBF7] to-[#FAF5ED] border border-[#E5DEC9] shadow-xs max-w-full">
               {/* City & Area Quick Selector (Dynamic with agent-posted locations & custom entry) */}
               <CustomDropdown
                 options={locationDropdownOptions}
@@ -302,14 +302,14 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 onChange={onSelectCity}
                 onClear={() => onSelectCity('All Delta Cities')}
                 headerTitle="Cities & Areas"
-                icon={<MapPin className="w-3.5 h-3.5 text-[#342A21]" />}
+                icon={<MapPin className="w-3.5 h-3.5 text-[#5C4938]" />}
                 align="left"
                 variant="pill"
                 allowCustomInput={true}
                 customSearchSubtitle="Search listings with this location name or similar words"
               />
 
-              <span className="w-px h-4 bg-[#E5E7EB]" />
+              <span className="w-px h-4 bg-[#E5DEC9]" />
 
               {/* Property Type Quick Selector */}
               <div className="hidden sm:inline-block">
@@ -318,7 +318,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   value={selectedType}
                   onChange={onSelectType}
                   headerTitle="Property Types"
-                  icon={<Home className="w-3.5 h-3.5 text-[#70798C]" />}
+                  icon={<Home className="w-3.5 h-3.5 text-[#6E5D4E]" />}
                   align="center"
                   variant="pill"
                 />
@@ -327,18 +327,18 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               {/* More Filters Modal Trigger */}
               <button
                 onClick={() => setIsOpenModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FAF9F6] hover:bg-[#EDE8DE] text-[#342A21] border border-[#E5E7EB] text-xs font-semibold transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F5EFE6]/90 hover:bg-[#EBE2D5] text-[#342A21] border border-[#E2D9C8] text-xs font-semibold transition-colors cursor-pointer"
               >
-                <SlidersHorizontal className="w-3.5 h-3.5 text-[#70798C]" />
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#5C4938]" />
                 <span>Filter</span>
                 {activeFiltersCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-[#FFAD05] text-[#000004] text-[10px] font-bold flex items-center justify-center">
+                  <span className="w-4 h-4 rounded-full bg-[#342A21] text-[#FAF8F5] text-[10px] font-bold flex items-center justify-center">
                     {activeFiltersCount}
                   </span>
                 )}
               </button>
 
-              <span className="w-px h-4 bg-[#E5E7EB]" />
+              <span className="w-px h-4 bg-[#E5DEC9]" />
 
               {/* Search User or Listing Trigger */}
               {searchQuery.trim() ? (
@@ -349,7 +349,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                     className="flex items-center gap-1.5 truncate cursor-pointer"
                     title="Edit search"
                   >
-                    <Search className="w-3 h-3 text-amber-300 shrink-0" />
+                    <Search className="w-3 h-3 text-[#F3D5A5] shrink-0" />
                     <span className="truncate">{searchQuery}</span>
                   </button>
                   <button
@@ -370,9 +370,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   onClick={() => setIsSearchExpanded(true)}
                   aria-label="Search user or listing"
                   title="Search user or listing"
-                  className="flex items-center justify-center w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1.5 sm:gap-1.5 rounded-full bg-[#FAF9F6] hover:bg-[#EDE8DE] text-[#342A21] border border-[#E5E7EB] text-xs font-semibold transition-colors cursor-pointer shrink-0"
+                  className="flex items-center justify-center w-7 h-7 sm:w-auto sm:px-2.5 sm:py-1.5 sm:gap-1.5 rounded-full bg-[#F5EFE6]/90 hover:bg-[#EBE2D5] text-[#342A21] border border-[#E2D9C8] text-xs font-semibold transition-colors cursor-pointer shrink-0"
                 >
-                  <Search className="w-3.5 h-3.5 text-[#342A21]" />
+                  <Search className="w-3.5 h-3.5 text-[#5C4938]" />
                   <span className="hidden sm:inline">Search</span>
                 </button>
               )}
