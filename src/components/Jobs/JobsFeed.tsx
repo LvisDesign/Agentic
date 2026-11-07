@@ -404,7 +404,13 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
                     key={item.key}
                     job={item.job}
                     hasApplied={hasApplied}
-                    onViewDetails={(j) => setActiveJobDetails(j)}
+                    onViewDetails={(j) => {
+                      if (!isAuthenticated && onTriggerSignup) {
+                        onTriggerSignup();
+                        return;
+                      }
+                      setActiveJobDetails(j);
+                    }}
                     onQuickApply={(j) => {
                       if (!isAuthenticated && onTriggerSignup) {
                         onTriggerSignup();

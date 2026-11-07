@@ -36,6 +36,8 @@ interface PropertyCardProps {
   onOpenBookingModal?: (listing: PropertyListing) => void;
   onUpdateAvailability?: (listingId: string, status: ListingAvailability) => void;
   onConfirmFreshness?: (listingId: string) => void;
+  isAuthenticated?: boolean;
+  onTriggerSignup?: (notice?: { title: string; message: string }) => void;
   index: number;
   totalCount: number;
 }
@@ -49,6 +51,8 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   onOpenBookingModal,
   onUpdateAvailability,
   onConfirmFreshness,
+  isAuthenticated = false,
+  onTriggerSignup,
   index,
   totalCount,
 }) => {
@@ -246,7 +250,16 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                   {/* Total Package Breakdown Trigger Button */}
                   <button
                     type="button"
-                    onClick={() => setShowFeeDrawer(true)}
+                    onClick={() => {
+                      if (!isAuthenticated && onTriggerSignup) {
+                        onTriggerSignup({
+                          title: 'Sign Up to View Total Package',
+                          message: 'Create a free Setlla account to view the full rent breakdown and total package for this property.',
+                        });
+                        return;
+                      }
+                      setShowFeeDrawer(true);
+                    }}
                     className="px-2.5 py-1 rounded-[8px] bg-[#342A21]/10 hover:bg-[#342A21]/20 text-[#342A21] text-xs font-bold transition-colors cursor-pointer border border-[#342A21]/25 active:scale-95 flex items-center gap-1.5 shadow-2xs"
                     title="View total package & rent breakdown"
                   >
@@ -310,7 +323,16 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             {/* 4. Description Preview (1 line when collapsed, full text when expanded) */}
             <div>
               <p 
-                onClick={() => setIsListingExpanded(!isListingExpanded)}
+                onClick={() => {
+                  if (!isAuthenticated && onTriggerSignup) {
+                    onTriggerSignup({
+                      title: 'Sign Up to View Full Listing',
+                      message: 'Create a free Setlla account to view all property details, amenities, and total package.',
+                    });
+                    return;
+                  }
+                  setIsListingExpanded(!isListingExpanded);
+                }}
                 className={`text-[11px] sm:text-xs text-[#70798C] mt-0.5 leading-relaxed cursor-pointer hover:text-[#342A21] transition-colors ${
                   isListingExpanded ? 'break-words' : 'line-clamp-1'
                 }`}
@@ -389,7 +411,16 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             {/* 6. Expand / Collapse Trigger Bar */}
             <button
               type="button"
-              onClick={() => setIsListingExpanded(!isListingExpanded)}
+              onClick={() => {
+                if (!isAuthenticated && onTriggerSignup) {
+                  onTriggerSignup({
+                    title: 'Sign Up to View Full Listing',
+                    message: 'Create a free Setlla account to view all property details, amenities, and total package.',
+                  });
+                  return;
+                }
+                setIsListingExpanded(!isListingExpanded);
+              }}
               className="w-full py-1.5 px-3 rounded-xl bg-[#FCF9F5] hover:bg-[#F4F5F7] text-[#342A21] text-xs font-semibold flex items-center justify-between border border-[#E5E7EB] transition-colors cursor-pointer group/toggle"
             >
               <span className="text-[11px] sm:text-xs font-bold text-[#342A21] flex items-center gap-1.5">

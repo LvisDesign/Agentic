@@ -268,7 +268,7 @@ export const mapDbToAdvert = (row: any): AdvertStory => {
     phone: row.phone,
     isVerified: Boolean(row.is_verified ?? row.isVerified),
     propertyId: row.property_id || row.propertyId,
-    status: row.status || 'active',
+    status: row.status || (row.is_verified || row.isVerified ? 'active' : 'pending_review'),
     submissionSource: row.submission_source || row.submissionSource || 'admin',
     partnerEmail: row.partner_email || row.partnerEmail,
     packageTier: row.package_tier || row.packageTier || 'growth',
@@ -341,7 +341,7 @@ export const mapAdvertToDb = (ad: AdvertStory) => ({
   phone: ad.phone || null,
   is_verified: ad.isVerified,
   property_id: ad.propertyId || null,
-  status: ad.status || 'active',
+  status: ad.status || 'pending_review',
   submission_source: ad.submissionSource || 'admin',
   partner_email: ad.partnerEmail || null,
   package_tier: ad.packageTier || 'growth',
@@ -484,7 +484,7 @@ export const saveAdvert = async (ad: AdvertStory): Promise<AdvertStory> => {
   const advertToSave: AdvertStory = {
     ...ad,
     createdAt: ad.createdAt || now,
-    status: ad.status || 'active',
+    status: ad.status || 'pending_review',
   };
 
   let updatedList: AdvertStory[];
@@ -924,8 +924,8 @@ export const pushProgrammaticAdvert = async (
     websiteUrl: payload.websiteUrl,
     whatsappNumber: payload.whatsappNumber,
     phone: payload.phone,
-    isVerified: true,
-    status: 'active',
+    isVerified: false,
+    status: 'pending_review',
     submissionSource: 'api_webhook',
     partnerEmail: matchedKey.contactEmail,
     packageTier: 'corporate',

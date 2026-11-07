@@ -1295,7 +1295,7 @@ export function App() {
     return unsubscribe;
   }, []);
 
-  // Active, verified campaigns to broadcast on the public feed (filters out declined, pending, test, and expired ads)
+  // Active, admin-approved campaigns to broadcast on the public feed (strictly requires status === 'active')
   const activePublicAdverts = useMemo(() => {
     return adverts.filter(
       (a) =>
@@ -1303,11 +1303,7 @@ export function App() {
         a.id &&
         a.advertiserName !== 'Lvis Agency' &&
         a.title !== '3 Bed Room' &&
-        a.status !== 'rejected' &&
-        a.status !== 'pending_review' &&
-        a.status !== 'deleted' &&
-        a.status !== 'expired' &&
-        (a.status === 'active' || !a.status)
+        a.status === 'active'
     );
   }, [adverts]);
 
@@ -1315,8 +1311,13 @@ export function App() {
   const [isPartnerPortalOpen, setIsPartnerPortalOpen] = useState(false);
 
   const handleAddAdvert = (newAd: AdvertStory) => {
-    setAdverts((prev) => [newAd, ...prev.filter((a) => a.id !== newAd.id)]);
-    saveAdvert(newAd).catch((err) => console.warn('[Setlla Adverts] Failed to save ad:', err));
+    const adForReview: AdvertStory = {
+      ...newAd,
+      status: 'pending_review',
+      isVerified: false,
+    };
+    setAdverts((prev) => [adForReview, ...prev.filter((a) => a.id !== adForReview.id)]);
+    saveAdvert(adForReview).catch((err) => console.warn('[Setlla Adverts] Failed to save ad:', err));
   };
 
   const handleUpdateAdvert = (updatedAd: AdvertStory) => {
@@ -1745,38 +1746,42 @@ export function App() {
   };
 
   // Centralized booking opener with auth guard:
-  // If user is a guest/unauthenticated, prompt signup/login and remember listing to resume!
+  // If user is a guest/unauthenticated, prompt signup and remember listing to resume!
   const handleOpenBooking = (listing: PropertyListing) => {
     if (!isAuthenticated) {
       setPendingBookingListing(listing);
-      const isKnown = isStandalone() || 
-        localStorage.getItem('setlla_pwa_installed') === 'true' || 
-        Boolean(
-          localStorage.getItem('setlla_registered_users') || 
-          localStorage.getItem('setlla_user') || 
-          localStorage.getItem('setlla_last_email') || 
-          localStorage.getItem('setlla_last_phone')
-        );
       setSignupNotice({
-        title: isKnown ? 'Sign In to Book Inspection' : 'Sign Up Required to Book Inspection',
-        message: isKnown
-          ? `Please sign in to your Setlla account to book your inspection slot for "${listing.title}".`
-          : `Create a free account or sign in to book your inspection slot for "${listing.title}". It takes less than 30 seconds!`,
+        title: 'Sign Up Required to Book Inspection',
+        message: `Create a free account to book your inspection slot for "${listing.title}". It takes less than 30 seconds!`,
       });
       setSignupInitialRole('seeker');
-      setSignupInitialMode(isKnown ? 'login' : 'signup');
+      setSignupInitialMode('signup');
       setIsSignupOpen(true);
       return;
     }
     setActiveModalListing(listing);
   };
 
-  const handleOpenSignup = () => {
+  const handleOpenSignup = (notice?: { title: string; message: string }) => {
     if (isAuthenticated || isAdminAuthenticated || currentRole === 'admin') return;
-    setSignupNotice(null);
+    setSignupNotice(notice && notice.title ? notice : null);
     setSignupInitialRole('seeker');
     setSignupInitialMode('signup');
     setIsSignupOpen(true);
+  };
+
+  const handleOpenPostAd = () => {
+    if (!isAuthenticated) {
+      setSignupNotice({
+        title: 'Sign Up Required to Post on Setlla',
+        message: 'Create a free Setlla account to post your sponsored advert or property promotion.',
+      });
+      setSignupInitialRole('seeker');
+      setSignupInitialMode('signup');
+      setIsSignupOpen(true);
+      return;
+    }
+    setIsPostAdOpen(true);
   };
 
   const handleOpenLogin = () => {
@@ -1804,13 +1809,23 @@ export function App() {
   };
 
   const handleOpenAdsPortal = useCallback(() => {
+    if (!isAuthenticated && !getActiveAdvertiser()) {
+      setSignupNotice({
+        title: 'Sign Up Required to Launch Ad Campaigns',
+        message: 'Create a free Setlla account to access the Customer Ads Portal and publish campaigns.',
+      });
+      setSignupInitialRole('seeker');
+      setSignupInitialMode('signup');
+      setIsSignupOpen(true);
+      return;
+    }
     if (getActiveAdvertiser()) {
       setUserView('partner');
       window.location.hash = '#/partner';
     } else {
       setIsAdvertiserAuthOpen(true);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const handleAdminAuthSuccess = useCallback((admin: UserProfile) => {
     setIsAdminAuthenticated(true);
@@ -2361,7 +2376,7 @@ export function App() {
                 currentUser={currentUser}
                 onSwitchToFeed={() => setUserView('feed')}
                 onOpenSignup={handleOpenSignup}
-                onOpenPostAd={() => setIsPostAdOpen(true)}
+                onOpenPostAd={handleOpenPostAd}
                 isAuthenticated={isAuthenticated}
               />
             </main>
@@ -2435,8 +2450,18 @@ export function App() {
               onSelectAdvert={handleSelectAdvert}
               onTriggerSignup={handleOpenSignup}
               isAuthenticated={isAuthenticated}
-              onOpenPostAd={() => setIsPostAdOpen(true)}
+              onOpenPostAd={handleOpenPostAd}
               onOpenEmployerPortal={() => {
+                if (!isAuthenticated) {
+                  setSignupNotice({
+                    title: 'Sign Up Required to Post a Vacancy',
+                    message: 'Create a free Employer or Agent account on Setlla to publish job vacancies.',
+                  });
+                  setSignupInitialRole('agent');
+                  setSignupInitialMode('signup');
+                  setIsSignupOpen(true);
+                  return;
+                }
                 setCurrentRole('agent');
                 setUserView('dashboard');
               }}
@@ -2460,7 +2485,7 @@ export function App() {
               listings={listings}
               adverts={activePublicAdverts}
               onSelectAdvert={handleSelectAdvert}
-              onOpenPostAd={() => setIsPostAdOpen(true)}
+              onOpenPostAd={handleOpenPostAd}
             />
 
             {/* Responsive Layout: Desktop features Sponsored Ads on left; mobile features in-feed sponsored carousel as tenants scroll down */}
@@ -2469,7 +2494,7 @@ export function App() {
               <DesktopAdvertSidebar
                 adverts={activePublicAdverts}
                 onSelectAdvert={handleSelectAdvert}
-                onOpenPostAd={() => setIsPostAdOpen(true)}
+                onOpenPostAd={handleOpenPostAd}
               />
 
               {/* Main Property Rental Continuous Feed */}
@@ -2487,8 +2512,10 @@ export function App() {
                   onResetFilters={handleResetFilters}
                   adverts={activePublicAdverts}
                   onSelectAdvert={handleSelectAdvert}
-                  onOpenPostAd={() => setIsPostAdOpen(true)}
+                  onOpenPostAd={handleOpenPostAd}
                   totalListingsCount={listings.length}
+                  isAuthenticated={isAuthenticated}
+                  onTriggerSignup={handleOpenSignup}
                   onOpenBecomeAgent={() => {
                     if (isAuthenticated) {
                       setIsBecomeAgentOpen(true);

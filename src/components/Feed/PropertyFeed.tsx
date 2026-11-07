@@ -23,6 +23,8 @@ interface PropertyFeedProps {
   activeStoryId?: string | null;
   totalListingsCount?: number;
   onOpenBecomeAgent?: () => void;
+  isAuthenticated?: boolean;
+  onTriggerSignup?: (notice?: { title: string; message: string }) => void;
 }
 
 export const PropertyFeed: React.FC<PropertyFeedProps> = ({
@@ -42,6 +44,8 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
   activeStoryId,
   totalListingsCount,
   onOpenBecomeAgent,
+  isAuthenticated = false,
+  onTriggerSignup,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -174,6 +178,8 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
               onOpenBookingModal={onOpenBookingModal}
               onUpdateAvailability={onUpdateAvailability}
               onConfirmFreshness={onConfirmFreshness}
+              isAuthenticated={isAuthenticated}
+              onTriggerSignup={onTriggerSignup}
               index={index}
               totalCount={listings.length}
             />

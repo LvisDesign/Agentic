@@ -169,8 +169,8 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
       websiteUrl: actionType === 'website' && websiteUrl.trim() ? websiteUrl.trim() : undefined,
       whatsappNumber: whatsapp.replace(/\D/g, ''),
       phone,
-      isVerified: true,
-      status: 'active',
+      isVerified: false,
+      status: 'pending_review',
       submissionSource: 'partner_portal',
       partnerEmail: userEmail,
       packageTier: selectedPlan === 'monthly' ? 'growth' : 'starter',
@@ -227,10 +227,10 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               <CheckCircle className="w-8 h-8" />
             </div>
             <h4 className="font-display text-xl font-bold text-[#000004]">
-              Payment Confirmed & Advert Live!
+              Payment Confirmed & Pending Admin Review!
             </h4>
             <p className="text-xs text-[#70798C] max-w-xs leading-relaxed">
-              Your promoted rental advert has been funded via Paystack and is now active across Setlla marketplace feeds.
+              Your promoted rental advert has been funded via Paystack and submitted for Admin review. Once approved, it will go live across Setlla marketplace feeds.
             </p>
             <div className="p-3 rounded-xl bg-[#FCF9F5] border border-[#E5E7EB] text-left text-xs w-full max-w-xs space-y-1">
               <div className="flex justify-between">
@@ -244,6 +244,10 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
                 </span>
               </div>
               <div className="flex justify-between">
+                <span className="text-[#70798C]">Status:</span>
+                <span className="font-bold text-amber-700">Pending Admin Review</span>
+              </div>
+              <div className="flex justify-between">
                 <span className="text-[#70798C]">Amount Paid:</span>
                 <span className="font-bold text-emerald-600">{formatNaira(advertCost)}</span>
               </div>
@@ -255,7 +259,7 @@ export const PostAdModal: React.FC<PostAdModalProps> = ({
               }}
               className="mt-2 py-2.5 px-6 rounded-xl bg-[#000004] hover:bg-neutral-800 text-white text-xs font-bold transition-colors cursor-pointer"
             >
-              View in Feed
+              Done
             </button>
           </div>
         ) : (

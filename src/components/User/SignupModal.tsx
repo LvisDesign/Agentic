@@ -486,11 +486,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         resolvedPersona === 'employer' ? 'employer_signup' :
         'job_seeker_signup';
 
-      // Instantly synchronize newly submitted profile to cloud platform_users
-      // so it reflects immediately in real time on the Super Admin Console (private.setlla.com)
-      await saveRegisteredUserAsync(updated, { allowReRegistration: true }).catch(() => {});
-
       // Send OTP to email and transition to verify_email screen for ALL signups
+      // Account will only be created & saved once the user enters the correct verification OTP
       try {
         const res = await sendEmailOTP(seekerEmail.trim(), otpPurpose, updated, seekerTurnstileToken || undefined);
         setOtpEmail(seekerEmail.trim());
@@ -624,11 +621,8 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         isEmailVerified: false,
       };
 
-      // Instantly synchronize newly submitted profile to cloud platform_users
-      // so it reflects immediately in real time on the Super Admin Console (private.setlla.com)
-      await saveRegisteredUserAsync(updated, { allowReRegistration: true }).catch(() => {});
-
       // Enforce email verification for Agents and Employers
+      // Account will only be created & saved once the user enters the correct verification OTP
       const otpPurpose: EmailOTPPurpose = resolvedPersona === 'employer' ? 'employer_signup' : 'agent_signup';
       try {
         const res = await sendEmailOTP(agentEmail.trim(), otpPurpose, updated, agentTurnstileToken || undefined);
@@ -793,7 +787,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         user.isEmailVerified = true;
         unrecordDeletedUser(user);
         saveRegisteredUser(user, { allowReRegistration: true });
-        saveRegisteredUserAsync(user, { allowReRegistration: true }).catch(() => {});
+        await saveRegisteredUserAsync(user, { allowReRegistration: true }).catch(() => {});
 
         // Commit immediately to local storage so session can never be lost
         try {
