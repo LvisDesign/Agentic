@@ -1566,10 +1566,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       setFormStep(1);
                       setSignupStep('form');
                     }}
-                    className="w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                    className="w-full py-3 sm:py-3.5 px-4 rounded-xl sm:rounded-2xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
                   >
                     <span>Continue</span>
-                    <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
+                    <ArrowRight className="w-4 h-4 text-[#000004]" />
                   </button>
                 </div>
               ) : (
@@ -1734,16 +1734,16 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <button
                         type="submit"
                         disabled={isVerifyingOtp || otpDigits.filter(Boolean).length !== 6}
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50"
                       >
                         {isVerifyingOtp ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
                             <span>Verifying Code...</span>
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="w-4 h-4 text-[#FCF9F5]" />
+                            <CheckCircle2 className="w-4 h-4 text-[#000004]" />
                             <span>{otpPurpose === 'forgot_password' ? 'Confirm Code & Continue' : 'Confirm & Activate Account'}</span>
                           </>
                         )}
@@ -2007,17 +2007,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                       <button
                         type="submit"
                         disabled={isLoggingIn}
-                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                        className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                       >
                         {isLoggingIn ? (
                           <>
-                            <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
+                            <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
                             <span>Verifying Account...</span>
                           </>
                         ) : (
                           <>
                             <span>Sign In</span>
-                            <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
+                            <ArrowRight className="w-4 h-4 text-[#000004]" />
                           </>
                         )}
                       </button>
@@ -2153,10 +2153,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="button"
                             onClick={handleSeekerNextStep}
-                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
+                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
                             <span>Next</span>
-                            <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
+                            <ArrowRight className="w-4 h-4 text-[#000004]" />
                           </button>
                         </div>
                       </div>
@@ -2343,17 +2343,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="submit"
                             disabled={isSubmittingSeeker}
-                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                           >
                             {isSubmittingSeeker ? (
                               <>
-                                <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
+                                <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
                                 <span>Registering...</span>
                               </>
                             ) : (
                               <>
                                 <span>Register</span>
-                                <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
+                                <ArrowRight className="w-4 h-4 text-[#000004]" />
                               </>
                             )}
                           </button>
@@ -2582,10 +2582,10 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="button"
                             onClick={handleAgentNextStep}
-                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
+                            className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all active:scale-[0.99] cursor-pointer"
                           >
                             <span>Next</span>
-                            <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
+                            <ArrowRight className="w-4 h-4 text-[#000004]" />
                           </button>
                         </div>
                       </div>
@@ -2801,17 +2801,17 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           <button
                             type="submit"
                             disabled={isSubmittingAgent}
-                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FCF9F5] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
+                            className="flex-1 py-2.5 sm:py-3 px-4 rounded-xl bg-[#FFAD05] hover:bg-[#e69c04] text-[#000004] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-60"
                           >
                             {isSubmittingAgent ? (
                               <>
-                                <Loader2 className="w-4 h-4 animate-spin text-[#FCF9F5]" />
+                                <Loader2 className="w-4 h-4 animate-spin text-[#000004]" />
                                 <span>Registering...</span>
                               </>
                             ) : (
                               <>
                                 <span>Register</span>
-                                <ArrowRight className="w-4 h-4 text-[#FCF9F5]" />
+                                <ArrowRight className="w-4 h-4 text-[#000004]" />
                               </>
                             )}
                           </button>
