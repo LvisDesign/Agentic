@@ -283,15 +283,6 @@ export const InspectionBookingModal: React.FC<InspectionBookingModalProps> = ({
                   {listing.agent.fullName}'s direct phone number will be <strong>revealed only when the agent confirms this booking</strong> so you can call directly or copy their number to coordinate the meeting point.
                 </p>
               </div>
-
-              {/* Live Dispatch Footer */}
-              <div className="pt-3 border-t border-[#E5E7EB] flex items-center justify-between text-[11px] text-[#70798C]">
-                <span className="flex items-center gap-1.5 font-medium text-emerald-700">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Request Dispatched to {listing.agent.fullName}
-                </span>
-                <span>Direct SMS confirmation pending</span>
-              </div>
             </div>
           )}
 
