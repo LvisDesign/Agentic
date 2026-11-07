@@ -728,37 +728,38 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
 
       {/* 2. Main Content Body */}
       <main className={embedded ? 'space-y-6' : 'max-w-6xl mx-auto px-3.5 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8'}>
-        {/* Top Banner Overview */}
-        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-7 border border-[#342A21]/15 shadow-subtle flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6">
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="font-display text-2xl text-[#342A21] font-normal">
-                {currentAdvertiser.companyName}
-              </span>
-            </div>
-            <p className="text-xs text-[#70798C] mt-1">
-              {currentAdvertiser.industry} · Operating in {currentAdvertiser.operatingCity} · Registered email: <strong>{currentAdvertiser.email}</strong>
-            </p>
-          </div>
-
+        {/* Top Banner Overview — Collapses on mobile when posting a new ad so the New Ad Campaign card comes straight up */}
+        <div
+          className={`bg-white rounded-2xl sm:rounded-3xl border border-[#342A21]/15 shadow-subtle transition-all duration-200 ${
+            activeTab === 'new-campaign' ? 'p-3 sm:p-5' : 'p-4 sm:p-6'
+          }`}
+        >
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap lg:flex-nowrap items-stretch gap-2 sm:gap-2.5 text-center shrink-0">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap lg:flex-nowrap items-stretch gap-2 sm:gap-2.5 text-center">
             <div 
               onClick={() => {
                 setTopUpAmount(15000);
                 setTopUpPack(15000);
                 setShowTopUpModal(true);
               }}
-              className="col-span-2 sm:col-span-1 bg-[#FCF9F5] p-4 sm:py-4 sm:px-5 rounded-2xl border border-[#342A21]/20 min-w-[175px] sm:min-w-[200px] lg:min-w-[220px] cursor-pointer hover:border-[#342A21]/40 shadow-xs transition-all text-left flex flex-col justify-between group"
+              className={`col-span-2 sm:col-span-1 bg-[#FCF9F5] rounded-2xl border border-[#342A21]/20 min-w-[175px] sm:min-w-[200px] lg:min-w-[240px] cursor-pointer hover:border-[#342A21]/40 shadow-xs transition-all text-left group ${
+                activeTab === 'new-campaign'
+                  ? 'p-3 sm:p-4 flex flex-row sm:flex-col items-center sm:items-stretch justify-between gap-3'
+                  : 'p-4 sm:py-4 sm:px-5 flex flex-col justify-between'
+              }`}
               title="Top up Ad Credits"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase font-bold text-[#70798C] tracking-wider">Credits Balance</span>
-                <Wallet className="w-4 h-4 text-[#342A21] group-hover:scale-110 transition-transform shrink-0" />
+              <div className={activeTab === 'new-campaign' ? 'min-w-0' : ''}>
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-[10px] sm:text-[11px] uppercase font-bold text-[#70798C] tracking-wider">Credits Balance</span>
+                  <Wallet className={`w-4 h-4 text-[#342A21] group-hover:scale-110 transition-transform shrink-0 ${activeTab === 'new-campaign' ? 'hidden sm:block' : ''}`} />
+                </div>
+                <span className={`font-extrabold text-[#000004] font-mono block whitespace-nowrap tracking-tight ${
+                  activeTab === 'new-campaign' ? 'text-xl sm:text-3xl mt-0.5 sm:my-1.5' : 'text-2xl sm:text-3xl my-1.5'
+                }`}>
+                  ₦{(currentAdvertiser.walletBalance || 0).toLocaleString()}
+                </span>
               </div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-[#000004] font-mono block whitespace-nowrap tracking-tight my-1.5">
-                ₦{(currentAdvertiser.walletBalance || 0).toLocaleString()}
-              </span>
               <button
                 type="button"
                 onClick={(e) => {
@@ -767,24 +768,26 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                   setTopUpPack(15000);
                   setShowTopUpModal(true);
                 }}
-                className="w-full py-2 px-3.5 rounded-xl bg-[#342A21] hover:bg-[#000004] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                className={`py-2 px-3.5 rounded-xl bg-[#342A21] hover:bg-[#000004] text-[#FCF9F5] text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs transition-all active:scale-95 cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === 'new-campaign' ? 'w-auto sm:w-full' : 'w-full'
+                }`}
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Top Up Credit</span>
               </button>
             </div>
-            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1">
+            <div className={`${activeTab === 'new-campaign' ? 'hidden sm:block' : 'block'} bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1`}>
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Active</span>
               <span className="text-lg font-bold text-[#342A21]">{activeCount}</span>
             </div>
-            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1">
+            <div className={`${activeTab === 'new-campaign' ? 'hidden sm:block' : 'block'} bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1`}>
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Pending</span>
               <span className="text-lg font-bold text-amber-700">{pendingCount}</span>
             </div>
             {queriedCount > 0 && (
               <div 
                 onClick={() => setStatusFilter('queried')}
-                className="bg-amber-50/90 p-3 rounded-2xl border border-amber-200 min-w-[70px] sm:min-w-[80px] flex-1 cursor-pointer hover:border-amber-300 transition-all text-left"
+                className={`${activeTab === 'new-campaign' ? 'hidden sm:block' : 'block'} bg-amber-50/90 p-3 rounded-2xl border border-amber-200 min-w-[70px] sm:min-w-[80px] flex-1 cursor-pointer hover:border-amber-300 transition-all text-left`}
                 title="View queried campaigns with review feedback"
               >
                 <div className="flex items-center justify-between mb-0.5">
@@ -794,11 +797,11 @@ export const AdvertiserDashboard: React.FC<AdvertiserDashboardProps> = ({
                 <span className="text-lg font-bold text-amber-700">{queriedCount}</span>
               </div>
             )}
-            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1">
+            <div className={`${activeTab === 'new-campaign' ? 'hidden sm:block' : 'block'} bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1`}>
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Views</span>
               <span className="text-lg font-bold text-[#342A21]">{totalImpressions.toLocaleString()}</span>
             </div>
-            <div className="bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1">
+            <div className={`${activeTab === 'new-campaign' ? 'hidden sm:block' : 'block'} bg-[#FCF9F5] p-3 rounded-2xl border border-[#E5E7EB] min-w-[70px] sm:min-w-[80px] flex-1`}>
               <span className="text-[10px] uppercase font-bold text-[#70798C] block">Leads</span>
               <span className="text-lg font-bold text-emerald-700">{totalClicks.toLocaleString()}</span>
             </div>
