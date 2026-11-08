@@ -353,57 +353,105 @@ export function ensureZombiePurgeMigration(): void {
 }
 
 /**
- * Checks whether an account record matches any deleted ID, phone, or email tombstone.
+ * Checks whether an account record matches a deleted user ID tombstone.
+ * Note: Phone numbers and email addresses of accounts deleted by the Super Admin
+ * are freed for re-registration, so only the deleted account ID itself is tombstoned.
  */
 export function isDeletedUserRecord(user: { id?: string; phone?: string; email?: string }): boolean {
   if (!user) return false;
-
-  // An active user session on this device is NEVER considered deleted
-  try {
-    const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
-    if (rawCurrent) {
-      const current = JSON.parse(rawCurrent);
-      if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
-        const isCurrent = 
-          Boolean(user.id && current.id && user.id === current.id) ||
-          Boolean(user.email && current.email && normalizeEmail(user.email) === normalizeEmail(current.email)) ||
-          Boolean(user.phone && current.phone && normalizePhoneNumber(user.phone) === normalizePhoneNumber(current.phone));
-        if (isCurrent) return false;
-      }
-    }
-  } catch (_) {}
-
   const deletedIds = getDeletedUserIds();
   if (user.id && deletedIds.has(user.id.trim())) return true;
-  const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
-  if (normPhone) {
-    const deletedPhones = getDeletedPhones();
-    if (deletedPhones.has(normPhone)) return true;
-  }
-  const normEmail = user.email ? normalizeEmail(user.email) : '';
-  if (normEmail) {
-    const deletedEmails = getDeletedEmails();
-    if (deletedEmails.has(normEmail)) return true;
-  }
   return false;
 }
 
 /**
- * Retrieves all registered users from storage and defaults.
- * Provides all available registered agents, tenants, and platform administrators.
+ * Retrieves all registered users from local storage registries (platform users, advertisers, and active session).
+ * Excludes any account ID that has been deleted by the Super Administrator.
  */
 export function getRegisteredUsers(): UserProfile[] {
   if (typeof window === 'undefined') return [];
+  const deletedIds = getDeletedUserIds();
+  const map = new Map<string, UserProfile>();
+
+  const addIfValid = (u: any) => {
+    if (!u || typeof u !== 'object') return;
+    const id = typeof u.id === 'string' ? u.id.trim() : '';
+    if (!id || id === 'GUEST_USER' || id === 'DT-USR-GUEST' || id === 'adv-asaba-solar-01') return;
+    if (deletedIds.has(id)) return;
+
+    const normPhone = u.phone ? normalizePhoneNumber(u.phone) : '';
+    const last10 = normPhone.slice(-10);
+    const normEmail = u.email ? normalizeEmail(u.email) : '';
+    if (normEmail === 'partners@asabasolar.ng') return;
+
+    // Deduplicate by id, phone, or email
+    for (const [existingId, existingUser] of map.entries()) {
+      const exPhone = existingUser.phone ? normalizePhoneNumber(existingUser.phone) : '';
+      const exEmail = existingUser.email ? normalizeEmail(existingUser.email) : '';
+      const samePhone = Boolean(
+        normPhone && exPhone && (normPhone === exPhone || (last10.length === 10 && exPhone.slice(-10) === last10))
+      );
+      const sameEmail = Boolean(normEmail && exEmail && normEmail === exEmail);
+      if (existingId === id || samePhone || sameEmail) {
+        map.set(existingId, {
+          ...existingUser,
+          ...u,
+          id: existingId,
+        });
+        return;
+      }
+    }
+
+    map.set(id, u as UserProfile);
+  };
+
   try {
-    const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
-    if (rawCurrent) {
-      const current: UserProfile = JSON.parse(rawCurrent);
-      if (current && current.id && current.id !== 'GUEST_USER' && current.id !== 'DT-USR-GUEST') {
-        return [current];
+    const rawList = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (rawList) {
+      const parsed = JSON.parse(rawList);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(addIfValid);
       }
     }
   } catch (_) {}
-  return [];
+
+  try {
+    const rawAdv = localStorage.getItem('setlla_registered_advertisers');
+    if (rawAdv) {
+      const advList = JSON.parse(rawAdv);
+      if (Array.isArray(advList)) {
+        advList.forEach((adv: any) => {
+          if (!adv || !adv.id) return;
+          addIfValid({
+            id: adv.id,
+            fullName: adv.contactName || adv.companyName || 'Advertiser Partner',
+            phone: adv.phone || '',
+            email: adv.email || '',
+            state: 'Delta State',
+            city: adv.operatingCity || 'Asaba',
+            persona: 'advertiser',
+            isAgent: false,
+            isAdmin: false,
+            isEmailVerified: true,
+            isVerifiedTenant: false,
+            savedListingIds: [],
+            createdAt: adv.createdAt || new Date().toISOString(),
+            agencyName: adv.companyName,
+          });
+        });
+      }
+    }
+  } catch (_) {}
+
+  try {
+    const rawCurrent = localStorage.getItem('setlla_user') || localStorage.getItem('deltarent_user');
+    if (rawCurrent) {
+      const current = JSON.parse(rawCurrent);
+      addIfValid(current);
+    }
+  } catch (_) {}
+
+  return Array.from(map.values());
 }
 
 
@@ -815,21 +863,46 @@ export function saveRegisteredUser(
   }
 
   const allUsers = getRegisteredUsers();
-  const existingIndex = allUsers.findIndex(
-    (u) =>
-      u.id === user.id ||
-      (user.phone && normalizePhoneNumber(u.phone) === normalizePhoneNumber(user.phone)) ||
-      (user.email && u.email && normalizeEmail(u.email) === normalizeEmail(user.email))
-  );
+  const userNormPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
+  const userLast10 = userNormPhone.slice(-10);
+  const userNormEmail = user.email ? normalizeEmail(user.email) : '';
+
+  const existingIndex = allUsers.findIndex((u) => {
+    if (u.id === user.id) return true;
+    const uNormPhone = u.phone ? normalizePhoneNumber(u.phone) : '';
+    const uNormEmail = u.email ? normalizeEmail(u.email) : '';
+    if (
+      userNormPhone &&
+      uNormPhone &&
+      (userNormPhone === uNormPhone || (userLast10.length === 10 && uNormPhone.slice(-10) === userLast10))
+    ) {
+      return true;
+    }
+    if (userNormEmail && uNormEmail && userNormEmail === uNormEmail) {
+      return true;
+    }
+    return false;
+  });
+
+  // Always preserve the canonical ID if an active user with this phone/email already exists
+  const canonicalUser: UserProfile =
+    existingIndex >= 0
+      ? {
+          ...allUsers[existingIndex],
+          ...user,
+          id: allUsers[existingIndex].id,
+          email: userNormEmail || allUsers[existingIndex].email,
+          ...(user.isAgent ? { isAgent: true, isVerifiedTenant: false } : {}),
+        }
+      : {
+          ...user,
+          email: userNormEmail || user.email,
+        };
 
   if (existingIndex >= 0) {
-    allUsers[existingIndex] = { 
-      ...allUsers[existingIndex], 
-      ...user,
-      ...(user.isAgent ? { isAgent: true, isVerifiedTenant: false } : {})
-    };
+    allUsers[existingIndex] = canonicalUser;
   } else {
-    allUsers.push(user);
+    allUsers.push(canonicalUser);
   }
 
   try {
@@ -846,7 +919,7 @@ export function saveRegisteredUser(
   if (isSupabaseConfigured()) {
     const client = getSupabaseClient();
     if (client) {
-      const dbRow = mapUserProfileToDb(user);
+      const dbRow = mapUserProfileToDb(canonicalUser);
       Promise.resolve(client.from('platform_users').upsert(dbRow, { onConflict: 'id' }))
         .then(async (res: any) => {
           if (res?.error) {
@@ -859,12 +932,12 @@ export function saveRegisteredUser(
             });
             const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
             if (!retryRes?.error && !options?.skipBroadcast) {
-              broadcastRealtimeEvent('USER_REGISTERED', { user });
+              broadcastRealtimeEvent('USER_REGISTERED', { user: canonicalUser });
             } else if (retryRes?.error) {
               console.warn('[UserRegistry] Supabase platform_users retry error:', retryRes.error.message);
             }
           } else if (!options?.skipBroadcast) {
-            broadcastRealtimeEvent('USER_REGISTERED', { user });
+            broadcastRealtimeEvent('USER_REGISTERED', { user: canonicalUser });
           }
         })
         .catch((err: any) => {
@@ -890,15 +963,26 @@ export async function saveRegisteredUserAsync(
   saveRegisteredUser(user, { ...options, skipCloudSync: true });
   if (!isSupabaseConfigured() || options?.skipCloudSync) return true;
 
+  // Ensure canonical ID is used if an existing account already holds this phone or email
+  const normPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
+  const normEmail = user.email ? normalizeEmail(user.email) : '';
+  const matchedCanonical =
+    getRegisteredUsers().find(
+      (u) =>
+        u.id === user.id ||
+        (normPhone && u.phone && normalizePhoneNumber(u.phone) === normPhone) ||
+        (normEmail && u.email && normalizeEmail(u.email) === normEmail)
+    ) || user;
+
   try {
     const savePromise = (async (): Promise<boolean> => {
       const client = getSupabaseClient();
       if (!client) return true;
-      const dbRow = mapUserProfileToDb(user);
+      const dbRow = mapUserProfileToDb(matchedCanonical);
       const { error } = await client.from('platform_users').upsert(dbRow, { onConflict: 'id' });
       if (!error) {
         if (!options?.skipBroadcast) {
-          broadcastRealtimeEvent('USER_REGISTERED', { user });
+          broadcastRealtimeEvent('USER_REGISTERED', { user: matchedCanonical });
         }
         return true;
       } else {
@@ -912,7 +996,7 @@ export async function saveRegisteredUserAsync(
         const retryRes = await client.from('platform_users').upsert(safeCoreRow, { onConflict: 'id' });
         if (!retryRes.error) {
           if (!options?.skipBroadcast) {
-            broadcastRealtimeEvent('USER_REGISTERED', { user });
+            broadcastRealtimeEvent('USER_REGISTERED', { user: matchedCanonical });
           }
           return true;
         } else {
@@ -1178,18 +1262,11 @@ export async function deleteUserFromRegistryAsync(
     });
   } catch (_) {}
 
-  // 8. Record deleted user tombstone locally & in cloud:
-  // - Default (allowReRegistration: false): Credentials remain permanently restricted/banned.
-  // - Admin Reset (allowReRegistration: true): Credentials are cleared so the user can sign up clean.
-  if (!options?.allowReRegistration) {
-    ids.forEach((id) => recordDeletedUser({ id }, true));
-    phoneVariants.forEach((p) => recordDeletedUser({ phone: p }, true));
-    emailVariants.forEach((e) => recordDeletedUser({ email: e }, true));
-  } else {
-    ids.forEach((id) => unrecordDeletedUser({ id }));
-    phoneVariants.forEach((p) => unrecordDeletedUser({ phone: p }));
-    emailVariants.forEach((e) => unrecordDeletedUser({ email: e }));
-  }
+  // 8. Record deleted user ID tombstone locally & in cloud so stale caches drop the old account ID,
+  // while clearing any phone/email restrictions so the email & phone number can be reused now that Super Admin deleted the account.
+  ids.forEach((id) => recordDeletedUser({ id }, true));
+  phoneVariants.forEach((p) => unrecordDeletedUser({ phone: p }));
+  emailVariants.forEach((e) => unrecordDeletedUser({ email: e }));
 
   // 9. Dispatch account deletion notice email directly to user's registered email
   const targetEmail = resolvedUser?.email || rawEmail;
@@ -1412,15 +1489,19 @@ export function getBlockedCredentials(): { phones: string[]; emails: string[] } 
 }
 
 /**
- * Checks whether an account already exists with the given phone number or email address in local storage.
- * Excludes the currently signed-in user's own ID if specified.
+ * Checks whether an account already exists with the given phone number or email address in local storage
+ * across ALL user types (Tenants, Agents/Listers, Job Seekers, Employers, Advertisers).
+ * Excludes the currently signed-in user's own ID if specified, and ignores accounts deleted by Super Admin.
  */
 export function checkUserExists(
   phone: string,
   email?: string,
   excludeUserId?: string
 ): DuplicateCheckResult {
+  const normPhone = normalizePhoneNumber(phone);
+  const last10 = normPhone.slice(-10);
   const normEmail = normalizeEmail(email);
+
   if (normEmail === 'admin@setlla.com') {
     return {
       exists: true,
@@ -1429,26 +1510,101 @@ export function checkUserExists(
       message: 'The official Super Admin account (admin@setlla.com) is reserved. Please sign in.',
     };
   }
+  if (normPhone && normPhone === normalizePhoneNumber('0907 705 6351')) {
+    return {
+      exists: true,
+      reason: 'phone',
+      field: 'phone',
+      message: 'This official administrative phone number is reserved. Please sign in.',
+    };
+  }
+
+  const allLocalUsers = getRegisteredUsers();
+  for (const user of allLocalUsers) {
+    if (!user || !user.id) continue;
+    if (excludeUserId && user.id === excludeUserId) continue;
+    if (isDeletedUserRecord(user)) continue;
+
+    const uNormPhone = user.phone ? normalizePhoneNumber(user.phone) : '';
+    const uNormEmail = user.email ? normalizeEmail(user.email) : '';
+
+    const phoneMatches = Boolean(
+      normPhone &&
+        uNormPhone &&
+        (normPhone === uNormPhone || (last10.length === 10 && uNormPhone.slice(-10) === last10))
+    );
+    const emailMatches = Boolean(normEmail && uNormEmail && normEmail === uNormEmail);
+
+    if (phoneMatches && emailMatches) {
+      return {
+        exists: true,
+        reason: 'both',
+        field: 'both',
+        message: `An account with phone number "${phone.trim()}" and email "${email?.trim()}" already exists on Setlla. Each email and phone number can only be used once.`,
+        matchedUser: user,
+      };
+    }
+
+    if (phoneMatches) {
+      return {
+        exists: true,
+        reason: 'phone',
+        field: 'phone',
+        message: `An account with phone number "${phone.trim()}" already exists on Setlla. Each phone number can only be used once across all user accounts.`,
+        matchedUser: user,
+      };
+    }
+
+    if (emailMatches) {
+      return {
+        exists: true,
+        reason: 'email',
+        field: 'email',
+        message: `An account with email "${email?.trim()}" already exists on Setlla. Each email address can only be used once across all user accounts.`,
+        matchedUser: user,
+      };
+    }
+  }
+
   return { exists: false };
 }
 
 /**
- * Asynchronously checks whether an account already exists with the given phone number or email,
- * inspecting both local cache and the central Supabase database across all devices.
+ * Asynchronously checks whether an account already exists with the given phone number or email
+ * across ALL user types (Tenants, Agents/Listers, Job Seekers, Employers, Advertisers),
+ * inspecting both the central Supabase database (`platform_users` and `advertisers`) and local registry.
+ * Only allows re-registration of an email or phone number if the account using it was deleted by the Super Admin.
  */
 export async function checkUserExistsAsync(
   phone: string,
   email?: string,
   excludeUserId?: string
 ): Promise<DuplicateCheckResult> {
-  // If Supabase is not configured, fall back to local registry
-  if (!isSupabaseConfigured()) {
-    return checkUserExists(phone, email, excludeUserId);
-  }
-
   const normPhone = normalizePhoneNumber(phone);
   const normEmail = normalizeEmail(email);
   const last10 = normPhone.slice(-10);
+
+  if (normEmail === 'admin@setlla.com') {
+    return {
+      exists: true,
+      reason: 'email',
+      field: 'email',
+      message: 'The official Super Admin account (admin@setlla.com) is reserved. Please sign in.',
+    };
+  }
+  if (normPhone && normPhone === normalizePhoneNumber('0907 705 6351')) {
+    return {
+      exists: true,
+      reason: 'phone',
+      field: 'phone',
+      message: 'This official administrative phone number is reserved. Please sign in.',
+    };
+  }
+
+  // If Supabase is not configured, fall back to local registry check
+  if (!isSupabaseConfigured()) {
+    return checkUserExists(phone, email, excludeUserId);
+  }
 
   try {
     const client = getSupabaseClient();
@@ -1456,134 +1612,192 @@ export async function checkUserExistsAsync(
       return checkUserExists(phone, email, excludeUserId);
     }
 
-    // 1. Query cloud blacklist / tombstones in deleted_adverts
+    // 1. Synchronize Super Admin deleted user ID tombstones (`usr_id:%`) from cloud
     try {
-      const tombstoneKeys: string[] = [];
-      if (normPhone) {
-        tombstoneKeys.push(`usr_phone:${normPhone}`);
-        if (last10.length === 10) tombstoneKeys.push(`usr_phone:0${last10}`);
+      const { data: tombstones } = await client
+        .from('deleted_adverts')
+        .select('id')
+        .like('id', 'usr_id:%');
+
+      if (Array.isArray(tombstones)) {
+        tombstones.forEach((t: any) => {
+          const rawId = typeof t?.id === 'string' ? t.id : '';
+          if (rawId.startsWith('usr_id:')) {
+            const delId = rawId.slice(7).trim();
+            if (delId) recordDeletedUser({ id: delId }, false);
+          }
+        });
+      }
+    } catch (_) {}
+
+    let dbQuerySucceeded = false;
+
+    const queryPromise = (async (): Promise<DuplicateCheckResult | null> => {
+      const userFilters: string[] = [];
+      const advFilters: string[] = [];
+
+      if (phone && phone.trim()) {
+        userFilters.push(`phone.eq.${phone.trim()}`);
+        advFilters.push(`phone.eq.${phone.trim()}`);
+      }
+      if (normPhone && normPhone !== phone.trim()) {
+        userFilters.push(`phone.eq.${normPhone}`);
+        advFilters.push(`phone.eq.${normPhone}`);
+      }
+      if (last10.length === 10) {
+        userFilters.push(`phone.ilike.%${last10}%`);
+        advFilters.push(`phone.ilike.%${last10}%`);
       }
       if (normEmail) {
-        tombstoneKeys.push(`usr_email:${normEmail}`);
+        userFilters.push(`email.ilike.${normEmail}`);
+        advFilters.push(`email.ilike.${normEmail}`);
       }
-      if (tombstoneKeys.length > 0) {
-        const { data: tombstones } = await client
-          .from('deleted_adverts')
-          .select('id')
-          .in('id', tombstoneKeys);
 
-        if (tombstones && tombstones.length > 0) {
-          const isPhoneBlocked = tombstones.some((t: any) => typeof t.id === 'string' && t.id.startsWith('usr_phone:'));
-          const isEmailBlocked = tombstones.some((t: any) => typeof t.id === 'string' && t.id.startsWith('usr_email:'));
+      if (userFilters.length === 0) {
+        dbQuerySucceeded = true;
+        return { exists: false };
+      }
 
-          if (normPhone && isPhoneBlocked) recordDeletedUser({ phone: normPhone }, false);
-          if (normEmail && isEmailBlocked) recordDeletedUser({ email: normEmail }, false);
+      const [usersRes, advRes] = await Promise.all([
+        client
+          .from('platform_users')
+          .select('id, full_name, phone, email, is_agent, agency_name, kyc_documents, created_at')
+          .or(userFilters.join(',')),
+        Promise.resolve(
+          client
+            .from('advertisers')
+            .select('id, company_name, contact_name, phone, email, operating_city, created_at')
+            .or(advFilters.join(','))
+        ).catch(() => ({ data: null, error: null })),
+      ]);
 
-          const reason = isPhoneBlocked && isEmailBlocked ? 'both' : isPhoneBlocked ? 'phone' : 'email';
+      if (usersRes.error) {
+        return null;
+      }
+
+      dbQuerySucceeded = true;
+      const deletedIds = getDeletedUserIds();
+      const candidateUsers: UserProfile[] = [];
+
+      if (Array.isArray(usersRes.data)) {
+        for (const row of usersRes.data) {
+          if (!row || !row.id) continue;
+          if (excludeUserId && row.id === excludeUserId) continue;
+          if (deletedIds.has(String(row.id).trim())) continue;
+          candidateUsers.push(mapDbToUserProfile(row));
+        }
+      }
+
+      if (advRes && Array.isArray(advRes.data)) {
+        for (const adv of advRes.data) {
+          if (!adv || !adv.id) continue;
+          if (excludeUserId && adv.id === excludeUserId) continue;
+          if (deletedIds.has(String(adv.id).trim())) continue;
+          candidateUsers.push({
+            id: adv.id,
+            fullName: adv.contact_name || adv.company_name || 'Advertiser Partner',
+            phone: adv.phone || '',
+            email: adv.email || '',
+            state: 'Delta State',
+            city: adv.operating_city || 'Asaba',
+            persona: 'advertiser',
+            isAgent: false,
+            isAdmin: false,
+            isEmailVerified: true,
+            isVerifiedTenant: false,
+            savedListingIds: [],
+            createdAt: adv.created_at || new Date().toISOString(),
+            agencyName: adv.company_name,
+          });
+        }
+      }
+
+      for (const user of candidateUsers) {
+        if (isDeletedUserRecord(user)) continue;
+
+        const userNormPhone = normalizePhoneNumber(user.phone);
+        const userNormEmail = normalizeEmail(user.email);
+
+        const phoneMatches = Boolean(
+          normPhone &&
+            userNormPhone &&
+            (normPhone === userNormPhone || (last10.length === 10 && userNormPhone.slice(-10) === last10))
+        );
+        const emailMatches = Boolean(normEmail && userNormEmail && normEmail === userNormEmail);
+
+        if (phoneMatches || emailMatches) {
+          // Cache active cloud user locally so subsequent synchronous checks also see it
+          saveRegisteredUser(user, { skipCloudSync: true, skipBroadcast: true });
+        }
+
+        if (phoneMatches && emailMatches) {
           return {
             exists: true,
-            isBanned: true,
-            reason,
-            field: reason,
-            message: reason === 'both'
-              ? 'This phone number and email address have been restricted by platform administration. Please contact support@setlla.com.'
-              : reason === 'phone'
-              ? 'This phone number has been restricted by platform administration. Please contact support@setlla.com.'
-              : 'This email address has been restricted by platform administration. Please contact support@setlla.com.',
+            reason: 'both',
+            field: 'both',
+            message: `An account with phone number "${phone.trim()}" and email "${email?.trim()}" already exists on Setlla. Each email and phone number can only be used once.`,
+            matchedUser: user,
+          };
+        }
+
+        if (phoneMatches) {
+          return {
+            exists: true,
+            reason: 'phone',
+            field: 'phone',
+            message: `An account with phone number "${phone.trim()}" already exists on Setlla. Each phone number can only be used once across all user accounts.`,
+            matchedUser: user,
+          };
+        }
+
+        if (emailMatches) {
+          return {
+            exists: true,
+            reason: 'email',
+            field: 'email',
+            message: `An account with email "${email?.trim()}" already exists on Setlla. Each email address can only be used once across all user accounts.`,
+            matchedUser: user,
           };
         }
       }
-    } catch (err) {
-      console.warn('[UserRegistry] Exception checking cloud blacklist:', err);
-    }
 
-    const queryPromise = (async (): Promise<DuplicateCheckResult> => {
-      const filters: string[] = [];
-
-      if (phone && phone.trim()) {
-        filters.push(`phone.eq.${phone.trim()}`);
-      }
-      if (normPhone && normPhone !== phone.trim()) {
-        filters.push(`phone.eq.${normPhone}`);
-      }
-      if (normEmail) {
-        filters.push(`email.eq.${normEmail}`);
-      }
-
-      if (filters.length === 0) return { exists: false };
-
-      const { data, error } = await client
-        .from('platform_users')
-        .select('id, full_name, phone, email, is_agent, agency_name')
-        .or(filters.join(','));
-
-      if (!error && Array.isArray(data)) {
-        for (const row of data) {
-          if (excludeUserId && row.id === excludeUserId) continue;
-
-          const user = mapDbToUserProfile(row);
-          if (isDeletedUserRecord(user)) continue;
-
-          const userNormPhone = normalizePhoneNumber(user.phone);
-          const userNormEmail = normalizeEmail(user.email);
-
-          const phoneMatches = Boolean(
-            normPhone && userNormPhone &&
-            (normPhone === userNormPhone || (last10.length >= 7 && userNormPhone.slice(-10) === last10))
-          );
-          const emailMatches = Boolean(normEmail && userNormEmail && normEmail === userNormEmail);
-
-          if (phoneMatches && emailMatches) {
-            return {
-              exists: true,
-              reason: 'both',
-              field: 'both',
-              message: `An account with phone number "${phone}" and email "${email}" already exists.`,
-              matchedUser: user,
-            };
-          }
-
-          if (phoneMatches) {
-            return {
-              exists: true,
-              reason: 'phone',
-              field: 'phone',
-              message: `An account with phone number "${phone}" already exists.`,
-              matchedUser: user,
-            };
-          }
-
-          if (emailMatches) {
-            return {
-              exists: true,
-              reason: 'email',
-              field: 'email',
-              message: `An account with email "${email}" already exists.`,
-              matchedUser: user,
-            };
-          }
-        }
-      }
       return { exists: false };
     })();
 
-    const timeoutPromise = new Promise<DuplicateCheckResult>((resolve) =>
-      setTimeout(() => resolve({ exists: false }), 4000)
+    const timeoutPromise = new Promise<DuplicateCheckResult | null>((resolve) =>
+      setTimeout(() => resolve(null), 4500)
     );
 
-    const result = await Promise.race([queryPromise, timeoutPromise]);
-    if (!result.exists) {
-      // Cloud database confirmed this credential does not exist.
-      // Purge any stale ghost session or local cache for this email/phone.
-      purgeGhostUserFromLocalStorage(phone, email);
+    const cloudResult = await Promise.race([queryPromise, timeoutPromise]);
+
+    if (cloudResult && cloudResult.exists) {
+      return cloudResult;
     }
-    return result;
+
+    // Check local registry as well
+    const localResult = checkUserExists(phone, email, excludeUserId);
+    if (localResult.exists && localResult.matchedUser) {
+      // If the cloud database query succeeded and found NO record in platform_users or advertisers,
+      // check whether the local cached record is an old account that was deleted in the cloud by Super Admin:
+      const createdAtMs = localResult.matchedUser.createdAt
+        ? new Date(localResult.matchedUser.createdAt).getTime()
+        : 0;
+      const ageMs = createdAtMs ? Date.now() - createdAtMs : Infinity;
+
+      if (dbQuerySucceeded && ageMs > 20000) {
+        // Account no longer exists in Supabase (deleted by Super Admin) -> purge stale local cache and allow signup
+        purgeGhostUserFromLocalStorage(phone, email);
+        return { exists: false };
+      }
+
+      return localResult;
+    }
+
+    return { exists: false };
   } catch (err) {
     console.warn('[UserRegistry] Exception during checkUserExistsAsync:', err);
+    return checkUserExists(phone, email, excludeUserId);
   }
-
-  purgeGhostUserFromLocalStorage(phone, email);
-  return { exists: false };
 }
 
 /**

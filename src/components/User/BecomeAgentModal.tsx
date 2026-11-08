@@ -11,11 +11,13 @@ import {
 import { DeltaCity } from '../../types/marketplace';
 import { DELTA_CITIES } from '../../data/deltaCities';
 import { ModalPortal } from '../UI/ModalPortal';
+import { checkUserExistsAsync } from '../../utils/userRegistry';
 
 interface BecomeAgentModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: {
+    id?: string;
     fullName: string;
     email?: string;
     phone: string;
@@ -44,6 +46,7 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -53,11 +56,22 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agencyName.trim()) return;
+    setErrorMessage(null);
 
     setIsSubmitting(true);
+    const dupCheck = await checkUserExistsAsync(businessPhone.trim(), currentUser.email, currentUser.id);
+    if (dupCheck.exists) {
+      setIsSubmitting(false);
+      setErrorMessage(
+        dupCheck.message ||
+          'This phone number is already registered to another Setlla account. Each phone number can only be used once.'
+      );
+      return;
+    }
+
     setTimeout(() => {
       setIsSubmitting(false);
       setSubmittedSuccess(true);
@@ -123,6 +137,11 @@ export const BecomeAgentModal: React.FC<BecomeAgentModalProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-5 overflow-y-auto space-y-4 text-xs no-scrollbar">
+            {errorMessage && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+                {errorMessage}
+              </div>
+            )}
             {/* Value Proposition Box */}
             <div className="p-3.5 rounded-2xl bg-[#FCF9F5] border border-amber-200/80 flex items-start gap-3">
               <Building2 className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />

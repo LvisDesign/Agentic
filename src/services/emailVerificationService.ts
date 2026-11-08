@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { UserProfile } from '../types/marketplace';
 import {
+  checkUserExistsAsync,
   findUserByCredential,
   findUserByCredentialAsync,
   saveRegisteredUser,
@@ -105,6 +106,15 @@ export async function sendEmailOTP(
       try {
         localStorage.setItem('setlla_last_email', cleanEmail);
       } catch (_) {}
+    }
+  } else {
+    // For any signup purpose, strictly block if an active account already uses this email or phone number
+    const dupCheck = await checkUserExistsAsync(pendingUser?.phone || '', cleanEmail);
+    if (dupCheck.exists) {
+      throw new Error(
+        dupCheck.message ||
+          'An account with this email or phone number already exists on Setlla. Each email and phone number can only be used once.'
+      );
     }
   }
 
@@ -346,6 +356,20 @@ export async function verifyEmailOTP(
     purpose === 'tenant_signup' ||
     purpose === 'job_seeker_signup'
   ) {
+    // Re-verify before account creation that no other account claimed this email or phone number
+    const dupCheck = await checkUserExistsAsync(
+      verifiedUser?.phone || '',
+      verifiedUser?.email || cleanEmail,
+      verifiedUser?.id
+    );
+    if (dupCheck.exists) {
+      clearPendingEmailOTP();
+      throw new Error(
+        dupCheck.message ||
+          'An account with this email or phone number already exists on Setlla. Please sign in instead.'
+      );
+    }
+
     if (verifiedUser) {
       verifiedUser.isEmailVerified = true;
       await saveRegisteredUserAsync(verifiedUser, { allowReRegistration: true });

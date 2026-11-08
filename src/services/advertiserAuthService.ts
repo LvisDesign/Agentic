@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { createPartnerApiKey, getPartnerApiKeys } from './adService';
 import { hashToken, verifyHashedToken, checkRateLimit } from '../utils/security';
+import { checkUserExistsAsync, normalizePhoneNumber } from '../utils/userRegistry';
 
 export interface WalletTransaction {
   id: string;
@@ -304,12 +305,33 @@ export function getActiveAdvertiser(): AdvertiserUser | null {
  * Signs up a new corporate advertiser and creates their dedicated partner API key.
  */
 export async function signupAdvertiser(payload: AdvertiserSignupPayload): Promise<AdvertiserUser> {
-  const existing = getRegisteredAdvertisers().find(
-    (a) => a.email.toLowerCase() === payload.email.trim().toLowerCase()
-  );
+  // Enforce global uniqueness across all Setlla user types (Tenants, Agents, Job Seekers, Employers, Advertisers)
+  const dupCheck = await checkUserExistsAsync(payload.phone, payload.email);
+  if (dupCheck.exists) {
+    throw new Error(
+      dupCheck.message ||
+        'An account with this email or phone number already exists on Setlla. Each email and phone number can only be used once.'
+    );
+  }
+
+  const normPhone = normalizePhoneNumber(payload.phone);
+  const last10 = normPhone.slice(-10);
+  const existing = getRegisteredAdvertisers().find((a) => {
+    const aPhone = normalizePhoneNumber(a.phone);
+    return (
+      a.email.toLowerCase() === payload.email.trim().toLowerCase() ||
+      Boolean(
+        normPhone &&
+          aPhone &&
+          (normPhone === aPhone || (last10.length === 10 && aPhone.slice(-10) === last10))
+      )
+    );
+  });
 
   if (existing) {
-    throw new Error('An advertiser account with this email address already exists. Please log in.');
+    throw new Error(
+      'An account with this email address or phone number already exists on Setlla. Please log in instead.'
+    );
   }
 
   // Create or retrieve corresponding API Key
@@ -474,6 +496,15 @@ export async function sendAdvertiserEmailOTP(
     if (existing && existing.passwordHash && password && existing.passwordHash !== password.trim()) {
       throw new Error('Incorrect password. Please verify your credentials.');
     }
+  } else {
+    // If signup, strictly block if an active Setlla account already uses this email or phone number
+    const dupCheck = await checkUserExistsAsync(payload?.phone || '', cleanEmail);
+    if (dupCheck.exists) {
+      throw new Error(
+        dupCheck.message ||
+          'An account with this email or phone number already exists on Setlla. Each email and phone number can only be used once.'
+      );
+    }
   }
 
   // Anti-flooding rate limit: Max 4 requests per 60 seconds
@@ -561,25 +592,26 @@ export async function verifyAdvertiserEmailOTP(
     throw new Error('Invalid verification code. Please check your email and try again.');
   }
 
+  const savedPurpose = record.purpose;
   const savedPassword = record?.password;
   const savedPayload = record?.payload;
   clearPendingAdvertiserOTP();
 
-  // Check if advertiser exists
-  let user = getRegisteredAdvertisers().find((a) => a.email.toLowerCase() === cleanEmail);
-
-  if (user) {
-    if (savedPassword) {
-      user.passwordHash = savedPassword;
+  if (savedPurpose === 'login') {
+    let user = getRegisteredAdvertisers().find((a) => a.email.toLowerCase() === cleanEmail);
+    if (user) {
+      if (savedPassword) {
+        user.passwordHash = savedPassword;
+      }
+      user.lastLoginAt = new Date().toISOString();
+      await saveRegisteredAdvertiser(user);
+      localStorage.setItem(ADVERTISER_AUTH_KEY, 'true');
+      localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(user));
+      return user;
     }
-    user.lastLoginAt = new Date().toISOString();
-    await saveRegisteredAdvertiser(user);
-    localStorage.setItem(ADVERTISER_AUTH_KEY, 'true');
-    localStorage.setItem(ADVERTISER_USER_KEY, JSON.stringify(user));
-    return user;
   }
 
-  // Otherwise, register new advertiser
+  // Otherwise, register new advertiser (enforces checkUserExistsAsync on both email and phone)
   const finalPayload: AdvertiserSignupPayload = savedPayload || {
     companyName: cleanEmail.split('@')[0],
     contactName: cleanEmail.split('@')[0],

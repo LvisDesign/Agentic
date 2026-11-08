@@ -39,6 +39,7 @@ import { CustomDropdown } from '../UI/CustomDropdown';
 import { ModalPortal } from '../UI/ModalPortal';
 import { isLocalUrl } from '../../utils/environment';
 import { isSuperAdminAuthenticated, isElvisSuperAdmin } from '../../services/adminAuthService';
+import { checkUserExistsAsync } from '../../utils/userRegistry';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -140,11 +141,21 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     setEditMode('editing');
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveErrorMessage(null);
     if (!editFullName.trim() || !editPhone.trim()) {
       setSaveErrorMessage('Full name and phone number are required.');
+      return;
+    }
+
+    // Prevent changing email or phone number to one already registered to another user
+    const dupCheck = await checkUserExistsAsync(editPhone.trim(), editEmail.trim(), currentUser.id);
+    if (dupCheck.exists) {
+      setSaveErrorMessage(
+        dupCheck.message ||
+          'This email address or phone number is already registered to another Setlla account.'
+      );
       return;
     }
 

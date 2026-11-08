@@ -848,14 +848,21 @@ export function App() {
         }
       } else if (event.type === 'USER_DELETED' && event.user) {
         const delUser = event.user;
-        // Record tombstone locally on this tab/device immediately so it cannot re-sync the deleted user
-        recordDeletedUser(delUser, false);
+        // Record deleted account ID tombstone locally and clear phone/email so they can be reused after Super Admin deletion
+        if (delUser.id) {
+          recordDeletedUser({ id: delUser.id }, false);
+        }
+        unrecordDeletedUser({ phone: delUser.phone, email: delUser.email });
         const delNormPhone = delUser.phone ? normalizePhoneNumber(delUser.phone) : '';
         const delNormEmail = delUser.email ? normalizeEmail(delUser.email) : '';
         const myNormPhone = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
         const myNormEmail = currentUser.email ? normalizeEmail(currentUser.email) : '';
 
-        const isMe = Boolean(delUser.id && currentUser.id && currentUser.id === delUser.id);
+        const isMe = Boolean(
+          (delUser.id && currentUser.id && currentUser.id === delUser.id) ||
+          (delNormPhone && myNormPhone && delNormPhone === myNormPhone) ||
+          (delNormEmail && myNormEmail && delNormEmail === myNormEmail)
+        );
 
         if (isMe) {
           localStorage.removeItem('setlla_user');
@@ -1993,17 +2000,19 @@ export function App() {
       if (!email) return;
       const clean = normalizeEmail(email);
 
-      // Verify against central platform_users: if the account does not exist in the database,
-      // it was deleted or is a ghost session: immediately terminate the auth session and do not revive it!
+      // Verify against central platform_users: if the account is suspended, immediately terminate the session.
+      // Never auto-create duplicate "healed" rows before OTP verification completes.
       if (clean !== 'admin@setlla.com') {
         const client = getSupabaseClient();
         if (client) {
           try {
-            const { data: dbUser } = await client
+            const { data: dbRows } = await client
               .from('platform_users')
               .select('id, is_suspended')
-              .eq('email', clean)
-              .maybeSingle();
+              .ilike('email', clean)
+              .limit(1);
+
+            const dbUser = Array.isArray(dbRows) && dbRows.length > 0 ? dbRows[0] : null;
 
             if (dbUser?.is_suspended) {
               console.warn('[App] Suspended account detected for:', clean, '- Terminating session.');
@@ -2019,55 +2028,41 @@ export function App() {
               setIsAuthenticated(false);
               return;
             }
-
-            // Self-healing: If user is authenticated in Supabase Auth but profile row is missing from platform_users,
-            // automatically create and sync the profile so they appear in admin and stay logged in!
-            if (!dbUser && isSupabaseConfigured()) {
-              const { data: sessData } = await supabase.auth.getSession();
-              const authUser = sessData?.session?.user;
-              if (authUser && normalizeEmail(authUser.email || '') === clean) {
-                const healedUser: UserProfile = {
-                  id: authUser.id,
-                  fullName: authUser.user_metadata?.full_name || clean.split('@')[0],
-                  phone: authUser.phone || authUser.user_metadata?.phone || '',
-                  email: clean,
-                  state: 'Delta State',
-                  city: 'Asaba',
-                  persona: 'tenant',
-                  isVerifiedTenant: true,
-                  isAgent: false,
-                  kycStatus: 'verified',
-                  savedListingIds: [],
-                  createdAt: authUser.created_at || new Date().toISOString()
-                };
-                saveRegisteredUserAsync(healedUser, { allowReRegistration: true }).catch(() => {});
-              }
-            }
           } catch (_) {}
         }
       }
 
-      // 1. Check if this email matches an active pending signup verification
+      // 1. Check if this email matches an active pending signup verification only when confirmed via magic link callback
       const pending = getPendingEmailOTP();
-      if (pending && normalizeEmail(pending.email) === clean && pending.pendingUser) {
-        console.log('[App] Auto-activating pending user from email link confirmation:', clean);
-        const user = pending.pendingUser;
-        user.isEmailVerified = true;
-        saveRegisteredUser(user, { allowReRegistration: true });
-        saveRegisteredUserAsync(user, { allowReRegistration: true });
-        clearPendingEmailOTP();
-        setCurrentUser(user);
-        setIsAuthenticated(true);
-        localStorage.setItem('setlla_auth', 'true');
-        localStorage.setItem('setlla_user', JSON.stringify(user));
-        setIsSignupOpen(false);
-        setSignupNotice(null);
-        if (user.isAgent) {
-          setCurrentRole('agent');
-          setUserView('dashboard');
-          window.location.hash = '#/agent';
+      const hasUrlCallbackToken =
+        typeof window !== 'undefined' &&
+        (window.location.hash.includes('access_token') ||
+          window.location.hash.includes('token_hash') ||
+          window.location.search.includes('token_hash') ||
+          window.location.search.includes('code='));
+
+      if (pending && normalizeEmail(pending.email) === clean && pending.pendingUser && hasUrlCallbackToken) {
+        const dupCheck = await findUserByCredentialAsync(clean);
+        if (!dupCheck) {
+          console.log('[App] Auto-activating pending user from email link confirmation:', clean);
+          const user = pending.pendingUser;
+          user.isEmailVerified = true;
+          saveRegisteredUser(user, { allowReRegistration: true });
+          saveRegisteredUserAsync(user, { allowReRegistration: true });
+          clearPendingEmailOTP();
+          setCurrentUser(user);
+          setIsAuthenticated(true);
+          localStorage.setItem('setlla_auth', 'true');
+          localStorage.setItem('setlla_user', JSON.stringify(user));
+          setIsSignupOpen(false);
+          setSignupNotice(null);
+          if (user.isAgent) {
+            setCurrentRole('agent');
+            setUserView('dashboard');
+            window.location.hash = '#/agent';
+          }
+          return;
         }
-        return;
       }
 
       // 2. Check if an existing registered user matches this email in local or cloud database

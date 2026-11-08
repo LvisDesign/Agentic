@@ -50,6 +50,7 @@ import {
   saveRegisteredUser, 
   saveRegisteredUserAsync,
   normalizeEmail,
+  normalizePhoneNumber,
   unrecordDeletedUser,
   DuplicateCheckResult 
 } from '../../utils/userRegistry';
@@ -428,6 +429,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+    if (normalizePhoneNumber(seekerPhone).length < 10) {
+      setSignupError('Please enter a valid 10 or 11-digit phone number.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     // Compulsory email and password for all accounts (tenants, job seekers, and employers)
     if (!seekerEmail.trim()) {
@@ -558,6 +564,11 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     if (!agentFullName.trim() || !agencyName.trim() || !agentPhone.trim()) {
       setSignupError('Please enter your full name, organization name, and phone number.');
+      formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (normalizePhoneNumber(agentPhone).length < 10) {
+      setSignupError('Please enter a valid 10 or 11-digit phone number.');
       formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -751,13 +762,6 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         const pending = getPendingEmailOTP();
         if (pending?.pendingUser) {
           user = pending.pendingUser;
-        }
-      }
-      if (!user) {
-        const cleanTargetEmail = (otpEmail || (activeRoleTab === 'agent' ? agentEmail : seekerEmail)).trim();
-        const existing = findUserByCredential(cleanTargetEmail);
-        if (existing) {
-          user = existing;
         }
       }
       if (!user) {
