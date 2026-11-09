@@ -150,7 +150,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
     return () => {
       window.removeEventListener('setlla:job-applications-updated', handleAppsUpdated);
     };
-  }, [currentUser]);
+  }, [currentUser?.id, currentUser?.email, currentUser?.phone]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);

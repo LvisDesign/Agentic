@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { CheckCircle2, ChevronRight, X, Building2, AlertCircle, UserX, Briefcase, Clock, Megaphone, Check } from 'lucide-react';
 import { PropertyListing, BookingRecord } from '../../types/marketplace';
 import { triggerDeviceVibration, playNotificationSound } from '../../utils/realtimeNotifications';
@@ -35,11 +35,13 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [iconError, setIconError] = useState(false);
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
 
   useEffect(() => {
     if (notification) {
       if (!getNotificationPreferences().pushBannerEnabled) {
-        onDismiss();
+        onDismissRef.current();
         return;
       }
 
@@ -59,14 +61,14 @@ export const PushNotificationBanner: React.FC<PushNotificationBannerProps> = ({
       // Auto dismiss after 9 seconds
       const timer = setTimeout(() => {
         setIsVisible(false);
-        setTimeout(onDismiss, 300);
+        setTimeout(() => onDismissRef.current(), 300);
       }, 9000);
 
       return () => clearTimeout(timer);
     } else {
       setIsVisible(false);
     }
-  }, [notification, onDismiss]);
+  }, [notification]);
 
   if (!notification || !isVisible) return null;
 

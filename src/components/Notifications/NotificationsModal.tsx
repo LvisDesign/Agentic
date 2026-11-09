@@ -111,7 +111,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
       window.removeEventListener('setlla:notifications-updated', refreshInbox);
       window.removeEventListener('setlla:job-applications-updated', refreshJobs);
     };
-  }, [currentUser, isOpen]);
+  }, [currentUser?.id, currentUser?.email, currentUser?.phone, isOpen]);
 
   const handleDismissAnnouncement = () => {
     setIsAnnouncementDismissed(true);

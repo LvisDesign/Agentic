@@ -2475,11 +2475,17 @@ export function App() {
         const existingUser = findUserByCredential(clean) || (await findUserByCredentialAsync(clean));
         if (existingUser) {
           unrecordDeletedUser(existingUser);
+          const wasAlreadyVerified = Boolean(existingUser.isEmailVerified);
           existingUser.isEmailVerified = true;
-          saveRegisteredUser(existingUser, { allowReRegistration: true });
-          saveRegisteredUserAsync(existingUser, { allowReRegistration: true });
-          console.log('[App] Auto-logging in existing registered user from session:', clean);
-          setCurrentUser(existingUser);
+          saveRegisteredUser(existingUser, {
+            allowReRegistration: true,
+            skipBroadcast: true,
+            skipCloudSync: wasAlreadyVerified,
+          });
+          if (!wasAlreadyVerified) {
+            saveRegisteredUserAsync(existingUser, { allowReRegistration: true, skipBroadcast: true });
+          }
+          setCurrentUser((prev) => (prev.id === existingUser.id && prev.isEmailVerified ? prev : existingUser));
           setIsAuthenticated(true);
           localStorage.setItem('setlla_auth', 'true');
           localStorage.setItem('setlla_user', JSON.stringify(existingUser));

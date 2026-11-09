@@ -51,6 +51,8 @@ export function getPlatformSettings(): PlatformSettings {
   return DEFAULT_PLATFORM_SETTINGS;
 }
 
+let inflightSettingsPromise: Promise<PlatformSettings> | null = null;
+
 /**
  * Asynchronously fetches platform settings and ad prices from Supabase central database.
  * Merges cloud values into local cache so all devices and screens see identical prices set by Super Admin.
@@ -59,77 +61,91 @@ export async function fetchPlatformSettingsAsync(): Promise<PlatformSettings> {
   const current = getPlatformSettings();
   if (!isSupabaseConfigured()) return current;
 
-  try {
-    const { data, error } = await supabase
-      .from('platform_settings')
-      .select('*');
-
-    if (error) {
-      console.warn('[AdminService] Error fetching platform_settings from Supabase:', error);
-      return current;
-    }
-
-    if (Array.isArray(data) && data.length > 0) {
-      const globalRow = data.find((r) => r.id === 'global_config') || data[0];
-      const pricingRow = data.find((r) => r.id === 'ad_pricing_config');
-
-      let parsedPricing: any = {};
-      if (pricingRow?.emergency_announcement) {
-        try {
-          parsedPricing = JSON.parse(pricingRow.emergency_announcement);
-        } catch (_) {}
-      }
-
-      const settingsData = (globalRow as any)?.settings_data || {};
-
-      const daily = Number((globalRow as any)?.ad_pricing_daily ?? parsedPricing.adPricingDaily ?? parsedPricing.daily ?? settingsData.adPricingDaily ?? current.adPricingDaily ?? 2500);
-      const starter = Number((globalRow as any)?.ad_pricing_starter ?? parsedPricing.adPricingStarter ?? parsedPricing.starter ?? settingsData.adPricingStarter ?? current.adPricingStarter ?? 15000);
-      const growth = Number((globalRow as any)?.ad_pricing_growth ?? parsedPricing.adPricingGrowth ?? parsedPricing.growth ?? settingsData.adPricingGrowth ?? current.adPricingGrowth ?? 45000);
-      const corporate = Number((globalRow as any)?.ad_pricing_corporate ?? parsedPricing.adPricingCorporate ?? parsedPricing.corporate ?? settingsData.adPricingCorporate ?? current.adPricingCorporate ?? 120000);
-      let feedWeekly = Number((globalRow as any)?.ad_pricing_feed_weekly ?? parsedPricing.adPricingFeedWeekly ?? parsedPricing.feedWeekly ?? settingsData.adPricingFeedWeekly ?? current.adPricingFeedWeekly ?? 5000);
-      let feedMonthly = Number((globalRow as any)?.ad_pricing_feed_monthly ?? parsedPricing.adPricingFeedMonthly ?? parsedPricing.feedMonthly ?? settingsData.adPricingFeedMonthly ?? current.adPricingFeedMonthly ?? 15000);
-      const jobFee = Number((globalRow as any)?.job_promotion_fee ?? parsedPricing.jobPromotionFee ?? parsedPricing.jobFee ?? settingsData.jobPromotionFee ?? current.jobPromotionFee ?? 2000);
-      const rawInspFee = Number(globalRow.default_inspection_fee || parsedPricing.defaultInspectionFee || pricingRow?.default_inspection_fee || current.defaultInspectionFee || 2500);
-
-      // Harmonization: If the admin customized 7-Day or 30-Day under Starter/Growth but left feedWeekly/feedMonthly at defaults (or vice versa), keep them aligned
-      if (feedWeekly === 5000 && starter !== 15000) {
-        feedWeekly = starter;
-      }
-      if (feedMonthly === 15000 && growth !== 45000) {
-        feedMonthly = growth;
-      }
-
-      const merged: PlatformSettings = {
-        ...DEFAULT_PLATFORM_SETTINGS,
-        ...current,
-        defaultInspectionFee: rawInspFee > 0 ? rawInspFee : 2500,
-        maxQueueLimitPerSlot: Number(globalRow.max_queue_limit_per_slot ?? current.maxQueueLimitPerSlot),
-        maintenanceMode: Boolean(globalRow.maintenance_mode ?? current.maintenanceMode),
-        emergencyAnnouncement: globalRow.id === 'global_config' ? (globalRow.emergency_announcement ?? current.emergencyAnnouncement) : current.emergencyAnnouncement,
-        emergencyAnnouncementActive: Boolean(globalRow.emergency_announcement_active ?? current.emergencyAnnouncementActive),
-        autoApproveVerifiedAgentListings: Boolean(globalRow.auto_approve_verified_agent_listings ?? current.autoApproveVerifiedAgentListings),
-        
-        // Dynamic ad & platform pricing from cloud database (strictly synchronized across all devices)
-        adPricingDaily: daily > 0 ? daily : 2500,
-        adPricingStarter: starter > 0 ? starter : 15000,
-        adPricingGrowth: growth > 0 ? growth : 45000,
-        adPricingCorporate: corporate > 0 ? corporate : 120000,
-        adPricingFeedWeekly: feedWeekly > 0 ? feedWeekly : 5000,
-        adPricingFeedMonthly: feedMonthly > 0 ? feedMonthly : 15000,
-        jobPromotionFee: jobFee > 0 ? jobFee : 2000,
-      };
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
-        window.dispatchEvent(new CustomEvent('setlla:platform_settings_updated', { detail: merged }));
-      }
-      return merged;
-    }
-  } catch (err) {
-    console.warn('[AdminService] Exception in fetchPlatformSettingsAsync:', err);
+  if (inflightSettingsPromise) {
+    return inflightSettingsPromise;
   }
 
-  return current;
+  inflightSettingsPromise = (async (): Promise<PlatformSettings> => {
+    try {
+      const { data, error } = await supabase
+        .from('platform_settings')
+        .select('*');
+
+      if (error) {
+        console.warn('[AdminService] Error fetching platform_settings from Supabase:', error);
+        return current;
+      }
+
+      if (Array.isArray(data) && data.length > 0) {
+        const globalRow = data.find((r) => r.id === 'global_config') || data[0];
+        const pricingRow = data.find((r) => r.id === 'ad_pricing_config');
+
+        let parsedPricing: any = {};
+        if (pricingRow?.emergency_announcement) {
+          try {
+            parsedPricing = JSON.parse(pricingRow.emergency_announcement);
+          } catch (_) {}
+        }
+
+        const settingsData = (globalRow as any)?.settings_data || {};
+
+        const daily = Number((globalRow as any)?.ad_pricing_daily ?? parsedPricing.adPricingDaily ?? parsedPricing.daily ?? settingsData.adPricingDaily ?? current.adPricingDaily ?? 2500);
+        const starter = Number((globalRow as any)?.ad_pricing_starter ?? parsedPricing.adPricingStarter ?? parsedPricing.starter ?? settingsData.adPricingStarter ?? current.adPricingStarter ?? 15000);
+        const growth = Number((globalRow as any)?.ad_pricing_growth ?? parsedPricing.adPricingGrowth ?? parsedPricing.growth ?? settingsData.adPricingGrowth ?? current.adPricingGrowth ?? 45000);
+        const corporate = Number((globalRow as any)?.ad_pricing_corporate ?? parsedPricing.adPricingCorporate ?? parsedPricing.corporate ?? settingsData.adPricingCorporate ?? current.adPricingCorporate ?? 120000);
+        let feedWeekly = Number((globalRow as any)?.ad_pricing_feed_weekly ?? parsedPricing.adPricingFeedWeekly ?? parsedPricing.feedWeekly ?? settingsData.adPricingFeedWeekly ?? current.adPricingFeedWeekly ?? 5000);
+        let feedMonthly = Number((globalRow as any)?.ad_pricing_feed_monthly ?? parsedPricing.adPricingFeedMonthly ?? parsedPricing.feedMonthly ?? settingsData.adPricingFeedMonthly ?? current.adPricingFeedMonthly ?? 15000);
+        const jobFee = Number((globalRow as any)?.job_promotion_fee ?? parsedPricing.jobPromotionFee ?? parsedPricing.jobFee ?? settingsData.jobPromotionFee ?? current.jobPromotionFee ?? 2000);
+        const rawInspFee = Number(globalRow.default_inspection_fee || parsedPricing.defaultInspectionFee || pricingRow?.default_inspection_fee || current.defaultInspectionFee || 2500);
+
+        // Harmonization: If the admin customized 7-Day or 30-Day under Starter/Growth but left feedWeekly/feedMonthly at defaults (or vice versa), keep them aligned
+        if (feedWeekly === 5000 && starter !== 15000) {
+          feedWeekly = starter;
+        }
+        if (feedMonthly === 15000 && growth !== 45000) {
+          feedMonthly = growth;
+        }
+
+        const merged: PlatformSettings = {
+          ...DEFAULT_PLATFORM_SETTINGS,
+          ...current,
+          defaultInspectionFee: rawInspFee > 0 ? rawInspFee : 2500,
+          maxQueueLimitPerSlot: Number(globalRow.max_queue_limit_per_slot ?? current.maxQueueLimitPerSlot),
+          maintenanceMode: Boolean(globalRow.maintenance_mode ?? current.maintenanceMode),
+          emergencyAnnouncement: globalRow.id === 'global_config' ? (globalRow.emergency_announcement ?? current.emergencyAnnouncement) : current.emergencyAnnouncement,
+          emergencyAnnouncementActive: Boolean(globalRow.emergency_announcement_active ?? current.emergencyAnnouncementActive),
+          autoApproveVerifiedAgentListings: Boolean(globalRow.auto_approve_verified_agent_listings ?? current.autoApproveVerifiedAgentListings),
+          
+          // Dynamic ad & platform pricing from cloud database (strictly synchronized across all devices)
+          adPricingDaily: daily > 0 ? daily : 2500,
+          adPricingStarter: starter > 0 ? starter : 15000,
+          adPricingGrowth: growth > 0 ? growth : 45000,
+          adPricingCorporate: corporate > 0 ? corporate : 120000,
+          adPricingFeedWeekly: feedWeekly > 0 ? feedWeekly : 5000,
+          adPricingFeedMonthly: feedMonthly > 0 ? feedMonthly : 15000,
+          jobPromotionFee: jobFee > 0 ? jobFee : 2000,
+        };
+
+        if (typeof window !== 'undefined') {
+          const prevRaw = localStorage.getItem(SETTINGS_KEY);
+          const nextRaw = JSON.stringify(merged);
+          if (prevRaw !== nextRaw) {
+            localStorage.setItem(SETTINGS_KEY, nextRaw);
+            window.dispatchEvent(new CustomEvent('setlla:platform_settings_updated', { detail: merged }));
+          }
+        }
+        return merged;
+      }
+    } catch (err) {
+      console.warn('[AdminService] Exception in fetchPlatformSettingsAsync:', err);
+    } finally {
+      inflightSettingsPromise = null;
+    }
+
+    return current;
+  })();
+
+  return inflightSettingsPromise;
 }
 
 /**

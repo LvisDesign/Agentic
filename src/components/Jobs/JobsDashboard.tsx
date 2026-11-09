@@ -95,7 +95,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [currentUser]);
+  }, [currentUser?.id, currentUser?.email, currentUser?.phone]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
