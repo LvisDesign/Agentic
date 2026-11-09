@@ -31,10 +31,10 @@ import { isSupabaseConfigured } from '../../utils/supabaseClient';
 import { getListingLifecycleInfo } from '../../utils/listingLifecycle';
 import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
 import { ensureAdvertiserForUser } from '../../services/advertiserAuthService';
-import { Pagination } from '../UI/Pagination';
+import { useInfiniteScroll, InfiniteScrollSentinel } from '../UI/Pagination';
 
-const AGENT_REQUESTS_PER_PAGE = 5;
-const AGENT_LISTINGS_PER_PAGE = 6;
+const AGENT_REQUESTS_BATCH = 4;
+const AGENT_LISTINGS_BATCH = 4;
 
 interface AgentDashboardProps {
   currentUser?: UserProfile;
@@ -74,9 +74,6 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'requests' | 'listings' | 'ads'>('requests');
   const [adsInitialTab, setAdsInitialTab] = useState<'campaigns' | 'new-campaign'>('campaigns');
   const [dashboardToast, setDashboardToast] = useState<string | null>(null);
-  const [pendingPage, setPendingPage] = useState(1);
-  const [confirmedPage, setConfirmedPage] = useState(1);
-  const [listingsPage, setListingsPage] = useState(1);
 
   // Automatically sync local listings to cloud database on mount
   useEffect(() => {
@@ -164,14 +161,23 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     (b) => b.status === 'ACCEPTED_PENDING_PAYMENT' || b.status === 'CONFIRMED_UNLOCKED'
   );
 
-  const safePendingPage = Math.min(Math.max(1, pendingPage), Math.max(1, Math.ceil(pendingRequests.length / AGENT_REQUESTS_PER_PAGE)));
-  const paginatedPendingRequests = pendingRequests.slice((safePendingPage - 1) * AGENT_REQUESTS_PER_PAGE, safePendingPage * AGENT_REQUESTS_PER_PAGE);
+  const pendingScroll = useInfiniteScroll(pendingRequests, {
+    initialBatchSize: AGENT_REQUESTS_BATCH,
+    batchSize: AGENT_REQUESTS_BATCH,
+    resetKey: `${activeTab}-pending`,
+  });
 
-  const safeConfirmedPage = Math.min(Math.max(1, confirmedPage), Math.max(1, Math.ceil(acceptedOrPaid.length / AGENT_REQUESTS_PER_PAGE)));
-  const paginatedAcceptedOrPaid = acceptedOrPaid.slice((safeConfirmedPage - 1) * AGENT_REQUESTS_PER_PAGE, safeConfirmedPage * AGENT_REQUESTS_PER_PAGE);
+  const confirmedScroll = useInfiniteScroll(acceptedOrPaid, {
+    initialBatchSize: AGENT_REQUESTS_BATCH,
+    batchSize: AGENT_REQUESTS_BATCH,
+    resetKey: `${activeTab}-confirmed`,
+  });
 
-  const safeListingsPage = Math.min(Math.max(1, listingsPage), Math.max(1, Math.ceil(agentListings.length / AGENT_LISTINGS_PER_PAGE)));
-  const paginatedAgentListings = agentListings.slice((safeListingsPage - 1) * AGENT_LISTINGS_PER_PAGE, safeListingsPage * AGENT_LISTINGS_PER_PAGE);
+  const listingsScroll = useInfiniteScroll(agentListings, {
+    initialBatchSize: AGENT_LISTINGS_BATCH,
+    batchSize: AGENT_LISTINGS_BATCH,
+    resetKey: `${activeTab}-listings`,
+  });
 
   const agentInitials = agentProfile.fullName
     ? agentProfile.fullName
@@ -426,7 +432,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {paginatedPendingRequests.map((b) => {
+                    {pendingScroll.visibleItems.map((b) => {
                       const property = listings.find((p) => p.id === b.propertyId) || listings[0];
                       return (
                         <div
@@ -488,14 +494,12 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       );
                     })}
 
-                    <Pagination
-                      currentPage={safePendingPage}
+                    <InfiniteScrollSentinel
+                      sentinelRef={pendingScroll.sentinelRef}
+                      hasMore={pendingScroll.hasMore}
+                      isLoadingMore={pendingScroll.isLoadingMore}
                       totalItems={pendingRequests.length}
-                      pageSize={AGENT_REQUESTS_PER_PAGE}
-                      onPageChange={setPendingPage}
-                      itemLabel="requests"
-                      hideOnSinglePage
-                      className="mt-3"
+                      minItemsForCaughtUp={AGENT_REQUESTS_BATCH + 1}
                     />
                   </div>
                 )}
@@ -573,7 +577,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    {paginatedAcceptedOrPaid.map((b) => (
+                    {confirmedScroll.visibleItems.map((b) => (
                       <div
                         key={b.id}
                         className="p-3.5 rounded-xl border border-[#E5E7EB] bg-[#FAF8F5] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs overflow-hidden"
@@ -599,14 +603,12 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                       </div>
                     ))}
 
-                    <Pagination
-                      currentPage={safeConfirmedPage}
+                    <InfiniteScrollSentinel
+                      sentinelRef={confirmedScroll.sentinelRef}
+                      hasMore={confirmedScroll.hasMore}
+                      isLoadingMore={confirmedScroll.isLoadingMore}
                       totalItems={acceptedOrPaid.length}
-                      pageSize={AGENT_REQUESTS_PER_PAGE}
-                      onPageChange={setConfirmedPage}
-                      itemLabel="confirmed inspections"
-                      hideOnSinglePage
-                      className="mt-3"
+                      minItemsForCaughtUp={AGENT_REQUESTS_BATCH + 1}
                     />
                   </div>
                 )}
@@ -645,7 +647,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {paginatedAgentListings.map((prop) => {
+                {listingsScroll.visibleItems.map((prop) => {
                 const lifecycle = getListingLifecycleInfo(prop);
                 const isRentedOut = prop.availabilityStatus === 'Rented Out';
 
@@ -894,15 +896,13 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               })}
               </div>
 
-              <Pagination
-                currentPage={safeListingsPage}
+              <InfiniteScrollSentinel
+                sentinelRef={listingsScroll.sentinelRef}
+                hasMore={listingsScroll.hasMore}
+                isLoadingMore={listingsScroll.isLoadingMore}
                 totalItems={agentListings.length}
-                pageSize={AGENT_LISTINGS_PER_PAGE}
-                onPageChange={(page) => {
-                  setListingsPage(page);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                itemLabel="properties"
+                minItemsForCaughtUp={3}
+                caughtUpText="You're all caught up on your listed properties"
               />
             </div>
           )}

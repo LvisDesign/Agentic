@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Pagination } from '../UI/Pagination';
+import { useInfiniteScroll, InfiniteScrollSentinel } from '../UI/Pagination';
 
-const JOBS_PER_PAGE = 6;
+const JOBS_INITIAL_BATCH = 3;
+const JOBS_BATCH_SIZE = 3;
 import { 
   Search, 
   MapPin, 
@@ -78,7 +79,6 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
 
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const mainContainerRef = useRef<HTMLElement>(null);
 
   // Load jobs on mount
@@ -189,29 +189,30 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
     });
   }, [filteredJobs]);
 
-  // Reset pagination when filters change
+  const filterSignature = `${searchQuery}::${selectedCity}::${selectedRoleType}::${sortedAndRankedJobs.length}`;
+
+  // Scroll to top when filter criteria change
   useEffect(() => {
-    setCurrentPage(1);
     mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [searchQuery, selectedCity, selectedRoleType]);
 
-  const totalPages = Math.max(1, Math.ceil(sortedAndRankedJobs.length / JOBS_PER_PAGE));
-  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  // Instagram-style progressive scroll pagination
+  const {
+    visibleItems: visibleJobs,
+    hasMore,
+    isLoadingMore,
+    sentinelRef,
+  } = useInfiniteScroll(sortedAndRankedJobs, {
+    initialBatchSize: JOBS_INITIAL_BATCH,
+    batchSize: JOBS_BATCH_SIZE,
+    scrollRootRef: mainContainerRef,
+    resetKey: filterSignature,
+  });
 
-  const paginatedJobs = useMemo(() => {
-    const start = (safePage - 1) * JOBS_PER_PAGE;
-    return sortedAndRankedJobs.slice(start, start + JOBS_PER_PAGE);
-  }, [sortedAndRankedJobs, safePage]);
-
-  // Inject Native Billboard Ads among ranked job offers for the active page
+  // Inject Native Billboard Ads among visible job offers
   const feedItems = useMemo(() => {
-    return injectNativeBillboardAds(paginatedJobs, adverts);
-  }, [paginatedJobs, adverts]);
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+    return injectNativeBillboardAds(visibleJobs, adverts);
+  }, [visibleJobs, adverts]);
 
   return (
     <div className="w-full h-full flex flex-col items-center bg-[#FCF9F5] overflow-hidden">
@@ -469,16 +470,15 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
                 }
               })}
 
-              {/* Setlla Jobs Pagination Controls */}
-              <div className="pt-2">
-                <Pagination
-                  currentPage={safePage}
-                  totalItems={sortedAndRankedJobs.length}
-                  pageSize={JOBS_PER_PAGE}
-                  onPageChange={handlePageChange}
-                  itemLabel="vacancies"
-                />
-              </div>
+              {/* Instagram-style Infinite Scroll Sentinel & Spinner */}
+              <InfiniteScrollSentinel
+                sentinelRef={sentinelRef}
+                hasMore={hasMore}
+                isLoadingMore={isLoadingMore}
+                totalItems={sortedAndRankedJobs.length}
+                minItemsForCaughtUp={3}
+                caughtUpText="You're all caught up on open vacancies"
+              />
             </>
           )}
         </main>

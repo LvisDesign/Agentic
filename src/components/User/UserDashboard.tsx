@@ -31,11 +31,11 @@ import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 import { isElvisSuperAdmin } from '../../services/adminAuthService';
 import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
 import { ensureAdvertiserForUser } from '../../services/advertiserAuthService';
-import { Pagination } from '../UI/Pagination';
+import { useInfiniteScroll, InfiniteScrollSentinel } from '../UI/Pagination';
 
-const PASSES_PER_PAGE = 5;
-const INVENTORY_PER_PAGE = 6;
-const SAVED_PER_PAGE = 6;
+const PASSES_BATCH_SIZE = 4;
+const INVENTORY_BATCH_SIZE = 4;
+const SAVED_BATCH_SIZE = 4;
 
 interface UserDashboardProps {
   currentUser: UserProfile;
@@ -73,10 +73,6 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'passes' | 'inventory' | 'saved' | 'ads'>('passes');
   const [adsInitialTab, setAdsInitialTab] = useState<'campaigns' | 'new-campaign'>('campaigns');
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
-  const [confirmedPage, setConfirmedPage] = useState(1);
-  const [pendingPage, setPendingPage] = useState(1);
-  const [inventoryPage, setInventoryPage] = useState(1);
-  const [savedPage, setSavedPage] = useState(1);
 
   // Identify platform administrator status
   const isAdmin = Boolean(
@@ -99,17 +95,29 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
   const savedListings = listings.filter((l) => savedPropertyIds.includes(l.id));
 
-  const safeConfirmedPage = Math.min(Math.max(1, confirmedPage), Math.max(1, Math.ceil(confirmedPasses.length / PASSES_PER_PAGE)));
-  const paginatedConfirmedPasses = confirmedPasses.slice((safeConfirmedPage - 1) * PASSES_PER_PAGE, safeConfirmedPage * PASSES_PER_PAGE);
+  const confirmedScroll = useInfiniteScroll(confirmedPasses, {
+    initialBatchSize: PASSES_BATCH_SIZE,
+    batchSize: PASSES_BATCH_SIZE,
+    resetKey: `${activeTab}-confirmed`,
+  });
 
-  const safePendingPage = Math.min(Math.max(1, pendingPage), Math.max(1, Math.ceil(pendingRequests.length / PASSES_PER_PAGE)));
-  const paginatedPendingRequests = pendingRequests.slice((safePendingPage - 1) * PASSES_PER_PAGE, safePendingPage * PASSES_PER_PAGE);
+  const pendingScroll = useInfiniteScroll(pendingRequests, {
+    initialBatchSize: PASSES_BATCH_SIZE,
+    batchSize: PASSES_BATCH_SIZE,
+    resetKey: `${activeTab}-pending`,
+  });
 
-  const safeInventoryPage = Math.min(Math.max(1, inventoryPage), Math.max(1, Math.ceil(listings.length / INVENTORY_PER_PAGE)));
-  const paginatedInventory = listings.slice((safeInventoryPage - 1) * INVENTORY_PER_PAGE, safeInventoryPage * INVENTORY_PER_PAGE);
+  const inventoryScroll = useInfiniteScroll(listings, {
+    initialBatchSize: INVENTORY_BATCH_SIZE,
+    batchSize: INVENTORY_BATCH_SIZE,
+    resetKey: `${activeTab}-inventory`,
+  });
 
-  const safeSavedPage = Math.min(Math.max(1, savedPage), Math.max(1, Math.ceil(savedListings.length / SAVED_PER_PAGE)));
-  const paginatedSavedListings = savedListings.slice((safeSavedPage - 1) * SAVED_PER_PAGE, safeSavedPage * SAVED_PER_PAGE);
+  const savedScroll = useInfiniteScroll(savedListings, {
+    initialBatchSize: SAVED_BATCH_SIZE,
+    batchSize: SAVED_BATCH_SIZE,
+    resetKey: `${activeTab}-saved-${savedListings.length}`,
+  });
 
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-20 pb-20 px-3.5 sm:px-6 max-w-5xl mx-auto">
@@ -446,7 +454,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {paginatedConfirmedPasses.map((b) => {
+                {confirmedScroll.visibleItems.map((b) => {
                   const property = listings.find((p) => p.id === b.propertyId) || listings[0];
                   const rawPhone = property.agent.phone;
                   return (
@@ -535,14 +543,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   );
                 })}
 
-                <Pagination
-                  currentPage={safeConfirmedPage}
+                <InfiniteScrollSentinel
+                  sentinelRef={confirmedScroll.sentinelRef}
+                  hasMore={confirmedScroll.hasMore}
+                  isLoadingMore={confirmedScroll.isLoadingMore}
                   totalItems={confirmedPasses.length}
-                  pageSize={PASSES_PER_PAGE}
-                  onPageChange={setConfirmedPage}
-                  itemLabel="passes"
-                  hideOnSinglePage
-                  className="mt-3"
+                  minItemsForCaughtUp={PASSES_BATCH_SIZE + 1}
                 />
               </div>
             )}
@@ -570,7 +576,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {paginatedPendingRequests.map((b) => {
+                {pendingScroll.visibleItems.map((b) => {
                   const property = listings.find((p) => p.id === b.propertyId) || listings[0];
                   return (
                     <div
@@ -607,14 +613,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   );
                 })}
 
-                <Pagination
-                  currentPage={safePendingPage}
+                <InfiniteScrollSentinel
+                  sentinelRef={pendingScroll.sentinelRef}
+                  hasMore={pendingScroll.hasMore}
+                  isLoadingMore={pendingScroll.isLoadingMore}
                   totalItems={pendingRequests.length}
-                  pageSize={PASSES_PER_PAGE}
-                  onPageChange={setPendingPage}
-                  itemLabel="requests"
-                  hideOnSinglePage
-                  className="mt-3"
+                  minItemsForCaughtUp={PASSES_BATCH_SIZE + 1}
                 />
               </div>
             )}
@@ -700,7 +704,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {paginatedInventory.map((prop) => {
+            {inventoryScroll.visibleItems.map((prop) => {
               const isSaved = savedPropertyIds.includes(prop.id);
               const userHasBooking = bookings.some((b) => b.propertyId === prop.id);
 
@@ -795,15 +799,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             })}
           </div>
 
-          <Pagination
-            currentPage={safeInventoryPage}
+          <InfiniteScrollSentinel
+            sentinelRef={inventoryScroll.sentinelRef}
+            hasMore={inventoryScroll.hasMore}
+            isLoadingMore={inventoryScroll.isLoadingMore}
             totalItems={listings.length}
-            pageSize={INVENTORY_PER_PAGE}
-            onPageChange={(page) => {
-              setInventoryPage(page);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            itemLabel="apartments"
+            minItemsForCaughtUp={3}
+            caughtUpText="You're all caught up on available apartments"
           />
         </div>
       )}
@@ -828,7 +830,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {paginatedSavedListings.map((prop) => (
+                {savedScroll.visibleItems.map((prop) => (
                   <div
                     key={prop.id}
                     className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-xs flex flex-col"
@@ -886,15 +888,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 ))}
               </div>
 
-              <Pagination
-                currentPage={safeSavedPage}
+              <InfiniteScrollSentinel
+                sentinelRef={savedScroll.sentinelRef}
+                hasMore={savedScroll.hasMore}
+                isLoadingMore={savedScroll.isLoadingMore}
                 totalItems={savedListings.length}
-                pageSize={SAVED_PER_PAGE}
-                onPageChange={(page) => {
-                  setSavedPage(page);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                itemLabel="saved apartments"
+                minItemsForCaughtUp={3}
+                caughtUpText="You're all caught up on saved apartments"
               />
             </div>
           )}

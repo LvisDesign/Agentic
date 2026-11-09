@@ -47,11 +47,11 @@ import { formatNaira } from '../../utils/formatters';
 import { AdminCustomSelect } from '../UI/AdminCustomSelect';
 import { getAdPricing, fetchPlatformSettingsAsync } from '../../services/adminService';
 import { ShareSheetModal, SharePayload } from '../UI/ShareSheetModal';
-import { Pagination } from '../UI/Pagination';
+import { useInfiniteScroll, InfiniteScrollSentinel } from '../UI/Pagination';
 
-const EMPLOYER_JOBS_PER_PAGE = 5;
-const EMPLOYER_APPS_PER_PAGE = 5;
-const INVOICES_PER_PAGE = 8;
+const EMPLOYER_JOBS_BATCH = 4;
+const EMPLOYER_APPS_BATCH = 4;
+const INVOICES_BATCH = 6;
 
 interface JobAgentDashboardProps {
   currentUser: UserProfile;
@@ -92,9 +92,6 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
   const [selectedJobFilterForApps, setSelectedJobFilterForApps] = useState<string>('all');
   const [appStatusFilter, setAppStatusFilter] = useState<string>('all');
-  const [jobsPage, setJobsPage] = useState(1);
-  const [appsPage, setAppsPage] = useState(1);
-  const [invoicesPage, setInvoicesPage] = useState(1);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -214,22 +211,23 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
     });
   }, [applications, selectedJobFilterForApps, appStatusFilter]);
 
-  useEffect(() => {
-    setJobsPage(1);
-  }, [searchQuery, statusFilter]);
+  const jobsScroll = useInfiniteScroll(filteredJobs, {
+    initialBatchSize: EMPLOYER_JOBS_BATCH,
+    batchSize: EMPLOYER_JOBS_BATCH,
+    resetKey: `${activeTab}-jobs-${searchQuery}-${statusFilter}`,
+  });
 
-  useEffect(() => {
-    setAppsPage(1);
-  }, [selectedJobFilterForApps, appStatusFilter]);
+  const appsScroll = useInfiniteScroll(filteredApplications, {
+    initialBatchSize: EMPLOYER_APPS_BATCH,
+    batchSize: EMPLOYER_APPS_BATCH,
+    resetKey: `${activeTab}-apps-${selectedJobFilterForApps}-${appStatusFilter}`,
+  });
 
-  const safeJobsPage = Math.min(Math.max(1, jobsPage), Math.max(1, Math.ceil(filteredJobs.length / EMPLOYER_JOBS_PER_PAGE)));
-  const paginatedJobs = filteredJobs.slice((safeJobsPage - 1) * EMPLOYER_JOBS_PER_PAGE, safeJobsPage * EMPLOYER_JOBS_PER_PAGE);
-
-  const safeAppsPage = Math.min(Math.max(1, appsPage), Math.max(1, Math.ceil(filteredApplications.length / EMPLOYER_APPS_PER_PAGE)));
-  const paginatedApplications = filteredApplications.slice((safeAppsPage - 1) * EMPLOYER_APPS_PER_PAGE, safeAppsPage * EMPLOYER_APPS_PER_PAGE);
-
-  const safeInvoicesPage = Math.min(Math.max(1, invoicesPage), Math.max(1, Math.ceil(jobs.length / INVOICES_PER_PAGE)));
-  const paginatedInvoiceJobs = jobs.slice((safeInvoicesPage - 1) * INVOICES_PER_PAGE, safeInvoicesPage * INVOICES_PER_PAGE);
+  const invoicesScroll = useInfiniteScroll(jobs, {
+    initialBatchSize: INVOICES_BATCH,
+    batchSize: INVOICES_BATCH,
+    resetKey: `${activeTab}-invoices`,
+  });
 
   return (
     <div className="w-full min-h-screen bg-[#FCF9F5] pb-24 font-body">
@@ -482,7 +480,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
               </div>
             ) : (
               <div className="space-y-3 sm:space-y-4">
-                {paginatedJobs.map((job) => {
+                {jobsScroll.visibleItems.map((job) => {
                   const jobApps = applications.filter((a) => a.jobId === job.id);
                   const isClosed = job.status === 'closed';
                   const lifecycle = getListingLifecycleInfo(job);
@@ -704,15 +702,13 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                   );
                 })}
 
-                <Pagination
-                  currentPage={safeJobsPage}
+                <InfiniteScrollSentinel
+                  sentinelRef={jobsScroll.sentinelRef}
+                  hasMore={jobsScroll.hasMore}
+                  isLoadingMore={jobsScroll.isLoadingMore}
                   totalItems={filteredJobs.length}
-                  pageSize={EMPLOYER_JOBS_PER_PAGE}
-                  onPageChange={(page) => {
-                    setJobsPage(page);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  itemLabel="listed jobs"
+                  minItemsForCaughtUp={3}
+                  caughtUpText="You're all caught up on your listed jobs"
                 />
               </div>
             )}
@@ -769,7 +765,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {paginatedApplications.map((app) => (
+                {appsScroll.visibleItems.map((app) => (
                   <div
                     key={app.id}
                     className="bg-white rounded-2xl sm:rounded-3xl border border-[#E5E7EB] p-4 sm:p-5 shadow-xs space-y-3"
@@ -846,15 +842,13 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                   </div>
                 ))}
 
-                <Pagination
-                  currentPage={safeAppsPage}
+                <InfiniteScrollSentinel
+                  sentinelRef={appsScroll.sentinelRef}
+                  hasMore={appsScroll.hasMore}
+                  isLoadingMore={appsScroll.isLoadingMore}
                   totalItems={filteredApplications.length}
-                  pageSize={EMPLOYER_APPS_PER_PAGE}
-                  onPageChange={(page) => {
-                    setAppsPage(page);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  itemLabel="applications"
+                  minItemsForCaughtUp={3}
+                  caughtUpText="You're all caught up on candidate applications"
                 />
               </div>
             )}
@@ -939,7 +933,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E5E7EB]">
-                    {paginatedInvoiceJobs.map((job) => {
+                    {invoicesScroll.visibleItems.map((job) => {
                       const isSponsored = job.isFeatured || (job.listingFeePaid && job.listingFeePaid > 0);
                       return (
                         <tr key={job.id} className="hover:bg-slate-50/50">
@@ -983,18 +977,13 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                   </tbody>
                 </table>
               </div>
-              {jobs.length > INVOICES_PER_PAGE && (
-                <div className="p-4 border-t border-[#E5E7EB]">
-                  <Pagination
-                    currentPage={safeInvoicesPage}
-                    totalItems={jobs.length}
-                    pageSize={INVOICES_PER_PAGE}
-                    onPageChange={setInvoicesPage}
-                    itemLabel="receipts"
-                    hideOnSinglePage
-                  />
-                </div>
-              )}
+              <InfiniteScrollSentinel
+                sentinelRef={invoicesScroll.sentinelRef}
+                hasMore={invoicesScroll.hasMore}
+                isLoadingMore={invoicesScroll.isLoadingMore}
+                totalItems={jobs.length}
+                minItemsForCaughtUp={INVOICES_BATCH + 1}
+              />
             </div>
           </div>
         )}

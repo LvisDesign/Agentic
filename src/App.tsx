@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability, PlatformSettings } from './types/marketplace';
 import { Header } from './components/Header';
 import { setAppBadge, clearAppBadge, autoEnableNotifications, isStandalone } from './utils/pwa';
@@ -607,17 +607,25 @@ export function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [currentUser.isAgent]);
 
-  // Data Synchronizer: fetches lightweight active listings & adverts
+  // Data Synchronizer: fetches lightweight initial batch of active listings & adverts (Instagram-style pagination)
+  const [hasMoreServerListings, setHasMoreServerListings] = useState(false);
+  const serverOffsetRef = useRef(0);
+  const SERVER_BATCH_SIZE = 8;
+
   const syncLatestData = useCallback(async () => {
     try {
       const [fetchedListings, fetchedAdverts, fetchedSettings] = await Promise.all([
-        fetchAllListings({ limit: 200 }),
+        fetchAllListings({ limit: SERVER_BATCH_SIZE, offset: 0 }),
         loadAllAdverts(),
         fetchPlatformSettingsAsync(),
       ]);
 
       if (fetchedListings && fetchedListings.length > 0) {
         setListings(fetchedListings);
+        serverOffsetRef.current = fetchedListings.length;
+        setHasMoreServerListings(fetchedListings.length >= SERVER_BATCH_SIZE);
+      } else {
+        setHasMoreServerListings(false);
       }
       if (fetchedAdverts && fetchedAdverts.length > 0) {
         setAdverts(fetchedAdverts);
@@ -652,6 +660,34 @@ export function App() {
       console.warn('[Setlla Sync] Background refresh notice:', err);
     }
   }, [currentUser.id]);
+
+  // Incremental server batch loader triggered when user scrolls near the end of the feed
+  const handleLoadMoreListings = useCallback(async () => {
+    if (!hasMoreServerListings) return false;
+    try {
+      const nextBatch = await fetchAllListings({
+        limit: SERVER_BATCH_SIZE,
+        offset: serverOffsetRef.current,
+      });
+      if (nextBatch && nextBatch.length > 0) {
+        serverOffsetRef.current += nextBatch.length;
+        setListings((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          const uniqueNew = nextBatch.filter((item) => !existingIds.has(item.id));
+          return uniqueNew.length > 0 ? [...prev, ...uniqueNew] : prev;
+        });
+        const more = nextBatch.length >= SERVER_BATCH_SIZE;
+        setHasMoreServerListings(more);
+        return more;
+      } else {
+        setHasMoreServerListings(false);
+        return false;
+      }
+    } catch (err) {
+      console.warn('[Setlla Pagination] Failed to load next batch:', err);
+      return false;
+    }
+  }, [hasMoreServerListings]);
 
   // Sync once on app mount and when network connectivity returns (no continuous loop polling)
   useEffect(() => {
@@ -2536,6 +2572,8 @@ export function App() {
                   totalListingsCount={listings.length}
                   isAuthenticated={isAuthenticated}
                   onTriggerSignup={handleOpenSignup}
+                  hasMoreServerListings={hasMoreServerListings}
+                  onLoadMoreListings={handleLoadMoreListings}
                   onOpenBecomeAgent={() => {
                     if (isAuthenticated) {
                       setIsBecomeAgentOpen(true);

@@ -31,10 +31,10 @@ import {
   saveCandidateCV,
   SavedCandidateCV
 } from '../../services/jobService';
-import { Pagination } from '../UI/Pagination';
+import { useInfiniteScroll, InfiniteScrollSentinel } from '../UI/Pagination';
 
-const APPS_PER_PAGE = 6;
-const RECOMMENDED_PER_PAGE = 6;
+const APPS_BATCH_SIZE = 4;
+const RECOMMENDED_BATCH_SIZE = 4;
 
 interface JobsDashboardProps {
   currentUser: UserProfile;
@@ -59,8 +59,6 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
   const [savedCV, setSavedCV] = useState<SavedCandidateCV | null>(null);
   const [isUploadingCV, setIsUploadingCV] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [appsPage, setAppsPage] = useState(1);
-  const [recommendedPage, setRecommendedPage] = useState(1);
 
   // Load jobs and applications
   useEffect(() => {
@@ -120,11 +118,17 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
   const inReview = applications.filter((a) => a.status === 'submitted' || a.status === 'reviewed').length;
   const shortlisted = applications.filter((a) => a.status === 'shortlisted').length;
 
-  const safeAppsPage = Math.min(Math.max(1, appsPage), Math.max(1, Math.ceil(applications.length / APPS_PER_PAGE)));
-  const paginatedApplications = applications.slice((safeAppsPage - 1) * APPS_PER_PAGE, safeAppsPage * APPS_PER_PAGE);
+  const appsScroll = useInfiniteScroll(applications, {
+    initialBatchSize: APPS_BATCH_SIZE,
+    batchSize: APPS_BATCH_SIZE,
+    resetKey: `${activeTab}-apps`,
+  });
 
-  const safeRecommendedPage = Math.min(Math.max(1, recommendedPage), Math.max(1, Math.ceil(jobs.length / RECOMMENDED_PER_PAGE)));
-  const paginatedRecommendedJobs = jobs.slice((safeRecommendedPage - 1) * RECOMMENDED_PER_PAGE, safeRecommendedPage * RECOMMENDED_PER_PAGE);
+  const recommendedScroll = useInfiniteScroll(jobs, {
+    initialBatchSize: RECOMMENDED_BATCH_SIZE,
+    batchSize: RECOMMENDED_BATCH_SIZE,
+    resetKey: `${activeTab}-recommended`,
+  });
 
   const isAdmin = Boolean(
     currentUser.isAdmin ||
@@ -322,7 +326,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
             ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {paginatedApplications.map((app) => (
+                  {appsScroll.visibleItems.map((app) => (
                     <article
                       key={app.id}
                       className="p-5 rounded-3xl bg-white border border-[#E5E7EB] shadow-2xs hover:shadow-xs transition-all space-y-3"
@@ -378,15 +382,13 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
                   ))}
                 </div>
 
-                <Pagination
-                  currentPage={safeAppsPage}
+                <InfiniteScrollSentinel
+                  sentinelRef={appsScroll.sentinelRef}
+                  hasMore={appsScroll.hasMore}
+                  isLoadingMore={appsScroll.isLoadingMore}
                   totalItems={applications.length}
-                  pageSize={APPS_PER_PAGE}
-                  onPageChange={(page) => {
-                    setAppsPage(page);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  itemLabel="applications"
+                  minItemsForCaughtUp={3}
+                  caughtUpText="You're all caught up on your applications"
                 />
               </div>
             )}
@@ -494,7 +496,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
         {activeTab === 'recommended' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {paginatedRecommendedJobs.map((job) => (
+              {recommendedScroll.visibleItems.map((job) => (
                 <article
                   key={job.id}
                   className="p-5 rounded-3xl bg-white border border-[#E5E7EB] shadow-2xs hover:shadow-xs transition-all space-y-3"
@@ -536,15 +538,13 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
               ))}
             </div>
 
-            <Pagination
-              currentPage={safeRecommendedPage}
+            <InfiniteScrollSentinel
+              sentinelRef={recommendedScroll.sentinelRef}
+              hasMore={recommendedScroll.hasMore}
+              isLoadingMore={recommendedScroll.isLoadingMore}
               totalItems={jobs.length}
-              pageSize={RECOMMENDED_PER_PAGE}
-              onPageChange={(page) => {
-                setRecommendedPage(page);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              itemLabel="opportunities"
+              minItemsForCaughtUp={3}
+              caughtUpText="You're all caught up on recommended vacancies"
             />
           </div>
         )}
