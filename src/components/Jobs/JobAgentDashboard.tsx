@@ -817,9 +817,11 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                               ? 'bg-emerald-100 text-emerald-800'
                               : app.status === 'rejected'
                               ? 'bg-red-100 text-red-800'
+                              : app.status === 'reviewed'
+                              ? 'bg-blue-100 text-blue-800'
                               : 'bg-amber-100 text-amber-800'
                           }`}>
-                            {app.status}
+                            {app.status === 'reviewed' ? 'Viewed' : app.status === 'submitted' ? 'In Review' : app.status}
                           </span>
                         </div>
                         <p className="text-xs text-[#70798C] mt-0.5">
@@ -833,6 +835,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                         onChange={(val) => handleUpdateAppStatus(app.id, val as any)}
                         options={[
                           { value: 'submitted', label: 'In Review', dotColor: '#F59E0B' },
+                          { value: 'reviewed', label: 'Viewed CV', dotColor: '#3B82F6' },
                           { value: 'shortlisted', label: 'Shortlist Candidate', dotColor: '#10B981' },
                           { value: 'rejected', label: 'Decline', dotColor: '#EF4444' },
                         ]}
@@ -856,13 +859,18 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2 flex-wrap">
-                        {/* View / Download CV */}
+                        {/* View / Download CV (Automatically marks application as Viewed & notifies candidate) */}
                         {app.cvUrl && (
                           <a
                             href={app.cvUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             download={app.cvFileName || 'Candidate_Resume.pdf'}
+                            onClick={() => {
+                              if (app.status === 'submitted') {
+                                handleUpdateAppStatus(app.id, 'reviewed');
+                              }
+                            }}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#000004] font-bold transition-colors cursor-pointer"
                           >
                             <Download className="w-3.5 h-3.5 text-emerald-600" />

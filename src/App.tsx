@@ -88,6 +88,7 @@ import {
 import { getPlatformSettings, fetchPlatformSettingsAsync } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
 import { fetchAllBookings, saveNewBooking, updateBookingStatus, deleteBooking } from './services/bookingService';
+import { fetchAllJobApplications } from './services/jobService';
 import { supabase, isSupabaseConfigured, getSupabaseClient, invalidateCache } from './utils/supabaseClient';
 import { broadcastRealtimeEvent, subscribeToRealtimeEvents } from './services/realtimeSync';
 import { playNotificationSound, showDeviceNotification, requestDeviceNotificationPermission } from './utils/realtimeNotifications';
@@ -1048,7 +1049,7 @@ export function App() {
             if (changedRow?.property_type === '__JOB_APPLICATION__' || changedRow?.property_type === '__JOB_LISTING__') {
               window.dispatchEvent(new CustomEvent('setlla:job-applications-updated'));
 
-              if (payload.eventType === 'INSERT' && changedRow?.property_type === '__JOB_APPLICATION__') {
+              if (changedRow?.property_type === '__JOB_APPLICATION__') {
                 const appData = changedRow.fees?._applicationData;
                 const agentInfo = changedRow.agent || {};
                 const isMyEmployerApp =
@@ -1062,12 +1063,22 @@ export function App() {
 
                 const isSelfApplicant =
                   (currentUser.id && appData?.applicantId === currentUser.id) ||
+                  (currentUser.email && appData?.applicantEmail && normalizeEmail(appData.applicantEmail) === normalizeEmail(currentUser.email)) ||
                   (currentUser.phone && appData?.applicantPhone && normalizePhoneNumber(appData.applicantPhone) === normalizePhoneNumber(currentUser.phone));
 
-                if (isMyEmployerApp && !isSelfApplicant && appData) {
+                if (payload.eventType === 'INSERT' && isMyEmployerApp && !isSelfApplicant && appData) {
+                  const eventKey = `employer_job_app_${appData.id || changedRow.id}`;
+                  try {
+                    const seenRaw = localStorage.getItem('setlla_notified_job_events_v1');
+                    const seen: string[] = seenRaw ? JSON.parse(seenRaw) : [];
+                    if (!seen.includes(eventKey)) {
+                      localStorage.setItem('setlla_notified_job_events_v1', JSON.stringify([eventKey, ...seen].slice(0, 300)));
+                    }
+                  } catch (_) {}
+
                   setPushNotification({
-                    eventKey: `employer_job_app_${appData.id || changedRow.id}`,
-                    title: 'New Candidate Application',
+                    eventKey,
+                    title: 'New job application received',
                     body: `${appData.applicantName} applied for "${appData.jobTitle}" with CV attached.`,
                     type: 'job_application_received',
                     actionText: 'Review Candidate CV',
@@ -1077,8 +1088,42 @@ export function App() {
                     },
                   });
                   playNotificationSound('success');
-                  showDeviceNotification('New Candidate Application', {
-                    body: `${appData.applicantName} applied for "${appData.jobTitle}". Open your Employer Portal to review their CV.`,
+                  showDeviceNotification('New job application received', {
+                    body: `${appData.applicantName} applied for "${appData.jobTitle}". Tap to view their CV.`,
+                  });
+                } else if (payload.eventType === 'UPDATE' && isSelfApplicant && appData && appData.status && appData.status !== 'submitted') {
+                  const eventKey = `applicant_job_status_${appData.id || changedRow.id}_${appData.status}`;
+                  try {
+                    const seenRaw = localStorage.getItem('setlla_notified_job_events_v1');
+                    const seen: string[] = seenRaw ? JSON.parse(seenRaw) : [];
+                    if (!seen.includes(eventKey)) {
+                      localStorage.setItem('setlla_notified_job_events_v1', JSON.stringify([eventKey, ...seen].slice(0, 300)));
+                    }
+                  } catch (_) {}
+
+                  const company = appData.companyName || 'The employer';
+                  const statusBody =
+                    appData.status === 'reviewed'
+                      ? `${company} viewed your application for "${appData.jobTitle}".`
+                      : appData.status === 'shortlisted'
+                      ? `Congratulations! ${company} shortlisted your application for "${appData.jobTitle}".`
+                      : `${company} updated the status of your application for "${appData.jobTitle}".`;
+
+                  setPushNotification({
+                    eventKey,
+                    title: 'Application status update',
+                    body: statusBody,
+                    type: 'job_status_updated',
+                    actionText: 'View My Applications',
+                    onAction: () => {
+                      setActiveRoom('jobs');
+                      setCurrentRole('tenant');
+                      setUserView('dashboard');
+                    },
+                  });
+                  playNotificationSound(appData.status === 'shortlisted' ? 'success' : 'info');
+                  showDeviceNotification('Application status update', {
+                    body: statusBody,
                   });
                 }
               }
@@ -1313,6 +1358,115 @@ export function App() {
       clearAppBadge();
     }
   }, [userBookings]);
+
+  // Persistent Job Application & Status Update Notification Trigger:
+  // Guarantees employers get notified of new applications AND applicants get Indeed-style
+  // "Application status update — [Company] viewed your application" alerts even if their tab was closed.
+  useEffect(() => {
+    if (!currentUser || !currentUser.id || currentUser.id === 'GUEST_USER' || currentUser.id === 'DT-USR-GUEST') {
+      return;
+    }
+
+    let cancelled = false;
+    const checkJobApplicationNotifications = async () => {
+      try {
+        const allApps = await fetchAllJobApplications();
+        if (cancelled || !allApps || allApps.length === 0) return;
+
+        const seenRaw = localStorage.getItem('setlla_notified_job_events_v1');
+        const seenSet = new Set<string>(seenRaw ? JSON.parse(seenRaw) : []);
+        let updatedSeen = false;
+
+        const userEmail = currentUser.email ? normalizeEmail(currentUser.email) : '';
+        const userPhone = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
+
+        for (const app of allApps) {
+          const isApplicant =
+            (currentUser.id && app.applicantId === currentUser.id) ||
+            (userEmail && app.applicantEmail && normalizeEmail(app.applicantEmail) === userEmail) ||
+            (userPhone && app.applicantPhone && normalizePhoneNumber(app.applicantPhone) === userPhone);
+
+          const isEmployer =
+            !isApplicant &&
+            Boolean(
+              (currentUser.id && app.posterId === currentUser.id) ||
+                (userEmail && app.posterEmail && normalizeEmail(app.posterEmail) === userEmail) ||
+                (userPhone && app.posterPhone && normalizePhoneNumber(app.posterPhone) === userPhone)
+            );
+
+          // 1. Notify Employer of new incoming application
+          if (isEmployer) {
+            const empEventKey = `employer_job_app_${app.id}`;
+            if (!seenSet.has(empEventKey)) {
+              seenSet.add(empEventKey);
+              updatedSeen = true;
+              setPushNotification({
+                eventKey: empEventKey,
+                title: 'New job application received',
+                body: `${app.applicantName} applied for "${app.jobTitle}" with CV attached.`,
+                type: 'job_application_received',
+                actionText: 'Review Candidate CV',
+                onAction: () => {
+                  setActiveRoom('jobs');
+                  setCurrentRole('agent');
+                },
+              });
+              playNotificationSound('success');
+              showDeviceNotification('New job application received', {
+                body: `${app.applicantName} applied for "${app.jobTitle}". Tap to review their CV.`,
+              });
+              break;
+            }
+          }
+
+          // 2. Notify Applicant when employer views/downloads CV, shortlists, or updates status
+          if (isApplicant && app.status && app.status !== 'submitted') {
+            const appEventKey = `applicant_job_status_${app.id}_${app.status}`;
+            if (!seenSet.has(appEventKey)) {
+              seenSet.add(appEventKey);
+              updatedSeen = true;
+              const company = app.companyName || 'The employer';
+              const statusBody =
+                app.status === 'reviewed'
+                  ? `${company} viewed your application for "${app.jobTitle}".`
+                  : app.status === 'shortlisted'
+                  ? `Congratulations! ${company} shortlisted your application for "${app.jobTitle}".`
+                  : `${company} updated the status of your application for "${app.jobTitle}".`;
+
+              setPushNotification({
+                eventKey: appEventKey,
+                title: 'Application status update',
+                body: statusBody,
+                type: 'job_status_updated',
+                actionText: 'View My Applications',
+                onAction: () => {
+                  setActiveRoom('jobs');
+                  setCurrentRole('tenant');
+                  setUserView('dashboard');
+                },
+              });
+              playNotificationSound(app.status === 'shortlisted' ? 'success' : 'info');
+              showDeviceNotification('Application status update', {
+                body: statusBody,
+              });
+              break;
+            }
+          }
+        }
+
+        if (updatedSeen) {
+          localStorage.setItem('setlla_notified_job_events_v1', JSON.stringify(Array.from(seenSet).slice(-300)));
+        }
+      } catch (_) {}
+    };
+
+    checkJobApplicationNotifications();
+    window.addEventListener('setlla:job-applications-updated', checkJobApplicationNotifications);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('setlla:job-applications-updated', checkJobApplicationNotifications);
+    };
+  }, [currentUser.id, currentUser.email, currentUser.phone]);
 
   // Persistent Tenant Notification Trigger:
   // Guarantees the applying tenant receives their celebratory alert & unlocked contact prompt
