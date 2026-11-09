@@ -84,14 +84,16 @@ export async function showDeviceNotification(
 ): Promise<void> {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
 
+  const cleanTitle = title.replace(/^🔔\s*/, '').trim();
+
   // Trigger haptic vibration regardless
   triggerDeviceVibration();
 
   if (Notification.permission === 'granted') {
     try {
-      const notification = new Notification(title, {
-        icon: '/pwa-192x192.png',
-        badge: '/pwa-192x192.png',
+      const notification = new Notification(cleanTitle, {
+        icon: '/icons/icon-192x192.png',
+        badge: '/icons/icon-192x192.png',
         ...options,
       });
 
@@ -107,9 +109,9 @@ export async function showDeviceNotification(
       // and require serviceWorkerRegistration.showNotification()
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then((reg) => {
-          reg.showNotification(title, {
-            icon: '/pwa-192x192.png',
-            badge: '/pwa-192x192.png',
+          reg.showNotification(cleanTitle, {
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/icon-192x192.png',
             ...options,
           }).catch(() => {});
         }).catch(() => {});
