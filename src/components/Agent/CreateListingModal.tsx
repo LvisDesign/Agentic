@@ -38,6 +38,9 @@ const PROPERTY_TYPE_OPTIONS: DropdownOption[] = [
   { value: '2-Bedroom Flat', label: '2-Bedroom Flat' },
   { value: '3-Bedroom Flat', label: '3-Bedroom Flat' },
   { value: 'Duplex / Semi-Detached', label: 'Duplex / Whole House' },
+  { value: 'Store / Shop', label: 'Store / Shop' },
+  { value: 'Warehouse / Commercial Space', label: 'Warehouse / Commercial Space' },
+  { value: 'Others (Custom)', label: 'Others / Custom (Specify)' },
 ];
 
 const SUGGESTED_ADDONS: string[] = [
@@ -88,6 +91,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
   const [city, setCity] = useState<DeltaCity>(initialCity);
   const [neighborhood, setNeighborhood] = useState('');
   const [propertyType, setPropertyType] = useState<PropertyType>('2-Bedroom Flat');
+  const [customPropertyType, setCustomPropertyType] = useState('');
   const [bedrooms, setBedrooms] = useState(2);
   const [bathrooms, setBathrooms] = useState(2);
   const [rentPeriod, setRentPeriod] = useState<'per annum' | 'per month'>('per annum');
@@ -128,9 +132,19 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       setSelectedState(initialListing.state || 'Delta State');
       setCity(initialListing.city || initialCity);
       setNeighborhood(initialListing.neighborhood || '');
-      setPropertyType(initialListing.propertyType || '2-Bedroom Flat');
-      setBedrooms(initialListing.bedrooms || 2);
-      setBathrooms(initialListing.bathrooms || 2);
+      const existingType = initialListing.propertyType || '2-Bedroom Flat';
+      const isStandardOption = PROPERTY_TYPE_OPTIONS.some(
+        (opt) => opt.value === existingType && opt.value !== 'Others (Custom)'
+      );
+      if (isStandardOption) {
+        setPropertyType(existingType);
+        setCustomPropertyType('');
+      } else {
+        setPropertyType('Others (Custom)');
+        setCustomPropertyType(existingType === 'Others (Custom)' ? '' : existingType);
+      }
+      setBedrooms(initialListing.bedrooms ?? 2);
+      setBathrooms(initialListing.bathrooms ?? 2);
       setRentPeriod(initialListing.fees?.rentPeriod || 'per annum');
       setBaseRentInput(formatCurrencyInput(String(initialListing.fees?.baseRent || '')));
       const cautionVal = initialListing.fees?.cautionFee || 0;
@@ -177,6 +191,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       setCity(initialCity);
       setNeighborhood('');
       setPropertyType('2-Bedroom Flat');
+      setCustomPropertyType('');
       setBedrooms(2);
       setBathrooms(2);
       setRentPeriod('per annum');
@@ -264,17 +279,26 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
     setUploadedMedia((prev) => prev.filter((m) => m.id !== id));
   };
 
+  const resolvedPropertyType: PropertyType =
+    propertyType === 'Others (Custom)'
+      ? ((customPropertyType.trim() || 'Custom Property') as PropertyType)
+      : propertyType;
+
   const handleNextStep = () => {
     if (step === 1) {
       if (!neighborhood.trim()) {
         setStep1Error('Please enter the area or neighborhood.');
         return;
       }
+      if (propertyType === 'Others (Custom)' && !customPropertyType.trim()) {
+        setStep1Error('Please describe the building or property type.');
+        return;
+      }
       setStep1Error(null);
       setStep(2);
     } else if (step === 2) {
       if (!baseRentNum || baseRentNum <= 0) {
-        setRentError('Please enter a valid house rent amount.');
+        setRentError('Please enter a valid rent amount.');
         return;
       }
       setRentError(null);
@@ -291,8 +315,14 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       return;
     }
 
+    if (propertyType === 'Others (Custom)' && !customPropertyType.trim()) {
+      setStep1Error('Please describe the building or property type.');
+      setStep(1);
+      return;
+    }
+
     if (!baseRentNum || baseRentNum <= 0) {
-      setRentError('Please enter a valid house rent amount.');
+      setRentError('Please enter a valid rent amount.');
       setStep(2);
       return;
     }
@@ -304,7 +334,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       return;
     }
 
-    const finalTitle = title.trim() || `${propertyType} in ${neighborhood.trim() || city}`;
+    const finalTitle = title.trim() || `${resolvedPropertyType} in ${neighborhood.trim() || city}`;
 
     if (isEditing && initialListing) {
       const updatedListing: PropertyListing = {
@@ -314,10 +344,10 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         city,
         neighborhood: neighborhood.trim() || 'Central Residential District',
         fullAddress: `${neighborhood.trim() ? `${neighborhood.trim()}, ` : ''}${city}, ${selectedState}`,
-        propertyType,
+        propertyType: resolvedPropertyType,
         bedrooms,
         bathrooms,
-        toilets: bathrooms + 1,
+        toilets: bathrooms > 0 ? bathrooms : 0,
         isServiced: serviceChargeNum > 0,
         media: uploadedMedia.map((item, i) => ({
           id: item.id,
@@ -367,15 +397,15 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
       city,
       neighborhood: neighborhood.trim() || 'Central Residential District',
       fullAddress: `${neighborhood.trim() ? `${neighborhood.trim()}, ` : ''}${city}, ${selectedState}`,
-      propertyType,
+      propertyType: resolvedPropertyType,
       bedrooms,
       bathrooms,
-      toilets: bathrooms + 1,
+      toilets: bathrooms > 0 ? bathrooms : 0,
       isServiced: serviceChargeNum > 0,
       isFurnished: false,
       electricityStatus: undefined,
       waterSupply: undefined,
-      description: `Verified ${propertyType.toLowerCase()} in ${neighborhood.trim()}, ${city}.`,
+      description: `Verified ${resolvedPropertyType.toLowerCase()} in ${neighborhood.trim()}, ${city}.`,
       media: uploadedMedia.map((item, i) => ({
         id: item.id,
         type: item.type,
@@ -568,28 +598,72 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   />
                 </div>
 
-                {/* House Type (Full width on mobile so dropdown never clips!) */}
-                <div className="relative z-20">
-                  <label className="text-[11px] font-semibold text-[#70798C] block mb-1">House Type</label>
-                  <CustomDropdown
-                    options={PROPERTY_TYPE_OPTIONS}
-                    value={propertyType}
-                    onChange={(val) => setPropertyType(val as PropertyType)}
-                    headerTitle="Select House Type"
-                    variant="form"
-                    allowCustomInput={false}
-                  />
+                {/* House / Building Type (Full width on mobile so dropdown never clips!) */}
+                <div className="relative z-20 space-y-2.5">
+                  <div>
+                    <label className="text-[11px] font-semibold text-[#70798C] block mb-1">House / Building Type</label>
+                    <CustomDropdown
+                      options={PROPERTY_TYPE_OPTIONS}
+                      value={propertyType}
+                      onChange={(val) => {
+                        const isStandard = PROPERTY_TYPE_OPTIONS.some((o) => o.value === val);
+                        if (isStandard) {
+                          setPropertyType(val as PropertyType);
+                          if (!isEditing && (val === 'Store / Shop' || val === 'Warehouse / Commercial Space')) {
+                            setBedrooms(0);
+                            setBathrooms(0);
+                          } else if (!isEditing && val === '2-Bedroom Flat') {
+                            setBedrooms(2);
+                            setBathrooms(2);
+                          } else if (!isEditing && val === '3-Bedroom Flat') {
+                            setBedrooms(3);
+                            setBathrooms(3);
+                          } else if (!isEditing && (val === 'Self-contain' || val === 'Single Room' || val === 'Bedseater')) {
+                            setBedrooms(1);
+                            setBathrooms(val === 'Single Room' ? 0 : 1);
+                          }
+                        } else {
+                          setPropertyType('Others (Custom)');
+                          setCustomPropertyType(val);
+                        }
+                        if (step1Error) setStep1Error(null);
+                      }}
+                      headerTitle="Select House / Building Type"
+                      variant="form"
+                      allowCustomInput={true}
+                      customSearchSubtitle="Or type custom building type"
+                    />
+                  </div>
+
+                  {propertyType === 'Others (Custom)' && (
+                    <div className="animate-fade-in">
+                      <label className="text-[11px] font-semibold text-[#70798C] block mb-1">
+                        Describe Building / Property Type *
+                      </label>
+                      <input
+                        type="text"
+                        value={customPropertyType}
+                        onChange={(e) => {
+                          setCustomPropertyType(e.target.value);
+                          if (step1Error) setStep1Error(null);
+                        }}
+                        placeholder="e.g. Lock-up Store, Plaza Suite, Office Space, Event Hall, Boys Quarters..."
+                        className="w-full px-3 py-2.5 rounded-xl border border-[#E5E7EB] bg-[#FFFDF9] text-xs text-[#000004] font-medium focus:outline-none focus:border-[#342A21]"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {/* Bedrooms & Bathrooms Steppers (Clean 2-Column Row) */}
+                {/* Rooms & Toilets/Bathrooms Steppers (Supports 0 for Stores & Commercial Spaces) */}
                 <div className="grid grid-cols-2 gap-2">
                   <div className="min-w-0 overflow-hidden p-2 sm:p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5]/60 flex items-center justify-between gap-1.5">
-                    <span className="text-[11px] sm:text-xs font-semibold text-[#000004] truncate">Bedrooms</span>
+                    <span className="text-[11px] sm:text-xs font-semibold text-[#000004] truncate">Rooms / Beds</span>
                     <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setBedrooms((b) => Math.max(1, b - 1))}
+                        onClick={() => setBedrooms((b) => Math.max(0, b - 1))}
                         className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
+                        title="Decrease rooms (0 for stores/open spaces)"
                       >
                         <Minus className="w-3 h-3" />
                       </button>
@@ -605,12 +679,13 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
                   </div>
 
                   <div className="min-w-0 overflow-hidden p-2 sm:p-2.5 rounded-xl border border-[#E5E7EB] bg-[#FCF9F5]/60 flex items-center justify-between gap-1.5">
-                    <span className="text-[11px] sm:text-xs font-semibold text-[#000004] truncate">Bathrooms</span>
+                    <span className="text-[11px] sm:text-xs font-semibold text-[#000004] truncate">Toilets / Baths</span>
                     <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                       <button
                         type="button"
-                        onClick={() => setBathrooms((b) => Math.max(1, b - 1))}
+                        onClick={() => setBathrooms((b) => Math.max(0, b - 1))}
                         className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-white border border-[#E5E7EB] hover:border-[#342A21] text-[#000004] flex items-center justify-center cursor-pointer active:scale-95 shrink-0"
+                        title="Decrease toilets/bathrooms (0 if none)"
                       >
                         <Minus className="w-3 h-3" />
                       </button>

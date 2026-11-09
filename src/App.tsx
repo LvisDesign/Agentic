@@ -1751,8 +1751,33 @@ export function App() {
       if (!matchesLocation(item, selectedCity, selectedState)) {
         return false;
       }
-      if (selectedType !== 'All Property Types' && item.propertyType !== selectedType) {
-        return false;
+      if (selectedType !== 'All Property Types') {
+        if (selectedType === 'Others' || selectedType === 'Others (Custom)') {
+          const standardTypes = new Set([
+            'Self-contain',
+            'Single Room',
+            'Bedseater',
+            '2-Bedroom Flat',
+            '3-Bedroom Flat',
+            'Duplex / Semi-Detached',
+            'Store / Shop',
+            'Warehouse / Commercial Space',
+          ]);
+          if (standardTypes.has(item.propertyType)) {
+            return false;
+          }
+        } else if (selectedType === 'Store / Shop') {
+          if (
+            item.propertyType !== 'Store / Shop' &&
+            item.propertyType !== 'Commercial Shop' &&
+            !item.propertyType.toLowerCase().includes('store') &&
+            !item.propertyType.toLowerCase().includes('shop')
+          ) {
+            return false;
+          }
+        } else if (item.propertyType !== selectedType) {
+          return false;
+        }
       }
       if (item.fees.baseRent > maxRent) {
         return false;

@@ -80,7 +80,11 @@ export type PropertyType =
   | '2-Bedroom Flat'
   | '3-Bedroom Flat'
   | 'Duplex / Semi-Detached'
-  | 'Commercial Shop';
+  | 'Store / Shop'
+  | 'Warehouse / Commercial Space'
+  | 'Commercial Shop'
+  | 'Others (Custom)'
+  | (string & {});
 
 export interface FeeBreakdown {
   baseRent: number;          // NGN per annum (or month)

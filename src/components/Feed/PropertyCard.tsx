@@ -278,16 +278,21 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               </div>
             </div>
 
-            {/* 3. Essential Quick Summary Pills (Bedrooms & Bathrooms) + Star Reaction */}
+            {/* 3. Essential Quick Summary Pills (Property Type, Bedrooms & Bathrooms) + Star Reaction */}
             <div className="flex items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+              {listing.propertyType && (
+                <span className="px-2 py-0.5 rounded-md bg-[#FAF6EC] border border-[#EDDAA6] text-[#342A21] font-semibold">
+                  {listing.propertyType}
+                </span>
+              )}
               <span className="px-2 py-0.5 rounded-md bg-[#FFFDF7] border border-[#EFE3C8] text-[#342A21] font-medium flex items-center gap-1">
                 <Bed className="w-3 h-3 text-[#C68400]" />
-                {listing.bedrooms} Bed
+                {listing.bedrooms ?? 0} {listing.bedrooms === 0 ? 'Rooms' : 'Bed'}
               </span>
               <span className="px-2 py-0.5 rounded-md bg-[#FFFDF7] border border-[#EFE3C8] text-[#342A21] font-medium flex items-center gap-1">
                 <Bath className="w-3 h-3 text-[#C68400]" />
-                {listing.bathrooms} Bath
+                {listing.bathrooms ?? 0} {listing.bathrooms === 0 ? 'Toilets' : 'Bath'}
               </span>
               {listing.electricityStatus && !isListingExpanded && (
                 <span className="px-2 py-0.5 rounded-md bg-amber-50/80 border border-amber-200 text-amber-900 font-medium flex items-center gap-1">

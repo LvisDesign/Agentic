@@ -623,5 +623,8 @@ export const PROPERTY_TYPES = [
   'Bedseater',
   '2-Bedroom Flat',
   '3-Bedroom Flat',
-  'Duplex / Semi-Detached'
+  'Duplex / Semi-Detached',
+  'Store / Shop',
+  'Warehouse / Commercial Space',
+  'Others'
 ];
