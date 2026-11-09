@@ -51,6 +51,8 @@ import {
   saveRegisteredUserAsync,
   normalizeEmail,
   normalizePhoneNumber,
+  validateLegitPhoneNumber,
+  sanitizePhoneInput,
   unrecordDeletedUser,
   DuplicateCheckResult 
 } from '../../utils/userRegistry';
@@ -371,13 +373,38 @@ export const SignupModal: React.FC<SignupModalProps> = ({
     }
   };
 
+  // Real-time inline validation helper for phone numbers
+  const getInlinePhoneError = (phone: string): string | null => {
+    const raw = phone.trim();
+    if (!raw) return null;
+    const norm = normalizePhoneNumber(raw);
+    if (norm.length >= 2 && !norm.startsWith('07') && !norm.startsWith('08') && !norm.startsWith('09')) {
+      return 'Must start with a valid Nigerian mobile prefix (070, 080, 081, 090, or 091).';
+    }
+    if (norm.length >= 4 && !/^0(70[1-9]|71[0-9]|80[2-9]|81[0-9]|90[1-9]|91[1-9])/.test(norm)) {
+      return 'Invalid carrier prefix. Enter a real Nigerian mobile number (e.g. 0803, 0810, 0706, 0903).';
+    }
+    if (norm.length >= 11) {
+      const check = validateLegitPhoneNumber(raw);
+      if (!check.valid) {
+        return check.message || 'Please enter a valid 11-digit Nigerian mobile number.';
+      }
+    }
+    return null;
+  };
+
+  const seekerPhoneInlineError = getInlinePhoneError(seekerPhone);
+  const agentPhoneInlineError = getInlinePhoneError(agentPhone);
+  const agentWhatsappInlineError = !sameAsPhone ? getInlinePhoneError(agentWhatsapp) : null;
+
   // Handle phone changes to sync WhatsApp if checked
   const handleAgentPhoneChange = (val: string) => {
-    setAgentPhone(val);
+    const sanitized = sanitizePhoneInput(val);
+    setAgentPhone(sanitized);
     if (duplicateError) setDuplicateError(null);
     if (signupError) setSignupError(null);
     if (sameAsPhone) {
-      setAgentWhatsapp(val);
+      setAgentWhatsapp(sanitized);
     }
   };
 
@@ -429,8 +456,9 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (normalizePhoneNumber(seekerPhone).length < 10) {
-      setSignupError('Please enter a valid 10 or 11-digit phone number.');
+    const seekerPhoneCheck = validateLegitPhoneNumber(seekerPhone);
+    if (!seekerPhoneCheck.valid) {
+      setSignupError(seekerPhoneCheck.message || 'Please enter a valid 11-digit Nigerian mobile phone number.');
       formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
@@ -456,7 +484,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     try {
       // Strict duplicate check: query cloud database for real existing accounts
-      const dupCheck = await checkUserExistsAsync(seekerPhone, seekerEmail);
+      const dupCheck = await checkUserExistsAsync(seekerPhoneCheck.normalized, seekerEmail);
       if (dupCheck.exists) {
         setDuplicateError(dupCheck);
         formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -473,7 +501,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       const updated: UserProfile = {
         id: `DT-USR-${Math.floor(1000 + Math.random() * 9000)}`,
         fullName: seekerFullName.trim(),
-        phone: seekerPhone.trim(),
+        phone: seekerPhoneCheck.normalized,
         email: seekerEmail.trim().toLowerCase(),
         password: seekerPassword.trim(),
         state: seekerState,
@@ -567,10 +595,22 @@ export const SignupModal: React.FC<SignupModalProps> = ({
       formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
-    if (normalizePhoneNumber(agentPhone).length < 10) {
-      setSignupError('Please enter a valid 10 or 11-digit phone number.');
+    const agentPhoneCheck = validateLegitPhoneNumber(agentPhone);
+    if (!agentPhoneCheck.valid) {
+      setSignupError(agentPhoneCheck.message || 'Please enter a valid 11-digit Nigerian mobile phone number.');
       formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
+    }
+
+    let normalizedWhatsapp = agentPhoneCheck.normalized;
+    if (!sameAsPhone && agentWhatsapp.trim()) {
+      const whatsappCheck = validateLegitPhoneNumber(agentWhatsapp);
+      if (!whatsappCheck.valid) {
+        setSignupError(`WhatsApp Number: ${whatsappCheck.message || 'Please enter a valid 11-digit Nigerian mobile number.'}`);
+        formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      normalizedWhatsapp = whatsappCheck.normalized;
     }
 
     // All users except tenants must provide compulsory email and password
@@ -594,7 +634,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
 
     try {
       // Strict duplicate check: query cloud database for real existing accounts
-      const dupCheck = await checkUserExistsAsync(agentPhone, agentEmail);
+      const dupCheck = await checkUserExistsAsync(agentPhoneCheck.normalized, agentEmail);
       if (dupCheck.exists) {
         setDuplicateError(dupCheck);
         formScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -607,7 +647,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         ? (agentCitySelection === 'Others' ? (customAgentCity.trim() || 'Others') : (agentCitySelection || agentCity || 'Asaba'))
         : (agentCity.trim() || 'Asaba');
 
-      const finalWhatsapp = sameAsPhone ? agentPhone.trim() : (agentWhatsapp.trim() || agentPhone.trim());
+      const finalWhatsapp = normalizedWhatsapp;
 
       const resolvedPersona: UserPersona = selectedPersona === 'employer' ? 'employer' : 'lister';
       const updated: UserProfile = {
@@ -615,7 +655,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
         fullName: agentFullName.trim(),
         agencyName: agencyName.trim(),
         agentType: agentType,
-        phone: agentPhone.trim(),
+        phone: agentPhoneCheck.normalized,
         whatsapp: finalWhatsapp,
         email: agentEmail.trim() || undefined,
         password: agentPassword.trim(),
@@ -2174,7 +2214,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           </label>
                           <div className="relative">
                             <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                              seekerPhoneInlineError || (duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both'))
                                 ? 'text-[#F0544F]'
                                 : 'text-[#70798C]'
                             }`} />
@@ -2184,21 +2224,27 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               autoFocus
                               inputMode="tel"
                               autoComplete="tel"
-                              placeholder="0803 000 0000"
+                              placeholder="0803 456 7890"
                               value={seekerPhone}
                               onChange={(e) => {
-                                setSeekerPhone(e.target.value);
+                                setSeekerPhone(sanitizePhoneInput(e.target.value));
                                 if (duplicateError) setDuplicateError(null);
                                 if (signupError) setSignupError(null);
                               }}
                               className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium ${
-                                duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                                  ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                                seekerPhoneInlineError || (duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both'))
+                                  ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30 focus:border-[#F0544F]'
                                   : 'border-[#E5E7EB]'
                               }`}
                             />
                           </div>
-                          {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                          {seekerPhoneInlineError && (
+                            <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>{seekerPhoneInlineError}</span>
+                            </p>
+                          )}
+                          {!seekerPhoneInlineError && duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
                             <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
                               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                               <span>Phone already registered.</span>
@@ -2729,7 +2775,7 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                           </div>
                           <div className="relative">
                             <Phone className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${
-                              duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
+                              agentPhoneInlineError || (duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both'))
                                 ? 'text-[#F0544F]'
                                 : 'text-[#70798C]'
                             }`} />
@@ -2738,17 +2784,23 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                               required
                               inputMode="tel"
                               autoComplete="tel"
-                              placeholder="0803 123 4567"
+                              placeholder="0803 456 7890"
                               value={agentPhone}
                               onChange={(e) => handleAgentPhoneChange(e.target.value)}
                               className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] placeholder:text-[#70798C]/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] transition-all font-medium ${
-                                duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both')
-                                  ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30'
+                                agentPhoneInlineError || (duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both'))
+                                  ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30 focus:border-[#F0544F]'
                                   : 'border-[#E5E7EB]'
                               }`}
                             />
                           </div>
-                          {duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
+                          {agentPhoneInlineError && (
+                            <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                              <span>{agentPhoneInlineError}</span>
+                            </p>
+                          )}
+                          {!agentPhoneInlineError && duplicateError && (duplicateError.field === 'phone' || duplicateError.field === 'both') && (
                             <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
                               <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                               <span>Phone already registered.</span>
@@ -2768,12 +2820,22 @@ export const SignupModal: React.FC<SignupModalProps> = ({
                                   required={!sameAsPhone}
                                   inputMode="tel"
                                   autoComplete="tel"
-                                  placeholder="0803 000 0000"
+                                  placeholder="0803 456 7890"
                                   value={agentWhatsapp}
-                                  onChange={(e) => setAgentWhatsapp(e.target.value)}
-                                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E5E7EB] rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] font-medium"
+                                  onChange={(e) => setAgentWhatsapp(sanitizePhoneInput(e.target.value))}
+                                  className={`w-full pl-9 pr-3 py-2 bg-white border rounded-xl text-xs sm:text-sm text-[#000004] focus:outline-none focus:ring-2 focus:ring-[#342A21]/20 focus:border-[#342A21] font-medium ${
+                                    agentWhatsappInlineError
+                                      ? 'border-[#F0544F] ring-2 ring-[#F0544F]/20 bg-[#FEECEB]/30 focus:border-[#F0544F]'
+                                      : 'border-[#E5E7EB]'
+                                  }`}
                                 />
                               </div>
+                              {agentWhatsappInlineError && (
+                                <p className="text-[10px] sm:text-[11px] font-semibold text-[#F0544F] mt-1 flex items-center gap-1 animate-fade-in">
+                                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                  <span>{agentWhatsappInlineError}</span>
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>

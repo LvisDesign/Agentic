@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../utils/supabaseClient';
 import { createPartnerApiKey, getPartnerApiKeys } from './adService';
 import { hashToken, verifyHashedToken, checkRateLimit } from '../utils/security';
-import { checkUserExistsAsync, normalizePhoneNumber } from '../utils/userRegistry';
+import { checkUserExistsAsync, normalizePhoneNumber, validateLegitPhoneNumber } from '../utils/userRegistry';
 
 export interface WalletTransaction {
   id: string;
@@ -305,8 +305,13 @@ export function getActiveAdvertiser(): AdvertiserUser | null {
  * Signs up a new corporate advertiser and creates their dedicated partner API key.
  */
 export async function signupAdvertiser(payload: AdvertiserSignupPayload): Promise<AdvertiserUser> {
+  const phoneCheck = validateLegitPhoneNumber(payload.phone);
+  if (!phoneCheck.valid) {
+    throw new Error(phoneCheck.message || 'Please enter a valid 11-digit Nigerian mobile phone number.');
+  }
+
   // Enforce global uniqueness across all Setlla user types (Tenants, Agents, Job Seekers, Employers, Advertisers)
-  const dupCheck = await checkUserExistsAsync(payload.phone, payload.email);
+  const dupCheck = await checkUserExistsAsync(phoneCheck.normalized, payload.email);
   if (dupCheck.exists) {
     throw new Error(
       dupCheck.message ||

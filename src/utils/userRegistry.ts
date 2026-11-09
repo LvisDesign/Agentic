@@ -132,6 +132,7 @@ if (typeof window !== 'undefined' && !localStorage.getItem(CLEAN_SLATE_KEY)) {
  * Handles formats like:
  *   "0803 891 0293" -> "08038910293"
  *   "+234 803 891 0293" -> "08038910293"
+ *   "+234 0803 891 0293" -> "08038910293"
  *   "2348038910293" -> "08038910293"
  *   "0803-891-0293" -> "08038910293"
  *   "8038910293" -> "08038910293"
@@ -141,9 +142,11 @@ export function normalizePhoneNumber(phone: string): string {
   let cleaned = phone.trim().replace(/[^\d+]/g, '');
 
   if (cleaned.startsWith('+234')) {
-    cleaned = '0' + cleaned.slice(4);
+    const rest = cleaned.slice(4).replace(/^0+/, '');
+    cleaned = '0' + rest;
   } else if (cleaned.startsWith('234') && cleaned.length >= 13) {
-    cleaned = '0' + cleaned.slice(3);
+    const rest = cleaned.slice(3).replace(/^0+/, '');
+    cleaned = '0' + rest;
   }
 
   // Remove any remaining non-digit symbols
@@ -152,6 +155,146 @@ export function normalizePhoneNumber(phone: string): string {
   // If user entered 10 digits without leading zero (e.g. "8038910293"), add leading "0"
   if (cleaned.length === 10 && (cleaned.startsWith('7') || cleaned.startsWith('8') || cleaned.startsWith('9'))) {
     cleaned = '0' + cleaned;
+  }
+
+  return cleaned;
+}
+
+/**
+ * Official Nigerian NCC mobile network prefixes:
+ * 0701-0709, 0710-0719, 0802-0809, 0810-0819, 0901-0909, 0911-0919
+ * (Excludes toll-free 0800, 0700, 0900, and unassigned prefixes like 0801)
+ */
+const NIGERIAN_MOBILE_REGEX = /^0(70[1-9]|71[0-9]|80[2-9]|81[0-9]|90[1-9]|91[1-9])\d{7}$/;
+
+export interface PhoneValidationResult {
+  valid: boolean;
+  normalized: string;
+  message?: string;
+}
+
+/**
+ * Validates that a phone number is a legitimate, real Nigerian mobile phone number
+ * and rejects bogus/placeholder patterns (e.g. "22222222222", "08030000000", "08031234567").
+ */
+export function validateLegitPhoneNumber(phone: string): PhoneValidationResult {
+  const raw = (phone || '').trim();
+  if (!raw) {
+    return {
+      valid: false,
+      normalized: '',
+      message: 'Please enter your phone number.',
+    };
+  }
+
+  if (!/^[+\d\s\-()]+$/.test(raw)) {
+    return {
+      valid: false,
+      normalized: '',
+      message: 'Phone number can only contain digits.',
+    };
+  }
+
+  const normalized = normalizePhoneNumber(raw);
+
+  // Must start with valid Nigerian mobile indicator or +234
+  if (!normalized.startsWith('07') && !normalized.startsWith('08') && !normalized.startsWith('09')) {
+    return {
+      valid: false,
+      normalized,
+      message: 'Enter a valid Nigerian mobile number starting with 070, 080, 081, 090, or 091.',
+    };
+  }
+
+  if (normalized.length !== 11) {
+    return {
+      valid: false,
+      normalized,
+      message: 'Phone number must be a complete 11-digit Nigerian mobile number (e.g. 0803 456 7890).',
+    };
+  }
+
+  if (!NIGERIAN_MOBILE_REGEX.test(normalized)) {
+    return {
+      valid: false,
+      normalized,
+      message: 'Invalid mobile network prefix. Use a valid Nigerian carrier number (MTN, Airtel, Glo, or 9mobile).',
+    };
+  }
+
+  const subscriber = normalized.slice(4); // 7-digit subscriber portion after 4-digit prefix
+
+  // Reject 5 or more consecutive identical digits (e.g. 08030000000, 08032222222, 08031111115)
+  if (/(\d)\1{4,}/.test(subscriber) || /(\d)\1{5,}/.test(normalized)) {
+    return {
+      valid: false,
+      normalized,
+      message: 'Please enter a legitimate mobile number. Repeated dummy digits are not allowed.',
+    };
+  }
+
+  // Reject sequential ascending or descending runs (e.g. 1234567, 2345678, 7654321, 9876543)
+  if (
+    '01234567890'.includes(subscriber) ||
+    '09876543210'.includes(subscriber) ||
+    /012345|123456|234567|345678|456789|987654|876543|765432|654321|543210/.test(subscriber)
+  ) {
+    return {
+      valid: false,
+      normalized,
+      message: 'Please enter your real phone number. Sequential test numbers (e.g. 1234567) are not allowed.',
+    };
+  }
+
+  // Reject subscriber numbers with fewer than 3 distinct digits (e.g. 08031212121, 08030101010)
+  const uniqueSubscriberDigits = new Set(subscriber.split('')).size;
+  if (uniqueSubscriberDigits < 3) {
+    return {
+      valid: false,
+      normalized,
+      message: 'Please enter a valid, active mobile phone number.',
+    };
+  }
+
+  return {
+    valid: true,
+    normalized,
+  };
+}
+
+/**
+ * Boolean helper for quick legitimacy check.
+ */
+export function isValidNigerianPhoneNumber(phone: string): boolean {
+  return validateLegitPhoneNumber(phone).valid;
+}
+
+/**
+ * Sanitizes phone input as the user types: strips non-phone characters
+ * and caps the digit count to prevent over-typing.
+ */
+export function sanitizePhoneInput(raw: string): string {
+  // Keep only digits, spaces, hyphens, and a leading '+'
+  let cleaned = raw.replace(/[^\d+\s\-]/g, '');
+  if (cleaned.indexOf('+') > 0) {
+    cleaned = cleaned.replace(/\+/g, '');
+  }
+
+  const digitsOnly = cleaned.replace(/\D/g, '');
+  const isIntl = cleaned.trim().startsWith('+234') || digitsOnly.startsWith('234');
+  const maxDigits = isIntl ? 14 : 11;
+
+  if (digitsOnly.length > maxDigits) {
+    let digitCount = 0;
+    let truncated = '';
+    for (const ch of cleaned) {
+      if (/\d/.test(ch)) {
+        if (digitCount >= maxDigits) continue;
+        digitCount++;
+      }
+      truncated += ch;
+    }
+    return truncated;
   }
 
   return cleaned;

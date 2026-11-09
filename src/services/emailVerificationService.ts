@@ -8,6 +8,7 @@ import {
   saveRegisteredUserAsync,
   normalizeEmail,
   isDeletedUserRecord,
+  validateLegitPhoneNumber,
 } from '../utils/userRegistry';
 import { hashToken, verifyHashedToken, checkRateLimit } from '../utils/security';
 
@@ -108,6 +109,15 @@ export async function sendEmailOTP(
       } catch (_) {}
     }
   } else {
+    // Enforce legitimate Nigerian mobile phone number for all signups
+    if (pendingUser?.phone) {
+      const phoneValidation = validateLegitPhoneNumber(pendingUser.phone);
+      if (!phoneValidation.valid) {
+        throw new Error(phoneValidation.message || 'Please enter a valid 11-digit Nigerian mobile phone number.');
+      }
+      pendingUser.phone = phoneValidation.normalized;
+    }
+
     // For any signup purpose, strictly block if an active account already uses this email or phone number
     const dupCheck = await checkUserExistsAsync(pendingUser?.phone || '', cleanEmail);
     if (dupCheck.exists) {
