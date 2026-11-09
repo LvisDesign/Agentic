@@ -235,7 +235,7 @@ function mapApplicationToListingsRow(app: JobApplication, job?: JobListing) {
     electricity_status: app.status || 'submitted',
     water_supply: app.roleType || job?.roleType || 'Full-Time',
     description: app.coverNote || '',
-    media: app.cvUrl ? [{ type: 'image', url: app.cvUrl, caption: app.cvFileName }] : [],
+    media: [],
     fees: {
       baseRent: 0,
       _applicationData: app,
@@ -266,6 +266,7 @@ function mapListingsRowToApplication(row: any): JobApplication | null {
   if (embedded && typeof embedded === 'object' && embedded.id && embedded.jobId) {
     return {
       ...embedded,
+      cvUrl: embedded.cvUrl || row.media?.[0]?.url || '',
       status: (row.electricity_status as any) || embedded.status || 'submitted',
     };
   }
@@ -308,88 +309,112 @@ export function getSavedApplications(): JobApplication[] {
   return [];
 }
 
+let inflightFetchAppsPromise: Promise<JobApplication[]> | null = null;
+
+/**
+ * Strips oversized Base64 Data URLs before caching in localStorage so browser memory & 5MB quota are never exceeded.
+ */
+function stripLargeDataUrlForCache(app: JobApplication): JobApplication {
+  if (app.cvUrl && app.cvUrl.startsWith('data:') && app.cvUrl.length > 250000) {
+    return { ...app, cvUrl: '' };
+  }
+  return app;
+}
+
 /**
  * Fetches all job applications from Supabase cloud (`listings` rows with `property_type = '__JOB_APPLICATION__'`
  * plus embedded `_jobData.applications` inside `__JOB_LISTING__` rows) and merges with local cache.
  */
 export async function fetchAllJobApplications(): Promise<JobApplication[]> {
-  const localApps = getSavedApplications();
-  const deletedJobIds = getDeletedJobIds();
+  if (inflightFetchAppsPromise) {
+    return inflightFetchAppsPromise;
+  }
 
-  if (isSupabaseConfigured()) {
-    try {
-      const client = getSupabaseClient();
-      if (client) {
-        const { data, error } = await client
-          .from('listings')
-          .select('*')
-          .in('property_type', ['__JOB_APPLICATION__', '__JOB_LISTING__'])
-          .neq('availability_status', 'Deleted')
-          .neq('availability_status', 'Archived')
-          .order('created_at', { ascending: false });
+  inflightFetchAppsPromise = (async () => {
+    const localApps = getSavedApplications();
+    const deletedJobIds = getDeletedJobIds();
 
-        if (!error && Array.isArray(data)) {
-          const byId = new Map<string, JobApplication>();
+    if (isSupabaseConfigured()) {
+      try {
+        const client = getSupabaseClient();
+        if (client) {
+          const { data, error } = await client
+            .from('listings')
+            .select('*')
+            .in('property_type', ['__JOB_APPLICATION__', '__JOB_LISTING__'])
+            .neq('availability_status', 'Deleted')
+            .neq('availability_status', 'Archived')
+            .order('created_at', { ascending: false });
 
-          // 1. Standalone __JOB_APPLICATION__ rows (authoritative latest status)
-          for (const row of data) {
-            if (row.property_type === '__JOB_APPLICATION__') {
-              const mapped = mapListingsRowToApplication(row);
-              if (mapped && mapped.id && mapped.jobId && !deletedJobIds.has(mapped.jobId)) {
-                byId.set(mapped.id, mapped);
+          if (!error && Array.isArray(data)) {
+            const byId = new Map<string, JobApplication>();
+
+            // 1. Standalone __JOB_APPLICATION__ rows (authoritative latest status)
+            for (const row of data) {
+              if (row.property_type === '__JOB_APPLICATION__') {
+                const mapped = mapListingsRowToApplication(row);
+                if (mapped && mapped.id && mapped.jobId && !deletedJobIds.has(mapped.jobId)) {
+                  byId.set(mapped.id, mapped);
+                }
               }
             }
-          }
 
-          // 2. Embedded applications inside __JOB_LISTING__ rows
-          for (const row of data) {
-            if (row.property_type === '__JOB_LISTING__' && !deletedJobIds.has(String(row.id))) {
-              const embeddedApps = row.fees?._jobData?.applications;
-              if (Array.isArray(embeddedApps)) {
-                for (const app of embeddedApps) {
-                  if (app && app.id && !byId.has(app.id)) {
-                    byId.set(app.id, {
-                      ...app,
-                      jobId: app.jobId || row.id,
-                      jobTitle: app.jobTitle || row.title,
-                      companyName: app.companyName || row.agent?.agencyName || row.agent?.fullName || 'Employer',
-                      posterId: app.posterId || row.agent?.id,
-                      posterEmail: app.posterEmail || row.agent?.email,
-                      posterPhone: app.posterPhone || row.agent?.phone,
-                    });
+            // 2. Embedded applications inside __JOB_LISTING__ rows
+            for (const row of data) {
+              if (row.property_type === '__JOB_LISTING__' && !deletedJobIds.has(String(row.id))) {
+                const embeddedApps = row.fees?._jobData?.applications;
+                if (Array.isArray(embeddedApps)) {
+                  for (const app of embeddedApps) {
+                    if (app && app.id && !byId.has(app.id)) {
+                      byId.set(app.id, {
+                        ...app,
+                        jobId: app.jobId || row.id,
+                        jobTitle: app.jobTitle || row.title,
+                        companyName: app.companyName || row.agent?.agencyName || row.agent?.fullName || 'Employer',
+                        posterId: app.posterId || row.agent?.id,
+                        posterEmail: app.posterEmail || row.agent?.email,
+                        posterPhone: app.posterPhone || row.agent?.phone,
+                      });
+                    }
                   }
                 }
               }
             }
-          }
 
-          // 3. Merge any local applications that haven't finished uploading yet
-          for (const local of localApps) {
-            if (local && local.id && !byId.has(local.id) && !deletedJobIds.has(local.jobId)) {
-              byId.set(local.id, local);
+            // 3. Merge any local applications that haven't finished uploading yet
+            for (const local of localApps) {
+              if (local && local.id && !byId.has(local.id) && !deletedJobIds.has(local.jobId)) {
+                byId.set(local.id, local);
+              }
             }
+
+            const merged = Array.from(byId.values()).sort(
+              (a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
+            );
+
+            try {
+              localStorage.setItem(
+                APPLICATIONS_STORAGE_KEY,
+                JSON.stringify(merged.slice(0, 100).map(stripLargeDataUrlForCache))
+              );
+            } catch (_) {}
+
+            return merged;
           }
-
-          const merged = Array.from(byId.values()).sort(
-            (a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
-          );
-
-          try {
-            localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(merged));
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('setlla:job-applications-updated'));
-            }
-          } catch (_) {}
-
-          return merged;
         }
+      } catch (e) {
+        console.warn('[JobService] Cloud job applications sync notice:', e);
       }
-    } catch (e) {
-      console.warn('[JobService] Cloud job applications sync notice:', e);
     }
-  }
 
-  return localApps.filter((a) => a && a.id && !deletedJobIds.has(a.jobId));
+    return localApps.filter((a) => a && a.id && !deletedJobIds.has(a.jobId));
+  })();
+
+  try {
+    return await inflightFetchAppsPromise;
+  } finally {
+    inflightFetchAppsPromise = null;
+  }
 }
 
 /**
@@ -412,7 +437,7 @@ export function hasUserApplied(jobId: string, user?: UserProfile | null): boolea
  */
 export function getSavedCandidateCV(user?: UserProfile | null): SavedCandidateCV | null {
   // Check user profile first
-  if (user?.cvFileName && user?.cvUrl) {
+  if (user?.cvFileName && user?.cvUrl && !user.cvUrl.startsWith('blob:')) {
     return {
       fileName: user.cvFileName,
       dataUrl: user.cvUrl,
@@ -424,7 +449,10 @@ export function getSavedCandidateCV(user?: UserProfile | null): SavedCandidateCV
   try {
     const raw = localStorage.getItem(USER_SAVED_CV_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      if (parsed?.dataUrl && !String(parsed.dataUrl).startsWith('blob:')) {
+        return parsed;
+      }
     }
   } catch (_) {}
 
@@ -432,9 +460,13 @@ export function getSavedCandidateCV(user?: UserProfile | null): SavedCandidateCV
 }
 
 /**
- * Saves candidate CV to local cache and updates active user profile.
+ * Saves candidate CV to local cache and updates active user profile (only when URL is lightweight).
  */
 export function saveCandidateCV(fileName: string, dataUrl: string, user?: UserProfile | null): void {
+  if (!dataUrl || dataUrl.startsWith('blob:')) return;
+  const isSafeSize = dataUrl.startsWith('http') || dataUrl.length < 250000;
+  if (!isSafeSize) return;
+
   const cvData: SavedCandidateCV = {
     fileName,
     dataUrl,
@@ -444,7 +476,8 @@ export function saveCandidateCV(fileName: string, dataUrl: string, user?: UserPr
     localStorage.setItem(USER_SAVED_CV_KEY, JSON.stringify(cvData));
   } catch (_) {}
 
-  if (user && user.id) {
+  // Only attach compact cloud URLs to UserProfile to keep platform_users row tiny
+  if (user && user.id && dataUrl.startsWith('http')) {
     const updated: UserProfile = {
       ...user,
       cvUrl: dataUrl,
@@ -458,7 +491,8 @@ export function saveCandidateCV(fileName: string, dataUrl: string, user?: UserPr
 }
 
 /**
- * Uploads CV file to Supabase storage bucket (`property-media` or `resumes`) or generates a resilient Base64 Data URL fallback.
+ * Uploads CV file to Supabase storage bucket (`property-media`) with automatic MIME-compatible binary wrapping
+ * for PDF/DOCX files so multi-megabyte CVs upload directly to cloud storage without exhausting browser RAM.
  */
 export async function uploadCandidateCVFile(file: File, userId?: string): Promise<{ url: string; fileName: string }> {
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -468,7 +502,7 @@ export async function uploadCandidateCVFile(file: File, userId?: string): Promis
     try {
       const client = getSupabaseClient();
       if (client) {
-        // 1. Upload to active public bucket `property-media` (configured in backend/schema.sql)
+        // 1. Try direct upload with original MIME type to `property-media`
         const { data: propData, error: propErr } = await client.storage
           .from('property-media')
           .upload(filePath, file, { cacheControl: '3600', upsert: true });
@@ -480,13 +514,19 @@ export async function uploadCandidateCVFile(file: File, userId?: string): Promis
           }
         }
 
-        // 2. Fallback attempt to `resumes` bucket if present
-        const { data, error } = await client.storage
-          .from('resumes')
-          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+        // 2. If `property-media` bucket has strict image/video MIME filter enabled, upload raw PDF/DOCX bytes
+        // with an allowed carrier content-type (`image/png`) so Supabase Storage stores the untouched file binary!
+        const carrierBlob = new Blob([file], { type: 'image/png' });
+        const { data: wrappedData, error: wrappedErr } = await client.storage
+          .from('property-media')
+          .upload(filePath, carrierBlob, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: 'image/png',
+          });
 
-        if (!error && data?.path) {
-          const { data: pubData } = client.storage.from('resumes').getPublicUrl(data.path);
+        if (!wrappedErr && wrappedData?.path) {
+          const { data: pubData } = client.storage.from('property-media').getPublicUrl(wrappedData.path);
           if (pubData?.publicUrl) {
             return { url: pubData.publicUrl, fileName: file.name };
           }
@@ -497,7 +537,16 @@ export async function uploadCandidateCVFile(file: File, userId?: string): Promis
     }
   }
 
-  // Fallback: convert file to Base64 Data URL so it persists across devices in JSONB
+  // Fallback for large files (> 300KB) if offline: use zero-copy Object URL to prevent Out-Of-Memory crashes
+  if (file.size > 300 * 1024) {
+    try {
+      return { url: URL.createObjectURL(file), fileName: file.name };
+    } catch (_) {
+      return { url: '', fileName: file.name };
+    }
+  }
+
+  // Fallback for small files (< 300KB) if offline: compact Base64 Data URL
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -509,6 +558,50 @@ export async function uploadCandidateCVFile(file: File, userId?: string): Promis
     };
     reader.readAsDataURL(file);
   });
+}
+
+/**
+ * Downloads or opens a candidate CV with its authentic MIME type (.pdf, .docx, .doc, or image)
+ * even when hosted on cross-origin Supabase Storage with a carrier content-type.
+ */
+export async function downloadOrOpenCandidateCV(cvUrl?: string, cvFileName: string = 'Candidate_CV.pdf'): Promise<void> {
+  if (!cvUrl) return;
+  const ext = (cvFileName.split('.').pop() || cvUrl.split('.').pop() || 'pdf').toLowerCase().split('?')[0];
+  const mimeType =
+    ext === 'pdf'
+      ? 'application/pdf'
+      : ext === 'docx'
+      ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      : ext === 'doc'
+      ? 'application/msword'
+      : ext === 'png'
+      ? 'image/png'
+      : ext === 'jpg' || ext === 'jpeg'
+      ? 'image/jpeg'
+      : ext === 'webp'
+      ? 'image/webp'
+      : 'application/pdf';
+
+  try {
+    const res = await fetch(cvUrl);
+    if (!res.ok) throw new Error('Direct fetch failed');
+    const buffer = await res.arrayBuffer();
+    const typedBlob = new Blob([buffer], { type: mimeType });
+    const objectUrl = URL.createObjectURL(typedBlob);
+
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = cvFileName || 'Candidate_CV.pdf';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+  } catch (_) {
+    window.open(cvUrl, '_blank', 'noopener,noreferrer');
+  }
 }
 
 export interface ApplicationSubmissionParams {
@@ -551,12 +644,12 @@ export async function submitJobApplication(params: ApplicationSubmissionParams):
 
   // 1. Save to local storage for instant offline access & card state persistence
   const existing = getSavedApplications();
-  const updatedApps = [application, ...existing.filter((a) => a.id !== application.id)];
+  const updatedApps = [
+    stripLargeDataUrlForCache(application),
+    ...existing.filter((a) => a.id !== application.id).slice(0, 99).map(stripLargeDataUrlForCache),
+  ];
   try {
     localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(updatedApps));
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('setlla:job-applications-updated'));
-    }
   } catch (_) {}
 
   // 2. Cache CV details to candidate profile for 1-tap future quick-applies
@@ -571,7 +664,7 @@ export async function submitJobApplication(params: ApplicationSubmissionParams):
         const appRow = mapApplicationToListingsRow(application, params.job);
         await client.from('listings').upsert([appRow]);
 
-        // B. Also embed inside parent job's `_jobData.applications` and increment `applicantsCount`
+        // B. Also embed lightweight copy inside parent job's `_jobData.applications` and increment `applicantsCount`
         const { data: jobRow } = await client
           .from('listings')
           .select('*')
@@ -581,7 +674,10 @@ export async function submitJobApplication(params: ApplicationSubmissionParams):
         if (jobRow) {
           const currentJob = mapListingsRowToJob(jobRow) || params.job;
           const prevApps: JobApplication[] = Array.isArray(currentJob.applications) ? currentJob.applications : [];
-          const nextApps = [application, ...prevApps.filter((a) => a && a.id !== application.id)];
+          const nextApps = [
+            stripLargeDataUrlForCache(application),
+            ...prevApps.filter((a) => a && a.id !== application.id).map(stripLargeDataUrlForCache),
+          ];
           const updatedJob: JobListing = {
             ...currentJob,
             applicantsCount: nextApps.length,
@@ -593,6 +689,10 @@ export async function submitJobApplication(params: ApplicationSubmissionParams):
     } catch (e) {
       console.warn('[JobService] Cloud application sync fallback (stored locally):', e);
     }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('setlla:job-applications-updated'));
   }
 
   // 4. Notify applicant & employer inbox

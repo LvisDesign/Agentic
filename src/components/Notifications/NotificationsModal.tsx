@@ -19,7 +19,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { BookingRecord, PropertyListing, UserProfile, ListingAvailability } from '../../types/marketplace';
-import { getSavedApplications, fetchAllJobApplications } from '../../services/jobService';
+import { getSavedApplications, fetchAllJobApplications, downloadOrOpenCandidateCV, updateApplicationReviewStatus } from '../../services/jobService';
 import { JobApplication } from '../../types/jobs';
 import { getWhatsAppUrl } from '../../utils/formatters';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
@@ -926,15 +926,18 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                         <FileText className="w-3.5 h-3.5 text-[#C68400] shrink-0" />
                         <span className="truncate font-medium">{app.cvFileName}</span>
                         {app.cvUrl ? (
-                          <a
-                            href={app.cvUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download={app.cvFileName}
-                            className="text-[10px] font-bold text-white bg-[#342A21] hover:bg-[#231C16] px-2.5 py-1 rounded-md ml-auto shrink-0 transition-colors"
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isEmployerView && app.status === 'submitted') {
+                                updateApplicationReviewStatus(app.id, 'reviewed');
+                              }
+                              downloadOrOpenCandidateCV(app.cvUrl, app.cvFileName);
+                            }}
+                            className="text-[10px] font-bold text-white bg-[#342A21] hover:bg-[#231C16] px-2.5 py-1 rounded-md ml-auto shrink-0 transition-colors cursor-pointer"
                           >
                             View CV
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-[10px] font-bold text-[#342A21] bg-[#FFF8E6] px-2 py-0.5 rounded-md ml-auto shrink-0 border border-[#EDDAA6]">
                             CV Attached

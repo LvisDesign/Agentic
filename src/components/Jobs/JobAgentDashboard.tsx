@@ -36,7 +36,8 @@ import {
   toggleJobStatus,
   confirmJobFreshness,
   updateApplicationReviewStatus,
-  sponsorJobListing 
+  sponsorJobListing,
+  downloadOrOpenCandidateCV,
 } from '../../services/jobService';
 import { isSupabaseConfigured, getSupabaseClient } from '../../utils/supabaseClient';
 import { getListingLifecycleInfo } from '../../utils/listingLifecycle';
@@ -861,21 +862,19 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                       <div className="flex items-center gap-2 flex-wrap">
                         {/* View / Download CV (Automatically marks application as Viewed & notifies candidate) */}
                         {app.cvUrl && (
-                          <a
-                            href={app.cvUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            download={app.cvFileName || 'Candidate_Resume.pdf'}
+                          <button
+                            type="button"
                             onClick={() => {
                               if (app.status === 'submitted') {
                                 handleUpdateAppStatus(app.id, 'reviewed');
                               }
+                              downloadOrOpenCandidateCV(app.cvUrl, app.cvFileName || 'Candidate_Resume.pdf');
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#000004] font-bold transition-colors cursor-pointer"
                           >
                             <Download className="w-3.5 h-3.5 text-emerald-600" />
                             <span>{app.cvFileName || 'Download CV'}</span>
-                          </a>
+                          </button>
                         )}
 
                         {/* Call Candidate */}
