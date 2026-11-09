@@ -31,6 +31,11 @@ import { DEFAULT_FALLBACK_IMAGE } from '../../utils/mediaStorage';
 import { isElvisSuperAdmin } from '../../services/adminAuthService';
 import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
 import { ensureAdvertiserForUser } from '../../services/advertiserAuthService';
+import { Pagination } from '../UI/Pagination';
+
+const PASSES_PER_PAGE = 5;
+const INVENTORY_PER_PAGE = 6;
+const SAVED_PER_PAGE = 6;
 
 interface UserDashboardProps {
   currentUser: UserProfile;
@@ -68,6 +73,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'passes' | 'inventory' | 'saved' | 'ads'>('passes');
   const [adsInitialTab, setAdsInitialTab] = useState<'campaigns' | 'new-campaign'>('campaigns');
   const [copiedPhoneId, setCopiedPhoneId] = useState<string | null>(null);
+  const [confirmedPage, setConfirmedPage] = useState(1);
+  const [pendingPage, setPendingPage] = useState(1);
+  const [inventoryPage, setInventoryPage] = useState(1);
+  const [savedPage, setSavedPage] = useState(1);
 
   // Identify platform administrator status
   const isAdmin = Boolean(
@@ -89,6 +98,18 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const queuedRequests = bookings.filter((b) => b.status === 'QUEUED');
 
   const savedListings = listings.filter((l) => savedPropertyIds.includes(l.id));
+
+  const safeConfirmedPage = Math.min(Math.max(1, confirmedPage), Math.max(1, Math.ceil(confirmedPasses.length / PASSES_PER_PAGE)));
+  const paginatedConfirmedPasses = confirmedPasses.slice((safeConfirmedPage - 1) * PASSES_PER_PAGE, safeConfirmedPage * PASSES_PER_PAGE);
+
+  const safePendingPage = Math.min(Math.max(1, pendingPage), Math.max(1, Math.ceil(pendingRequests.length / PASSES_PER_PAGE)));
+  const paginatedPendingRequests = pendingRequests.slice((safePendingPage - 1) * PASSES_PER_PAGE, safePendingPage * PASSES_PER_PAGE);
+
+  const safeInventoryPage = Math.min(Math.max(1, inventoryPage), Math.max(1, Math.ceil(listings.length / INVENTORY_PER_PAGE)));
+  const paginatedInventory = listings.slice((safeInventoryPage - 1) * INVENTORY_PER_PAGE, safeInventoryPage * INVENTORY_PER_PAGE);
+
+  const safeSavedPage = Math.min(Math.max(1, savedPage), Math.max(1, Math.ceil(savedListings.length / SAVED_PER_PAGE)));
+  const paginatedSavedListings = savedListings.slice((safeSavedPage - 1) * SAVED_PER_PAGE, safeSavedPage * SAVED_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-[#FCF9F5] text-[#000004] pt-20 pb-20 px-3.5 sm:px-6 max-w-5xl mx-auto">
@@ -425,7 +446,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {confirmedPasses.map((b) => {
+                {paginatedConfirmedPasses.map((b) => {
                   const property = listings.find((p) => p.id === b.propertyId) || listings[0];
                   const rawPhone = property.agent.phone;
                   return (
@@ -513,6 +534,16 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     </div>
                   );
                 })}
+
+                <Pagination
+                  currentPage={safeConfirmedPage}
+                  totalItems={confirmedPasses.length}
+                  pageSize={PASSES_PER_PAGE}
+                  onPageChange={setConfirmedPage}
+                  itemLabel="passes"
+                  hideOnSinglePage
+                  className="mt-3"
+                />
               </div>
             )}
           </div>
@@ -539,7 +570,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {pendingRequests.map((b) => {
+                {paginatedPendingRequests.map((b) => {
                   const property = listings.find((p) => p.id === b.propertyId) || listings[0];
                   return (
                     <div
@@ -575,6 +606,16 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     </div>
                   );
                 })}
+
+                <Pagination
+                  currentPage={safePendingPage}
+                  totalItems={pendingRequests.length}
+                  pageSize={PASSES_PER_PAGE}
+                  onPageChange={setPendingPage}
+                  itemLabel="requests"
+                  hideOnSinglePage
+                  className="mt-3"
+                />
               </div>
             )}
           </div>
@@ -659,7 +700,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {listings.map((prop) => {
+            {paginatedInventory.map((prop) => {
               const isSaved = savedPropertyIds.includes(prop.id);
               const userHasBooking = bookings.some((b) => b.propertyId === prop.id);
 
@@ -753,6 +794,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               );
             })}
           </div>
+
+          <Pagination
+            currentPage={safeInventoryPage}
+            totalItems={listings.length}
+            pageSize={INVENTORY_PER_PAGE}
+            onPageChange={(page) => {
+              setInventoryPage(page);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            itemLabel="apartments"
+          />
         </div>
       )}
 
@@ -774,63 +826,76 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {savedListings.map((prop) => (
-                <div
-                  key={prop.id}
-                  className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-xs flex flex-col"
-                >
-                  <div className="h-44 relative bg-slate-900 overflow-hidden">
-                    <img
-                      src={prop.media[0]?.poster || prop.media[0]?.url || DEFAULT_FALLBACK_IMAGE}
-                      alt={prop.title}
-                      onError={(e) => {
-                        e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
-                      }}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium">
-                      {prop.city}
-                    </div>
-                    <button
-                      onClick={() => onToggleSaveProperty(prop.id)}
-                      className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center transition-colors cursor-pointer"
-                    >
-                      <BookmarkCheck className="w-4 h-4 text-emerald-400" />
-                    </button>
-                    <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-white font-display text-sm font-bold">
-                      {formatNaira(prop.fees.baseRent)}/{prop.fees.rentPeriod}
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2">
-                    <div>
-                      <h4 className="font-bold text-sm text-[#000004] line-clamp-2 break-words leading-snug">
-                        {prop.title}
-                      </h4>
-                      <p className="text-xs text-[#70798C] mt-0.5 line-clamp-1">
-                        Uploaded by {prop.agent.fullName} • {prop.neighborhood}
-                      </p>
-                    </div>
-
-                    <div className="pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between gap-2">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {paginatedSavedListings.map((prop) => (
+                  <div
+                    key={prop.id}
+                    className="bg-white rounded-xl border border-[#E5E7EB] overflow-hidden shadow-xs flex flex-col"
+                  >
+                    <div className="h-44 relative bg-slate-900 overflow-hidden">
+                      <img
+                        src={prop.media[0]?.poster || prop.media[0]?.url || DEFAULT_FALLBACK_IMAGE}
+                        alt={prop.title}
+                        onError={(e) => {
+                          e.currentTarget.src = DEFAULT_FALLBACK_IMAGE;
+                        }}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-white text-[11px] font-medium">
+                        {prop.city}
+                      </div>
                       <button
                         onClick={() => onToggleSaveProperty(prop.id)}
-                        className="text-xs text-rose-600 hover:underline cursor-pointer font-medium"
+                        className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center transition-colors cursor-pointer"
                       >
-                        Remove
+                        <BookmarkCheck className="w-4 h-4 text-emerald-400" />
                       </button>
+                      <div className="absolute bottom-2.5 left-2.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-lg text-white font-display text-sm font-bold">
+                        {formatNaira(prop.fees.baseRent)}/{prop.fees.rentPeriod}
+                      </div>
+                    </div>
 
-                      <button
-                        onClick={() => onOpenBookingModal(prop)}
-                        className="py-2 sm:py-1.5 px-3.5 rounded-lg bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] cursor-pointer whitespace-nowrap"
-                      >
-                        Book Inspection
-                      </button>
+                    <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2">
+                      <div>
+                        <h4 className="font-bold text-sm text-[#000004] line-clamp-2 break-words leading-snug">
+                          {prop.title}
+                        </h4>
+                        <p className="text-xs text-[#70798C] mt-0.5 line-clamp-1">
+                          Uploaded by {prop.agent.fullName} • {prop.neighborhood}
+                        </p>
+                      </div>
+
+                      <div className="pt-2.5 border-t border-[#E5E7EB] flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => onToggleSaveProperty(prop.id)}
+                          className="text-xs text-rose-600 hover:underline cursor-pointer font-medium"
+                        >
+                          Remove
+                        </button>
+
+                        <button
+                          onClick={() => onOpenBookingModal(prop)}
+                          className="py-2 sm:py-1.5 px-3.5 rounded-lg bg-[#000004] text-white text-xs font-bold hover:bg-[#1f2937] cursor-pointer whitespace-nowrap"
+                        >
+                          Book Inspection
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              <Pagination
+                currentPage={safeSavedPage}
+                totalItems={savedListings.length}
+                pageSize={SAVED_PER_PAGE}
+                onPageChange={(page) => {
+                  setSavedPage(page);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                itemLabel="saved apartments"
+              />
             </div>
           )}
         </div>

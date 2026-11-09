@@ -611,7 +611,7 @@ export function App() {
   const syncLatestData = useCallback(async () => {
     try {
       const [fetchedListings, fetchedAdverts, fetchedSettings] = await Promise.all([
-        fetchAllListings({ limit: 24 }),
+        fetchAllListings({ limit: 200 }),
         loadAllAdverts(),
         fetchPlatformSettingsAsync(),
       ]);

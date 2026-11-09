@@ -1,10 +1,13 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { PropertyListing, BookingRecord, ListingAvailability } from '../../types/marketplace';
 import { PropertyCard } from './PropertyCard';
 import { MapPin, SearchX, RefreshCcw, Building2, Plus } from 'lucide-react';
 import { AdvertStory } from '../../data/mockAdverts';
 import { InFeedSponsoredCarousel } from './InFeedSponsoredCarousel';
 import { AdvertStoriesTray } from './AdvertStoriesTray';
+import { Pagination } from '../UI/Pagination';
+
+const RENTALS_PER_PAGE = 5;
 
 interface PropertyFeedProps {
   listings: PropertyListing[];
@@ -48,6 +51,27 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
   onTriggerSignup,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.max(1, Math.ceil(listings.length / RENTALS_PER_PAGE));
+
+  // Reset or clamp page when filtered listings change
+  const listingsSignature = useMemo(() => listings.map((l) => l.id).join(','), [listings]);
+  useEffect(() => {
+    setCurrentPage(1);
+    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [listingsSignature]);
+
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const paginatedListings = useMemo(() => {
+    const start = (safePage - 1) * RENTALS_PER_PAGE;
+    return listings.slice(start, start + RENTALS_PER_PAGE);
+  }, [listings, safePage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Smooth keyboard scrolling based on user actions (ArrowUp / ArrowDown / PageDown / PageUp)
   useEffect(() => {
@@ -155,16 +179,16 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
         </div>
       )}
 
-      {listings.map((listing, index) => {
+      {paginatedListings.map((listing, pageIndex) => {
+        const globalIndex = (safePage - 1) * RENTALS_PER_PAGE + pageIndex;
         // Only mark activeBooking if THIS specific user/tenant created or owns the booking
         const activeBooking = (userBookings ?? []).find((b) => b.propertyId === listing.id);
         
-        // Show sponsored carousel after 2nd listing (index === 1), or after 1st listing if only 1 listing exists.
-        // If there are 6+ listings, also show secondary carousel set after 5th listing (index === 4).
+        // Show sponsored carousel after 2nd listing on the page (pageIndex === 1), or after 1st listing if only 1 listing exists on the page.
         const showAdsAfterThisListing = adverts && adverts.length > 0 && (
-          index === 1 || 
-          (listings.length === 1 && index === 0) || 
-          (listings.length >= 6 && index === 4)
+          pageIndex === 1 || 
+          (paginatedListings.length === 1 && pageIndex === 0) || 
+          (paginatedListings.length >= 5 && pageIndex === 4)
         );
 
         return (
@@ -180,14 +204,14 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
               onConfirmFreshness={onConfirmFreshness}
               isAuthenticated={isAuthenticated}
               onTriggerSignup={onTriggerSignup}
-              index={index}
+              index={globalIndex}
               totalCount={listings.length}
             />
 
             {/* In-feed Threads-style Sponsored Ads Carousel as tenants scroll down */}
             {showAdsAfterThisListing && (
               <InFeedSponsoredCarousel
-                adverts={index === 1 ? adverts : [...adverts].reverse()}
+                adverts={pageIndex === 1 ? adverts : [...adverts].reverse()}
                 onSelectAdvert={onSelectAdvert}
                 onOpenPostAd={onOpenPostAd}
                 onOpenBookingModal={onOpenBookingModal}
@@ -197,6 +221,18 @@ export const PropertyFeed: React.FC<PropertyFeedProps> = ({
           </React.Fragment>
         );
       })}
+
+      {/* Setlla Rentals Pagination Controls */}
+      <div className="pt-2">
+        <Pagination
+          currentPage={safePage}
+          totalItems={listings.length}
+          pageSize={RENTALS_PER_PAGE}
+          onPageChange={handlePageChange}
+          itemLabel="properties"
+        />
+      </div>
+
       {/* Bottom spacer so user can comfortably scroll the last post into complete view */}
       <div className="h-10 sm:h-14 w-full shrink-0" />
     </div>

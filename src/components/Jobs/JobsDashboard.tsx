@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Briefcase, 
   FileText, 
@@ -31,6 +31,10 @@ import {
   saveCandidateCV,
   SavedCandidateCV
 } from '../../services/jobService';
+import { Pagination } from '../UI/Pagination';
+
+const APPS_PER_PAGE = 6;
+const RECOMMENDED_PER_PAGE = 6;
 
 interface JobsDashboardProps {
   currentUser: UserProfile;
@@ -55,6 +59,8 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
   const [savedCV, setSavedCV] = useState<SavedCandidateCV | null>(null);
   const [isUploadingCV, setIsUploadingCV] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [appsPage, setAppsPage] = useState(1);
+  const [recommendedPage, setRecommendedPage] = useState(1);
 
   // Load jobs and applications
   useEffect(() => {
@@ -113,6 +119,12 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
   const totalApplied = applications.length;
   const inReview = applications.filter((a) => a.status === 'submitted' || a.status === 'reviewed').length;
   const shortlisted = applications.filter((a) => a.status === 'shortlisted').length;
+
+  const safeAppsPage = Math.min(Math.max(1, appsPage), Math.max(1, Math.ceil(applications.length / APPS_PER_PAGE)));
+  const paginatedApplications = applications.slice((safeAppsPage - 1) * APPS_PER_PAGE, safeAppsPage * APPS_PER_PAGE);
+
+  const safeRecommendedPage = Math.min(Math.max(1, recommendedPage), Math.max(1, Math.ceil(jobs.length / RECOMMENDED_PER_PAGE)));
+  const paginatedRecommendedJobs = jobs.slice((safeRecommendedPage - 1) * RECOMMENDED_PER_PAGE, safeRecommendedPage * RECOMMENDED_PER_PAGE);
 
   const isAdmin = Boolean(
     currentUser.isAdmin ||
@@ -308,61 +320,74 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {applications.map((app) => (
-                  <article
-                    key={app.id}
-                    className="p-5 rounded-3xl bg-white border border-[#E5E7EB] shadow-2xs hover:shadow-xs transition-all space-y-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <span className="text-[10px] font-bold text-[#70798C] uppercase tracking-wider">
-                          {app.companyName}
-                        </span>
-                        <h4 className="font-display font-bold text-base text-[#000004] mt-0.5">
-                          {app.jobTitle}
-                        </h4>
-                      </div>
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
-                        app.status === 'shortlisted'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                          : app.status === 'reviewed'
-                          ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
-                          : 'bg-amber-100 text-amber-800 border-amber-300'
-                      }`}>
-                        {app.status === 'shortlisted'
-                          ? 'Shortlisted'
-                          : app.status === 'reviewed'
-                          ? 'Viewed'
-                          : 'Submitted'}
-                      </span>
-                    </div>
-
-                    <div className="p-3 bg-[#FCF9F5] rounded-xl border border-[#E5E7EB] flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FileText className="w-4 h-4 text-[#342A21] shrink-0" />
-                        <span className="truncate font-semibold text-[#000004]">
-                          {app.cvFileName}
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {paginatedApplications.map((app) => (
+                    <article
+                      key={app.id}
+                      className="p-5 rounded-3xl bg-white border border-[#E5E7EB] shadow-2xs hover:shadow-xs transition-all space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <span className="text-[10px] font-bold text-[#70798C] uppercase tracking-wider">
+                            {app.companyName}
+                          </span>
+                          <h4 className="font-display font-bold text-base text-[#000004] mt-0.5">
+                            {app.jobTitle}
+                          </h4>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
+                          app.status === 'shortlisted'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : app.status === 'reviewed'
+                            ? 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                            : 'bg-amber-100 text-amber-800 border-amber-300'
+                        }`}>
+                          {app.status === 'shortlisted'
+                            ? 'Shortlisted'
+                            : app.status === 'reviewed'
+                            ? 'Viewed'
+                            : 'Submitted'}
                         </span>
                       </div>
-                      <span className="text-[10px] text-[#70798C] shrink-0 ml-2">
-                        Attached CV
-                      </span>
-                    </div>
 
-                    <div className="flex items-center justify-between text-xs text-[#70798C] pt-1">
-                      <span>Applied: {new Date(app.appliedAt).toLocaleDateString()}</span>
-                      <button
-                        type="button"
-                        onClick={onSwitchToFeed}
-                        className="font-bold text-[#000004] hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <span>View Vacancy</span>
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </article>
-                ))}
+                      <div className="p-3 bg-[#FCF9F5] rounded-xl border border-[#E5E7EB] flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="w-4 h-4 text-[#342A21] shrink-0" />
+                          <span className="truncate font-semibold text-[#000004]">
+                            {app.cvFileName}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-[#70798C] shrink-0 ml-2">
+                          Attached CV
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs text-[#70798C] pt-1">
+                        <span>Applied: {new Date(app.appliedAt).toLocaleDateString()}</span>
+                        <button
+                          type="button"
+                          onClick={onSwitchToFeed}
+                          className="font-bold text-[#000004] hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>View Vacancy</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <Pagination
+                  currentPage={safeAppsPage}
+                  totalItems={applications.length}
+                  pageSize={APPS_PER_PAGE}
+                  onPageChange={(page) => {
+                    setAppsPage(page);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  itemLabel="applications"
+                />
               </div>
             )}
           </div>
@@ -469,7 +494,7 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
         {activeTab === 'recommended' && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {jobs.slice(0, 6).map((job) => (
+              {paginatedRecommendedJobs.map((job) => (
                 <article
                   key={job.id}
                   className="p-5 rounded-3xl bg-white border border-[#E5E7EB] shadow-2xs hover:shadow-xs transition-all space-y-3"
@@ -510,6 +535,17 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
                 </article>
               ))}
             </div>
+
+            <Pagination
+              currentPage={safeRecommendedPage}
+              totalItems={jobs.length}
+              pageSize={RECOMMENDED_PER_PAGE}
+              onPageChange={(page) => {
+                setRecommendedPage(page);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              itemLabel="opportunities"
+            />
           </div>
         )}
       </main>

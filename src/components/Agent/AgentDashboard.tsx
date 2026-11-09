@@ -31,6 +31,10 @@ import { isSupabaseConfigured } from '../../utils/supabaseClient';
 import { getListingLifecycleInfo } from '../../utils/listingLifecycle';
 import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
 import { ensureAdvertiserForUser } from '../../services/advertiserAuthService';
+import { Pagination } from '../UI/Pagination';
+
+const AGENT_REQUESTS_PER_PAGE = 5;
+const AGENT_LISTINGS_PER_PAGE = 6;
 
 interface AgentDashboardProps {
   currentUser?: UserProfile;
@@ -70,6 +74,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   const [activeTab, setActiveTab] = useState<'requests' | 'listings' | 'ads'>('requests');
   const [adsInitialTab, setAdsInitialTab] = useState<'campaigns' | 'new-campaign'>('campaigns');
   const [dashboardToast, setDashboardToast] = useState<string | null>(null);
+  const [pendingPage, setPendingPage] = useState(1);
+  const [confirmedPage, setConfirmedPage] = useState(1);
+  const [listingsPage, setListingsPage] = useState(1);
 
   // Automatically sync local listings to cloud database on mount
   useEffect(() => {
@@ -156,6 +163,15 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   const acceptedOrPaid = agentBookings.filter(
     (b) => b.status === 'ACCEPTED_PENDING_PAYMENT' || b.status === 'CONFIRMED_UNLOCKED'
   );
+
+  const safePendingPage = Math.min(Math.max(1, pendingPage), Math.max(1, Math.ceil(pendingRequests.length / AGENT_REQUESTS_PER_PAGE)));
+  const paginatedPendingRequests = pendingRequests.slice((safePendingPage - 1) * AGENT_REQUESTS_PER_PAGE, safePendingPage * AGENT_REQUESTS_PER_PAGE);
+
+  const safeConfirmedPage = Math.min(Math.max(1, confirmedPage), Math.max(1, Math.ceil(acceptedOrPaid.length / AGENT_REQUESTS_PER_PAGE)));
+  const paginatedAcceptedOrPaid = acceptedOrPaid.slice((safeConfirmedPage - 1) * AGENT_REQUESTS_PER_PAGE, safeConfirmedPage * AGENT_REQUESTS_PER_PAGE);
+
+  const safeListingsPage = Math.min(Math.max(1, listingsPage), Math.max(1, Math.ceil(agentListings.length / AGENT_LISTINGS_PER_PAGE)));
+  const paginatedAgentListings = agentListings.slice((safeListingsPage - 1) * AGENT_LISTINGS_PER_PAGE, safeListingsPage * AGENT_LISTINGS_PER_PAGE);
 
   const agentInitials = agentProfile.fullName
     ? agentProfile.fullName
@@ -410,7 +426,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {pendingRequests.map((b) => {
+                    {paginatedPendingRequests.map((b) => {
                       const property = listings.find((p) => p.id === b.propertyId) || listings[0];
                       return (
                         <div
@@ -471,6 +487,16 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         </div>
                       );
                     })}
+
+                    <Pagination
+                      currentPage={safePendingPage}
+                      totalItems={pendingRequests.length}
+                      pageSize={AGENT_REQUESTS_PER_PAGE}
+                      onPageChange={setPendingPage}
+                      itemLabel="requests"
+                      hideOnSinglePage
+                      className="mt-3"
+                    />
                   </div>
                 )}
               </div>
@@ -547,7 +573,7 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    {acceptedOrPaid.map((b) => (
+                    {paginatedAcceptedOrPaid.map((b) => (
                       <div
                         key={b.id}
                         className="p-3.5 rounded-xl border border-[#E5E7EB] bg-[#FAF8F5] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs overflow-hidden"
@@ -572,6 +598,16 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                         </div>
                       </div>
                     ))}
+
+                    <Pagination
+                      currentPage={safeConfirmedPage}
+                      totalItems={acceptedOrPaid.length}
+                      pageSize={AGENT_REQUESTS_PER_PAGE}
+                      onPageChange={setConfirmedPage}
+                      itemLabel="confirmed inspections"
+                      hideOnSinglePage
+                      className="mt-3"
+                    />
                   </div>
                 )}
               </div>
@@ -607,8 +643,9 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {agentListings.map((prop) => {
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {paginatedAgentListings.map((prop) => {
                 const lifecycle = getListingLifecycleInfo(prop);
                 const isRentedOut = prop.availabilityStatus === 'Rented Out';
 
@@ -855,6 +892,18 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                   </div>
                 );
               })}
+              </div>
+
+              <Pagination
+                currentPage={safeListingsPage}
+                totalItems={agentListings.length}
+                pageSize={AGENT_LISTINGS_PER_PAGE}
+                onPageChange={(page) => {
+                  setListingsPage(page);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                itemLabel="properties"
+              />
             </div>
           )}
         </div>

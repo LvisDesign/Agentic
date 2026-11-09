@@ -1,4 +1,7 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { Pagination } from '../UI/Pagination';
+
+const JOBS_PER_PAGE = 6;
 import { 
   Search, 
   MapPin, 
@@ -75,6 +78,8 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
 
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const mainContainerRef = useRef<HTMLElement>(null);
 
   // Load jobs on mount
   useEffect(() => {
@@ -184,10 +189,29 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
     });
   }, [filteredJobs]);
 
-  // Inject Native Billboard Ads among ranked job offers
+  // Reset pagination when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [searchQuery, selectedCity, selectedRoleType]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedAndRankedJobs.length / JOBS_PER_PAGE));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedJobs = useMemo(() => {
+    const start = (safePage - 1) * JOBS_PER_PAGE;
+    return sortedAndRankedJobs.slice(start, start + JOBS_PER_PAGE);
+  }, [sortedAndRankedJobs, safePage]);
+
+  // Inject Native Billboard Ads among ranked job offers for the active page
   const feedItems = useMemo(() => {
-    return injectNativeBillboardAds(sortedAndRankedJobs, adverts);
-  }, [sortedAndRankedJobs, adverts]);
+    return injectNativeBillboardAds(paginatedJobs, adverts);
+  }, [paginatedJobs, adverts]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    mainContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="w-full h-full flex flex-col items-center bg-[#FCF9F5] overflow-hidden">
@@ -313,7 +337,10 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
         </div>
 
         {/* Center Main Jobs Feed Container - The ONLY scrolling column on desktop */}
-        <main className="w-full max-w-2xl flex-1 min-w-0 h-full overflow-y-auto feed-scroll-container no-scrollbar space-y-4 sm:space-y-5 px-1 pb-16 overscroll-contain">
+        <main
+          ref={mainContainerRef}
+          className="w-full max-w-2xl flex-1 min-w-0 h-full overflow-y-auto feed-scroll-container no-scrollbar space-y-4 sm:space-y-5 px-1 pb-16 overscroll-contain"
+        >
           {/* Mobile Ad Stories Tray (Visible only on < lg screens) */}
           {adverts && adverts.length > 0 && (
             <div className="lg:hidden w-full pb-2">
@@ -396,50 +423,63 @@ export const JobsFeed: React.FC<JobsFeedProps> = ({
             </div>
           ) : (
             /* Stream of Jobs + In-Feed Ads Seated Directly Among Offers */
-            feedItems.map((item) => {
-              if (item.type === 'job') {
-                const hasApplied = appliedJobIds.has(item.job.id);
-                return (
-                  <JobListingCard
-                    key={item.key}
-                    job={item.job}
-                    hasApplied={hasApplied}
-                    onViewDetails={(j) => {
-                      if (!isAuthenticated && onTriggerSignup) {
-                        onTriggerSignup();
-                        return;
-                      }
-                      setActiveJobDetails(j);
-                    }}
-                    onQuickApply={(j) => {
-                      if (!isAuthenticated && onTriggerSignup) {
-                        onTriggerSignup();
-                        return;
-                      }
-                      setActiveQuickApplyJob(j);
-                    }}
-                    onShareJob={handleShareJob}
-                  />
-                );
-              } else if (item.type === 'carousel') {
-                return (
-                  <InFeedSponsoredCarousel
-                    key={item.key}
-                    adverts={item.adverts}
-                    onSelectAdvert={onSelectAdvert}
-                    onOpenPostAd={onOpenPostAd}
-                  />
-                );
-              } else {
-                return (
-                  <NativeBillboardAdCard
-                    key={item.key}
-                    advert={item.advert}
-                    onSelectAdvert={onSelectAdvert}
-                  />
-                );
-              }
-            })
+            <>
+              {feedItems.map((item) => {
+                if (item.type === 'job') {
+                  const hasApplied = appliedJobIds.has(item.job.id);
+                  return (
+                    <JobListingCard
+                      key={item.key}
+                      job={item.job}
+                      hasApplied={hasApplied}
+                      onViewDetails={(j) => {
+                        if (!isAuthenticated && onTriggerSignup) {
+                          onTriggerSignup();
+                          return;
+                        }
+                        setActiveJobDetails(j);
+                      }}
+                      onQuickApply={(j) => {
+                        if (!isAuthenticated && onTriggerSignup) {
+                          onTriggerSignup();
+                          return;
+                        }
+                        setActiveQuickApplyJob(j);
+                      }}
+                      onShareJob={handleShareJob}
+                    />
+                  );
+                } else if (item.type === 'carousel') {
+                  return (
+                    <InFeedSponsoredCarousel
+                      key={item.key}
+                      adverts={item.adverts}
+                      onSelectAdvert={onSelectAdvert}
+                      onOpenPostAd={onOpenPostAd}
+                    />
+                  );
+                } else {
+                  return (
+                    <NativeBillboardAdCard
+                      key={item.key}
+                      advert={item.advert}
+                      onSelectAdvert={onSelectAdvert}
+                    />
+                  );
+                }
+              })}
+
+              {/* Setlla Jobs Pagination Controls */}
+              <div className="pt-2">
+                <Pagination
+                  currentPage={safePage}
+                  totalItems={sortedAndRankedJobs.length}
+                  pageSize={JOBS_PER_PAGE}
+                  onPageChange={handlePageChange}
+                  itemLabel="vacancies"
+                />
+              </div>
+            </>
           )}
         </main>
 
