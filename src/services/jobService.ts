@@ -4,6 +4,8 @@ import { AdvertStory } from '../data/mockAdverts';
 import { isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 import { UserProfile } from '../types/marketplace';
 import { saveRegisteredUser } from '../utils/userRegistry';
+import { recordNotificationInInbox } from './notificationService';
+import { showDeviceNotification } from '../utils/realtimeNotifications';
 
 const JOBS_STORAGE_KEY = 'setlla_job_listings';
 const DELETED_JOBS_STORAGE_KEY = 'setlla_deleted_job_ids';
@@ -403,6 +405,36 @@ export async function submitJobApplication(params: ApplicationSubmissionParams):
     }
   }
 
+  // 4. Notify applicant & employer inbox
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('setlla:trigger-notification', {
+        detail: {
+          eventKey: `job_app_sent_${application.id}`,
+          title: 'Job Application Submitted',
+          body: `Your application and CV for "${application.jobTitle}" at ${application.companyName} have been delivered.`,
+          type: 'job_status_updated',
+          actionText: 'View Applications',
+        },
+      })
+    );
+  }
+
+  if (params.job.posterId || params.job.posterEmail || params.job.contactPhone) {
+    recordNotificationInInbox({
+      eventKey: `employer_job_app_${application.id}`,
+      title: 'New Candidate Application',
+      body: `${application.applicantName} applied for "${application.jobTitle}" with CV (${application.cvFileName}).`,
+      type: 'job_application_received',
+      recipientId: params.job.posterId,
+      recipientEmail: params.job.posterEmail || params.job.contactEmail,
+      recipientPhone: params.job.contactPhone,
+      jobId: application.jobId,
+      applicationId: application.id,
+      actionLabel: 'Review Candidate CV',
+    });
+  }
+
   return application;
 }
 
@@ -496,6 +528,26 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
     } catch (e) {
       console.warn('[JobService] Cloud job insert notice:', e);
     }
+  }
+
+  // 3. Notify employer that their job vacancy has been published
+  if (typeof window !== 'undefined') {
+    const publishedTitle = 'Job Vacancy Published';
+    const publishedBody = `"${newJob.title}" at ${newJob.companyName} (${newJob.city}) is now live on Setlla Jobs.`;
+    window.dispatchEvent(
+      new CustomEvent('setlla:trigger-notification', {
+        detail: {
+          eventKey: `job_published_${newJob.id}`,
+          title: publishedTitle,
+          body: publishedBody,
+          type: 'job_published',
+          actionText: 'View in Setlla Jobs',
+        },
+      })
+    );
+    showDeviceNotification(publishedTitle, {
+      body: publishedBody,
+    });
   }
 
   return newJob;
@@ -629,10 +681,33 @@ export function updateApplicationReviewStatus(
   status: 'submitted' | 'reviewed' | 'shortlisted' | 'rejected'
 ): void {
   const existing = getSavedApplications();
-  const updated = existing.map((a) => (a.id === appId ? { ...a, status } : a));
+  let targetApp: JobApplication | undefined;
+  const updated = existing.map((a) => {
+    if (a.id === appId) {
+      targetApp = { ...a, status };
+      return targetApp;
+    }
+    return a;
+  });
   try {
     localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(updated));
   } catch (_) {}
+
+  if (targetApp && (status === 'shortlisted' || status === 'reviewed')) {
+    const statusLabel = status === 'shortlisted' ? 'Shortlisted' : 'Reviewed';
+    recordNotificationInInbox({
+      eventKey: `job_app_status_${targetApp.id}_${status}`,
+      title: `Application ${statusLabel}`,
+      body: `${targetApp.companyName} marked your application for "${targetApp.jobTitle}" as ${statusLabel}.`,
+      type: 'job_status_updated',
+      recipientId: targetApp.applicantId,
+      recipientEmail: targetApp.applicantEmail,
+      recipientPhone: targetApp.applicantPhone,
+      jobId: targetApp.jobId,
+      applicationId: targetApp.id,
+      actionLabel: 'View Application Status',
+    });
+  }
 }
 
 /**

@@ -53,6 +53,7 @@ import { JobsFeed } from './components/Jobs/JobsFeed';
 import { JobsDashboard } from './components/Jobs/JobsDashboard';
 import { JobAgentDashboard } from './components/Jobs/JobAgentDashboard';
 import { PushNotificationBanner, PushNotificationData } from './components/Notifications/PushNotificationBanner';
+import { recordNotificationInInbox, shouldProcessNotificationEvent } from './services/notificationService';
 import { UnlockedContactSheet } from './components/Booking/UnlockedContactSheet';
 import { CustomConfirmModal } from './components/UI/CustomConfirmModal';
 import { PWAInstallBanner } from './components/UI/PWAInstallBanner';
@@ -743,7 +744,71 @@ export function App() {
   }, [currentRole, isAdminAuthenticated, userView]);
 
   const [activeModalListing, setActiveModalListing] = useState<PropertyListing | null>(null);
-  const [pushNotification, setPushNotification] = useState<PushNotificationData | null>(null);
+  const [activePushNotification, setActivePushNotification] = useState<PushNotificationData | null>(null);
+  const [notificationQueue, setNotificationQueue] = useState<PushNotificationData[]>([]);
+
+  // Unified notification dispatcher: deduplicates events, persists to user's Notification Inbox, and manages the banner queue
+  const setPushNotification = useCallback(
+    (next: PushNotificationData | null) => {
+      if (!next) {
+        setNotificationQueue((prevQueue) => {
+          if (prevQueue.length > 0) {
+            const [head, ...rest] = prevQueue;
+            setActivePushNotification(head);
+            return rest;
+          }
+          setActivePushNotification(null);
+          return prevQueue;
+        });
+        return;
+      }
+
+      const dedupKey =
+        next.eventKey ||
+        `${next.type || 'general'}:${next.booking?.id || next.listing?.id || next.title}:${next.body}`;
+
+      if (!shouldProcessNotificationEvent(dedupKey)) {
+        return;
+      }
+
+      // Persist in the user's Notification & Activity Inbox
+      recordNotificationInInbox({
+        eventKey: dedupKey,
+        title: next.title,
+        body: next.body,
+        type: next.type || 'general',
+        recipientId: currentUser?.id !== 'GUEST_USER' ? currentUser?.id : undefined,
+        recipientEmail: currentUser?.email,
+        recipientPhone: currentUser?.phone,
+        propertyId: next.listing?.id,
+        bookingId: next.booking?.id,
+        actionLabel: next.actionText,
+      });
+
+      setActivePushNotification((currentActive) => {
+        if (!currentActive) {
+          return next;
+        }
+        setNotificationQueue((q) => [...q, next]);
+        return currentActive;
+      });
+    },
+    [currentUser?.id, currentUser?.email, currentUser?.phone]
+  );
+
+  const pushNotification = activePushNotification;
+
+  // Listen for custom 'setlla:trigger-notification' events from Jobs, Adverts & other modules
+  useEffect(() => {
+    const handleTriggerNotification = (e: Event) => {
+      const custom = e as CustomEvent<PushNotificationData>;
+      if (custom.detail) {
+        setPushNotification(custom.detail);
+      }
+    };
+    window.addEventListener('setlla:trigger-notification', handleTriggerNotification);
+    return () => window.removeEventListener('setlla:trigger-notification', handleTriggerNotification);
+  }, [setPushNotification]);
   const [unlockedSheetData, setUnlockedSheetData] = useState<{ listing: PropertyListing; booking: BookingRecord } | null>(null);
   const [platformAlertModal, setPlatformAlertModal] = useState<{
     isOpen: boolean;
@@ -782,11 +847,16 @@ export function App() {
           recordNotifiedAgentBookingId(b.id);
           const title = targetListing.title;
           setPushNotification({
+            eventKey: `inspection_req_${b.id}`,
             title: 'New Inspection Request',
             body: `${b.applicantName} requested an inspection for "${title}" (${b.slotTimeWindow}).`,
             type: 'inspection_request',
             listing: targetListing,
             booking: b,
+            secondaryActionText: 'Approve Slot',
+            onSecondaryAction: () => {
+              handleAcceptBooking(b.id);
+            },
             actionText: 'Review in Agent Portal',
             onAction: () => {
               setCurrentRole('agent');
@@ -1044,10 +1114,15 @@ export function App() {
                     recordNotifiedAgentBookingId(bookingId);
                     const propTitle = targetListing.title;
                     setPushNotification({
+                      eventKey: `inspection_req_${bookingId}`,
                       title: 'New Inspection Request',
                       body: `${applicantName} booked an inspection for "${propTitle}" (${slotTime}).`,
                       type: 'inspection_request',
                       listing: targetListing,
+                      secondaryActionText: 'Approve Slot',
+                      onSecondaryAction: () => {
+                        handleAcceptBooking(bookingId);
+                      },
                       actionText: 'Review in Agent Portal',
                       onAction: () => {
                         setCurrentRole('agent');
@@ -1315,11 +1390,16 @@ export function App() {
       const propTitle = targetListing.title;
 
       setPushNotification({
+        eventKey: `inspection_req_${unnotifiedBooking.id}`,
         title: 'New Inspection Request',
         body: `${unnotifiedBooking.applicantName} requested an inspection for "${propTitle}" (${unnotifiedBooking.slotTimeWindow}).`,
         type: 'inspection_request',
         listing: targetListing,
         booking: unnotifiedBooking,
+        secondaryActionText: 'Approve Slot',
+        onSecondaryAction: () => {
+          handleAcceptBooking(unnotifiedBooking.id);
+        },
         actionText: 'Review in Agent Portal',
         onAction: () => {
           setCurrentRole('agent');
@@ -2681,9 +2761,12 @@ export function App() {
         isOpen={isMyPassesOpen}
         onClose={() => setIsMyPassesOpen(false)}
         bookings={userBookings}
+        allBookings={bookings}
         listings={listings}
         currentUser={currentUser}
         onOpenBookingModal={handleOpenBooking}
+        onAcceptBooking={handleAcceptBooking}
+        onRejectBooking={handleRejectBooking}
         onConfirmListingFreshness={handleConfirmListingFreshness}
         onUpdateAvailability={handleUpdateListingAvailability}
       />
@@ -2778,6 +2861,7 @@ export function App() {
       {/* 4. Instant PWA Web Push Notification Banner Simulation */}
       <PushNotificationBanner
         notification={pushNotification}
+        queuedCount={notificationQueue.length}
         onDismiss={() => setPushNotification(null)}
         onClickNotification={(data) => {
           setPushNotification(null);

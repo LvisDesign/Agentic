@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Hourglass, 
   User, 
@@ -15,6 +15,7 @@ import { CustomConfirmModal } from './UI/CustomConfirmModal';
 import { getActiveAdvertiser } from '../services/advertiserAuthService';
 import { getSavedApplications } from '../services/jobService';
 import { isElvisSuperAdmin } from '../services/adminAuthService';
+import { getUnreadNotificationsCount } from '../services/notificationService';
 
 interface HeaderProps {
   currentRole: UserRole;
@@ -80,9 +81,22 @@ export const Header: React.FC<HeaderProps> = ({
     }
   }, [currentUser]);
 
+  const [unreadInboxCount, setUnreadInboxCount] = useState<number>(() =>
+    getUnreadNotificationsCount(currentUser)
+  );
+
+  useEffect(() => {
+    const syncUnread = () => {
+      setUnreadInboxCount(getUnreadNotificationsCount(currentUser));
+    };
+    syncUnread();
+    window.addEventListener('setlla:notifications-updated', syncUnread);
+    return () => window.removeEventListener('setlla:notifications-updated', syncUnread);
+  }, [currentUser]);
+
   const totalNotificationsCount = (notificationCount !== undefined)
     ? notificationCount
-    : (confirmedPassesCount + pendingCount + jobApplicationsCount);
+    : (confirmedPassesCount + pendingCount + jobApplicationsCount + unreadInboxCount);
 
   // Retrieve active logged in advertiser (Customer Ads Account)
   const activeAdvertiser = getActiveAdvertiser();

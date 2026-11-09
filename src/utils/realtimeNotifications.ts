@@ -4,9 +4,12 @@
  * across desktop and mobile devices without requiring third-party audio assets.
  */
 
+import { getNotificationPreferences } from '../services/notificationService';
+
 // Synthesize pleasant, clean notification chimes using the browser's native Web Audio API
 export function playNotificationSound(type: 'success' | 'alert' | 'info' = 'alert'): void {
   if (typeof window === 'undefined') return;
+  if (!getNotificationPreferences().soundEnabled) return;
 
   try {
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -68,6 +71,7 @@ export function playNotificationSound(type: 'success' | 'alert' | 'info' = 'aler
  * Native device vibration with safety checks
  */
 export function triggerDeviceVibration(pattern: number[] = [150, 75, 150]): void {
+  if (!getNotificationPreferences().vibrationEnabled) return;
   if (typeof window !== 'undefined' && 'vibrate' in navigator) {
     try {
       navigator.vibrate(pattern);
@@ -84,16 +88,18 @@ export async function showDeviceNotification(
 ): Promise<void> {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
 
-  const cleanTitle = title.replace(/^🔔\s*/, '').trim();
+  const cleanTitle = title.replace(/^[🔔🎉✅⚠️🚀💼🏢]+\s*/, '').trim();
 
   // Trigger haptic vibration regardless
   triggerDeviceVibration();
 
   if (Notification.permission === 'granted') {
+    const tag = options?.tag || `setlla-${cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
     try {
       const notification = new Notification(cleanTitle, {
         icon: '/icons/icon-192x192.png',
         badge: '/icons/icon-192x192.png',
+        tag,
         ...options,
       });
 
@@ -112,6 +118,7 @@ export async function showDeviceNotification(
           reg.showNotification(cleanTitle, {
             icon: '/icons/icon-192x192.png',
             badge: '/icons/icon-192x192.png',
+            tag,
             ...options,
           }).catch(() => {});
         }).catch(() => {});
