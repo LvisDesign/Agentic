@@ -50,6 +50,8 @@ interface AgentDashboardProps {
   onSwitchToSeeker?: () => void;
   onSwitchToTenant?: () => void;
   onOpenAdsPortal?: () => void;
+  hasMoreServerListings?: boolean;
+  onLoadMoreListings?: () => Promise<boolean | void> | void;
 }
 
 export const AgentDashboard: React.FC<AgentDashboardProps> = ({
@@ -66,6 +68,8 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   onSwitchToSeeker,
   onSwitchToTenant,
   onOpenAdsPortal,
+  hasMoreServerListings = false,
+  onLoadMoreListings,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingListing, setEditingListing] = useState<PropertyListing | null>(null);

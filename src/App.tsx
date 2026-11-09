@@ -610,7 +610,7 @@ export function App() {
   // Data Synchronizer: fetches lightweight initial batch of active listings & adverts (Instagram-style pagination)
   const [hasMoreServerListings, setHasMoreServerListings] = useState(false);
   const serverOffsetRef = useRef(0);
-  const SERVER_BATCH_SIZE = 8;
+  const SERVER_BATCH_SIZE = 20;
 
   const syncLatestData = useCallback(async () => {
     try {
@@ -622,7 +622,7 @@ export function App() {
 
       if (fetchedListings && fetchedListings.length > 0) {
         setListings(fetchedListings);
-        serverOffsetRef.current = fetchedListings.length;
+        serverOffsetRef.current = SERVER_BATCH_SIZE;
         setHasMoreServerListings(fetchedListings.length >= SERVER_BATCH_SIZE);
       } else {
         setHasMoreServerListings(false);
@@ -670,13 +670,15 @@ export function App() {
         offset: serverOffsetRef.current,
       });
       if (nextBatch && nextBatch.length > 0) {
-        serverOffsetRef.current += nextBatch.length;
+        serverOffsetRef.current += SERVER_BATCH_SIZE;
+        let addedCount = 0;
         setListings((prev) => {
           const existingIds = new Set(prev.map((p) => p.id));
           const uniqueNew = nextBatch.filter((item) => !existingIds.has(item.id));
+          addedCount = uniqueNew.length;
           return uniqueNew.length > 0 ? [...prev, ...uniqueNew] : prev;
         });
-        const more = nextBatch.length >= SERVER_BATCH_SIZE;
+        const more = addedCount > 0 && nextBatch.length >= SERVER_BATCH_SIZE;
         setHasMoreServerListings(more);
         return more;
       } else {
@@ -685,6 +687,7 @@ export function App() {
       }
     } catch (err) {
       console.warn('[Setlla Pagination] Failed to load next batch:', err);
+      setHasMoreServerListings(false);
       return false;
     }
   }, [hasMoreServerListings]);
@@ -2449,6 +2452,8 @@ export function App() {
               onDeleteListing={handleDeleteListing}
               onUpdateAvailability={handleUpdateListingAvailability}
               onConfirmFreshness={handleConfirmListingFreshness}
+              hasMoreServerListings={hasMoreServerListings}
+              onLoadMoreListings={handleLoadMoreListings}
               onSwitchToSeeker={() => {
                 setCurrentRole('tenant');
                 setUserView('feed');
