@@ -38,6 +38,7 @@ export interface JobListing {
   listingFeePaid?: number;
   viewsCount?: number;
   applicantsCount?: number;
+  applications?: JobApplication[];
 }
 
 export interface JobApplication {
@@ -54,6 +55,12 @@ export interface JobApplication {
   coverNote?: string;
   appliedAt: string;
   status: 'submitted' | 'reviewed' | 'shortlisted' | 'rejected';
+  posterId?: string;
+  posterEmail?: string;
+  posterPhone?: string;
+  city?: string;
+  salaryRange?: string;
+  roleType?: string;
 }
 
 export type PlatformRoom = 'rentals' | 'jobs';

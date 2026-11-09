@@ -27,10 +27,12 @@ import { isElvisSuperAdmin } from '../../services/adminAuthService';
 import { 
   getAllJobs, 
   getSavedApplications, 
+  fetchAllJobApplications,
   getSavedCandidateCV, 
   saveCandidateCV,
   SavedCandidateCV
 } from '../../services/jobService';
+import { normalizePhoneNumber } from '../../utils/userRegistry';
 import { useInfiniteScroll, InfiniteScrollSentinel } from '../UI/Pagination';
 
 const APPS_BATCH_SIZE = 4;
@@ -67,14 +69,23 @@ export const JobsDashboard: React.FC<JobsDashboardProps> = ({
       if (isMounted) setJobs(fetched);
     });
 
-    const apps = getSavedApplications();
-    const userApps = apps.filter((a) => {
-      if (currentUser?.id && a.applicantId === currentUser.id) return true;
-      if (currentUser?.email && a.applicantEmail && a.applicantEmail.toLowerCase() === currentUser.email.toLowerCase()) return true;
-      if (currentUser?.phone && a.applicantPhone && a.applicantPhone === currentUser.phone) return true;
-      return true;
-    });
-    setApplications(userApps);
+    const filterForCandidate = (apps: JobApplication[]) => {
+      if (!currentUser?.id && !currentUser?.email && !currentUser?.phone) return apps;
+      const userPhoneNorm = currentUser?.phone ? normalizePhoneNumber(currentUser.phone) : '';
+      return apps.filter((a) => {
+        if (currentUser.id && a.applicantId === currentUser.id) return true;
+        if (currentUser.email && a.applicantEmail && a.applicantEmail.toLowerCase() === currentUser.email.toLowerCase()) return true;
+        if (userPhoneNorm && a.applicantPhone && normalizePhoneNumber(a.applicantPhone) === userPhoneNorm) return true;
+        return false;
+      });
+    };
+
+    setApplications(filterForCandidate(getSavedApplications()));
+    fetchAllJobApplications()
+      .then((cloudApps) => {
+        if (isMounted) setApplications(filterForCandidate(cloudApps));
+      })
+      .catch(() => {});
 
     const cv = getSavedCandidateCV(currentUser);
     if (cv) {

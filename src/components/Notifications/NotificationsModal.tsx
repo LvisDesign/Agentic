@@ -19,7 +19,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { BookingRecord, PropertyListing, UserProfile, ListingAvailability } from '../../types/marketplace';
-import { getSavedApplications } from '../../services/jobService';
+import { getSavedApplications, fetchAllJobApplications } from '../../services/jobService';
+import { JobApplication } from '../../types/jobs';
 import { getWhatsAppUrl } from '../../utils/formatters';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { InspectionPassCard } from '../Pass/InspectionPassCard';
@@ -81,15 +82,35 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     }
   });
 
-  // Sync persistent notifications & preferences when modal opens or storage updates
+  const [cloudJobApps, setCloudJobApps] = useState<JobApplication[]>(() => {
+    try {
+      return getSavedApplications();
+    } catch {
+      return [];
+    }
+  });
+
+  // Sync persistent notifications, preferences & cloud job applications when modal opens or storage updates
   useEffect(() => {
     const refreshInbox = () => {
       setInboxItems(getNotificationsForUser(currentUser));
       setPrefs(getNotificationPreferences());
     };
+    const refreshJobs = () => {
+      fetchAllJobApplications()
+        .then((apps) => setCloudJobApps(apps))
+        .catch(() => {});
+    };
     refreshInbox();
+    if (isOpen) {
+      refreshJobs();
+    }
     window.addEventListener('setlla:notifications-updated', refreshInbox);
-    return () => window.removeEventListener('setlla:notifications-updated', refreshInbox);
+    window.addEventListener('setlla:job-applications-updated', refreshJobs);
+    return () => {
+      window.removeEventListener('setlla:notifications-updated', refreshInbox);
+      window.removeEventListener('setlla:job-applications-updated', refreshJobs);
+    };
   }, [currentUser, isOpen]);
 
   const handleDismissAnnouncement = () => {
@@ -99,20 +120,34 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     } catch (_) {}
   };
 
-  // Retrieve saved job applications for current user
+  // Retrieve saved job applications for current user (as applicant or as employer)
   const jobApplications = useMemo(() => {
     try {
-      const apps = getSavedApplications();
-      if (!currentUser?.id && !currentUser?.email) return apps;
-      return apps.filter((a) => {
-        if (currentUser.id && a.applicantId === currentUser.id) return true;
-        if (currentUser.email && a.applicantEmail && a.applicantEmail.toLowerCase() === currentUser.email.toLowerCase()) return true;
+      if (!currentUser?.id && !currentUser?.email && !currentUser?.phone) return [];
+      const userEmail = currentUser.email ? normalizeEmail(currentUser.email) : '';
+      const userPhone = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
+      return cloudJobApps.filter((a) => {
+        if (currentUser.id && (a.applicantId === currentUser.id || a.posterId === currentUser.id)) return true;
+        if (
+          userEmail &&
+          ((a.applicantEmail && normalizeEmail(a.applicantEmail) === userEmail) ||
+            (a.posterEmail && normalizeEmail(a.posterEmail) === userEmail))
+        ) {
+          return true;
+        }
+        if (
+          userPhone &&
+          ((a.applicantPhone && normalizePhoneNumber(a.applicantPhone) === userPhone) ||
+            (a.posterPhone && normalizePhoneNumber(a.posterPhone) === userPhone))
+        ) {
+          return true;
+        }
         return false;
       });
     } catch (_) {
       return [];
     }
-  }, [currentUser, isOpen]);
+  }, [cloudJobApps, currentUser]);
 
   // Check if current user is an agent, employer, or property lister
   const isLister = Boolean(
@@ -846,6 +881,13 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                 )}
 
                 {jobApplications.map((app) => {
+                  const isEmployerView =
+                    Boolean(
+                      (currentUser?.id && app.posterId === currentUser.id) ||
+                        (currentUser?.email && app.posterEmail && normalizeEmail(app.posterEmail) === normalizeEmail(currentUser.email)) ||
+                        (currentUser?.phone && app.posterPhone && normalizePhoneNumber(app.posterPhone) === normalizePhoneNumber(currentUser.phone))
+                    ) && app.applicantId !== currentUser?.id;
+
                   return (
                     <article
                       key={`notif-job-${app.id}`}
@@ -859,10 +901,12 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
 
                           <div className="min-w-0">
                             <h4 className="font-bold text-xs sm:text-sm text-[#000004] truncate">
-                              {app.jobTitle}
+                              {isEmployerView ? `${app.applicantName} → ${app.jobTitle}` : app.jobTitle}
                             </h4>
                             <p className="text-[11px] text-[#70798C] truncate mt-0.5">
-                              {app.companyName} • Applied {new Date(app.appliedAt).toLocaleDateString()}
+                              {isEmployerView
+                                ? `${app.applicantPhone} • Applied ${new Date(app.appliedAt).toLocaleDateString()}`
+                                : `${app.companyName} • Applied ${new Date(app.appliedAt).toLocaleDateString()}`}
                             </p>
                           </div>
                         </div>
@@ -872,6 +916,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                             ? 'Shortlisted'
                             : app.status === 'reviewed'
                             ? 'Viewed'
+                            : isEmployerView
+                            ? 'New Applicant'
                             : 'Sent'}
                         </span>
                       </div>
@@ -879,9 +925,21 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
                       <div className="flex items-center gap-2 text-[11px] text-[#342A21] bg-white px-3 py-2 rounded-xl border border-[#EFE3C6]">
                         <FileText className="w-3.5 h-3.5 text-[#C68400] shrink-0" />
                         <span className="truncate font-medium">{app.cvFileName}</span>
-                        <span className="text-[10px] font-bold text-[#342A21] bg-[#FFF8E6] px-2 py-0.5 rounded-md ml-auto shrink-0 border border-[#EDDAA6]">
-                          CV Attached
-                        </span>
+                        {app.cvUrl ? (
+                          <a
+                            href={app.cvUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={app.cvFileName}
+                            className="text-[10px] font-bold text-white bg-[#342A21] hover:bg-[#231C16] px-2.5 py-1 rounded-md ml-auto shrink-0 transition-colors"
+                          >
+                            View CV
+                          </a>
+                        ) : (
+                          <span className="text-[10px] font-bold text-[#342A21] bg-[#FFF8E6] px-2 py-0.5 rounded-md ml-auto shrink-0 border border-[#EDDAA6]">
+                            CV Attached
+                          </span>
+                        )}
                       </div>
                     </article>
                   );

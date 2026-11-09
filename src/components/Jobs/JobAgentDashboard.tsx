@@ -32,12 +32,13 @@ import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
 import { ensureAdvertiserForUser } from '../../services/advertiserAuthService';
 import { 
   getEmployerJobs, 
-  getSavedApplications, 
+  getEmployerApplications,
   toggleJobStatus,
   confirmJobFreshness,
   updateApplicationReviewStatus,
   sponsorJobListing 
 } from '../../services/jobService';
+import { isSupabaseConfigured, getSupabaseClient } from '../../utils/supabaseClient';
 import { getListingLifecycleInfo } from '../../utils/listingLifecycle';
 import { PostJobModal } from './PostJobModal';
 import { JobDetailsSheet } from './JobDetailsSheet';
@@ -99,13 +100,10 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
       const employerJobs = await getEmployerJobs(currentUser);
       setJobs(employerJobs);
 
-      const allApps = getSavedApplications();
-      // Match applications submitted for this agent's jobs
-      const jobIds = new Set(employerJobs.map((j) => j.id));
-      const relevantApps = allApps.filter((a) => jobIds.has(a.jobId) || a.companyName.toLowerCase().includes(currentUser.fullName?.toLowerCase() || ''));
-      setApplications(relevantApps.length > 0 ? relevantApps : allApps); // Fallback to all mock apps for rich demonstration
+      const employerApps = await getEmployerApplications(currentUser, employerJobs);
+      setApplications(employerApps);
     } catch (e) {
-      console.error('Failed to load employer jobs:', e);
+      console.error('Failed to load employer jobs & applications:', e);
     } finally {
       setIsLoading(false);
     }
@@ -113,6 +111,44 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
 
   useEffect(() => {
     loadData();
+
+    const handleAppsUpdated = () => {
+      loadData();
+    };
+    window.addEventListener('setlla:job-applications-updated', handleAppsUpdated);
+
+    if (isSupabaseConfigured()) {
+      const client = getSupabaseClient();
+      if (client) {
+        const channel = client
+          .channel('employer-job-applications-sync')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'listings' },
+            (payload) => {
+              const row = (payload.new || payload.old) as any;
+              if (
+                row &&
+                (row.property_type === '__JOB_APPLICATION__' ||
+                  row.property_type === '__JOB_LISTING__' ||
+                  String(row.id || '').startsWith('job-'))
+              ) {
+                loadData();
+              }
+            }
+          )
+          .subscribe();
+
+        return () => {
+          window.removeEventListener('setlla:job-applications-updated', handleAppsUpdated);
+          client.removeChannel(channel);
+        };
+      }
+    }
+
+    return () => {
+      window.removeEventListener('setlla:job-applications-updated', handleAppsUpdated);
+    };
   }, [currentUser]);
 
   const showToast = (msg: string) => {
@@ -805,23 +841,45 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                       />
                     </div>
 
+                    {app.coverNote && (
+                      <div className="p-3 rounded-xl bg-[#FCF9F5] border border-[#EFE3C6] text-xs text-[#342A21] leading-relaxed">
+                        <span className="font-bold text-[#000004]">Cover Note: </span>
+                        {app.coverNote}
+                      </div>
+                    )}
+
                     {/* Candidate Contact & CV Row */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2 border-t border-[#E5E7EB] text-xs">
                       <div className="flex items-center gap-3 flex-wrap text-[#70798C]">
-                        <span>Email: <strong className="text-[#000004]">{app.applicantEmail}</strong></span>
-                        <span>Phone: <strong className="text-[#000004]">{app.applicantPhone}</strong></span>
+                        <span>Email: <strong className="text-[#000004]">{app.applicantEmail || 'Not provided'}</strong></span>
+                        <span>Phone: <strong className="text-[#000004]">{app.applicantPhone || 'Not provided'}</strong></span>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {/* Download CV */}
-                        <a
-                          href={app.cvUrl}
-                          download={app.cvFileName || 'Candidate_Resume.pdf'}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#000004] font-bold transition-colors cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>{app.cvFileName || 'Download CV'}</span>
-                        </a>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* View / Download CV */}
+                        {app.cvUrl && (
+                          <a
+                            href={app.cvUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={app.cvFileName || 'Candidate_Resume.pdf'}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white hover:bg-slate-50 text-[#000004] font-bold transition-colors cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>{app.cvFileName || 'Download CV'}</span>
+                          </a>
+                        )}
+
+                        {/* Call Candidate */}
+                        {app.applicantPhone && (
+                          <a
+                            href={`tel:${app.applicantPhone}`}
+                            className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#342A21] hover:bg-[#000004] text-white font-bold transition-colors shadow-2xs"
+                          >
+                            <Phone className="w-3.5 h-3.5 text-[#FFAD05]" />
+                            <span>Call</span>
+                          </a>
+                        )}
 
                         {/* WhatsApp Candidate */}
                         {app.applicantPhone && (

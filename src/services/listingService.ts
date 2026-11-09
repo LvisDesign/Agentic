@@ -285,7 +285,14 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
         const cloudListings: PropertyListing[] = data
           .filter((row) => {
             if (!row || !row.id) return false;
-            if (row.property_type === '__JOB_LISTING__' || String(row.id).startsWith('job-')) return false;
+            if (
+              row.property_type === '__JOB_LISTING__' ||
+              row.property_type === '__JOB_APPLICATION__' ||
+              String(row.id).startsWith('job-') ||
+              String(row.id).startsWith('app-')
+            ) {
+              return false;
+            }
             const status = row.availability_status || row.availabilityStatus;
             if (isNonActive(status)) return false;
             if (deletedIds.has(row.id)) return false;

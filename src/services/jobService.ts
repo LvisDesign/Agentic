@@ -3,7 +3,7 @@ import { INITIAL_JOB_LISTINGS } from '../data/mockJobs';
 import { AdvertStory } from '../data/mockAdverts';
 import { isSupabaseConfigured, getSupabaseClient } from '../utils/supabaseClient';
 import { UserProfile } from '../types/marketplace';
-import { saveRegisteredUser } from '../utils/userRegistry';
+import { saveRegisteredUser, normalizePhoneNumber, normalizeEmail } from '../utils/userRegistry';
 import { recordNotificationInInbox } from './notificationService';
 import { showDeviceNotification } from '../utils/realtimeNotifications';
 
@@ -218,15 +218,178 @@ export async function getAllJobs(): Promise<JobListing[]> {
   }));
 }
 
+function mapApplicationToListingsRow(app: JobApplication, job?: JobListing) {
+  return {
+    id: app.id,
+    title: app.jobTitle || job?.title || 'Job Application',
+    state: 'Delta State',
+    city: app.city || job?.city || 'Asaba',
+    neighborhood: app.companyName || job?.companyName || 'Employer',
+    full_address: job?.address || app.city || 'Asaba',
+    property_type: '__JOB_APPLICATION__',
+    bedrooms: 0,
+    bathrooms: 0,
+    toilets: 0,
+    is_serviced: false,
+    is_furnished: false,
+    electricity_status: app.status || 'submitted',
+    water_supply: app.roleType || job?.roleType || 'Full-Time',
+    description: app.coverNote || '',
+    media: app.cvUrl ? [{ type: 'image', url: app.cvUrl, caption: app.cvFileName }] : [],
+    fees: {
+      baseRent: 0,
+      _applicationData: app,
+    },
+    inspection_fee: 0,
+    agent: {
+      id: app.posterId || job?.posterId || 'employer',
+      fullName: app.applicantName,
+      agencyName: app.companyName || job?.companyName || '',
+      email: app.posterEmail || job?.posterEmail || job?.contactEmail || '',
+      phone: app.posterPhone || job?.contactPhone || app.applicantPhone || '',
+    },
+    inspection_slots: [],
+    inspection_days: [],
+    tags: [app.jobId, app.status || 'submitted', app.applicantEmail || '', app.applicantPhone || ''],
+    addons: [],
+    availability_status: app.status === 'rejected' ? 'Rejected' : 'Available',
+    created_at: app.appliedAt || new Date().toISOString(),
+    last_confirmed_at: new Date().toISOString(),
+  };
+}
+
+function mapListingsRowToApplication(row: any): JobApplication | null {
+  if (!row || !row.id) return null;
+  if (row.availability_status === 'Deleted' || row.availability_status === 'Archived') return null;
+
+  const embedded = row.fees?._applicationData;
+  if (embedded && typeof embedded === 'object' && embedded.id && embedded.jobId) {
+    return {
+      ...embedded,
+      status: (row.electricity_status as any) || embedded.status || 'submitted',
+    };
+  }
+
+  if (row.property_type !== '__JOB_APPLICATION__') return null;
+
+  return {
+    id: row.id,
+    jobId: row.tags?.[0] || '',
+    jobTitle: row.title || 'Job Role',
+    companyName: row.neighborhood || row.agent?.agencyName || 'Employer',
+    applicantId: 'CANDIDATE',
+    applicantName: row.agent?.fullName || 'Applicant',
+    applicantEmail: row.tags?.[2] || '',
+    applicantPhone: row.tags?.[3] || row.agent?.phone || '',
+    cvFileName: row.media?.[0]?.caption || 'Candidate_CV.pdf',
+    cvUrl: row.media?.[0]?.url || '',
+    coverNote: row.description || undefined,
+    appliedAt: row.created_at || new Date().toISOString(),
+    status: (row.electricity_status as any) || 'submitted',
+    posterId: row.agent?.id,
+    posterEmail: row.agent?.email,
+    posterPhone: row.agent?.phone,
+    city: row.city,
+    roleType: row.water_supply,
+  };
+}
+
 /**
- * Retrieves all applications submitted by candidate.
+ * Retrieves all cached applications synchronously from local storage.
  */
 export function getSavedApplications(): JobApplication[] {
   try {
     const raw = localStorage.getItem(APPLICATIONS_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
   } catch (_) {}
   return [];
+}
+
+/**
+ * Fetches all job applications from Supabase cloud (`listings` rows with `property_type = '__JOB_APPLICATION__'`
+ * plus embedded `_jobData.applications` inside `__JOB_LISTING__` rows) and merges with local cache.
+ */
+export async function fetchAllJobApplications(): Promise<JobApplication[]> {
+  const localApps = getSavedApplications();
+  const deletedJobIds = getDeletedJobIds();
+
+  if (isSupabaseConfigured()) {
+    try {
+      const client = getSupabaseClient();
+      if (client) {
+        const { data, error } = await client
+          .from('listings')
+          .select('*')
+          .in('property_type', ['__JOB_APPLICATION__', '__JOB_LISTING__'])
+          .neq('availability_status', 'Deleted')
+          .neq('availability_status', 'Archived')
+          .order('created_at', { ascending: false });
+
+        if (!error && Array.isArray(data)) {
+          const byId = new Map<string, JobApplication>();
+
+          // 1. Standalone __JOB_APPLICATION__ rows (authoritative latest status)
+          for (const row of data) {
+            if (row.property_type === '__JOB_APPLICATION__') {
+              const mapped = mapListingsRowToApplication(row);
+              if (mapped && mapped.id && mapped.jobId && !deletedJobIds.has(mapped.jobId)) {
+                byId.set(mapped.id, mapped);
+              }
+            }
+          }
+
+          // 2. Embedded applications inside __JOB_LISTING__ rows
+          for (const row of data) {
+            if (row.property_type === '__JOB_LISTING__' && !deletedJobIds.has(String(row.id))) {
+              const embeddedApps = row.fees?._jobData?.applications;
+              if (Array.isArray(embeddedApps)) {
+                for (const app of embeddedApps) {
+                  if (app && app.id && !byId.has(app.id)) {
+                    byId.set(app.id, {
+                      ...app,
+                      jobId: app.jobId || row.id,
+                      jobTitle: app.jobTitle || row.title,
+                      companyName: app.companyName || row.agent?.agencyName || row.agent?.fullName || 'Employer',
+                      posterId: app.posterId || row.agent?.id,
+                      posterEmail: app.posterEmail || row.agent?.email,
+                      posterPhone: app.posterPhone || row.agent?.phone,
+                    });
+                  }
+                }
+              }
+            }
+          }
+
+          // 3. Merge any local applications that haven't finished uploading yet
+          for (const local of localApps) {
+            if (local && local.id && !byId.has(local.id) && !deletedJobIds.has(local.jobId)) {
+              byId.set(local.id, local);
+            }
+          }
+
+          const merged = Array.from(byId.values()).sort(
+            (a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime()
+          );
+
+          try {
+            localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(merged));
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('setlla:job-applications-updated'));
+            }
+          } catch (_) {}
+
+          return merged;
+        }
+      }
+    } catch (e) {
+      console.warn('[JobService] Cloud job applications sync notice:', e);
+    }
+  }
+
+  return localApps.filter((a) => a && a.id && !deletedJobIds.has(a.jobId));
 }
 
 /**
@@ -239,7 +402,7 @@ export function hasUserApplied(jobId: string, user?: UserProfile | null): boolea
     if (app.jobId !== jobId) return false;
     if (user?.id && app.applicantId === user.id) return true;
     if (user?.email && app.applicantEmail && app.applicantEmail.toLowerCase() === user.email.toLowerCase()) return true;
-    if (user?.phone && app.applicantPhone && app.applicantPhone === user.phone) return true;
+    if (user?.phone && app.applicantPhone && normalizePhoneNumber(app.applicantPhone) === normalizePhoneNumber(user.phone)) return true;
     return false;
   });
 }
@@ -295,7 +458,7 @@ export function saveCandidateCV(fileName: string, dataUrl: string, user?: UserPr
 }
 
 /**
- * Uploads CV file to Supabase storage bucket `resumes` (or generates resilient data URL fallback).
+ * Uploads CV file to Supabase storage bucket (`property-media` or `resumes`) or generates a resilient Base64 Data URL fallback.
  */
 export async function uploadCandidateCVFile(file: File, userId?: string): Promise<{ url: string; fileName: string }> {
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
@@ -305,7 +468,19 @@ export async function uploadCandidateCVFile(file: File, userId?: string): Promis
     try {
       const client = getSupabaseClient();
       if (client) {
-        // Attempt upload to `resumes` bucket
+        // 1. Upload to active public bucket `property-media` (configured in backend/schema.sql)
+        const { data: propData, error: propErr } = await client.storage
+          .from('property-media')
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        if (!propErr && propData?.path) {
+          const { data: pubData } = client.storage.from('property-media').getPublicUrl(propData.path);
+          if (pubData?.publicUrl) {
+            return { url: pubData.publicUrl, fileName: file.name };
+          }
+        }
+
+        // 2. Fallback attempt to `resumes` bucket if present
         const { data, error } = await client.storage
           .from('resumes')
           .upload(filePath, file, { cacheControl: '3600', upsert: true });
@@ -322,15 +497,15 @@ export async function uploadCandidateCVFile(file: File, userId?: string): Promis
     }
   }
 
-  // Fallback: convert file to local object URL / base64 for seamless zero-failure candidate experience
+  // Fallback: convert file to Base64 Data URL so it persists across devices in JSONB
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onloadend = () => {
-      const result = typeof reader.result === 'string' ? reader.result : URL.createObjectURL(file);
+      const result = typeof reader.result === 'string' ? reader.result : '';
       resolve({ url: result, fileName: file.name });
     };
     reader.onerror = () => {
-      resolve({ url: URL.createObjectURL(file), fileName: file.name });
+      resolve({ url: '', fileName: file.name });
     };
     reader.readAsDataURL(file);
   });
@@ -348,60 +523,75 @@ export interface ApplicationSubmissionParams {
 }
 
 /**
- * Submits candidate application to `public.job_applications` and local registry.
+ * Submits candidate application to Supabase (`public.listings` as `__JOB_APPLICATION__` + parent job `_jobData`)
+ * and local registry so employers and administrators receive applications in real time across all devices.
  */
 export async function submitJobApplication(params: ApplicationSubmissionParams): Promise<JobApplication> {
   const application: JobApplication = {
-    id: `app-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    id: `job-app-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     jobId: params.job.id,
     jobTitle: params.job.title,
     companyName: params.job.companyName,
     applicantId: params.user.id || 'GUEST_APPLICANT',
-    applicantName: params.applicantName,
-    applicantEmail: params.applicantEmail,
-    applicantPhone: params.applicantPhone,
+    applicantName: params.applicantName.trim(),
+    applicantEmail: params.applicantEmail.trim(),
+    applicantPhone: params.applicantPhone.trim(),
     cvFileName: params.cvFileName,
     cvUrl: params.cvUrl,
     coverNote: params.coverNote?.trim(),
     appliedAt: new Date().toISOString(),
-    status: 'submitted'
+    status: 'submitted',
+    posterId: params.job.posterId,
+    posterEmail: params.job.posterEmail || params.job.contactEmail,
+    posterPhone: params.job.contactPhone,
+    city: params.job.city,
+    salaryRange: params.job.salaryRange,
+    roleType: params.job.roleType,
   };
 
   // 1. Save to local storage for instant offline access & card state persistence
   const existing = getSavedApplications();
-  existing.unshift(application);
+  const updatedApps = [application, ...existing.filter((a) => a.id !== application.id)];
   try {
-    localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(existing));
+    localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(updatedApps));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('setlla:job-applications-updated'));
+    }
   } catch (_) {}
 
   // 2. Cache CV details to candidate profile for 1-tap future quick-applies
   saveCandidateCV(params.cvFileName, params.cvUrl, params.user);
 
-  // 3. Persist to Supabase `public.job_applications`
+  // 3. Persist to Supabase `public.listings` (both standalone `__JOB_APPLICATION__` row AND parent job `_jobData.applications`)
   if (isSupabaseConfigured()) {
     try {
       const client = getSupabaseClient();
       if (client) {
-        await client.from('job_applications').insert([
-          {
-            id: application.id,
-            job_id: application.jobId,
-            job_title: application.jobTitle,
-            company_name: application.companyName,
-            applicant_id: application.applicantId,
-            applicant_name: application.applicantName,
-            applicant_email: application.applicantEmail,
-            applicant_phone: application.applicantPhone,
-            cv_file_name: application.cvFileName,
-            cv_url: application.cvUrl,
-            cover_note: application.coverNote || null,
-            status: application.status,
-            applied_at: application.appliedAt
-          }
-        ]);
+        // A. Upsert standalone application row in `public.listings`
+        const appRow = mapApplicationToListingsRow(application, params.job);
+        await client.from('listings').upsert([appRow]);
+
+        // B. Also embed inside parent job's `_jobData.applications` and increment `applicantsCount`
+        const { data: jobRow } = await client
+          .from('listings')
+          .select('*')
+          .eq('id', params.job.id)
+          .maybeSingle();
+
+        if (jobRow) {
+          const currentJob = mapListingsRowToJob(jobRow) || params.job;
+          const prevApps: JobApplication[] = Array.isArray(currentJob.applications) ? currentJob.applications : [];
+          const nextApps = [application, ...prevApps.filter((a) => a && a.id !== application.id)];
+          const updatedJob: JobListing = {
+            ...currentJob,
+            applicantsCount: nextApps.length,
+            applications: nextApps,
+          };
+          await client.from('listings').upsert([mapJobToListingsRow(updatedJob)]);
+        }
       }
     } catch (e) {
-      console.warn('[JobService] Cloud application insert fallback (stored locally):', e);
+      console.warn('[JobService] Cloud application sync fallback (stored locally):', e);
     }
   }
 
@@ -420,7 +610,7 @@ export async function submitJobApplication(params: ApplicationSubmissionParams):
     );
   }
 
-  if (params.job.posterId || params.job.posterEmail || params.job.contactPhone) {
+  if (params.job.posterId || params.job.posterEmail || params.job.contactEmail || params.job.contactPhone) {
     recordNotificationInInbox({
       eventKey: `employer_job_app_${application.id}`,
       title: 'New Candidate Application',
@@ -598,15 +788,59 @@ export async function getEmployerJobs(user?: UserProfile | null): Promise<JobLis
   const all = await getAllJobs();
   if (!user) return [];
 
-  // Return jobs posted by this user
+  const userPhoneNorm = user.phone ? normalizePhoneNumber(user.phone) : '';
+  const userEmailNorm = user.email ? normalizeEmail(user.email) : '';
+  const userCompanyNorm = (user.companyName || user.agencyName || '').toLowerCase().trim();
+  const userFullNameNorm = (user.fullName || '').toLowerCase().trim();
+
+  // Return jobs posted by this user (matched by ID, email, phone, company name, or poster name)
   const userJobs = all.filter((j) => {
     if (j.posterId && user.id && j.posterId === user.id) return true;
-    if (j.posterEmail && user.email && j.posterEmail.toLowerCase() === user.email.toLowerCase()) return true;
-    if (j.companyName && (user.companyName || user.agencyName) && j.companyName.toLowerCase() === (user.companyName || user.agencyName || '').toLowerCase()) return true;
+    if (userEmailNorm && j.posterEmail && normalizeEmail(j.posterEmail) === userEmailNorm) return true;
+    if (userEmailNorm && j.contactEmail && normalizeEmail(j.contactEmail) === userEmailNorm) return true;
+    if (userPhoneNorm && j.contactPhone && normalizePhoneNumber(j.contactPhone) === userPhoneNorm) return true;
+    if (userCompanyNorm && j.companyName && j.companyName.toLowerCase().trim() === userCompanyNorm) return true;
+    if (userFullNameNorm && j.posterName && j.posterName.toLowerCase().trim() === userFullNameNorm) return true;
     return false;
   });
 
   return userJobs;
+}
+
+/**
+ * Retrieves all candidate applications submitted for an employer's job vacancies from Supabase cloud + local storage.
+ */
+export async function getEmployerApplications(
+  user?: UserProfile | null,
+  employerJobs?: JobListing[]
+): Promise<JobApplication[]> {
+  const [allApps, resolvedJobs] = await Promise.all([
+    fetchAllJobApplications(),
+    employerJobs ? Promise.resolve(employerJobs) : getEmployerJobs(user),
+  ]);
+
+  if (!user) return [];
+
+  const jobIds = new Set(resolvedJobs.map((j) => j.id));
+  const companyNames = new Set(
+    resolvedJobs
+      .map((j) => (j.companyName || '').toLowerCase().trim())
+      .filter(Boolean)
+  );
+  if (user.companyName) companyNames.add(user.companyName.toLowerCase().trim());
+  if (user.agencyName) companyNames.add(user.agencyName.toLowerCase().trim());
+
+  const userPhoneNorm = user.phone ? normalizePhoneNumber(user.phone) : '';
+  const userEmailNorm = user.email ? normalizeEmail(user.email) : '';
+
+  return allApps.filter((app) => {
+    if (jobIds.has(app.jobId)) return true;
+    if (user.id && app.posterId && app.posterId === user.id) return true;
+    if (userEmailNorm && app.posterEmail && normalizeEmail(app.posterEmail) === userEmailNorm) return true;
+    if (userPhoneNorm && app.posterPhone && normalizePhoneNumber(app.posterPhone) === userPhoneNorm) return true;
+    if (app.companyName && companyNames.has(app.companyName.toLowerCase().trim())) return true;
+    return false;
+  });
 }
 
 /**
@@ -691,7 +925,48 @@ export function updateApplicationReviewStatus(
   });
   try {
     localStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('setlla:job-applications-updated'));
+    }
   } catch (_) {}
+
+  // Sync updated status to Supabase `public.listings` (`__JOB_APPLICATION__` row + parent job `_jobData.applications`)
+  if (isSupabaseConfigured() && targetApp) {
+    const appToSync = targetApp;
+    (async () => {
+      try {
+        const client = getSupabaseClient();
+        if (client) {
+          await client.from('listings').upsert([mapApplicationToListingsRow(appToSync)]);
+
+          if (appToSync.jobId) {
+            const { data: jobRow } = await client
+              .from('listings')
+              .select('*')
+              .eq('id', appToSync.jobId)
+              .maybeSingle();
+
+            if (jobRow) {
+              const currentJob = mapListingsRowToJob(jobRow);
+              if (currentJob && Array.isArray(currentJob.applications)) {
+                const updatedJobApps = currentJob.applications.map((item) =>
+                  item && item.id === appToSync.id ? { ...item, status } : item
+                );
+                await client.from('listings').upsert([
+                  mapJobToListingsRow({
+                    ...currentJob,
+                    applications: updatedJobApps,
+                  }),
+                ]);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[JobService] Cloud application status update notice:', e);
+      }
+    })();
+  }
 
   if (targetApp && (status === 'shortlisted' || status === 'reviewed')) {
     const statusLabel = status === 'shortlisted' ? 'Shortlisted' : 'Reviewed';

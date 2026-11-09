@@ -1026,6 +1026,8 @@ export function App() {
             if (!isMounted) return;
             invalidateCache('listings_');
 
+            const changedRow = (payload.new || payload.old) as any;
+
             if (payload.eventType === 'DELETE' && payload.old) {
               const oldRow = payload.old as any;
               if (oldRow?.id) {
@@ -1033,7 +1035,6 @@ export function App() {
                 setListings((prev) => prev.filter((l) => l.id !== String(oldRow.id)));
               }
             } else if (payload.new) {
-              const changedRow = payload.new as any;
               const rowStatus = changedRow?.availability_status || changedRow?.availabilityStatus;
               if (
                 changedRow?.id &&
@@ -1044,12 +1045,59 @@ export function App() {
               }
             }
 
+            if (changedRow?.property_type === '__JOB_APPLICATION__' || changedRow?.property_type === '__JOB_LISTING__') {
+              window.dispatchEvent(new CustomEvent('setlla:job-applications-updated'));
+
+              if (payload.eventType === 'INSERT' && changedRow?.property_type === '__JOB_APPLICATION__') {
+                const appData = changedRow.fees?._applicationData;
+                const agentInfo = changedRow.agent || {};
+                const isMyEmployerApp =
+                  (currentUser.id && (appData?.posterId === currentUser.id || agentInfo.id === currentUser.id)) ||
+                  (currentUser.email &&
+                    ((appData?.posterEmail && normalizeEmail(appData.posterEmail) === normalizeEmail(currentUser.email)) ||
+                      (agentInfo.email && normalizeEmail(agentInfo.email) === normalizeEmail(currentUser.email)))) ||
+                  (currentUser.phone &&
+                    ((appData?.posterPhone && normalizePhoneNumber(appData.posterPhone) === normalizePhoneNumber(currentUser.phone)) ||
+                      (agentInfo.phone && normalizePhoneNumber(agentInfo.phone) === normalizePhoneNumber(currentUser.phone))));
+
+                const isSelfApplicant =
+                  (currentUser.id && appData?.applicantId === currentUser.id) ||
+                  (currentUser.phone && appData?.applicantPhone && normalizePhoneNumber(appData.applicantPhone) === normalizePhoneNumber(currentUser.phone));
+
+                if (isMyEmployerApp && !isSelfApplicant && appData) {
+                  setPushNotification({
+                    eventKey: `employer_job_app_${appData.id || changedRow.id}`,
+                    title: 'New Candidate Application',
+                    body: `${appData.applicantName} applied for "${appData.jobTitle}" with CV attached.`,
+                    type: 'job_application_received',
+                    actionText: 'Review Candidate CV',
+                    onAction: () => {
+                      setActiveRoom('jobs');
+                      setCurrentRole('agent');
+                    },
+                  });
+                  playNotificationSound('success');
+                  showDeviceNotification('New Candidate Application', {
+                    body: `${appData.applicantName} applied for "${appData.jobTitle}". Open your Employer Portal to review their CV.`,
+                  });
+                }
+              }
+              return;
+            }
+
             fetchAllListings().then((updated) => {
               if (!isMounted || !updated) return;
               setListings(updated);
 
               if (payload.eventType === 'INSERT' && payload.new) {
                 const newRow = payload.new as any;
+                if (
+                  newRow.property_type === '__JOB_LISTING__' ||
+                  newRow.property_type === '__JOB_APPLICATION__' ||
+                  String(newRow.id || '').startsWith('job-')
+                ) {
+                  return;
+                }
                 const isMine = currentUser.isAgent && (newRow.agent_id === currentUser.id || newRow.agentId === currentUser.id);
                 if (!isMine && !currentUser.isAgent) {
                   const city = newRow.city || 'Delta State';
