@@ -98,7 +98,7 @@ export async function showDeviceNotification(
     try {
       const notification = new Notification(cleanTitle, {
         icon: '/icons/icon-192x192.png',
-        badge: '/icons/icon-192x192.png',
+        badge: '/icons/notification-badge.png',
         tag,
         ...options,
       });
@@ -117,7 +117,7 @@ export async function showDeviceNotification(
         navigator.serviceWorker.ready.then((reg) => {
           reg.showNotification(cleanTitle, {
             icon: '/icons/icon-192x192.png',
-            badge: '/icons/icon-192x192.png',
+            badge: '/icons/notification-badge.png',
             tag,
             ...options,
           }).catch(() => {});
