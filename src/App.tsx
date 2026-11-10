@@ -1837,15 +1837,28 @@ export function App() {
     updateAvailability(listingId, status);
   };
 
-  // Handler: Refresh 48-hour proof-of-life heartbeat
+  // Handler: Refresh 48-hour proof-of-life heartbeat (and relist 72h expired properties)
   const handleConfirmListingFreshness = (listingId: string) => {
     const now = new Date().toISOString();
+    const existingItem = listings.find((item) => item.id === listingId);
+    const refreshedSnapshot: PropertyListing | undefined = existingItem
+      ? {
+          ...existingItem,
+          lastConfirmedAt: now,
+          createdAt: now,
+          availabilityStatus: 'Available',
+          takenAt: undefined,
+          isArchived: false,
+        }
+      : undefined;
+
     setListings((prev) =>
       prev.map((item) =>
         item.id === listingId
-          ? { 
-              ...item, 
+          ? {
+              ...item,
               lastConfirmedAt: now,
+              createdAt: now,
               availabilityStatus: 'Available',
               takenAt: undefined,
               isArchived: false,
@@ -1853,7 +1866,7 @@ export function App() {
           : item
       )
     );
-    confirmFreshness(listingId);
+    confirmFreshness(listingId, refreshedSnapshot);
   };
 
   // Handler: Book an inspection slot

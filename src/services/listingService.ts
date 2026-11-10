@@ -8,6 +8,38 @@ const LOCAL_STORAGE_KEY = 'setlla_listings';
 const LEGACY_STORAGE_KEY = 'deltarent_listings';
 const DELETED_IDS_KEY = 'setlla_deleted_listing_ids';
 const LEGACY_DELETED_IDS_KEY = 'deltarent_deleted_listing_ids';
+const CONFIRMATION_OVERRIDES_KEY = 'setlla_listing_confirmations';
+
+interface ListingConfirmationOverride {
+  lastConfirmedAt: string;
+  availabilityStatus: ListingAvailability;
+  takenAt?: string;
+  updatedAtMs: number;
+}
+
+function getListingConfirmationOverrides(): Record<string, ListingConfirmationOverride> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(CONFIRMATION_OVERRIDES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch (_) {}
+  return {};
+}
+
+function recordListingConfirmationOverride(
+  listingId: string,
+  override: ListingConfirmationOverride
+): void {
+  if (typeof window === 'undefined' || !listingId) return;
+  try {
+    const all = getListingConfirmationOverrides();
+    all[listingId] = override;
+    localStorage.setItem(CONFIRMATION_OVERRIDES_KEY, JSON.stringify(all));
+  } catch (_) {}
+}
 
 function getLocalSavedListings(): string | null {
   if (typeof window === 'undefined') return null;
@@ -282,6 +314,7 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
 
       if (Array.isArray(data)) {
         const deletedIds = getDeletedListingIds();
+        const confirmationOverrides = getListingConfirmationOverrides();
         const cloudListings: PropertyListing[] = data
           .filter((row) => {
             if (!row || !row.id) return false;
@@ -300,6 +333,27 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
             return true;
           })
           .map((row, idx) => {
+            const override = confirmationOverrides[row.id];
+            const dbConfirmedRaw =
+              row.last_confirmed_at ||
+              row.lastConfirmedAt ||
+              (row.fees && typeof row.fees === 'object' ? (row.fees as any)._lastConfirmedAt : undefined) ||
+              row.created_at ||
+              row.createdAt;
+            const dbConfirmedMs = dbConfirmedRaw ? new Date(dbConfirmedRaw).getTime() : 0;
+            const overrideMs = override?.lastConfirmedAt ? new Date(override.lastConfirmedAt).getTime() : 0;
+            const useOverride = Boolean(override && overrideMs > (isNaN(dbConfirmedMs) ? 0 : dbConfirmedMs));
+
+            const resolvedLastConfirmedAt = useOverride
+              ? override.lastConfirmedAt
+              : dbConfirmedRaw || new Date().toISOString();
+            const resolvedAvailability = useOverride
+              ? override.availabilityStatus
+              : row.availability_status || row.availabilityStatus || 'Available';
+            const resolvedTakenAt = useOverride
+              ? override.takenAt
+              : (row.fees && typeof row.fees === 'object' ? (row.fees as any)._takenAt : undefined) || row.taken_at || row.takenAt;
+
             const item: PropertyListing = {
               id: row.id,
               title: row.title,
@@ -325,8 +379,9 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
               tags: row.tags || [],
               addons: row.addons || [],
               createdAt: row.created_at || row.createdAt || new Date().toISOString(),
-              availabilityStatus: row.availability_status || row.availabilityStatus || 'Available',
-              lastConfirmedAt: row.last_confirmed_at || row.lastConfirmedAt,
+              availabilityStatus: resolvedAvailability,
+              lastConfirmedAt: resolvedLastConfirmedAt,
+              takenAt: resolvedTakenAt || undefined,
             };
             return sanitizeListingMedia(item, idx);
           });
@@ -356,6 +411,7 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
         const deletedIds = getDeletedListingIds();
+        const confirmationOverrides = getListingConfirmationOverrides();
         const customAgentListings = parsed
           .filter((item: PropertyListing) => 
             item.id && 
@@ -363,7 +419,25 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
             item.availabilityStatus !== 'Deleted' &&
             !INITIAL_LISTINGS.some((init) => init.id === item.id)
           )
-          .map((item: PropertyListing, idx: number) => sanitizeListingMedia(item, idx));
+          .map((item: PropertyListing, idx: number) => {
+            const override = confirmationOverrides[item.id];
+            if (override) {
+              const itemConfirmedMs = item.lastConfirmedAt ? new Date(item.lastConfirmedAt).getTime() : 0;
+              const overrideMs = override.lastConfirmedAt ? new Date(override.lastConfirmedAt).getTime() : 0;
+              if (overrideMs > (isNaN(itemConfirmedMs) ? 0 : itemConfirmedMs)) {
+                return sanitizeListingMedia(
+                  {
+                    ...item,
+                    lastConfirmedAt: override.lastConfirmedAt,
+                    availabilityStatus: override.availabilityStatus,
+                    takenAt: override.takenAt,
+                  },
+                  idx
+                );
+              }
+            }
+            return sanitizeListingMedia(item, idx);
+          });
 
         return customAgentListings;
       }
@@ -439,26 +513,8 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
 export async function updateAvailability(listingId: string, status: ListingAvailability): Promise<void> {
   const client = getSupabaseClient();
   const now = new Date().toISOString();
-  const updatePayload: Record<string, any> = { availability_status: status };
 
-  if (status === 'Rented Out') {
-    updatePayload.taken_at = now;
-  } else if (status === 'Available') {
-    updatePayload.last_confirmed_at = now;
-    updatePayload.taken_at = null;
-  }
-
-  if (isSupabaseConfigured() && client) {
-    try {
-      await client
-        .from('listings')
-        .update(updatePayload)
-        .eq('id', listingId);
-    } catch (err) {
-      console.warn('[Setlla Supabase] Failed updating availability:', err);
-    }
-  }
-
+  let targetListing: PropertyListing | undefined;
   try {
     const saved = getLocalSavedListings();
     if (saved) {
@@ -475,52 +531,149 @@ export async function updateAvailability(listingId: string, status: ListingAvail
           modified.lastConfirmedAt = now;
           modified.takenAt = undefined;
         }
+        targetListing = modified;
         return modified;
       });
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     }
   } catch (e) {}
-}
 
-/**
- * Confirms listing freshness / vacant proof-of-life timestamp
- */
-export async function confirmFreshness(listingId: string): Promise<void> {
-  const now = new Date().toISOString();
-  const client = getSupabaseClient();
+  recordListingConfirmationOverride(listingId, {
+    lastConfirmedAt: status === 'Available' ? now : targetListing?.lastConfirmedAt || now,
+    availabilityStatus: status,
+    takenAt: status === 'Rented Out' ? now : undefined,
+    updatedAtMs: Date.now(),
+  });
+  invalidateCache('listings_');
 
   if (isSupabaseConfigured() && client) {
     try {
-      await client
+      const updatePayload: Record<string, any> = { availability_status: status };
+      if (status === 'Available') {
+        updatePayload.last_confirmed_at = now;
+      }
+      if (targetListing?.fees && typeof targetListing.fees === 'object') {
+        updatePayload.fees = {
+          ...targetListing.fees,
+          _lastConfirmedAt: status === 'Available' ? now : targetListing.lastConfirmedAt || now,
+          _takenAt: status === 'Rented Out' ? now : null,
+        };
+      }
+
+      const { error } = await client
         .from('listings')
-        .update({ 
-          last_confirmed_at: now, 
-          availability_status: 'Available',
-          taken_at: null 
-        })
+        .update(updatePayload)
         .eq('id', listingId);
+
+      if (error && updatePayload.last_confirmed_at) {
+        const { last_confirmed_at: _omit, ...fallbackPayload } = updatePayload;
+        await client.from('listings').update(fallbackPayload).eq('id', listingId);
+      }
+      invalidateCache('listings_');
     } catch (err) {
-      console.warn('[Setlla Supabase] Failed confirming freshness:', err);
+      console.warn('[Setlla Supabase] Failed updating availability:', err);
     }
   }
+}
 
+/**
+ * Confirms listing freshness / vacant proof-of-life timestamp (and relists expired 72h listings)
+ */
+export async function confirmFreshness(listingId: string, listingSnapshot?: PropertyListing): Promise<void> {
+  const now = new Date().toISOString();
+  const client = getSupabaseClient();
+
+  unrecordDeletedListingId(listingId);
+
+  let targetListing: PropertyListing | undefined = listingSnapshot;
   try {
     const saved = getLocalSavedListings();
     if (saved) {
       const existing: PropertyListing[] = JSON.parse(saved);
-      const updated = existing.map((item) =>
-        item.id === listingId
-          ? { 
-              ...item, 
-              lastConfirmedAt: now, 
-              availabilityStatus: 'Available' as ListingAvailability,
-              takenAt: undefined 
-            }
-          : item
-      );
+      const updated = existing.map((item) => {
+        if (item.id !== listingId) return item;
+        const refreshed: PropertyListing = {
+          ...item,
+          lastConfirmedAt: now,
+          createdAt: now,
+          availabilityStatus: 'Available' as ListingAvailability,
+          takenAt: undefined,
+          isArchived: false,
+        };
+        targetListing = refreshed;
+        return refreshed;
+      });
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     }
   } catch (e) {}
+
+  recordListingConfirmationOverride(listingId, {
+    lastConfirmedAt: now,
+    availabilityStatus: 'Available',
+    takenAt: undefined,
+    updatedAtMs: Date.now(),
+  });
+  invalidateCache('listings_');
+
+  if (isSupabaseConfigured() && client) {
+    try {
+      const updatedFees =
+        targetListing?.fees && typeof targetListing.fees === 'object'
+          ? {
+              ...targetListing.fees,
+              _lastConfirmedAt: now,
+              _takenAt: null,
+            }
+          : undefined;
+
+      const primaryPayload: Record<string, any> = {
+        last_confirmed_at: now,
+        created_at: now,
+        availability_status: 'Available',
+        ...(updatedFees ? { fees: updatedFees } : {}),
+      };
+
+      const { data: updatedRows, error: updateError } = await client
+        .from('listings')
+        .update(primaryPayload)
+        .eq('id', listingId)
+        .select('id');
+
+      if (updateError) {
+        // Fallback if `last_confirmed_at` column is absent on an older database instance
+        const fallbackPayload: Record<string, any> = {
+          created_at: now,
+          availability_status: 'Available',
+          ...(updatedFees ? { fees: updatedFees } : {}),
+        };
+        const { data: fallbackRows } = await client
+          .from('listings')
+          .update(fallbackPayload)
+          .eq('id', listingId)
+          .select('id');
+
+        if ((!fallbackRows || fallbackRows.length === 0) && targetListing) {
+          await saveNewListing({
+            ...targetListing,
+            createdAt: now,
+            lastConfirmedAt: now,
+            availabilityStatus: 'Available',
+          });
+        }
+      } else if ((!updatedRows || updatedRows.length === 0) && targetListing) {
+        await saveNewListing({
+          ...targetListing,
+          createdAt: now,
+          lastConfirmedAt: now,
+          availabilityStatus: 'Available',
+        });
+      }
+
+      invalidateCache('listings_');
+    } catch (err) {
+      console.warn('[Setlla Supabase] Failed confirming freshness:', err);
+    }
+  }
 }
 
 /**

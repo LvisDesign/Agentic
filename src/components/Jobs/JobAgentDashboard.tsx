@@ -24,7 +24,8 @@ import {
   ChevronRight,
   RotateCcw,
   Radio,
-  Megaphone
+  Megaphone,
+  X
 } from 'lucide-react';
 import { JobListing, JobApplication } from '../../types/jobs';
 import { UserProfile } from '../../types/marketplace';
@@ -268,11 +269,48 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
 
   return (
     <div className="w-full min-h-screen bg-[#FCF9F5] pb-24 font-body">
-      {/* Toast Notification */}
+      {/* Setlla Design System Floating Notification Toast */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#FCF9F5] text-[#342A21] px-4 py-2.5 rounded-2xl shadow-xl border border-[#E5E7EB] flex items-center gap-2 text-xs font-bold animate-in slide-in-from-bottom duration-200">
-          <CheckCircle2 className="w-4 h-4 text-[#342A21] shrink-0" />
-          <span>{toastMessage}</span>
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[90] w-[92vw] max-w-md animate-slide-up">
+          <div className="w-full bg-gradient-to-br from-white via-[#FFFDF9] to-[#FFF7E2] text-[#000004] rounded-2xl p-3.5 sm:p-4 shadow-[0_16px_40px_-10px_rgba(52,42,33,0.24)] border border-[#EDDAA6] flex items-start gap-3 relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#342A21] via-[#FFAD05] to-[#342A21]" />
+            <div className="relative shrink-0 mt-0.5">
+              <div className="w-9 h-9 rounded-xl bg-[#000004] border border-[#FFAD05]/45 flex items-center justify-center overflow-hidden shadow-xs p-1.5">
+                <img
+                  src="/icons/icon-192x192.png"
+                  alt="Setlla"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                  className="w-full h-full object-contain rounded-lg"
+                />
+              </div>
+              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#FFFDF9] border border-[#EDDAA6] flex items-center justify-center shadow-2xs">
+                <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
+              </span>
+            </div>
+            <div className="flex-1 min-w-0 pr-1">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border text-[#342A21] bg-[#FFF8E6] border-[#EDD595] inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Setlla Jobs Update</span>
+                </span>
+                <span className="text-[10px] font-medium text-[#70798C]">• Just now</span>
+              </div>
+              <p className="font-display font-bold text-xs sm:text-sm text-[#1A1410] leading-snug mt-0.5">
+                {toastMessage}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="w-6 h-6 rounded-full bg-[#FFF8E6] hover:bg-[#FFEFCA] text-[#342A21] flex items-center justify-center transition-colors shrink-0 cursor-pointer border border-[#EDD595]"
+              aria-label="Dismiss notification"
+              title="Dismiss notification"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 

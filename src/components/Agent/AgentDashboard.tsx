@@ -19,7 +19,8 @@ import {
   UploadCloud,
   Edit3,
   Trash2,
-  Megaphone
+  Megaphone,
+  X
 } from 'lucide-react';
 import { PropertyListing, BookingRecord, AgentProfile, UserProfile, ListingAvailability } from '../../types/marketplace';
 import { formatNaira } from '../../utils/formatters';
@@ -77,7 +78,17 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'requests' | 'listings' | 'ads'>('requests');
   const [adsInitialTab, setAdsInitialTab] = useState<'campaigns' | 'new-campaign'>('campaigns');
-  const [dashboardToast, setDashboardToast] = useState<string | null>(null);
+  const [dashboardToast, setDashboardToast] = useState<
+    | string
+    | {
+        badge: string;
+        title: string;
+        message: string;
+        variant?: 'success' | 'warning' | 'danger';
+        showViewFeedAction?: boolean;
+      }
+    | null
+  >(null);
 
   // Automatically sync local listings to cloud database on mount
   useEffect(() => {
@@ -786,8 +797,22 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                                   if (onUpdateAvailability) {
                                     onUpdateAvailability(prop.id, st);
                                     if (st === 'Rented Out') {
-                                      setDashboardToast('Listing marked as Rented Out. Hiding from public feed in 3s...');
-                                      setTimeout(() => setDashboardToast(null), 3500);
+                                      setDashboardToast({
+                                        badge: 'Status Updated',
+                                        title: 'Marked as Rented Out',
+                                        message: `"${prop.title}" will remain visible for 24h as completed deal proof.`,
+                                        variant: 'warning',
+                                      });
+                                      setTimeout(() => setDashboardToast(null), 4000);
+                                    } else if (st === 'Available') {
+                                      setDashboardToast({
+                                        badge: 'Listing Live',
+                                        title: 'Available on Explore Feed',
+                                        message: `"${prop.title}" is verified available and active on the public feed.`,
+                                        variant: 'success',
+                                        showViewFeedAction: true,
+                                      });
+                                      setTimeout(() => setDashboardToast(null), 4000);
                                     }
                                   }
                                 }}
@@ -833,18 +858,31 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                             <button
                               type="button"
                               onClick={() => {
+                                const wasExpired = lifecycle.stage === 'expired';
                                 onConfirmFreshness(prop.id);
                                 setDashboardToast(
-                                  lifecycle.stage === 'expired' 
-                                    ? 'Listing relisted and live on Explore feed!'
-                                    : 'Listing availability verified! Freshness renewed for 48h.'
+                                  wasExpired
+                                    ? {
+                                        badge: 'Listing Relisted',
+                                        title: 'Relisted & Live on Explore Feed',
+                                        message: `"${prop.title}" has been restored to the public feed for the next 48 hours.`,
+                                        variant: 'success',
+                                        showViewFeedAction: true,
+                                      }
+                                    : {
+                                        badge: 'Freshness Renewed',
+                                        title: 'Vacancy Availability Verified',
+                                        message: `"${prop.title}" freshness clock has been renewed for 48 hours on Setlla.`,
+                                        variant: 'success',
+                                        showViewFeedAction: true,
+                                      }
                                 );
-                                setTimeout(() => setDashboardToast(null), 3000);
+                                setTimeout(() => setDashboardToast(null), 4500);
                               }}
-                              className={`shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all cursor-pointer shadow-2xs whitespace-nowrap active:scale-95 ${
+                              className={`shrink-0 px-3 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer shadow-2xs whitespace-nowrap active:scale-95 ${
                                 lifecycle.stage === 'expired' || lifecycle.stage === 'needs_confirmation'
-                                  ? 'bg-neutral-900 hover:bg-neutral-800 text-white font-semibold'
-                                  : 'bg-white hover:bg-neutral-100 text-neutral-700 border border-neutral-200/90'
+                                  ? 'bg-[#342A21] hover:bg-[#231C16] text-[#FFF9EB] border border-[#FFAD05]/40'
+                                  : 'bg-white hover:bg-[#FAF6EE] text-[#342A21] border border-[#E5D3A7]'
                               }`}
                             >
                               {lifecycle.stage === 'expired'
@@ -945,16 +983,28 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
         }}
         onListingCreated={(newListing) => {
           onListingCreated(newListing);
-          setDashboardToast(`Property "${newListing.title}" added to your listings!`);
-          setTimeout(() => setDashboardToast(null), 3000);
+          setDashboardToast({
+            badge: 'Listing Published',
+            title: 'Property Live on Explore Feed',
+            message: `"${newListing.title}" has been added to your verified listings.`,
+            variant: 'success',
+            showViewFeedAction: true,
+          });
+          setTimeout(() => setDashboardToast(null), 4000);
         }}
         onListingUpdated={(updatedListing) => {
           if (onListingUpdated) {
             onListingUpdated(updatedListing);
           }
           setEditingListing(null);
-          setDashboardToast(`Changes to "${updatedListing.title}" saved successfully!`);
-          setTimeout(() => setDashboardToast(null), 3000);
+          setDashboardToast({
+            badge: 'Listing Updated',
+            title: 'Changes Saved Successfully',
+            message: `"${updatedListing.title}" has been updated across Setlla.`,
+            variant: 'success',
+            showViewFeedAction: true,
+          });
+          setTimeout(() => setDashboardToast(null), 4000);
         }}
       />
 
@@ -1000,8 +1050,13 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
                     if (onDeleteListing) {
                       await onDeleteListing(listingToDelete.id);
                     }
-                    setDashboardToast('Property listing permanently deleted.');
-                    setTimeout(() => setDashboardToast(null), 3000);
+                    setDashboardToast({
+                      badge: 'Listing Removed',
+                      title: 'Property Listing Deleted',
+                      message: `"${listingToDelete.title}" was permanently removed from Setlla.`,
+                      variant: 'danger',
+                    });
+                    setTimeout(() => setDashboardToast(null), 3500);
                   } finally {
                     setIsDeleting(false);
                     setListingToDelete(null);
@@ -1024,11 +1079,115 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
       </ModalPortal>
       )}
 
-      {/* Floating Status Toast */}
+      {/* Setlla Design System Floating Notification Toast */}
       {dashboardToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-3 rounded-[12px] bg-[#000004] text-white shadow-2xl text-xs sm:text-sm font-medium animate-slide-up border border-white/10 max-w-[90vw]">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{dashboardToast}</span>
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[90] w-[92vw] max-w-md animate-slide-up">
+          <div className="w-full bg-gradient-to-br from-white via-[#FFFDF9] to-[#FFF7E2] text-[#000004] rounded-2xl p-3.5 sm:p-4 shadow-[0_16px_40px_-10px_rgba(52,42,33,0.24)] border border-[#EDDAA6] flex items-start gap-3 relative overflow-hidden">
+            {/* Subtle top Setlla Espresso-Gold-Espresso accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#342A21] via-[#FFAD05] to-[#342A21]" />
+
+            {/* Setlla Brand App Icon Badge */}
+            <div className="relative shrink-0 mt-0.5">
+              <div className="w-10 h-10 rounded-xl bg-[#000004] border border-[#FFAD05]/45 flex items-center justify-center overflow-hidden shadow-xs p-1.5">
+                <img
+                  src="/icons/icon-192x192.png"
+                  alt="Setlla"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                  className="w-full h-full object-contain rounded-lg"
+                />
+              </div>
+              <span className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-[#FFFDF9] border border-[#EDDAA6] flex items-center justify-center shadow-2xs">
+                {typeof dashboardToast === 'object' && dashboardToast.variant === 'danger' ? (
+                  <Trash2 className="w-2.5 h-2.5 text-rose-600" />
+                ) : typeof dashboardToast === 'object' && dashboardToast.variant === 'warning' ? (
+                  <Clock className="w-2.5 h-2.5 text-[#C68400]" />
+                ) : (
+                  <CheckCircle className="w-2.5 h-2.5 text-emerald-600" />
+                )}
+              </span>
+            </div>
+
+            {/* Notification Content */}
+            <div className="flex-1 min-w-0 pr-1">
+              {typeof dashboardToast === 'string' ? (
+                <>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border text-[#342A21] bg-[#FFF8E6] border-[#EDD595] inline-flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span>Setlla Update</span>
+                    </span>
+                  </div>
+                  <p className="font-display font-bold text-xs sm:text-sm text-[#1A1410] leading-snug mt-0.5">
+                    {dashboardToast}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                    <span
+                      className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1.5 ${
+                        dashboardToast.variant === 'danger'
+                          ? 'text-rose-800 bg-rose-50 border-rose-200'
+                          : dashboardToast.variant === 'warning'
+                          ? 'text-[#8A5A00] bg-[#FFF3D1] border-[#E8CC88]'
+                          : 'text-[#342A21] bg-[#FFF8E6] border-[#EDD595]'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          dashboardToast.variant === 'danger'
+                            ? 'bg-rose-500'
+                            : dashboardToast.variant === 'warning'
+                            ? 'bg-[#FFAD05]'
+                            : 'bg-emerald-500'
+                        }`}
+                      />
+                      <span>{dashboardToast.badge}</span>
+                    </span>
+                    <span className="text-[10px] font-medium text-[#70798C]">• Just now</span>
+                  </div>
+
+                  <h5 className="font-display font-bold text-xs sm:text-sm text-[#1A1410] leading-snug">
+                    {dashboardToast.title}
+                  </h5>
+
+                  <p className="text-[11px] sm:text-xs text-[#5C5346] line-clamp-2 mt-0.5 leading-relaxed font-medium">
+                    {dashboardToast.message}
+                  </p>
+
+                  {dashboardToast.showViewFeedAction && (onSwitchToTenant || onSwitchToSeeker) && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDashboardToast(null);
+                          const switchFn = onSwitchToTenant || onSwitchToSeeker;
+                          if (switchFn) switchFn();
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#342A21] hover:bg-[#231C16] text-[#FFF9EB] border border-[#FFAD05]/35 text-[11px] font-bold shadow-2xs transition-all active:scale-95 cursor-pointer"
+                      >
+                        <span>View on Explore Feed</span>
+                        <ArrowUpRight className="w-3 h-3 text-[#FFAD05]" />
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Dismiss Button */}
+            <button
+              type="button"
+              onClick={() => setDashboardToast(null)}
+              className="w-6 h-6 rounded-full bg-[#FFF8E6] hover:bg-[#FFEFCA] text-[#342A21] flex items-center justify-center transition-colors shrink-0 cursor-pointer border border-[#EDD595]"
+              aria-label="Dismiss notification"
+              title="Dismiss notification"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
     </div>

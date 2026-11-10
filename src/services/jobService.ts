@@ -973,7 +973,12 @@ export async function toggleJobStatus(jobId: string, newStatus: 'active' | 'clos
     try {
       const client = getSupabaseClient();
       if (client) {
-        await client.from('listings').upsert([mapJobToListingsRow(targetModified)]);
+        const row = mapJobToListingsRow(targetModified);
+        const { error } = await client.from('listings').upsert([row]);
+        if (error) {
+          const { last_confirmed_at: _omit, ...fallbackRow } = row;
+          await client.from('listings').upsert([fallbackRow]);
+        }
       }
     } catch (_) {}
   }
@@ -988,7 +993,13 @@ export async function confirmJobFreshness(jobId: string): Promise<void> {
   let targetModified: JobListing | null = null;
   const updated = all.map((j) => {
     if (j.id !== jobId) return j;
-    const mod: JobListing = { ...j, lastConfirmedAt: now, status: 'active' as const, takenAt: undefined };
+    const mod: JobListing = {
+      ...j,
+      createdAt: now,
+      lastConfirmedAt: now,
+      status: 'active' as const,
+      takenAt: undefined,
+    };
     targetModified = mod;
     return mod;
   });
@@ -1001,7 +1012,12 @@ export async function confirmJobFreshness(jobId: string): Promise<void> {
     try {
       const client = getSupabaseClient();
       if (client) {
-        await client.from('listings').upsert([mapJobToListingsRow(targetModified)]);
+        const row = mapJobToListingsRow(targetModified);
+        const { error } = await client.from('listings').upsert([row]);
+        if (error) {
+          const { last_confirmed_at: _omit, ...fallbackRow } = row;
+          await client.from('listings').upsert([fallbackRow]);
+        }
       }
     } catch (_) {}
   }
