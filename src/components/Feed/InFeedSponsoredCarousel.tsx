@@ -231,32 +231,16 @@ const InFeedSponsoredVideo: React.FC<InFeedSponsoredVideoProps> = ({ mediaUrl, p
   return (
     <div
       ref={containerRef}
-      className="w-full h-full relative cursor-pointer flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#231C16] via-[#18130F] to-[#0E0B09]"
+      className="w-full relative cursor-pointer flex items-center justify-center overflow-hidden bg-[#18130F]"
       onClick={() => {
         if (hasEnded) handlePlayAgain();
       }}
     >
-      {/* Ambient warm glow backdrop so portrait/square creatives look intentional */}
-      {safePoster ? (
-        <div
-          className="absolute inset-0 bg-cover bg-center filter blur-xl opacity-35 scale-110 pointer-events-none"
-          style={{ backgroundImage: `url(${safePoster})` }}
-        />
-      ) : (
-        <div
-          className="absolute inset-0 pointer-events-none opacity-35"
-          style={{
-            background:
-              'radial-gradient(circle at 50% 45%, rgba(255, 173, 5, 0.28) 0%, rgba(52, 42, 33, 0.15) 55%, transparent 100%)',
-          }}
-        />
-      )}
-
       <video
         ref={videoRef}
         src={videoSrcWithFrame}
         poster={safePoster}
-        className="relative z-10 w-full h-full object-contain mx-auto"
+        className="relative z-10 w-full h-auto block"
         muted={isMuted}
         playsInline
         preload="metadata"
@@ -506,7 +490,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
 
         <div
           ref={scrollContainerRef}
-          className="flex gap-3.5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-1 pt-0.5 overscroll-x-contain scroll-smooth"
+          className="flex items-start gap-3.5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-1 pt-0.5 overscroll-x-contain scroll-smooth"
         >
           {adverts.map((ad) => {
             const isExpanded = !!expandedAdIds[ad.id];
@@ -566,11 +550,11 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                     </button>
                   </div>
 
-                  {/* B. Media-First Showcase (Video or High-Res Visual) */}
+                  {/* B. Media-First Showcase (Full Intrinsic Display — Video or High-Res Visual) */}
                   {ad.mediaUrl && (
                     <div
                       onClick={(e) => handleCTA(e, ad)}
-                      className="mb-3 rounded-2xl overflow-hidden aspect-[16/10] bg-[#18130F] border border-[#EDE3CC] relative group/media cursor-pointer flex items-center justify-center shadow-2xs"
+                      className="mb-3 w-full rounded-2xl overflow-hidden bg-[#18130F] border border-[#EDE3CC] relative group/media cursor-pointer shadow-2xs"
                     >
                       {ad.mediaType === 'video' || isVideoMediaUrl(ad.mediaUrl) ? (
                         <InFeedSponsoredVideo mediaUrl={ad.mediaUrl} posterUrl={ad.thumbnailUrl} />
@@ -578,7 +562,7 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
                         <img
                           src={ad.mediaUrl}
                           alt={cleanHeadline}
-                          className="w-full h-full object-cover group-hover/media:scale-[1.03] transition-transform duration-300"
+                          className="w-full h-auto block group-hover/media:scale-[1.02] transition-transform duration-300"
                           loading="lazy"
                         />
                       )}

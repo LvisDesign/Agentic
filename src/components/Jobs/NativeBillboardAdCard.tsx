@@ -93,14 +93,14 @@ export const NativeBillboardAdCard: React.FC<NativeBillboardAdCardProps> = ({
           </div>
         </div>
 
-        {/* Media Preview (Media-First Visual Hierarchy) */}
+        {/* Media Preview (Full Intrinsic Display) */}
         {advert.mediaUrl && (
-          <div className="w-full h-44 sm:h-52 rounded-xl sm:rounded-2xl overflow-hidden bg-[#18130F] relative border border-[#EDE3CC]">
+          <div className="w-full rounded-xl sm:rounded-2xl overflow-hidden bg-[#18130F] relative border border-[#EDE3CC]">
             {advert.mediaType === 'video' || isVideoMediaUrl(advert.mediaUrl) ? (
               <video
                 src={advert.mediaUrl.includes('#') ? advert.mediaUrl : `${advert.mediaUrl}#t=0.1`}
                 poster={safePoster}
-                className="w-full h-full object-contain"
+                className="w-full h-auto block"
                 muted
                 playsInline
                 loop
@@ -110,7 +110,7 @@ export const NativeBillboardAdCard: React.FC<NativeBillboardAdCardProps> = ({
               <img
                 src={advert.mediaUrl}
                 alt={cleanHeadline}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                className="w-full h-auto block group-hover:scale-[1.02] transition-transform duration-300"
               />
             )}
           </div>
