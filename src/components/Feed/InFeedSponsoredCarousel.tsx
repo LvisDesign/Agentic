@@ -12,7 +12,6 @@ import {
   Volume2,
   VolumeX,
   RotateCcw,
-  Sparkles,
 } from 'lucide-react';
 import { WhatsAppIcon } from '../UI/WhatsAppIcon';
 import { AdvertStory, getAdvertCtaConfig } from '../../data/mockAdverts';
@@ -459,9 +458,6 @@ export const InFeedSponsoredCarousel: React.FC<InFeedSponsoredCarouselProps> = (
       {/* 1. SECTION HEADER */}
       <div className="px-0.5 pb-3 flex items-center justify-between border-b border-[#342A21]/10 relative z-10">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="w-6 h-6 rounded-lg bg-[#342A21] text-[#FFAD05] flex items-center justify-center shadow-2xs shrink-0">
-            <Sparkles className="w-3.5 h-3.5" />
-          </span>
           <h3 className="font-display font-extrabold text-sm sm:text-base tracking-tight text-[#231C16] truncate">
             Sponsored Spotlight
           </h3>
