@@ -14,7 +14,6 @@ import {
   Smartphone,
   Trash2,
   CheckCheck,
-  Sparkles,
   UserCheck,
   XCircle,
 } from 'lucide-react';
@@ -567,9 +566,8 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
               }).length > 0 && (
                 <div className="space-y-2.5">
                   <div className="flex items-center justify-between px-1 pt-0.5">
-                    <span className="text-[11px] font-bold text-[#70798C] uppercase tracking-wider flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-[#C68400]" />
-                      <span>Recent Alerts</span>
+                    <span className="text-[11px] font-bold text-[#70798C] uppercase tracking-wider">
+                      Recent Alerts
                     </span>
                     <span className="text-[11px] font-bold text-[#342A21]">
                       {inboxItems.length}
