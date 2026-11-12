@@ -80,7 +80,8 @@ export function triggerDeviceVibration(pattern: number[] = [150, 75, 150]): void
 }
 
 /**
- * Shows an OS-level device notification if permission is granted
+ * Shows an OS-level device notification (via Service Worker first for lock-screen & background reliability,
+ * with fallback to standard Notification API).
  */
 export async function showDeviceNotification(
   title: string,
@@ -94,36 +95,55 @@ export async function showDeviceNotification(
   triggerDeviceVibration();
 
   if (Notification.permission === 'granted') {
-    const tag = options?.tag || `setlla-${cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+    const tag = options?.tag || `setlla-${cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`;
+    const { onClick, ...restOptions } = options || {};
+
+    // Increment OS app icon badge if supported (Android / iOS / Desktop PWA)
+    if ('setAppBadge' in navigator) {
+      try {
+        (navigator as any).setAppBadge().catch(() => {});
+      } catch (_) {}
+    }
+
+    // 1. Prefer Service Worker showNotification so alerts surface on mobile lock screens & backgrounded tabs
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg && 'showNotification' in reg) {
+          await reg.showNotification(cleanTitle, {
+            icon: '/icons/icon-192x192.png',
+            badge: '/icons/notification-badge.png',
+            tag,
+            renotify: true,
+            vibrate: [200, 100, 200],
+            data: {
+              url: window.location.href,
+              timestamp: Date.now(),
+            },
+            ...restOptions,
+          } as NotificationOptions);
+          return;
+        }
+      } catch (_) {
+        // Fall through to standard Notification constructor
+      }
+    }
+
+    // 2. Fallback: Standard Window Notification API
     try {
       const notification = new Notification(cleanTitle, {
         icon: '/icons/icon-192x192.png',
         badge: '/icons/notification-badge.png',
         tag,
-        ...options,
+        ...restOptions,
       });
 
-      if (options?.onClick) {
-        notification.onclick = () => {
-          window.focus();
-          options.onClick?.();
-          notification.close();
-        };
-      }
-    } catch (e) {
-      // Some mobile browsers (like Chrome Android) disallow `new Notification()`
-      // and require serviceWorkerRegistration.showNotification()
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then((reg) => {
-          reg.showNotification(cleanTitle, {
-            icon: '/icons/icon-192x192.png',
-            badge: '/icons/notification-badge.png',
-            tag,
-            ...options,
-          }).catch(() => {});
-        }).catch(() => {});
-      }
-    }
+      notification.onclick = () => {
+        window.focus();
+        onClick?.();
+        notification.close();
+      };
+    } catch (_) {}
   }
 }
 

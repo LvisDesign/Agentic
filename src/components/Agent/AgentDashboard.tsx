@@ -33,6 +33,7 @@ import { getListingLifecycleInfo } from '../../utils/listingLifecycle';
 import { AdvertiserDashboard } from '../Advertiser/AdvertiserDashboard';
 import { ensureAdvertiserForUser } from '../../services/advertiserAuthService';
 import { useInfiniteScroll, InfiniteScrollSentinel } from '../UI/Pagination';
+import { normalizePhoneNumber, normalizeEmail } from '../../utils/userRegistry';
 
 const AGENT_REQUESTS_BATCH = 4;
 const AGENT_LISTINGS_BATCH = 4;
@@ -131,7 +132,8 @@ export const AgentDashboard: React.FC<AgentDashboardProps> = ({
     : listings.filter((l) => {
         if (!currentUser) return false;
         if (l.agent?.id && currentUser.id && l.agent.id === currentUser.id) return true;
-        if (currentUser.phone && l.agent?.phone && l.agent.phone.replace(/\s+/g, '') === currentUser.phone.replace(/\s+/g, '')) return true;
+        if (currentUser.phone && l.agent?.phone && normalizePhoneNumber(l.agent.phone) === normalizePhoneNumber(currentUser.phone)) return true;
+        if (currentUser.email && l.agent?.email && normalizeEmail(l.agent.email) === normalizeEmail(currentUser.email)) return true;
         if (currentUser.fullName && l.agent?.fullName && l.agent.fullName.toLowerCase() === currentUser.fullName.toLowerCase()) return true;
         return false;
       })

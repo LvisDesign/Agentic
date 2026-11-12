@@ -6,6 +6,10 @@ import { UserProfile } from '../types/marketplace';
 import { saveRegisteredUser, normalizePhoneNumber, normalizeEmail } from '../utils/userRegistry';
 import { recordNotificationInInbox } from './notificationService';
 import { showDeviceNotification } from '../utils/realtimeNotifications';
+import {
+  sendNewJobApplicationToEmployerEmail,
+  sendJobApplicationStatusToSeekerEmail,
+} from './transactionalEmailService';
 
 const JOBS_STORAGE_KEY = 'setlla_job_listings';
 const DELETED_JOBS_STORAGE_KEY = 'setlla_deleted_job_ids';
@@ -725,6 +729,10 @@ export async function submitJobApplication(params: ApplicationSubmissionParams):
     });
   }
 
+  // 5. Off-app Email Notifications (to Employer & Candidate — non-blocking)
+  sendNewJobApplicationToEmployerEmail(application, params.job).catch(() => {});
+  sendJobApplicationStatusToSeekerEmail(application, 'submitted').catch(() => {});
+
   return application;
 }
 
@@ -1084,12 +1092,20 @@ export function updateApplicationReviewStatus(
     })();
   }
 
-  if (targetApp && (status === 'shortlisted' || status === 'reviewed')) {
-    const statusLabel = status === 'shortlisted' ? 'Shortlisted' : 'Reviewed';
+  if (targetApp && (status === 'shortlisted' || status === 'reviewed' || status === 'rejected')) {
+    const statusLabel =
+      status === 'shortlisted'
+        ? 'Shortlisted'
+        : status === 'reviewed'
+        ? 'Reviewed'
+        : 'Declined';
     recordNotificationInInbox({
       eventKey: `job_app_status_${targetApp.id}_${status}`,
       title: `Application ${statusLabel}`,
-      body: `${targetApp.companyName} marked your application for "${targetApp.jobTitle}" as ${statusLabel}.`,
+      body:
+        status === 'rejected'
+          ? `${targetApp.companyName} updated your application status for "${targetApp.jobTitle}".`
+          : `${targetApp.companyName} marked your application for "${targetApp.jobTitle}" as ${statusLabel}.`,
       type: 'job_status_updated',
       recipientId: targetApp.applicantId,
       recipientEmail: targetApp.applicantEmail,
@@ -1098,6 +1114,9 @@ export function updateApplicationReviewStatus(
       applicationId: targetApp.id,
       actionLabel: 'View Application Status',
     });
+
+    // Dispatch instant off-app email notification to the Job Seeker
+    sendJobApplicationStatusToSeekerEmail(targetApp, status).catch(() => {});
   }
 }
 

@@ -22,7 +22,9 @@ export default async function handler(req, res) {
       text,
       html,
       replyTo,
+      fromName,
       advert,
+      metadata,
       eventType = 'new_campaign',
     } = req.body || {};
 
@@ -40,15 +42,16 @@ export default async function handler(req, res) {
       .filter(Boolean);
 
     const recipients = Array.isArray(to) && to.length > 0
-      ? to
+      ? to.map((e) => String(e).trim()).filter(Boolean)
       : typeof to === 'string' && to.trim()
       ? [to.trim()]
       : configuredRecipients;
 
     const resendApiKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
+    const defaultFromName = fromName || (advert ? 'Setlla Adverts Alert' : 'Setlla Notifications');
     const fromAddress =
       process.env.RESEND_FROM_EMAIL ||
-      'Setlla Adverts Alert <notifications@setlla.com>';
+      `${defaultFromName} <notifications@setlla.com>`;
 
     let deliveredVia = null;
 
@@ -74,7 +77,7 @@ export default async function handler(req, res) {
         deliveredVia = 'resend';
       } else {
         const errText = await resendRes.text().catch(() => '');
-        console.warn('[AdminNotificationAPI] Resend response notice:', errText);
+        console.warn('[NotificationAPI] Resend response notice:', errText);
       }
     }
 
@@ -90,6 +93,7 @@ export default async function handler(req, res) {
           html,
           replyTo,
           advert,
+          metadata,
           eventType,
         }),
       });
@@ -98,16 +102,17 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3. Fallback Delivery: FormSubmit AJAX relay to primary admin inboxes
+    // 3. Fallback Delivery: FormSubmit AJAX relay to recipient inboxes
     if (!deliveredVia) {
-      const relayPromises = recipients.map((recipientEmail) =>
-        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
+      const formPayload = metadata && typeof metadata === 'object'
+        ? {
+            _subject: subject,
+            _template: 'box',
+            _captcha: 'false',
+            ...metadata,
+            Message: text,
+          }
+        : {
             _subject: subject,
             _template: 'box',
             _captcha: 'false',
@@ -126,7 +131,16 @@ export default async function handler(req, res) {
             Media_URL: advert?.mediaUrl || 'N/A',
             Admin_Portal_Action: 'https://private.setlla.com',
             Message: text,
-          }),
+          };
+
+      const relayPromises = recipients.map((recipientEmail) =>
+        fetch(`https://formsubmit.co/ajax/${encodeURIComponent(recipientEmail)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(formPayload),
         }).catch(() => null)
       );
 
@@ -147,3 +161,4 @@ export default async function handler(req, res) {
     });
   }
 }
+

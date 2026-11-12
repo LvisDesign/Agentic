@@ -22,23 +22,35 @@ export async function fetchAllBookings(): Promise<BookingRecord[]> {
         .order('created_at', { ascending: false });
 
       if (!error && Array.isArray(data)) {
-        const cloudBookings: BookingRecord[] = data.map((row) => ({
-          id: row.id,
-          propertyId: row.property_id || row.propertyId,
-          slotId: row.slot_id || row.slotId,
-          slotTimeWindow: row.slot_time_window || row.slotTimeWindow,
-          slotDate: row.slot_date || row.slotDate,
-          applicantName: row.applicant_name || row.applicantName,
-          applicantPhone: row.applicant_phone || row.applicantPhone,
-          applicantEmail: row.applicant_email || row.applicantEmail,
-          status: row.status as BookingStatus,
-          queuePosition: row.queue_position ?? row.queuePosition,
-          inspectionFeeAmount: row.inspection_fee_amount ?? row.inspectionFeeAmount ?? 0,
-          paymentReference: row.payment_reference || row.paymentReference,
-          paymentMethod: row.payment_method || row.paymentMethod,
-          createdAt: row.created_at || row.createdAt || new Date().toISOString(),
-          confirmedAt: row.confirmed_at || row.confirmedAt,
-        }));
+        const cloudBookings: BookingRecord[] = data.map((row) => {
+          const rawPayRef = row.payment_reference || row.paymentReference || '';
+          const encodedEmail =
+            typeof rawPayRef === 'string' && rawPayRef.startsWith('EMAIL:')
+              ? rawPayRef.slice(6).trim()
+              : undefined;
+          const cleanPayRef =
+            typeof rawPayRef === 'string' && rawPayRef.startsWith('EMAIL:')
+              ? undefined
+              : rawPayRef || undefined;
+
+          return {
+            id: row.id,
+            propertyId: row.property_id || row.propertyId,
+            slotId: row.slot_id || row.slotId,
+            slotTimeWindow: row.slot_time_window || row.slotTimeWindow,
+            slotDate: row.slot_date || row.slotDate,
+            applicantName: row.applicant_name || row.applicantName,
+            applicantPhone: row.applicant_phone || row.applicantPhone,
+            applicantEmail: row.applicant_email || row.applicantEmail || encodedEmail,
+            status: row.status as BookingStatus,
+            queuePosition: row.queue_position ?? row.queuePosition,
+            inspectionFeeAmount: row.inspection_fee_amount ?? row.inspectionFeeAmount ?? 0,
+            paymentReference: cleanPayRef,
+            paymentMethod: row.payment_method || row.paymentMethod,
+            createdAt: row.created_at || row.createdAt || new Date().toISOString(),
+            confirmedAt: row.confirmed_at || row.confirmedAt,
+          };
+        });
 
         try {
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cloudBookings));
@@ -70,6 +82,10 @@ export async function saveNewBooking(booking: BookingRecord): Promise<void> {
   const client = getSupabaseClient();
   if (isSupabaseConfigured() && client) {
     try {
+      const encodedRef =
+        booking.paymentReference ||
+        (booking.applicantEmail ? `EMAIL:${booking.applicantEmail.trim()}` : null);
+
       const row = {
         id: booking.id,
         property_id: booking.propertyId,
@@ -82,13 +98,20 @@ export async function saveNewBooking(booking: BookingRecord): Promise<void> {
         status: booking.status,
         queue_position: booking.queuePosition || null,
         inspection_fee_amount: booking.inspectionFeeAmount || 0,
-        payment_reference: booking.paymentReference || null,
+        payment_reference: encodedRef,
         payment_method: booking.paymentMethod || null,
         created_at: booking.createdAt || new Date().toISOString(),
         confirmed_at: booking.confirmedAt || null,
       };
 
-      await client.from('bookings').upsert([row]);
+      const { error } = await client.from('bookings').upsert([row]);
+      if (error) {
+        const { applicant_email: _omitEmail, ...fallbackRow } = row;
+        const { error: retryErr } = await client.from('bookings').upsert([fallbackRow]);
+        if (retryErr) {
+          console.warn('[Setlla Supabase] Fallback booking upsert notice:', retryErr.message);
+        }
+      }
     } catch (err) {
       console.warn('[Setlla Supabase] Failed saving booking to cloud:', err);
     }
@@ -111,10 +134,18 @@ export async function updateBookingStatus(bookingId: string, status: BookingStat
 
   if (isSupabaseConfigured() && client) {
     try {
-      await client
+      const updatePayload: Record<string, unknown> = { status };
+      if (confirmedAt) {
+        updatePayload.confirmed_at = confirmedAt;
+      }
+      const { error } = await client
         .from('bookings')
-        .update({ status, confirmed_at: confirmedAt })
+        .update(updatePayload)
         .eq('id', bookingId);
+
+      if (error && confirmedAt) {
+        await client.from('bookings').update({ status }).eq('id', bookingId);
+      }
     } catch (err) {
       console.warn('[Setlla Supabase] Failed updating booking status:', err);
     }

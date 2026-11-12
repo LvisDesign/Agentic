@@ -92,6 +92,11 @@ import { fetchAllJobApplications } from './services/jobService';
 import { supabase, isSupabaseConfigured, getSupabaseClient, invalidateCache } from './utils/supabaseClient';
 import { broadcastRealtimeEvent, subscribeToRealtimeEvents } from './services/realtimeSync';
 import { playNotificationSound, showDeviceNotification, requestDeviceNotificationPermission } from './utils/realtimeNotifications';
+import {
+  sendInspectionRequestToAgentEmail,
+  sendInspectionSubmittedToTenantEmail,
+  sendInspectionResponseToTenantEmail,
+} from './services/transactionalEmailService';
 
 // Guest Profile for new, unauthenticated visitors
 const GUEST_USER: UserProfile = {
@@ -842,9 +847,17 @@ export function App() {
             (currentUser.phone &&
               targetListing!.agent.phone &&
               normalizePhoneNumber(targetListing!.agent.phone) === normalizePhoneNumber(currentUser.phone)) ||
+            (currentUser.email &&
+              targetListing!.agent.email &&
+              normalizeEmail(targetListing!.agent.email) === normalizeEmail(currentUser.email)) ||
             currentUser.isAdmin);
+        const isBookingFromSelf = Boolean(
+          currentUser.phone &&
+            b.applicantPhone &&
+            normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(b.applicantPhone)
+        );
 
-        if (currentUser.isAgent && currentUser.phone !== b.applicantPhone && isMyListing && targetListing) {
+        if (!isBookingFromSelf && isMyListing && targetListing) {
           recordNotifiedAgentBookingId(b.id);
           const title = targetListing.title;
           setPushNotification({
@@ -874,10 +887,11 @@ export function App() {
         const targetListing = event.listing || listings.find((p) => p.id === event.booking!.propertyId);
         const isApplicant = isBookingForUser(event.booking, currentUser, myDeviceBookingIds);
 
-        if (isApplicant && !currentUser.isAgent) {
+        if (isApplicant) {
           recordNotifiedBookingId(event.booking.id);
           const agentName = targetListing?.agent.fullName || 'The Agent';
           setPushNotification({
+            eventKey: `inspection_confirmed_${event.booking.id}`,
             title: '🎉 Inspection Approved!',
             body: `${agentName} confirmed your inspection for "${targetListing?.title || 'the property'}". Contact details unlocked!`,
             type: 'inspection_confirmed',
@@ -915,12 +929,13 @@ export function App() {
 
         const isApplicant = rejectedBooking ? isBookingForUser(rejectedBooking, currentUser, myDeviceBookingIds) : false;
 
-        if (isApplicant && !currentUser.isAgent && rejectedId) {
+        if (isApplicant && rejectedId) {
           recordNotifiedDeclinedBookingId(rejectedId);
           const agentName = targetListing?.agent.fullName || 'The Agent';
           const propTitle = targetListing?.title || 'the property';
 
           setPushNotification({
+            eventKey: `inspection_declined_${rejectedId}`,
             title: '❌ Inspection Request Declined',
             body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
             type: 'inspection_declined',
@@ -1200,9 +1215,12 @@ export function App() {
                   (currentUser.phone &&
                     targetListing.agent.phone &&
                     normalizePhoneNumber(targetListing.agent.phone) === normalizePhoneNumber(currentUser.phone)) ||
+                  (currentUser.email &&
+                    targetListing.agent.email &&
+                    normalizeEmail(targetListing.agent.email) === normalizeEmail(currentUser.email)) ||
                   currentUser.isAdmin;
 
-                if (currentUser.isAgent && !isMe && isMyListing) {
+                if (!isMe && isMyListing) {
                   if (!getNotifiedAgentBookingIds().has(bookingId)) {
                     recordNotifiedAgentBookingId(bookingId);
                     const propTitle = targetListing.title;
@@ -1232,6 +1250,11 @@ export function App() {
                 const status = updatedRow.status;
                 const propId = updatedRow.property_id || updatedRow.propertyId;
                 const targetListing = listings.find((p) => p.id === propId);
+                const rawPayRef = updatedRow.payment_reference || updatedRow.paymentReference || '';
+                const encodedEmail =
+                  typeof rawPayRef === 'string' && rawPayRef.startsWith('EMAIL:')
+                    ? rawPayRef.slice(6).trim()
+                    : undefined;
 
                 const bookingRecord: BookingRecord = {
                   id: updatedRow.id,
@@ -1241,7 +1264,7 @@ export function App() {
                   slotDate: updatedRow.slot_date || updatedRow.slotDate,
                   applicantName: updatedRow.applicant_name || updatedRow.applicantName || 'Applicant',
                   applicantPhone: updatedRow.applicant_phone || updatedRow.applicantPhone,
-                  applicantEmail: updatedRow.applicant_email || updatedRow.applicantEmail,
+                  applicantEmail: updatedRow.applicant_email || updatedRow.applicantEmail || encodedEmail,
                   status: status as any,
                   inspectionFeeAmount: Number(updatedRow.inspection_fee_amount || 0),
                   createdAt: updatedRow.created_at || updatedRow.createdAt || new Date().toISOString(),
@@ -1250,13 +1273,14 @@ export function App() {
 
                 const isMe = isBookingForUser(bookingRecord, currentUser, myDeviceBookingIds);
 
-                if (isMe && !currentUser.isAgent && (status === 'CONFIRMED_UNLOCKED' || status === 'APPROVED_CONFIRMED')) {
+                if (isMe && (status === 'CONFIRMED_UNLOCKED' || status === 'APPROVED_CONFIRMED')) {
                   if (!getNotifiedBookingIds().has(bookingRecord.id)) {
                     recordNotifiedBookingId(bookingRecord.id);
                     const agentName = targetListing?.agent.fullName || 'The Agent';
                     const propTitle = targetListing?.title || 'the property';
 
                     setPushNotification({
+                      eventKey: `inspection_confirmed_${bookingRecord.id}`,
                       title: '🎉 Inspection Approved!',
                       body: `${agentName} confirmed your inspection for "${propTitle}". Contact details unlocked!`,
                       type: 'inspection_confirmed',
@@ -1279,13 +1303,14 @@ export function App() {
                     });
                     playNotificationSound('success');
                   }
-                } else if (isMe && !currentUser.isAgent && status === 'REJECTED_BY_AGENT') {
+                } else if (isMe && status === 'REJECTED_BY_AGENT') {
                   if (!getNotifiedDeclinedBookingIds().has(bookingRecord.id)) {
                     recordNotifiedDeclinedBookingId(bookingRecord.id);
                     const agentName = targetListing?.agent.fullName || 'The Agent';
                     const propTitle = targetListing?.title || 'the property';
 
                     setPushNotification({
+                      eventKey: `inspection_declined_${bookingRecord.id}`,
                       title: '❌ Inspection Request Declined',
                       body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
                       type: 'inspection_declined',
@@ -1472,7 +1497,7 @@ export function App() {
   // Guarantees the applying tenant receives their celebratory alert & unlocked contact prompt
   // even if their app was closed, offline, or logged out when the agent approved the booking.
   useEffect(() => {
-    if (!currentUser || currentUser.isAgent) return;
+    if (!currentUser) return;
 
     const notified = getNotifiedBookingIds();
     const unnotifiedConfirmedBooking = userBookings.find(
@@ -1489,6 +1514,7 @@ export function App() {
       const propTitle = targetListing?.title || 'the property';
 
       setPushNotification({
+        eventKey: `inspection_confirmed_${unnotifiedConfirmedBooking.id}`,
         title: '🎉 Inspection Approved!',
         body: `${agentName} confirmed your inspection for "${propTitle}". Contact details unlocked!`,
         type: 'inspection_confirmed',
@@ -1517,7 +1543,7 @@ export function App() {
   // Persistent Tenant Decline Notification Trigger:
   // Ensures applying tenants are notified if an agent declined their request while offline or away
   useEffect(() => {
-    if (!currentUser || currentUser.isAgent) return;
+    if (!currentUser) return;
 
     const notifiedDeclined = getNotifiedDeclinedBookingIds();
     const unnotifiedDeclinedBooking = userBookings.find(
@@ -1532,6 +1558,7 @@ export function App() {
       const propTitle = targetListing?.title || 'the property';
 
       setPushNotification({
+        eventKey: `inspection_declined_${unnotifiedDeclinedBooking.id}`,
         title: '❌ Inspection Request Declined',
         body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
         type: 'inspection_declined',
@@ -1554,7 +1581,7 @@ export function App() {
   // Persistent Agent Booking Request Notification Trigger:
   // Guarantees agents receive a pop-up alert & sound for pending booking requests even if their app was closed
   useEffect(() => {
-    if (!currentUser || !currentUser.isAgent) return;
+    if (!currentUser) return;
 
     const notifiedAgentRequests = getNotifiedAgentBookingIds();
     const agentListingIds = new Set(
@@ -1565,10 +1592,15 @@ export function App() {
             (currentUser.phone &&
               l.agent.phone &&
               normalizePhoneNumber(l.agent.phone) === normalizePhoneNumber(currentUser.phone)) ||
+            (currentUser.email &&
+              l.agent.email &&
+              normalizeEmail(l.agent.email) === normalizeEmail(currentUser.email)) ||
             currentUser.isAdmin
         )
         .map((l) => l.id)
     );
+
+    if (agentListingIds.size === 0) return;
 
     const unnotifiedBooking = bookings.find(
       (b) =>
@@ -1613,7 +1645,32 @@ export function App() {
         body: `${unnotifiedBooking.applicantName} requested an inspection for "${propTitle}" (${unnotifiedBooking.slotTimeWindow}).`,
       });
     }
-  }, [bookings, currentUser.id, currentUser.isAgent]);
+  }, [bookings, listings, currentUser.id, currentUser.phone, currentUser.email, currentUser.isAgent, currentUser.isAdmin]);
+
+  // Background Wake / App Focus Sync:
+  // Whenever a user returns to Setlla from another app or unlocks their phone, immediately pull fresh bookings & job applications
+  useEffect(() => {
+    const syncOnWake = () => {
+      if (document.visibilityState && document.visibilityState !== 'visible') return;
+      fetchAllBookings()
+        .then((freshBookings) => {
+          if (Array.isArray(freshBookings) && freshBookings.length > 0) {
+            setBookings(freshBookings);
+          }
+        })
+        .catch(() => {});
+      fetchAllJobApplications().catch(() => {});
+    };
+
+    window.addEventListener('focus', syncOnWake);
+    window.addEventListener('online', syncOnWake);
+    document.addEventListener('visibilitychange', syncOnWake);
+    return () => {
+      window.removeEventListener('focus', syncOnWake);
+      window.removeEventListener('online', syncOnWake);
+      document.removeEventListener('visibilitychange', syncOnWake);
+    };
+  }, []);
 
   // Authentication gating & resume booking state
   const [pendingBookingListing, setPendingBookingListing] = useState<PropertyListing | null>(null);
@@ -1884,6 +1941,53 @@ export function App() {
       listing: targetListing,
     });
 
+    // Record persistent inbox alerts for both the Agent and the Tenant
+    if (targetListing) {
+      recordNotificationInInbox({
+        eventKey: `agent_booking_inbox_${newBooking.id}`,
+        title: 'New Inspection Request',
+        body: `${newBooking.applicantName} booked an inspection for "${targetListing.title}" (${newBooking.slotDate} • ${newBooking.slotTimeWindow}).`,
+        type: 'inspection_request',
+        recipientId: targetListing.agent?.id,
+        recipientEmail: targetListing.agent?.email,
+        recipientPhone: targetListing.agent?.phone,
+        propertyId: targetListing.id,
+        bookingId: newBooking.id,
+        actionLabel: 'Review in Agent Portal',
+      });
+    }
+
+    recordNotificationInInbox({
+      eventKey: `tenant_booking_sent_${newBooking.id}`,
+      title: 'Inspection Request Sent',
+      body: `Your inspection request for "${targetListing?.title || 'the property'}" (${newBooking.slotDate} • ${newBooking.slotTimeWindow}) was sent to ${targetListing?.agent?.fullName || 'the agent'}.`,
+      type: 'general',
+      recipientId: currentUser?.id,
+      recipientEmail: newBooking.applicantEmail || currentUser?.email,
+      recipientPhone: newBooking.applicantPhone || currentUser?.phone,
+      propertyId: newBooking.propertyId,
+      bookingId: newBooking.id,
+      actionLabel: 'View Inspection Pass',
+    });
+
+    setPushNotification({
+      eventKey: `tenant_booking_toast_${newBooking.id}`,
+      title: 'Inspection Request Sent!',
+      body: `We notified ${targetListing?.agent?.fullName || 'the property agent'} of your request for "${targetListing?.title || 'the property'}". You'll be alerted as soon as they confirm.`,
+      type: 'general',
+      listing: targetListing,
+      booking: newBooking,
+      actionText: 'View Pass Status',
+      onAction: () => {
+        setIsMyPassesOpen(true);
+      },
+    });
+    playNotificationSound('info');
+
+    // Dispatch instant off-app Email Notifications to Agent and Tenant (non-blocking)
+    sendInspectionRequestToAgentEmail(newBooking, targetListing).catch(() => {});
+    sendInspectionSubmittedToTenantEmail(newBooking, targetListing).catch(() => {});
+
     // Proactively request device notification permission if not yet decided
     requestDeviceNotificationPermission().catch(() => {});
 
@@ -1972,6 +2076,9 @@ export function App() {
       listing: targetListing,
     });
 
+    // Dispatch instant off-app Email Notification with unlocked contact & address to Tenant
+    sendInspectionResponseToTenantEmail(updatedBooking, targetListing, 'approved').catch(() => {});
+
     // Provide immediate feedback to the AGENT that they successfully confirmed the applicant
     if (currentUser.isAgent) {
       setPushNotification({
@@ -2003,6 +2110,9 @@ export function App() {
       propertyId: targetBooking.propertyId,
     });
 
+    // Dispatch instant off-app Email Notification to Tenant that the slot was declined
+    sendInspectionResponseToTenantEmail(updatedRejectedBooking, targetListing, 'declined').catch(() => {});
+
     // Provide immediate feedback to the AGENT that they declined this applicant
     if (currentUser.isAgent) {
       setPushNotification({
@@ -2031,6 +2141,7 @@ export function App() {
         booking: promotedBooking,
         listing: targetListing,
       });
+      sendInspectionResponseToTenantEmail(promotedBooking, targetListing, 'approved').catch(() => {});
     }
 
     // Keep the rejected booking in bookings with status REJECTED_BY_AGENT so the tenant can see the updated status

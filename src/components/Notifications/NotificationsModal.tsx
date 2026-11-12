@@ -148,17 +148,6 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     }
   }, [cloudJobApps, currentUser]);
 
-  // Check if current user is an agent, employer, or property lister
-  const isLister = Boolean(
-    currentUser?.isAgent ||
-      currentUser?.persona === 'lister' ||
-      currentUser?.persona === 'employer' ||
-      (currentUser?.phone &&
-        listings.some(
-          (l) => l.agent?.phone && normalizePhoneNumber(l.agent.phone) === normalizePhoneNumber(currentUser.phone)
-        ))
-  );
-
   // Filter listings belonging to this lister
   const myAgentListings = useMemo(() => {
     if (!currentUser) return [];
@@ -172,6 +161,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
       return false;
     });
   }, [listings, currentUser]);
+
+  // Check if current user is an agent, employer, or property lister
+  const isLister = Boolean(
+    currentUser?.isAgent ||
+      currentUser?.persona === 'lister' ||
+      currentUser?.persona === 'employer' ||
+      myAgentListings.length > 0
+  );
 
   // Filter listings belonging to this lister that require 48h check or are 72h-expired
   const myActionRequiredListings = useMemo(() => {
