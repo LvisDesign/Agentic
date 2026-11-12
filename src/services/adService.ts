@@ -1,6 +1,7 @@
 import { AdvertStory, AdvertPendingChanges } from '../data/mockAdverts';
 import { supabase, isSupabaseConfigured, getSupabaseClient, fetchWithDeduplication, invalidateCache } from '../utils/supabaseClient';
 import { isSuperAdminAuthenticated } from './adminAuthService';
+import { sendAdminAdvertNotificationEmail } from './adminNotificationEmailService';
 
 export interface PartnerApiKey {
   id: string;
@@ -735,6 +736,12 @@ export const editAdvert = async (
   }
 
   const saved = await saveAdvert(updatedAd);
+
+  // Notify Admin via email whenever sensitive creative changes or a pending/rejected ad is resubmitted for review
+  if (hasSensitiveChanges || existing.status === 'pending_review' || existing.status === 'rejected') {
+    sendAdminAdvertNotificationEmail(saved, 'edited_campaign').catch(() => {});
+  }
+
   return { advert: saved, hasSensitiveChanges };
 };
 
@@ -856,6 +863,10 @@ export const submitPartnerAdvert = async (payload: PartnerSubmissionPayload): Pr
   };
 
   const saved = await saveAdvert(newAdvert);
+
+  // Dispatch immediate email notification to Admin so they can review & approve on private.setlla.com
+  sendAdminAdvertNotificationEmail(saved, 'new_campaign').catch(() => {});
+
   return {
     success: true,
     advert: saved,
@@ -938,6 +949,9 @@ export const pushProgrammaticAdvert = async (
   };
 
   const saved = await saveAdvert(programmaticAd);
+
+  // Dispatch immediate email notification to Admin
+  sendAdminAdvertNotificationEmail(saved, 'new_campaign').catch(() => {});
 
   return {
     success: true,
