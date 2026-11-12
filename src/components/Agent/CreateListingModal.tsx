@@ -436,6 +436,7 @@ export const CreateListingModal: React.FC<CreateListingModalProps> = ({
         responseTime: 'Responds within 10 mins',
         phone: currentUser?.phone || '',
         whatsapp: currentUser?.whatsapp || currentUser?.phone || '',
+        email: currentUser?.email || '',
         avatarUrl: currentUser?.avatarUrl && !currentUser.avatarUrl.includes('/images/properties/') && !currentUser.avatarUrl.includes('images.unsplash.com')
           ? currentUser.avatarUrl
           : '',

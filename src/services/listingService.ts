@@ -291,6 +291,9 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
           .select('*')
           .neq('availability_status', 'Deleted')
           .neq('availability_status', 'Archived')
+          .neq('property_type', '__JOB_LISTING__')
+          .neq('property_type', '__JOB_APPLICATION__')
+          .neq('property_type', '__INSPECTION_BOOKING__')
           .order('created_at', { ascending: false });
 
         if (options?.city && options.city !== 'All Cities' && options.city.trim()) {
@@ -321,8 +324,10 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
             if (
               row.property_type === '__JOB_LISTING__' ||
               row.property_type === '__JOB_APPLICATION__' ||
+              row.property_type === '__INSPECTION_BOOKING__' ||
               String(row.id).startsWith('job-') ||
-              String(row.id).startsWith('app-')
+              String(row.id).startsWith('app-') ||
+              String(row.id).startsWith('STL-')
             ) {
               return false;
             }

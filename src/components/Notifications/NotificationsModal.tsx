@@ -153,11 +153,14 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({
     if (!currentUser) return [];
     const phoneNorm = currentUser.phone ? normalizePhoneNumber(currentUser.phone) : '';
     const emailNorm = currentUser.email ? normalizeEmail(currentUser.email) : '';
+    const nameNorm = (currentUser.fullName || '').trim().toLowerCase();
 
     return listings.filter((l) => {
+      if (currentUser.isAdmin || currentUser.isSuperAdmin) return true;
       if (l.agent?.id && currentUser.id && l.agent.id === currentUser.id) return true;
       if (phoneNorm && l.agent?.phone && normalizePhoneNumber(l.agent.phone) === phoneNorm) return true;
       if (emailNorm && l.agent?.email && normalizeEmail(l.agent.email) === emailNorm) return true;
+      if (nameNorm && nameNorm !== 'guest user' && l.agent?.fullName && l.agent.fullName.trim().toLowerCase() === nameNorm) return true;
       return false;
     });
   }, [listings, currentUser]);

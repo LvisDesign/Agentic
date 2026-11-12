@@ -87,7 +87,7 @@ import {
 } from './services/adminAuthService';
 import { getPlatformSettings, fetchPlatformSettingsAsync } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
-import { fetchAllBookings, saveNewBooking, updateBookingStatus, deleteBooking } from './services/bookingService';
+import { fetchAllBookings, saveNewBooking, updateBookingStatus, deleteBooking, getSavedLocalBookingsList, mapListingsRowToBooking } from './services/bookingService';
 import { fetchAllJobApplications } from './services/jobService';
 import { supabase, isSupabaseConfigured, getSupabaseClient, invalidateCache } from './utils/supabaseClient';
 import { broadcastRealtimeEvent, subscribeToRealtimeEvents } from './services/realtimeSync';
@@ -218,7 +218,7 @@ function resolveInitialNavState(isUserAgent: boolean, isUserAdmin: boolean = fal
 
 export function App() {
   const [listings, setListings] = useState<PropertyListing[]>([]);
-  const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [bookings, setBookings] = useState<BookingRecord[]>(() => getSavedLocalBookingsList());
 
   // Seamless auto-activation of mobile alerts on user interaction
   useEffect(() => {
@@ -614,15 +614,16 @@ export function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [currentUser.isAgent]);
 
-  // Data Synchronizer: fetches lightweight initial batch of active listings & adverts (Instagram-style pagination)
+  // Data Synchronizer: fetches active listings, inspection bookings, adverts & settings on startup
   const [hasMoreServerListings, setHasMoreServerListings] = useState(false);
   const serverOffsetRef = useRef(0);
-  const SERVER_BATCH_SIZE = 20;
+  const SERVER_BATCH_SIZE = 50;
 
   const syncLatestData = useCallback(async () => {
     try {
-      const [fetchedListings, fetchedAdverts, fetchedSettings] = await Promise.all([
+      const [fetchedListings, fetchedBookings, fetchedAdverts, fetchedSettings] = await Promise.all([
         fetchAllListings({ limit: SERVER_BATCH_SIZE, offset: 0 }),
+        fetchAllBookings(),
         loadAllAdverts(),
         fetchPlatformSettingsAsync(),
       ]);
@@ -633,6 +634,9 @@ export function App() {
         setHasMoreServerListings(fetchedListings.length >= SERVER_BATCH_SIZE);
       } else {
         setHasMoreServerListings(false);
+      }
+      if (Array.isArray(fetchedBookings)) {
+        setBookings(fetchedBookings);
       }
       if (fetchedAdverts && fetchedAdverts.length > 0) {
         setAdverts(fetchedAdverts);
@@ -841,6 +845,7 @@ export function App() {
         setBookings((prev) => [b, ...prev.filter((item) => item.id !== b.id)]);
 
         const targetListing = event.listing || listings.find((p) => p.id === b.propertyId);
+        const myNameNorm = (currentUser.fullName || '').trim().toLowerCase();
         const isMyListing =
           Boolean(targetListing) &&
           (targetListing!.agent.id === currentUser.id ||
@@ -850,6 +855,10 @@ export function App() {
             (currentUser.email &&
               targetListing!.agent.email &&
               normalizeEmail(targetListing!.agent.email) === normalizeEmail(currentUser.email)) ||
+            (myNameNorm &&
+              myNameNorm !== 'guest user' &&
+              targetListing!.agent.fullName &&
+              targetListing!.agent.fullName.trim().toLowerCase() === myNameNorm) ||
             currentUser.isAdmin);
         const isBookingFromSelf = Boolean(
           currentUser.phone &&
@@ -1145,6 +1154,158 @@ export function App() {
               return;
             }
 
+            if (changedRow?.property_type === '__INSPECTION_BOOKING__' || Array.isArray(changedRow?.fees?._bookings)) {
+              const mappedBooking =
+                changedRow?.property_type === '__INSPECTION_BOOKING__'
+                  ? mapListingsRowToBooking(changedRow)
+                  : null;
+
+              if (mappedBooking) {
+                setBookings((prev) => [mappedBooking, ...prev.filter((b) => b.id !== mappedBooking.id)]);
+              }
+
+              fetchAllBookings()
+                .then((updated) => {
+                  if (isMounted && Array.isArray(updated)) {
+                    setBookings(updated);
+                  }
+                })
+                .catch(() => {});
+
+              if (mappedBooking && changedRow?.property_type === '__INSPECTION_BOOKING__') {
+                const targetListing = listings.find((p) => p.id === mappedBooking.propertyId);
+                const myNameNorm = (currentUser.fullName || '').trim().toLowerCase();
+                const rowAgentId = changedRow.fees?._agentId || changedRow.agent?.id || targetListing?.agent?.id || '';
+                const rowAgentPhone = changedRow.fees?._agentPhone || targetListing?.agent?.phone || '';
+                const rowAgentEmail = changedRow.fees?._agentEmail || targetListing?.agent?.email || '';
+                const rowAgentName = (
+                  changedRow.fees?._agentName ||
+                  changedRow.agent?.agencyName ||
+                  targetListing?.agent?.fullName ||
+                  ''
+                )
+                  .trim()
+                  .toLowerCase();
+
+                const isMyPropertyBooking = Boolean(
+                  currentUser.isAdmin ||
+                    (currentUser.id && rowAgentId && rowAgentId === currentUser.id) ||
+                    (currentUser.phone &&
+                      rowAgentPhone &&
+                      normalizePhoneNumber(rowAgentPhone) === normalizePhoneNumber(currentUser.phone)) ||
+                    (currentUser.email &&
+                      rowAgentEmail &&
+                      normalizeEmail(rowAgentEmail) === normalizeEmail(currentUser.email)) ||
+                    (myNameNorm && myNameNorm !== 'guest user' && rowAgentName && rowAgentName === myNameNorm)
+                );
+
+                const isFromMe = Boolean(
+                  currentUser.phone &&
+                    mappedBooking.applicantPhone &&
+                    normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(mappedBooking.applicantPhone)
+                );
+
+                if (
+                  (payload.eventType === 'INSERT' ||
+                    mappedBooking.status === 'REQUEST_SUBMITTED' ||
+                    mappedBooking.status === 'QUEUED') &&
+                  isMyPropertyBooking &&
+                  !isFromMe &&
+                  !getNotifiedAgentBookingIds().has(mappedBooking.id)
+                ) {
+                  recordNotifiedAgentBookingId(mappedBooking.id);
+                  const propTitle = targetListing?.title || changedRow.title || 'Property Listing';
+
+                  setPushNotification({
+                    eventKey: `inspection_req_${mappedBooking.id}`,
+                    title: 'New Inspection Request',
+                    body: `${mappedBooking.applicantName} booked an inspection for "${propTitle}" (${mappedBooking.slotTimeWindow}).`,
+                    type: 'inspection_request',
+                    listing: targetListing,
+                    booking: mappedBooking,
+                    secondaryActionText: 'Approve Slot',
+                    onSecondaryAction: () => {
+                      handleAcceptBooking(mappedBooking.id);
+                    },
+                    actionText: 'Review in Agent Portal',
+                    onAction: () => {
+                      setActiveRoom('rentals');
+                      setCurrentRole('agent');
+                    },
+                  });
+                  showDeviceNotification('New Inspection Request', {
+                    body: `${mappedBooking.applicantName} booked an inspection for "${propTitle}" (${mappedBooking.slotTimeWindow}).`,
+                  });
+                  playNotificationSound('alert');
+                } else if (payload.eventType === 'UPDATE') {
+                  const isApplicant = isBookingForUser(mappedBooking, currentUser, myDeviceBookingIds);
+                  if (
+                    isApplicant &&
+                    (mappedBooking.status === 'CONFIRMED_UNLOCKED' || mappedBooking.status === 'APPROVED_CONFIRMED') &&
+                    !getNotifiedBookingIds().has(mappedBooking.id)
+                  ) {
+                    recordNotifiedBookingId(mappedBooking.id);
+                    const agentName = targetListing?.agent.fullName || changedRow.fees?._agentName || 'The Agent';
+                    const propTitle = targetListing?.title || changedRow.title || 'the property';
+
+                    setPushNotification({
+                      eventKey: `inspection_confirmed_${mappedBooking.id}`,
+                      title: '🎉 Inspection Approved!',
+                      body: `${agentName} confirmed your inspection for "${propTitle}". Contact details unlocked!`,
+                      type: 'inspection_confirmed',
+                      listing: targetListing,
+                      booking: mappedBooking,
+                      actionText: 'Tap to view unlocked contact',
+                      onAction: () => {
+                        if (targetListing) {
+                          setUnlockedSheetData({ listing: targetListing, booking: mappedBooking });
+                        }
+                      },
+                    });
+                    showDeviceNotification('🎉 Inspection Approved!', {
+                      body: `${agentName} confirmed your inspection. Contact details unlocked!`,
+                      onClick: () => {
+                        if (targetListing) {
+                          setUnlockedSheetData({ listing: targetListing, booking: mappedBooking });
+                        }
+                      },
+                    });
+                    playNotificationSound('success');
+                  } else if (
+                    isApplicant &&
+                    mappedBooking.status === 'REJECTED_BY_AGENT' &&
+                    !getNotifiedDeclinedBookingIds().has(mappedBooking.id)
+                  ) {
+                    recordNotifiedDeclinedBookingId(mappedBooking.id);
+                    const agentName = targetListing?.agent.fullName || changedRow.fees?._agentName || 'The Agent';
+                    const propTitle = targetListing?.title || changedRow.title || 'the property';
+
+                    setPushNotification({
+                      eventKey: `inspection_declined_${mappedBooking.id}`,
+                      title: '❌ Inspection Request Declined',
+                      body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
+                      type: 'inspection_declined',
+                      listing: targetListing,
+                      booking: mappedBooking,
+                      actionText: 'Tap to explore other properties',
+                      onAction: () => {
+                        setCurrentRole('tenant');
+                        setUserView('feed');
+                      },
+                    });
+                    showDeviceNotification('❌ Inspection Request Declined', {
+                      body: `${agentName} was unable to accept your inspection request for "${propTitle}".`,
+                    });
+                    playNotificationSound('alert');
+                  }
+                }
+              }
+
+              if (changedRow?.property_type === '__INSPECTION_BOOKING__') {
+                return;
+              }
+            }
+
             fetchAllListings().then((updated) => {
               if (!isMounted || !updated) return;
               setListings(updated);
@@ -1210,6 +1371,7 @@ export function App() {
                   applicantPhone &&
                   normalizePhoneNumber(currentUser.phone) === normalizePhoneNumber(applicantPhone);
 
+                const myNameNorm = (currentUser.fullName || '').trim().toLowerCase();
                 const isMyListing =
                   targetListing.agent.id === currentUser.id ||
                   (currentUser.phone &&
@@ -1218,6 +1380,10 @@ export function App() {
                   (currentUser.email &&
                     targetListing.agent.email &&
                     normalizeEmail(targetListing.agent.email) === normalizeEmail(currentUser.email)) ||
+                  (myNameNorm &&
+                    myNameNorm !== 'guest user' &&
+                    targetListing.agent.fullName &&
+                    targetListing.agent.fullName.trim().toLowerCase() === myNameNorm) ||
                   currentUser.isAdmin;
 
                 if (!isMe && isMyListing) {
@@ -1584,6 +1750,7 @@ export function App() {
     if (!currentUser) return;
 
     const notifiedAgentRequests = getNotifiedAgentBookingIds();
+    const myNameNorm = (currentUser.fullName || '').trim().toLowerCase();
     const agentListingIds = new Set(
       listings
         .filter(
@@ -1595,6 +1762,10 @@ export function App() {
             (currentUser.email &&
               l.agent.email &&
               normalizeEmail(l.agent.email) === normalizeEmail(currentUser.email)) ||
+            (myNameNorm &&
+              myNameNorm !== 'guest user' &&
+              l.agent.fullName &&
+              l.agent.fullName.trim().toLowerCase() === myNameNorm) ||
             currentUser.isAdmin
         )
         .map((l) => l.id)
@@ -1636,6 +1807,7 @@ export function App() {
         },
         actionText: 'Review in Agent Portal',
         onAction: () => {
+          setActiveRoom('rentals');
           setCurrentRole('agent');
         },
       });
@@ -1645,16 +1817,16 @@ export function App() {
         body: `${unnotifiedBooking.applicantName} requested an inspection for "${propTitle}" (${unnotifiedBooking.slotTimeWindow}).`,
       });
     }
-  }, [bookings, listings, currentUser.id, currentUser.phone, currentUser.email, currentUser.isAgent, currentUser.isAdmin]);
+  }, [bookings, listings, currentUser.id, currentUser.phone, currentUser.email, currentUser.fullName, currentUser.isAgent, currentUser.isAdmin]);
 
-  // Background Wake / App Focus Sync:
-  // Whenever a user returns to Setlla from another app or unlocks their phone, immediately pull fresh bookings & job applications
+  // Background Wake, Tab Focus, View Switch & Heartbeat Sync:
+  // Ensures mobile & desktop devices pull fresh inspection bookings & job applications immediately on open/focus and periodically while active
   useEffect(() => {
-    const syncOnWake = () => {
+    const syncBookingsAndJobs = () => {
       if (document.visibilityState && document.visibilityState !== 'visible') return;
       fetchAllBookings()
         .then((freshBookings) => {
-          if (Array.isArray(freshBookings) && freshBookings.length > 0) {
+          if (Array.isArray(freshBookings)) {
             setBookings(freshBookings);
           }
         })
@@ -1662,15 +1834,19 @@ export function App() {
       fetchAllJobApplications().catch(() => {});
     };
 
-    window.addEventListener('focus', syncOnWake);
-    window.addEventListener('online', syncOnWake);
-    document.addEventListener('visibilitychange', syncOnWake);
+    syncBookingsAndJobs();
+
+    const intervalId = window.setInterval(syncBookingsAndJobs, 12000);
+    window.addEventListener('focus', syncBookingsAndJobs);
+    window.addEventListener('online', syncBookingsAndJobs);
+    document.addEventListener('visibilitychange', syncBookingsAndJobs);
     return () => {
-      window.removeEventListener('focus', syncOnWake);
-      window.removeEventListener('online', syncOnWake);
-      document.removeEventListener('visibilitychange', syncOnWake);
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', syncBookingsAndJobs);
+      window.removeEventListener('online', syncBookingsAndJobs);
+      document.removeEventListener('visibilitychange', syncBookingsAndJobs);
     };
-  }, []);
+  }, [currentRole, isMyPassesOpen, currentUser.id]);
 
   // Authentication gating & resume booking state
   const [pendingBookingListing, setPendingBookingListing] = useState<PropertyListing | null>(null);
@@ -1928,12 +2104,12 @@ export function App() {
 
   // Handler: Book an inspection slot
   const handleBookSlot = (newBooking: BookingRecord) => {
+    const targetListing = listings.find((p) => p.id === newBooking.propertyId);
+
     recordMyDeviceBookingId(newBooking.id);
     setMyDeviceBookingIds((prev) => new Set([...prev, newBooking.id]));
     setBookings((prev) => [newBooking, ...prev.filter((b) => b.id !== newBooking.id)]);
-    saveNewBooking(newBooking);
-
-    const targetListing = listings.find((p) => p.id === newBooking.propertyId);
+    saveNewBooking(newBooking, targetListing);
 
     // Broadcast across all connected devices and open tabs immediately
     broadcastRealtimeEvent('NEW_BOOKING_REQUEST', {
