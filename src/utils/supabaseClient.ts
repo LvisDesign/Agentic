@@ -3,25 +3,32 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 export const OFFICIAL_SUPABASE_URL = 'https://qxxheinizxyyrfcrijbs.supabase.co';
 export const OFFICIAL_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4eGhlaW5penh5eXJmY3JpamJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyNjAzOTksImV4cCI6MjEwODgzNjM5OX0.xMzIyxs9JVluL5kmbcpLSyb1WKRcopnNzJhl8cB41PI';
 
+const envUrl = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_SUPABASE_URL : undefined;
+const envKey = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_SUPABASE_ANON_KEY : undefined;
+
+const ACTIVE_SUPABASE_URL = (envUrl && String(envUrl).trim()) || OFFICIAL_SUPABASE_URL;
+const ACTIVE_SUPABASE_KEY = (envKey && String(envKey).trim()) || OFFICIAL_SUPABASE_KEY;
+const CONFIG_SOURCE: 'env' | 'default' = envUrl && envKey ? 'env' : 'default';
+
 export interface SupabaseConfig {
   url: string;
   key: string;
   isConfigured: boolean;
-  source: 'default';
+  source: 'env' | 'default';
 }
 
 export const getSupabaseConfig = (): SupabaseConfig => ({
-  url: OFFICIAL_SUPABASE_URL,
-  key: OFFICIAL_SUPABASE_KEY,
-  isConfigured: true,
-  source: 'default',
+  url: ACTIVE_SUPABASE_URL,
+  key: ACTIVE_SUPABASE_KEY,
+  isConfigured: Boolean(ACTIVE_SUPABASE_URL && ACTIVE_SUPABASE_KEY),
+  source: CONFIG_SOURCE,
 });
 
-export const isSupabaseConfigured = (): boolean => true;
+export const isSupabaseConfigured = (): boolean => Boolean(ACTIVE_SUPABASE_URL && ACTIVE_SUPABASE_KEY);
 
 export const supabase: SupabaseClient = createClient(
-  OFFICIAL_SUPABASE_URL,
-  OFFICIAL_SUPABASE_KEY
+  ACTIVE_SUPABASE_URL,
+  ACTIVE_SUPABASE_KEY
 );
 
 export function getSupabaseClient(): SupabaseClient {
