@@ -1,5 +1,7 @@
-import { BookingRecord, PropertyListing } from '../types/marketplace';
+import { BookingRecord, PropertyListing, UserProfile } from '../types/marketplace';
 import { JobApplication, JobListing } from '../types/jobs';
+import { getSupabaseClient, isSupabaseConfigured } from '../utils/supabaseClient';
+import { mapDbToUserProfile, resolveUserPersona, PlatformUserPersona } from '../utils/userRegistry';
 
 const APP_PORTAL_URL = 'https://setlla.com';
 const dispatchedEmailKeys = new Set<string>();
@@ -539,3 +541,250 @@ export async function sendJobApplicationStatusToSeekerEmail(
     },
   });
 }
+
+function normalizePhone(phone?: string): string {
+  return String(phone || '').replace(/\D/g, '').slice(-10);
+}
+
+/**
+ * Fetches active, non-suspended registered users matching any of the target personas,
+ * excluding the author/poster and deduplicating by lowercase email.
+ */
+async function fetchUsersByPersonas(
+  targetPersonas: PlatformUserPersona[],
+  exclude: { id?: string; email?: string; phone?: string }
+): Promise<UserProfile[]> {
+  const byEmail = new Map<string, UserProfile>();
+  const excludeEmail = exclude.email?.trim().toLowerCase();
+  const excludePhone = normalizePhone(exclude.phone);
+
+  const considerUser = (user: UserProfile) => {
+    if (!user || user.isSuspended) return;
+    const email = user.email?.trim().toLowerCase();
+    if (!isValidEmail(email)) return;
+    if (exclude.id && user.id === exclude.id) return;
+    if (excludeEmail && email === excludeEmail) return;
+    if (excludePhone && normalizePhone(user.phone) === excludePhone) return;
+
+    const persona = resolveUserPersona(user);
+    if (!targetPersonas.includes(persona)) return;
+
+    if (!byEmail.has(email!)) {
+      byEmail.set(email!, user);
+    }
+  };
+
+  // 1. Cloud database (Supabase platform_users)
+  try {
+    const client = getSupabaseClient();
+    if (isSupabaseConfigured() && client) {
+      const { data, error } = await client
+        .from('platform_users')
+        .select('*')
+        .eq('is_suspended', false)
+        .limit(500);
+      if (!error && Array.isArray(data)) {
+        data.forEach((row) => considerUser(mapDbToUserProfile(row)));
+      }
+    }
+  } catch (_) {
+    // Fall back to local registry if cloud fetch fails
+  }
+
+  // 2. Local registry fallback (useful in preview/local testing)
+  try {
+    if (typeof window !== 'undefined') {
+      const raw = localStorage.getItem('setlla_registered_users');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          parsed.forEach((u) => considerUser(u as UserProfile));
+        }
+      }
+    }
+  } catch (_) {}
+
+  return Array.from(byEmail.values());
+}
+
+/**
+ * 7. Notifies all registered Tenants and other Agents via email when a new property listing is published.
+ * Excludes pure job_seeker/employer accounts and the posting agent themselves.
+ */
+export async function notifyRegisteredUsersOfNewPropertyListing(
+  listing: PropertyListing
+): Promise<number> {
+  const recipients = await fetchUsersByPersonas(['tenant', 'agent'], {
+    id: listing.agent?.id,
+    email: listing.agent?.email,
+    phone: listing.agent?.phone,
+  });
+
+  if (recipients.length === 0) return 0;
+
+  const location = [listing.neighborhood, listing.city, listing.state].filter(Boolean).join(', ') || 'Nigeria';
+  const formattedPrice = `₦${Number(listing.fees?.baseRent || 0).toLocaleString()}`;
+  const periodLabel = '/year';
+  const agentName = listing.agent?.agencyName || listing.agent?.fullName || 'Verified Setlla Agent';
+
+  const results = await Promise.allSettled(
+    recipients.map((user) => {
+      const persona = resolveUserPersona(user);
+      const isAgentRecipient = persona === 'agent';
+      const firstName = (user.fullName || '').trim().split(/\s+/)[0] || (isAgentRecipient ? 'Partner Agent' : 'there');
+      const subject = `[Setlla] New Property Listed in ${listing.city}: ${listing.title}`;
+      const badgeLabel = isAgentRecipient ? 'Market Update • Agent Network' : 'New Verified Listing';
+      const introLine = isAgentRecipient
+        ? `A new property listing was just published by ${agentName} on Setlla.`
+        : `A verified property matching the Setlla marketplace was just listed in ${listing.city}.`;
+
+      const text = [
+        `Hello ${firstName},`,
+        ``,
+        introLine,
+        ``,
+        `- Property: ${listing.title}`,
+        `- Location: ${location}`,
+        `- Price: ${formattedPrice}${periodLabel}`,
+        `- Type: ${listing.propertyType || 'Verified Property'}`,
+        ``,
+        `Tap to inspect photos, details, or book a viewing on Setlla: ${APP_PORTAL_URL}`,
+      ].join('\n');
+
+      const html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FCF9F5; border: 1px solid #EFE3C6; border-radius: 16px; overflow: hidden;">
+          <div style="background-color: #000004; padding: 22px 24px; border-bottom: 2px solid #FFAD05;">
+            <span style="display: inline-block; background-color: #FFAD05; color: #000004; font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px;">
+              ${badgeLabel}
+            </span>
+            <h2 style="color: #FFFFFF; margin: 0; font-size: 18px; font-weight: 700;">
+              New Property in ${listing.city}
+            </h2>
+          </div>
+          <div style="padding: 24px; color: #1C1613; font-size: 14px; line-height: 1.6;">
+            <p style="margin-top: 0;">Hello <strong>${firstName}</strong>,</p>
+            <p>${introLine}</p>
+            <div style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; margin: 18px 0;">
+              <p style="margin: 4px 0;"><strong>Property:</strong> ${listing.title}</p>
+              <p style="margin: 4px 0;"><strong>Location:</strong> ${location}</p>
+              <p style="margin: 4px 0;"><strong>Price:</strong> <span style="color: #B45309; font-weight: 800;">${formattedPrice}${periodLabel}</span></p>
+              <p style="margin: 4px 0;"><strong>Listed By:</strong> ${agentName}</p>
+            </div>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="${APP_PORTAL_URL}" style="display: inline-block; background-color: #000004; color: #FFAD05; font-weight: 700; font-size: 14px; text-decoration: none; padding: 13px 26px; border-radius: 12px; border: 1px solid #FFAD05;">
+                View Listing on Setlla &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      return dispatchTransactionalEmail({
+        dedupKey: `new_listing_alert_${listing.id}_${user.email!.trim().toLowerCase()}`,
+        to: user.email!,
+        subject,
+        text,
+        html,
+        fromName: 'Setlla Listings',
+        eventType: 'new_property_listing_alert',
+        metadata: {
+          Event: 'New Property Listing',
+          Property: listing.title,
+          Location: location,
+          Price: `${formattedPrice}${periodLabel}`,
+          Action_URL: APP_PORTAL_URL,
+        },
+      });
+    })
+  );
+
+  return results.filter((r) => r.status === 'fulfilled' && r.value).length;
+}
+
+/**
+ * 8. Notifies all registered Job Seekers via email when a new job vacancy is posted on Setlla Jobs.
+ * Excludes the job poster themselves.
+ */
+export async function notifyJobSeekersOfNewJobListing(job: JobListing): Promise<number> {
+  const recipients = await fetchUsersByPersonas(['job_seeker'], {
+    id: job.posterId,
+    email: job.posterEmail,
+    phone: job.contactPhone,
+  });
+
+  if (recipients.length === 0) return 0;
+
+  const location = [job.city, job.state].filter(Boolean).join(', ') || 'Nigeria';
+  const company = job.companyName || 'Setlla Verified Employer';
+  const salary = job.salaryRange || 'Competitive';
+
+  const results = await Promise.allSettled(
+    recipients.map((user) => {
+      const firstName = (user.fullName || '').trim().split(/\s+/)[0] || 'there';
+      const subject = `[Setlla Jobs] New Vacancy in ${job.city}: ${job.title}`;
+
+      const text = [
+        `Hello ${firstName},`,
+        ``,
+        `A new job opportunity was just posted on Setlla Jobs!`,
+        ``,
+        `- Role: ${job.title}`,
+        `- Company: ${company}`,
+        `- Location: ${location}`,
+        `- Compensation: ${salary}`,
+        `- Job Type: ${job.roleType || 'Full-Time'}`,
+        ``,
+        `Apply early with your Setlla CV: ${APP_PORTAL_URL}`,
+      ].join('\n');
+
+      const html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FCF9F5; border: 1px solid #EFE3C6; border-radius: 16px; overflow: hidden;">
+          <div style="background-color: #000004; padding: 22px 24px; border-bottom: 2px solid #FFAD05;">
+            <span style="display: inline-block; background-color: #FFAD05; color: #000004; font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px;">
+              Setlla Jobs &bull; New Vacancy
+            </span>
+            <h2 style="color: #FFFFFF; margin: 0; font-size: 18px; font-weight: 700;">
+              ${job.title}
+            </h2>
+          </div>
+          <div style="padding: 24px; color: #1C1613; font-size: 14px; line-height: 1.6;">
+            <p style="margin-top: 0;">Hello <strong>${firstName}</strong>,</p>
+            <p>A new job opening matching Setlla Jobs was just published. Apply early before slots fill up.</p>
+            <div style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 12px; padding: 16px; margin: 18px 0;">
+              <p style="margin: 4px 0;"><strong>Role:</strong> ${job.title}</p>
+              <p style="margin: 4px 0;"><strong>Company:</strong> ${company}</p>
+              <p style="margin: 4px 0;"><strong>Location:</strong> ${location}</p>
+              <p style="margin: 4px 0;"><strong>Compensation:</strong> <span style="color: #047857; font-weight: 800;">${salary}</span></p>
+            </div>
+            <div style="text-align: center; margin-top: 24px;">
+              <a href="${APP_PORTAL_URL}" style="display: inline-block; background-color: #000004; color: #FFAD05; font-weight: 700; font-size: 14px; text-decoration: none; padding: 13px 26px; border-radius: 12px; border: 1px solid #FFAD05;">
+                Apply Now on Setlla Jobs &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      return dispatchTransactionalEmail({
+        dedupKey: `new_job_alert_${job.id}_${user.email!.trim().toLowerCase()}`,
+        to: user.email!,
+        subject,
+        text,
+        html,
+        fromName: 'Setlla Jobs',
+        eventType: 'new_job_listing_alert',
+        metadata: {
+          Event: 'New Job Vacancy',
+          Role: job.title,
+          Company: company,
+          Location: location,
+          Salary: salary,
+          Action_URL: APP_PORTAL_URL,
+        },
+      });
+    })
+  );
+
+  return results.filter((r) => r.status === 'fulfilled' && r.value).length;
+}
+

@@ -9,6 +9,7 @@ import { showDeviceNotification } from '../utils/realtimeNotifications';
 import {
   sendNewJobApplicationToEmployerEmail,
   sendJobApplicationStatusToSeekerEmail,
+  notifyJobSeekersOfNewJobListing,
 } from './transactionalEmailService';
 
 const JOBS_STORAGE_KEY = 'setlla_job_listings';
@@ -847,6 +848,11 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
       body: publishedBody,
     });
   }
+
+  // 4. Notify all registered Job Seekers via email so they come back to apply
+  notifyJobSeekersOfNewJobListing(newJob).catch((err) => {
+    console.warn('[JobService] Job seeker email broadcast notice:', err);
+  });
 
   return newJob;
 }
