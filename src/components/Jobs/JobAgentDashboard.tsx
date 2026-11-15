@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Radio,
   Megaphone,
+  Loader2,
   X
 } from 'lucide-react';
 import { JobListing, JobApplication } from '../../types/jobs';
@@ -95,6 +96,7 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
   const [selectedJobFilterForApps, setSelectedJobFilterForApps] = useState<string>('all');
   const [appStatusFilter, setAppStatusFilter] = useState<string>('all');
+  const [confirmingJobId, setConfirmingJobId] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -185,12 +187,20 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
   };
 
   const handleConfirmFreshness = async (job: JobListing) => {
-    await confirmJobFreshness(job.id);
-    const now = new Date().toISOString();
-    setJobs((prev) =>
-      prev.map((j) => (j.id === job.id ? { ...j, lastConfirmedAt: now, status: 'active', takenAt: undefined } : j))
-    );
-    showToast('Job vacancy availability confirmed! Retained live on Setlla Jobs.');
+    if (confirmingJobId === job.id) return;
+    setConfirmingJobId(job.id);
+    try {
+      await confirmJobFreshness(job.id);
+      const now = new Date().toISOString();
+      setJobs((prev) =>
+        prev.map((j) =>
+          j.id === job.id ? { ...j, createdAt: now, lastConfirmedAt: now, status: 'active', takenAt: undefined } : j
+        )
+      );
+      showToast('Job vacancy relisted & confirmed live on Setlla Jobs!');
+    } finally {
+      setConfirmingJobId(null);
+    }
   };
 
   const handleUpdateAppStatus = (appId: string, newStatus: 'submitted' | 'reviewed' | 'shortlisted' | 'rejected') => {
@@ -696,8 +706,13 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
 
                         <button
                           type="button"
+                          disabled={confirmingJobId === job.id}
                           onClick={() => handleConfirmFreshness(job)}
-                          className={`w-full sm:w-auto text-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer whitespace-nowrap active:scale-95 shrink-0 ${
+                          className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 text-center px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all whitespace-nowrap shrink-0 ${
+                            confirmingJobId === job.id
+                              ? 'opacity-75 cursor-wait'
+                              : 'cursor-pointer active:scale-95'
+                          } ${
                             lifecycle.stage === 'expired'
                               ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-2xs'
                               : lifecycle.stage === 'needs_confirmation'
@@ -705,11 +720,18 @@ export const JobAgentDashboard: React.FC<JobAgentDashboardProps> = ({
                               : 'bg-white hover:bg-[#F0ECE1] text-[#000004] border border-[#E5E7EB] shadow-2xs'
                           }`}
                         >
-                          {lifecycle.stage === 'expired'
-                            ? 'Relist & Renew'
-                            : lifecycle.stage === 'needs_confirmation'
-                            ? 'Yes, Still Open'
-                            : 'Confirm Still Open'}
+                          {confirmingJobId === job.id ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              <span>{lifecycle.stage === 'expired' ? 'Relisting...' : 'Confirming...'}</span>
+                            </>
+                          ) : lifecycle.stage === 'expired' ? (
+                            'Relist & Renew'
+                          ) : lifecycle.stage === 'needs_confirmation' ? (
+                            'Yes, Still Open'
+                          ) : (
+                            'Confirm Still Open'
+                          )}
                         </button>
                       </div>
 

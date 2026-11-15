@@ -456,12 +456,32 @@ export async function fetchAllListings(options?: FetchListingOptions): Promise<P
  * Publishes a new property listing to Supabase and caches locally
  */
 export async function saveNewListing(listing: PropertyListing): Promise<void> {
-  const sanitized = sanitizeListingMedia(listing);
+  unrecordDeletedListingId(listing.id);
+  const now = new Date().toISOString();
+  const sanitized = sanitizeListingMedia({
+    ...listing,
+    createdAt: listing.createdAt || now,
+    lastConfirmedAt: listing.lastConfirmedAt || now,
+    availabilityStatus: listing.availabilityStatus || 'Available',
+  });
   const client = getSupabaseClient();
 
-  // Save to Supabase if connected
+  // 1. Update local cache immediately so concurrent refreshes never drop the new listing
+  try {
+    const saved = getLocalSavedListings();
+    const existing: PropertyListing[] = saved ? JSON.parse(saved) : [];
+    const updated = [sanitized, ...existing.filter((item) => item.id !== sanitized.id)].slice(0, 30);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+  } catch (e) {}
+
+  // 2. Save to Supabase if connected
   if (isSupabaseConfigured() && client) {
     try {
+      const mirroredFees =
+        sanitized.fees && typeof sanitized.fees === 'object'
+          ? { ...sanitized.fees, _lastConfirmedAt: sanitized.lastConfirmedAt || now }
+          : sanitized.fees;
+
       const row = {
         id: sanitized.id,
         title: sanitized.title,
@@ -479,7 +499,7 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
         water_supply: sanitized.waterSupply || null,
         description: sanitized.description,
         media: sanitized.media,
-        fees: sanitized.fees,
+        fees: mirroredFees,
         inspection_fee: sanitized.inspectionFee,
         agent: sanitized.agent,
         inspection_slots: sanitized.inspectionSlots,
@@ -487,29 +507,28 @@ export async function saveNewListing(listing: PropertyListing): Promise<void> {
         tags: sanitized.tags || [],
         addons: sanitized.addons || [],
         availability_status: sanitized.availabilityStatus || 'Available',
-        created_at: sanitized.createdAt || new Date().toISOString(),
-        last_confirmed_at: sanitized.lastConfirmedAt || new Date().toISOString(),
+        created_at: sanitized.createdAt || now,
+        last_confirmed_at: sanitized.lastConfirmedAt || now,
       };
 
       const { error } = await client.from('listings').upsert([row]);
-      invalidateCache('listings_');
       if (error) {
-        console.error('[Setlla Supabase] Error saving listing to database:', error);
+        // Fallback if `last_confirmed_at` column is absent on an older database instance
+        const { last_confirmed_at: _omit, ...fallbackRow } = row;
+        const { error: fallbackError } = await client.from('listings').upsert([fallbackRow]);
+        if (fallbackError) {
+          console.error('[Setlla Supabase] Error saving listing to database:', fallbackError);
+        } else {
+          console.log('[Setlla Supabase] Listing saved to cloud successfully (fallback schema):', sanitized.id);
+        }
       } else {
         console.log('[Setlla Supabase] Listing saved to cloud successfully:', sanitized.id);
       }
+      invalidateCache('listings_');
     } catch (err) {
       console.warn('[Setlla Supabase] Network exception saving listing:', err);
     }
   }
-
-  // Also update local cache
-  try {
-    const saved = getLocalSavedListings();
-    const existing: PropertyListing[] = saved ? JSON.parse(saved) : [];
-    const updated = [sanitized, ...existing.filter((item) => item.id !== sanitized.id)].slice(0, 30);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-  } catch (e) {}
 }
 
 /**
@@ -710,7 +729,10 @@ export async function updateListing(listing: PropertyListing): Promise<void> {
         water_supply: sanitized.waterSupply || null,
         description: sanitized.description,
         media: sanitized.media,
-        fees: sanitized.fees,
+        fees:
+          sanitized.fees && typeof sanitized.fees === 'object'
+            ? { ...sanitized.fees, _lastConfirmedAt: sanitized.lastConfirmedAt || new Date().toISOString() }
+            : sanitized.fees,
         inspection_fee: sanitized.inspectionFee,
         agent: sanitized.agent,
         inspection_slots: sanitized.inspectionSlots,
@@ -728,7 +750,23 @@ export async function updateListing(listing: PropertyListing): Promise<void> {
         .eq('id', sanitized.id)
         .select();
 
-      if (updateError || !updatedRows || updatedRows.length === 0) {
+      if (updateError) {
+        const { last_confirmed_at: _omit, ...fallbackRow } = row;
+        const { data: fbUpdated } = await client
+          .from('listings')
+          .update(fallbackRow)
+          .eq('id', sanitized.id)
+          .select();
+        if (!fbUpdated || fbUpdated.length === 0) {
+          await client.from('listings').upsert([
+            {
+              ...fallbackRow,
+              id: sanitized.id,
+              created_at: sanitized.createdAt || new Date().toISOString(),
+            },
+          ]);
+        }
+      } else if (!updatedRows || updatedRows.length === 0) {
         // Fallback to upsert if row wasn't present
         await client.from('listings').upsert([
           {

@@ -821,7 +821,11 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
         const row = mapJobToListingsRow(newJob);
         const { error } = await client.from('listings').upsert([row]);
         if (error) {
-          console.warn('[JobService] Cloud job upsert notice:', error.message);
+          const { last_confirmed_at: _omit, ...fallbackRow } = row;
+          const { error: fallbackError } = await client.from('listings').upsert([fallbackRow]);
+          if (fallbackError) {
+            console.warn('[JobService] Cloud job upsert notice:', fallbackError.message);
+          }
         }
       }
     } catch (e) {
