@@ -197,8 +197,8 @@ export async function verifyPaystackPayment(params: {
   recordId?: string;
 }): Promise<{ verified: boolean; message?: string; amountNaira?: number }> {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const { getSupabaseConfig } = await import('./supabaseClient');
+    const { url: supabaseUrl, key: anonKey } = getSupabaseConfig();
 
     if (!supabaseUrl || !anonKey) {
       console.warn('[Setlla Paystack] Server verification bypassed in offline mode.');

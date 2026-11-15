@@ -6,9 +6,19 @@ export const OFFICIAL_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc
 const envUrl = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_SUPABASE_URL : undefined;
 const envKey = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_SUPABASE_ANON_KEY : undefined;
 
-const ACTIVE_SUPABASE_URL = (envUrl && String(envUrl).trim()) || OFFICIAL_SUPABASE_URL;
-const ACTIVE_SUPABASE_KEY = (envKey && String(envKey).trim()) || OFFICIAL_SUPABASE_KEY;
-const CONFIG_SOURCE: 'env' | 'default' = envUrl && envKey ? 'env' : 'default';
+const isOfficialProdHost =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'setlla.com' ||
+    window.location.hostname === 'www.setlla.com' ||
+    window.location.hostname.endsWith('.setlla.com'));
+
+const ACTIVE_SUPABASE_URL = isOfficialProdHost
+  ? OFFICIAL_SUPABASE_URL
+  : (envUrl && String(envUrl).trim()) || OFFICIAL_SUPABASE_URL;
+const ACTIVE_SUPABASE_KEY = isOfficialProdHost
+  ? OFFICIAL_SUPABASE_KEY
+  : (envKey && String(envKey).trim()) || OFFICIAL_SUPABASE_KEY;
+const CONFIG_SOURCE: 'env' | 'default' = !isOfficialProdHost && envUrl && envKey ? 'env' : 'default';
 
 export interface SupabaseConfig {
   url: string;
