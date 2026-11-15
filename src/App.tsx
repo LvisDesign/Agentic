@@ -25,7 +25,8 @@ import {
   isDeletedUserRecord,
   recordDeletedUser,
   findUserByCredential,
-  findUserByCredentialAsync
+  findUserByCredentialAsync,
+  resolveUserPersona
 } from './utils/userRegistry';
 import { isLocalUrl } from './utils/environment';
 import { PropertyFeed } from './components/Feed/PropertyFeed';
@@ -88,7 +89,7 @@ import {
 import { getPlatformSettings, fetchPlatformSettingsAsync } from './services/adminService';
 import { fetchAllListings, saveNewListing, updateListing, deleteListing, updateAvailability, confirmFreshness, getDeletedListingIds, recordDeletedListingId } from './services/listingService';
 import { fetchAllBookings, saveNewBooking, updateBookingStatus, deleteBooking, getSavedLocalBookingsList, mapListingsRowToBooking } from './services/bookingService';
-import { fetchAllJobApplications } from './services/jobService';
+import { fetchAllJobApplications, getAllJobs } from './services/jobService';
 import { supabase, isSupabaseConfigured, getSupabaseClient, invalidateCache } from './utils/supabaseClient';
 import { broadcastRealtimeEvent, subscribeToRealtimeEvents } from './services/realtimeSync';
 import { playNotificationSound, showDeviceNotification, requestDeviceNotificationPermission } from './utils/realtimeNotifications';
@@ -96,7 +97,36 @@ import {
   sendInspectionRequestToAgentEmail,
   sendInspectionSubmittedToTenantEmail,
   sendInspectionResponseToTenantEmail,
+  notifyRegisteredUsersOfNewPropertyListing,
 } from './services/transactionalEmailService';
+
+const NOTIFIED_NEW_LISTINGS_KEY = 'setlla_notified_new_listings_v1';
+const NOTIFIED_NEW_JOBS_KEY = 'setlla_notified_new_jobs_v1';
+
+function getStoredNotifiedSet(storageKey: string): Set<string> {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? new Set(parsed.map(String)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function hasNotifiedItem(storageKey: string, id: string): boolean {
+  return getStoredNotifiedSet(storageKey).has(id);
+}
+
+function recordNotifiedItem(storageKey: string, id: string): void {
+  try {
+    const next = Array.from(getStoredNotifiedSet(storageKey));
+    if (!next.includes(id)) {
+      next.push(id);
+      localStorage.setItem(storageKey, JSON.stringify(next.slice(-200)));
+    }
+  } catch {}
+}
 
 // Guest Profile for new, unauthenticated visitors
 const GUEST_USER: UserProfile = {
@@ -963,10 +993,22 @@ export function App() {
         }
       } else if (event.type === 'LISTING_CREATED' && event.listing) {
         setListings((prev) => [event.listing!, ...prev.filter((l) => l.id !== event.listing!.id)]);
-        if (!currentUser.isAgent) {
+        const persona = resolveUserPersona(currentUser);
+        const isPropertyAudience = Boolean(currentUser?.id) && (persona === 'tenant' || persona === 'agent');
+        const isMine = Boolean(
+          currentUser?.id &&
+            (event.listing.agent?.id === currentUser.id ||
+              (currentUser.email &&
+                event.listing.agent?.email &&
+                currentUser.email.toLowerCase() === event.listing.agent.email.toLowerCase()))
+        );
+        if (!isMine && isPropertyAudience && !hasNotifiedItem(NOTIFIED_NEW_LISTINGS_KEY, event.listing.id)) {
+          recordNotifiedItem(NOTIFIED_NEW_LISTINGS_KEY, event.listing.id);
+          const title = `🏡 New Property in ${event.listing.city}!`;
+          const body = `"${event.listing.title}" was just listed. Tap to view.`;
           setPushNotification({
-            title: `🏡 New Property in ${event.listing.city}!`,
-            body: `"${event.listing.title}" was just listed. Tap to view.`,
+            title,
+            body,
             type: 'new_listing',
             listing: event.listing,
             actionText: 'Tap to view in Explore feed',
@@ -975,6 +1017,7 @@ export function App() {
               setUserView('feed');
             },
           });
+          showDeviceNotification(title, { body });
           playNotificationSound('info');
         }
       } else if (event.type === 'LISTING_UPDATED' && event.listing) {
@@ -1072,6 +1115,41 @@ export function App() {
 
             if (changedRow?.property_type === '__JOB_APPLICATION__' || changedRow?.property_type === '__JOB_LISTING__') {
               window.dispatchEvent(new CustomEvent('setlla:job-applications-updated'));
+
+              if (payload.eventType === 'INSERT' && changedRow?.property_type === '__JOB_LISTING__') {
+                const jobData = changedRow.fees?._jobData || {};
+                const jobId = String(changedRow.id || jobData.id || '');
+                const persona = resolveUserPersona(currentUser);
+                const isMine = Boolean(
+                  currentUser?.id &&
+                    (changedRow.agent_id === currentUser.id || jobData.posterId === currentUser.id)
+                );
+                if (
+                  Boolean(currentUser?.id) &&
+                  persona === 'job_seeker' &&
+                  !isMine &&
+                  jobId &&
+                  !hasNotifiedItem(NOTIFIED_NEW_JOBS_KEY, jobId)
+                ) {
+                  recordNotifiedItem(NOTIFIED_NEW_JOBS_KEY, jobId);
+                  const jobTitle = changedRow.title || jobData.title || 'New Job Opening';
+                  const jobCity = changedRow.city || jobData.city || 'Delta State';
+                  const company = jobData.companyName || changedRow.agent?.agencyName || 'Verified Employer';
+                  const notifTitle = `💼 New Job in ${jobCity}!`;
+                  const notifBody = `"${jobTitle}" at ${company} was just posted. Tap to apply.`;
+                  setPushNotification({
+                    title: notifTitle,
+                    body: notifBody,
+                    type: 'job_published',
+                    actionText: 'Tap to view in Setlla Jobs',
+                    onAction: () => {
+                      handleRoomChange('jobs');
+                    },
+                  });
+                  showDeviceNotification(notifTitle, { body: notifBody });
+                  playNotificationSound('info');
+                }
+              }
 
               if (changedRow?.property_type === '__JOB_APPLICATION__') {
                 const appData = changedRow.fees?._applicationData;
@@ -1319,13 +1397,21 @@ export function App() {
                 ) {
                   return;
                 }
-                const isMine = currentUser.isAgent && (newRow.agent_id === currentUser.id || newRow.agentId === currentUser.id);
-                if (!isMine && !currentUser.isAgent) {
+                const persona = resolveUserPersona(currentUser);
+                const isPropertyAudience = Boolean(currentUser?.id) && (persona === 'tenant' || persona === 'agent');
+                const isMine = Boolean(
+                  currentUser?.id && (newRow.agent_id === currentUser.id || newRow.agentId === currentUser.id)
+                );
+                const rowId = String(newRow.id || '');
+                if (!isMine && isPropertyAudience && rowId && !hasNotifiedItem(NOTIFIED_NEW_LISTINGS_KEY, rowId)) {
+                  recordNotifiedItem(NOTIFIED_NEW_LISTINGS_KEY, rowId);
                   const city = newRow.city || 'Delta State';
                   const title = newRow.title || 'Verified Property';
+                  const notifTitle = `🏡 New Property in ${city}!`;
+                  const notifBody = `"${title}" was just listed by an agent. Tap to view.`;
                   setPushNotification({
-                    title: `🏡 New Property in ${city}!`,
-                    body: `"${title}" was just listed by an agent. Tap to view.`,
+                    title: notifTitle,
+                    body: notifBody,
                     type: 'new_listing',
                     actionText: 'Tap to view in Explore',
                     onAction: () => {
@@ -1333,6 +1419,7 @@ export function App() {
                       setUserView('feed');
                     },
                   });
+                  showDeviceNotification(notifTitle, { body: notifBody });
                   playNotificationSound('info');
                 }
               }
@@ -1537,6 +1624,104 @@ export function App() {
       unsubBroadcast();
     };
   }, [currentUser, myDeviceBookingIds, listings]);
+
+  // Catch-up Persona Notifications:
+  // When a registered Tenant, Agent, or Job Seeker returns to Setlla, surface the latest unseen
+  // property listing (for Tenants & Agents) or job vacancy (for Job Seekers) posted in the last 24h.
+  useEffect(() => {
+    if (!currentUser || !currentUser.id || currentUser.id === 'GUEST_USER' || currentUser.id === 'DT-USR-GUEST') {
+      return;
+    }
+
+    const persona = resolveUserPersona(currentUser);
+    const now = Date.now();
+    const maxAgeMs = 24 * 60 * 60 * 1000;
+
+    if (persona === 'tenant' || persona === 'agent') {
+      const unseenRecent = listings
+        .filter((l) => {
+          if (!l?.id) return false;
+          const isMine =
+            l.agent?.id === currentUser.id ||
+            (currentUser.email && l.agent?.email && currentUser.email.toLowerCase() === l.agent.email.toLowerCase());
+          if (isMine) return false;
+          const createdMs = l.createdAt ? new Date(l.createdAt).getTime() : 0;
+          if (!createdMs || now - createdMs > maxAgeMs) return false;
+          return !hasNotifiedItem(NOTIFIED_NEW_LISTINGS_KEY, l.id);
+        })
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      if (unseenRecent.length > 0) {
+        unseenRecent.forEach((l) => recordNotifiedItem(NOTIFIED_NEW_LISTINGS_KEY, l.id));
+        const newest = unseenRecent[0];
+        const notifTitle =
+          unseenRecent.length > 1
+            ? `🏡 ${unseenRecent.length} New Properties on Setlla!`
+            : `🏡 New Property in ${newest.city}!`;
+        const notifBody = `"${newest.title}" (${newest.neighborhood ? `${newest.neighborhood}, ` : ''}${newest.city}) is now available.`;
+        setPushNotification({
+          eventKey: `catchup_listing_${newest.id}`,
+          title: notifTitle,
+          body: notifBody,
+          type: 'new_listing',
+          listing: newest,
+          actionText: 'Tap to view in Explore',
+          onAction: () => {
+            setCurrentRole('tenant');
+            setUserView('feed');
+          },
+        });
+        showDeviceNotification(notifTitle, { body: notifBody });
+      }
+      return;
+    }
+
+    if (persona === 'job_seeker') {
+      let cancelled = false;
+      getAllJobs()
+        .then((jobs) => {
+          if (cancelled || !Array.isArray(jobs)) return;
+          const unseenRecent = jobs
+            .filter((j) => {
+              if (!j?.id || j.status !== 'active') return false;
+              const isMine =
+                j.posterId === currentUser.id ||
+                (currentUser.email && j.posterEmail && currentUser.email.toLowerCase() === j.posterEmail.toLowerCase());
+              if (isMine) return false;
+              const createdMs = j.createdAt ? new Date(j.createdAt).getTime() : 0;
+              if (!createdMs || now - createdMs > maxAgeMs) return false;
+              return !hasNotifiedItem(NOTIFIED_NEW_JOBS_KEY, j.id);
+            })
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+          if (unseenRecent.length > 0) {
+            unseenRecent.forEach((j) => recordNotifiedItem(NOTIFIED_NEW_JOBS_KEY, j.id));
+            const newest = unseenRecent[0];
+            const notifTitle =
+              unseenRecent.length > 1
+                ? `💼 ${unseenRecent.length} New Jobs on Setlla Jobs!`
+                : `💼 New Job in ${newest.city}!`;
+            const notifBody = `"${newest.title}" at ${newest.companyName} is hiring now.`;
+            setPushNotification({
+              eventKey: `catchup_job_${newest.id}`,
+              title: notifTitle,
+              body: notifBody,
+              type: 'job_published',
+              actionText: 'Tap to view in Setlla Jobs',
+              onAction: () => {
+                handleRoomChange('jobs');
+              },
+            });
+            showDeviceNotification(notifTitle, { body: notifBody });
+          }
+        })
+        .catch(() => {});
+
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [currentUser, listings]);
 
   // Synchronize dynamic home-screen badge count strictly with THIS user's active inspection passes
   useEffect(() => {
@@ -2389,6 +2574,11 @@ export function App() {
 
     broadcastRealtimeEvent('LISTING_CREATED', {
       listing: newListing,
+    });
+
+    // Notify all registered Tenants and other Agents via email so they return to Setlla
+    notifyRegisteredUsersOfNewPropertyListing(newListing).catch((err) => {
+      console.warn('[App] Property listing email broadcast notice:', err);
     });
 
     // Notify the agent that their property listing has been successfully published
