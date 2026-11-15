@@ -1386,7 +1386,17 @@ export function App() {
 
             fetchAllListings().then((updated) => {
               if (!isMounted || !updated) return;
-              setListings(updated);
+              const deletedIds = getDeletedListingIds();
+              const nowMs = Date.now();
+              setListings((prev) => {
+                const updatedIds = new Set(updated.map((l) => l.id));
+                const pendingFresh = prev.filter((l) => {
+                  if (!l?.id || updatedIds.has(l.id) || deletedIds.has(l.id)) return false;
+                  const createdMs = l.createdAt ? new Date(l.createdAt).getTime() : 0;
+                  return Boolean(createdMs && nowMs - createdMs < 60000);
+                });
+                return pendingFresh.length > 0 ? [...pendingFresh, ...updated] : updated;
+              });
 
               if (payload.eventType === 'INSERT' && payload.new) {
                 const newRow = payload.new as any;
