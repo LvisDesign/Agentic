@@ -2542,6 +2542,31 @@ export function App() {
     broadcastRealtimeEvent('BOOKING_DELETED', { bookingId });
   };
 
+  // Handler: Open Agent Portal directly for already-registered agents, or Become Agent / Agent Signup for non-agents
+  const handleListPropertyOrBecomeAgent = () => {
+    const isRegisteredAgent =
+      isAuthenticated &&
+      Boolean(
+        currentUser.isAgent ||
+          currentUser.isAdmin ||
+          currentUser.isSuperAdmin ||
+          resolveUserPersona(currentUser) === 'agent'
+      );
+
+    if (isRegisteredAgent) {
+      setCurrentRole('agent');
+      localStorage.setItem('setlla_active_role', 'agent');
+      localStorage.setItem('deltarent_active_role', 'agent');
+      return;
+    }
+
+    if (isAuthenticated) {
+      setIsBecomeAgentOpen(true);
+    } else {
+      handleOpenAgentSignup();
+    }
+  };
+
   // Handler: Create listing from agent onboarding form
   const handleListingCreated = (newListing: PropertyListing) => {
     setListings((prev) => [newListing, ...prev]);
@@ -3245,7 +3270,7 @@ export function App() {
             setIsProfileOpen(true);
           }}
           currentUser={currentUser}
-          onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
+          onOpenBecomeAgent={handleListPropertyOrBecomeAgent}
           onOpenSignup={handleOpenSignup}
           onOpenLogin={handleOpenLogin}
           isAuthenticated={isAuthenticated}
@@ -3349,7 +3374,7 @@ export function App() {
               onOpenBookingModal={handleOpenBooking}
               onCancelBooking={handleCancelBooking}
               onOpenMyPasses={() => setIsMyPassesOpen(true)}
-              onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
+              onOpenBecomeAgent={handleListPropertyOrBecomeAgent}
               onOpenSignup={handleOpenSignup}
               onSwitchToFeed={() => setUserView('feed')}
               onSwitchToAgent={() => setCurrentRole('agent')}
@@ -3451,13 +3476,7 @@ export function App() {
                   onTriggerSignup={handleOpenSignup}
                   hasMoreServerListings={hasMoreServerListings}
                   onLoadMoreListings={handleLoadMoreListings}
-                  onOpenBecomeAgent={() => {
-                    if (isAuthenticated) {
-                      setIsBecomeAgentOpen(true);
-                    } else {
-                      handleOpenAgentSignup();
-                    }
-                  }}
+                  onOpenBecomeAgent={handleListPropertyOrBecomeAgent}
                 />
               </div>
             </div>
@@ -3514,7 +3533,7 @@ export function App() {
         currentUser={currentUser}
         onUpdateAvatar={handleUpdateAvatar}
         onUpdateProfile={handleUpdateUser}
-        onOpenBecomeAgent={() => setIsBecomeAgentOpen(true)}
+        onOpenBecomeAgent={handleListPropertyOrBecomeAgent}
         onOpenSignup={handleOpenSignup}
         onSignOut={handleSignOut}
         onOpenAdsPortal={handleOpenAdsPortal}
