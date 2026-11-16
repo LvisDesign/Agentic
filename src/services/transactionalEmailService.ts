@@ -788,3 +788,80 @@ export async function notifyJobSeekersOfNewJobListing(job: JobListing): Promise<
   return results.filter((r) => r.status === 'fulfilled' && r.value).length;
 }
 
+/**
+ * 9. Sends a 6-digit email verification / password-reset OTP directly via Setlla's
+ * transactional email API (Resend + FormSubmit relay) so signup codes deliver reliably
+ * even if Supabase SMTP is throttled, unconfigured (staging), or the user was previously in auth.users.
+ */
+export async function sendVerificationOtpEmail(params: {
+  email: string;
+  code: string;
+  fullName?: string;
+  purpose?: string;
+}): Promise<boolean> {
+  const cleanEmail = params.email.trim().toLowerCase();
+  if (!isValidEmail(cleanEmail)) return false;
+
+  const isRecovery = params.purpose === 'forgot_password';
+  const firstName = (params.fullName || '').trim().split(/\s+/)[0] || 'there';
+  const subject = isRecovery
+    ? `[Setlla] Password Reset Code: ${params.code}`
+    : `[Setlla] Your Verification Code: ${params.code}`;
+
+  const text = [
+    `Hello ${firstName},`,
+    ``,
+    isRecovery
+      ? `Use the 6-digit code below to reset your Setlla password:`
+      : `Use the 6-digit verification code below to confirm your email and activate your Setlla account:`,
+    ``,
+    `Verification Code: ${params.code}`,
+    ``,
+    `This code expires in 10 minutes. If you did not request this, you can safely ignore this email.`,
+  ].join('\n');
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; background-color: #FCF9F5; border: 1px solid #EFE3C6; border-radius: 16px; overflow: hidden;">
+      <div style="background-color: #000004; padding: 22px 24px; border-bottom: 2px solid #FFAD05;">
+        <span style="display: inline-block; background-color: #FFAD05; color: #000004; font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px;">
+          Setlla Security &bull; ${isRecovery ? 'Password Reset' : 'Email Verification'}
+        </span>
+        <h2 style="color: #FFFFFF; margin: 0; font-size: 18px; font-weight: 700;">
+          ${isRecovery ? 'Reset your Setlla password' : 'Verify your email address'}
+        </h2>
+      </div>
+      <div style="padding: 24px; color: #1C1613; font-size: 14px; line-height: 1.6;">
+        <p style="margin-top: 0;">Hello <strong>${firstName}</strong>,</p>
+        <p>${
+          isRecovery
+            ? 'Enter the 6-digit confirmation code below to reset your Setlla account password:'
+            : 'Enter the 6-digit confirmation code below to verify your email and activate your Setlla account:'
+        }</p>
+        <div style="background-color: #FFFFFF; border: 2px dashed #FFAD05; border-radius: 12px; padding: 18px; margin: 20px 0; text-align: center;">
+          <span style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #000004;">
+            ${params.code}
+          </span>
+        </div>
+        <p style="font-size: 12px; color: #70798C; margin-bottom: 0;">
+          This code expires in 10 minutes. If you didn&rsquo;t request this on Setlla, you can safely ignore this message.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return dispatchTransactionalEmail({
+    dedupKey: `otp_${cleanEmail}_${params.code}_${Date.now()}`,
+    to: cleanEmail,
+    subject,
+    text,
+    html,
+    fromName: 'Setlla Security',
+    eventType: isRecovery ? 'password_reset_otp' : 'signup_verification_otp',
+    metadata: {
+      Event: isRecovery ? 'Password Reset OTP' : 'Email Verification OTP',
+      Verification_Code: params.code,
+      Recipient: cleanEmail,
+    },
+  });
+}
+
