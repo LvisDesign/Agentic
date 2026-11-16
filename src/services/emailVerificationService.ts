@@ -11,6 +11,7 @@ import {
   validateLegitPhoneNumber,
 } from '../utils/userRegistry';
 import { hashToken, verifyHashedToken, checkRateLimit } from '../utils/security';
+import { sendVerificationOtpEmail } from './transactionalEmailService';
 
 const PENDING_EMAIL_OTP_KEY = 'setlla_pending_email_otp';
 
@@ -153,6 +154,14 @@ export async function sendEmailOTP(
 
   let isExistingAccount = false;
 
+  // Primary Transactional OTP Email (Resend API / FormSubmit relay) so signup codes always deliver
+  const transactionalSentPromise = sendVerificationOtpEmail({
+    email: cleanEmail,
+    code,
+    fullName: pendingUser?.fullName,
+    purpose,
+  }).catch(() => false);
+
   // Supabase Auth Email Delivery via Hostinger custom SMTP
   if (isSupabaseConfigured()) {
     const baseRedirectUrl = typeof window !== 'undefined' && window.location?.origin
@@ -230,10 +239,17 @@ export async function sendEmailOTP(
         console.log('[Setlla Email Service] Supabase OTP email successfully dispatched via Hostinger SMTP to:', cleanEmail);
       }
     } catch (dispatchErr: any) {
-      console.error('[Setlla Email Service] Supabase OTP dispatch error:', dispatchErr);
-      throw new Error(dispatchErr?.message || 'Failed to dispatch verification email. Please check your connection.');
+      console.warn('[Setlla Email Service] Supabase OTP dispatch notice:', dispatchErr);
+      const fallbackDelivered = await transactionalSentPromise;
+      if (!fallbackDelivered) {
+        throw new Error(dispatchErr?.message || 'Failed to dispatch verification email. Please check your connection.');
+      }
     }
+  } else {
+    await transactionalSentPromise;
   }
+
+  await transactionalSentPromise;
 
   return {
     success: true,
