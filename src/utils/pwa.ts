@@ -549,8 +549,15 @@ export async function sendBackgroundWebPush(params: {
         supabaseKey,
       }),
     });
-    return res.ok;
-  } catch {
+    const data = await res.json().catch(() => null);
+    if (!res.ok || (data && data.success === false)) {
+      console.warn('[WebPush] Broadcast notice:', res.status, data);
+    } else {
+      console.info('[WebPush] Broadcast result:', data);
+    }
+    return res.ok && Boolean(data?.success);
+  } catch (err) {
+    console.warn('[WebPush] Broadcast error:', err);
     return false;
   }
 }

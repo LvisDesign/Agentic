@@ -62,10 +62,12 @@ export default async function handler(req, res) {
       DEFAULT_SUPABASE_URL
     ).replace(/\/+$/, '');
     const supabaseKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      reqSupabaseKey ||
-      process.env.VITE_SUPABASE_ANON_KEY ||
-      DEFAULT_SUPABASE_KEY;
+      reqSupabaseUrl && reqSupabaseKey
+        ? reqSupabaseKey
+        : process.env.SUPABASE_SERVICE_ROLE_KEY ||
+          reqSupabaseKey ||
+          process.env.VITE_SUPABASE_ANON_KEY ||
+          DEFAULT_SUPABASE_KEY;
 
     const personasFilter = Array.isArray(targetPersonas) && targetPersonas.length > 0
       ? targetPersonas.map((p) => String(p).trim()).filter(Boolean)
