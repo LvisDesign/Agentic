@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
 import { PropertyListing, BookingRecord, UserRole, UserProfile, ListingAvailability, PlatformSettings } from './types/marketplace';
 import { Header } from './components/Header';
-import { setAppBadge, clearAppBadge, autoEnableNotifications, isStandalone } from './utils/pwa';
+import { setAppBadge, clearAppBadge, autoEnableNotifications, isStandalone, syncUserPushSubscription, sendBackgroundWebPush } from './utils/pwa';
 import { 
   saveRegisteredUser, 
   saveRegisteredUserAsync, 
@@ -1635,6 +1635,22 @@ export function App() {
     };
   }, [currentUser, myDeviceBookingIds, listings]);
 
+  // Sync Web Push (VAPID) subscription for signed-in users so lock-screen alerts work even when app is closed
+  useEffect(() => {
+    if (!currentUser || !currentUser.id || currentUser.id === 'GUEST_USER' || currentUser.id === 'DT-USR-GUEST') {
+      return;
+    }
+
+    const persona = resolveUserPersona(currentUser);
+    syncUserPushSubscription(currentUser, persona).catch(() => {});
+
+    const onFocus = () => {
+      syncUserPushSubscription(currentUser, persona).catch(() => {});
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [currentUser]);
+
   // Catch-up Persona Notifications:
   // When a registered Tenant, Agent, or Job Seeker returns to Setlla, surface the latest unseen
   // property listing (for Tenants & Agents) or job vacancy (for Job Seekers) posted in the last 24h.
@@ -2615,6 +2631,20 @@ export function App() {
     notifyRegisteredUsersOfNewPropertyListing(newListing).catch((err) => {
       console.warn('[App] Property listing email broadcast notice:', err);
     });
+
+    // Send background Web Push (VAPID) to subscribed Tenants and other Agents (wakes lock screen even when app is closed)
+    sendBackgroundWebPush({
+      targetPersonas: ['tenant', 'agent'],
+      excludeUserId: currentUser.id,
+      title: `🏡 New Property in ${newListing.city}!`,
+      body: `"${newListing.title}" — tap to view on Setlla.`,
+      url: '/',
+      tag: `new-listing-${newListing.id}`,
+      actions: [
+        { action: 'open', title: 'View Property' },
+        { action: 'dismiss', title: 'Close' },
+      ],
+    }).catch(() => {});
 
     // Notify the agent that their property listing has been successfully published
     const publishedTitle = 'Property Listing Published';

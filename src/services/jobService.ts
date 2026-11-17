@@ -6,6 +6,7 @@ import { UserProfile } from '../types/marketplace';
 import { saveRegisteredUser, normalizePhoneNumber, normalizeEmail } from '../utils/userRegistry';
 import { recordNotificationInInbox } from './notificationService';
 import { showDeviceNotification } from '../utils/realtimeNotifications';
+import { sendBackgroundWebPush } from '../utils/pwa';
 import {
   sendNewJobApplicationToEmployerEmail,
   sendJobApplicationStatusToSeekerEmail,
@@ -857,6 +858,20 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
   notifyJobSeekersOfNewJobListing(newJob).catch((err) => {
     console.warn('[JobService] Job seeker email broadcast notice:', err);
   });
+
+  // 5. Send background Web Push (VAPID) to subscribed Job Seekers (wakes lock screen even when app is closed)
+  sendBackgroundWebPush({
+    targetPersonas: ['job_seeker'],
+    excludeUserId: newJob.posterId,
+    title: `💼 New Job in ${newJob.city}!`,
+    body: `"${newJob.title}" at ${newJob.companyName} — tap to apply on Setlla Jobs.`,
+    url: '/#/jobs',
+    tag: `new-job-${newJob.id}`,
+    actions: [
+      { action: 'open', title: 'View Job' },
+      { action: 'dismiss', title: 'Close' },
+    ],
+  }).catch(() => {});
 
   return newJob;
 }

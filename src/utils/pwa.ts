@@ -1,4 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { getSupabaseClient, getSupabaseConfig, isSupabaseConfigured } from './supabaseClient';
+
+const DEFAULT_VAPID_PUBLIC_KEY =
+  'BPsJdexvKNuzfFW_kBqOT0gGgtsAS-32LpsHblWuP1ssKUWAQqGis8TqpOeqTx80-3a-JfoxmQ6q1T8r5Tu6Y-U';
+const VAPID_KEY_STORAGE = 'setlla_vapid_pub_key_v1';
+
+export function getVapidPublicKey(): string {
+  const envKey =
+    typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_VAPID_PUBLIC_KEY : undefined;
+  return (envKey && String(envKey).trim()) || DEFAULT_VAPID_PUBLIC_KEY;
+}
 
 // PWA (Progressive Web App) Utility Module
 // Provides Service Worker registration, Web Push subscription, App Badging, and installation helpers
@@ -441,23 +452,106 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
       return null;
     }
 
-    // Check existing subscription
+    const vapidPublicKey = getVapidPublicKey();
+
+    // Check existing subscription; re-subscribe if VAPID public key changed (e.g. from legacy placeholder key)
     let subscription = await registration.pushManager.getSubscription();
+    const storedKey = localStorage.getItem(VAPID_KEY_STORAGE);
+    if (subscription && storedKey !== vapidPublicKey) {
+      await subscription.unsubscribe().catch(() => {});
+      subscription = null;
+    }
+
     if (!subscription) {
       // Subscribe user for push payloads
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        // Using a standard client-safe dummy applicationServerKey fallback if backend VAPID isn't set
-        applicationServerKey: urlBase64ToUint8Array(
-          'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
-        ) as unknown as BufferSource,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as unknown as BufferSource,
       });
     }
+
+    try {
+      localStorage.setItem(VAPID_KEY_STORAGE, vapidPublicKey);
+    } catch (_) {}
 
     return subscription;
   } catch (error) {
     console.warn('[PWA] Push subscription notice:', error);
     return null;
+  }
+}
+
+/**
+ * Persists the current signed-in user's Web Push subscription to Supabase `push_subscriptions`
+ * tagged with their resolved persona (`tenant`, `agent`, `job_seeker`, `employer`, etc.).
+ */
+export async function syncUserPushSubscription(
+  user: { id?: string; city?: string } | null | undefined,
+  resolvedPersona: string
+): Promise<boolean> {
+  if (typeof window === 'undefined' || !user?.id || user.id === 'GUEST_USER' || user.id === 'DT-USR-GUEST') {
+    return false;
+  }
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return false;
+  }
+
+  try {
+    const subscription = await subscribeToPushNotifications();
+    if (!subscription || !isSupabaseConfigured()) return false;
+
+    const client = getSupabaseClient();
+    const subJson = subscription.toJSON();
+    if (!client || !subJson?.endpoint) return false;
+
+    const { error } = await client.from('push_subscriptions').upsert(
+      [
+        {
+          endpoint: subJson.endpoint,
+          user_id: user.id,
+          persona: resolvedPersona || 'tenant',
+          city: user.city || 'Asaba',
+          subscription: subJson,
+          updated_at: new Date().toISOString(),
+        },
+      ],
+      { onConflict: 'endpoint' }
+    );
+
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Triggers the serverless VAPID push broadcaster (/api/send-push-notification)
+ * so targeted users receive lock-screen notifications even when Setlla is closed.
+ */
+export async function sendBackgroundWebPush(params: {
+  targetPersonas: string[];
+  excludeUserId?: string;
+  title: string;
+  body: string;
+  url?: string;
+  tag?: string;
+  actions?: Array<{ action: string; title: string }>;
+}): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  try {
+    const { url: supabaseUrl, key: supabaseKey } = getSupabaseConfig();
+    const res = await fetch('/api/send-push-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...params,
+        supabaseUrl,
+        supabaseKey,
+      }),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 
