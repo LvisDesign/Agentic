@@ -1,7 +1,4 @@
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-const webpush = require('web-push');
+import * as webpush from 'web-push';
 
 const DEFAULT_SUPABASE_URL = 'https://qxxheinizxyyrfcrijbs.supabase.co';
 const DEFAULT_SUPABASE_KEY =
