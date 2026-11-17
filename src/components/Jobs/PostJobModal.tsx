@@ -157,6 +157,30 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
     }
   };
 
+  const resetForm = () => {
+    setCurrentStep(1);
+    setSelectedPlan('free');
+    setTitle('');
+    setCompanyName(currentUser.fullName ? `${currentUser.fullName} & Partners` : 'Delta Enterprise');
+    setCategory(CATEGORIES[0]);
+    setRoleType('Full-Time');
+    setWorkplaceType('On-Site');
+    setCity(currentUser.operatingCity || 'Asaba');
+    setAddress('');
+    setSalaryRange('₦180,000 – ₦250,000 / month');
+    setSummary('');
+    setDescription('');
+    setResponsibilitiesText('');
+    setRequirementsText('');
+    setBenefitsText('Competitive remuneration, career growth, verified partner employer');
+    setRequirePortfolio(false);
+    setCompanyWebsite('');
+    setApplicationDeadline('');
+    setContactEmail(currentUser.email || '');
+    setContactPhone(currentUser.phone || '');
+    setErrors({});
+  };
+
   const submitJob = async (isFeatured: boolean, listingFeePaid: number, paymentReference?: string) => {
     setIsSubmitting(true);
     try {
@@ -203,6 +227,7 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
       });
 
       onJobCreated(created);
+      resetForm();
       onClose();
     } catch (e) {
       console.error('Failed to publish job:', e);
