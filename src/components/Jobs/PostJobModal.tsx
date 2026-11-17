@@ -852,7 +852,6 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
               disabled={isSubmitting}
               className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#000004] hover:bg-[#1f2937] text-white text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-50"
             >
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>{isSubmitting ? 'Publishing...' : 'Publish Free Vacancy (₦0)'}</span>
             </button>
           ) : (
