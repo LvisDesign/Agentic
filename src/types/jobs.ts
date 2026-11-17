@@ -22,6 +22,9 @@ export interface JobListing {
   responsibilities: string[];
   requirements: string[];
   benefits?: string[];
+  requirePortfolio?: boolean;
+  companyWebsite?: string;
+  applicationDeadline?: string;
   category: string; // e.g. "Technology", "Logistics", "Healthcare", "Real Estate"
   department?: string;
   slotsAvailable?: number;

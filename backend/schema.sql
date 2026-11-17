@@ -657,3 +657,39 @@ drop trigger if exists trg_prevent_unauthorized_ad_activation on public.adverts;
 create trigger trg_prevent_unauthorized_ad_activation
   before update on public.adverts
   for each row execute function public.prevent_unauthorized_ad_activation();
+
+-- 15. WEB PUSH SUBSCRIPTIONS (VAPID BACKGROUND NOTIFICATIONS)
+create table if not exists public.push_subscriptions (
+  endpoint text primary key,
+  user_id text not null,
+  persona text not null default 'tenant',
+  city text,
+  subscription jsonb not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now())
+);
+
+create index if not exists idx_push_subscriptions_persona on public.push_subscriptions (persona);
+create index if not exists idx_push_subscriptions_user_id on public.push_subscriptions (user_id);
+
+alter table public.push_subscriptions enable row level security;
+
+drop policy if exists "Public can read push subscriptions" on public.push_subscriptions;
+drop policy if exists "Public can insert push subscriptions" on public.push_subscriptions;
+drop policy if exists "Public can update push subscriptions" on public.push_subscriptions;
+drop policy if exists "Public can delete push subscriptions" on public.push_subscriptions;
+
+create policy "Public can read push subscriptions"
+  on public.push_subscriptions for select
+  using (true);
+
+create policy "Public can insert push subscriptions"
+  on public.push_subscriptions for insert
+  with check (true);
+
+create policy "Public can update push subscriptions"
+  on public.push_subscriptions for update
+  using (true);
+
+create policy "Public can delete push subscriptions"
+  on public.push_subscriptions for delete
+  using (true);

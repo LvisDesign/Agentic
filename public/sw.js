@@ -1,7 +1,7 @@
 // Service Worker for Setlla Progressive Web App (setlla.com)
 // Handles static caching, offline fallback, web push notifications, and app badging API
 
-const CACHE_NAME = 'setlla-pwa-v23';
+const CACHE_NAME = 'setlla-pwa-v24';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -166,9 +166,9 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const title = data.title || 'Inspection Accepted by Agent';
+  const title = data.title || 'Setlla Update';
   const options = {
-    body: data.body || 'Your physical apartment inspection pass has been confirmed with direct agent phone coordinates.',
+    body: data.body || 'Tap to view the latest update on Setlla.',
     icon: data.icon || '/icons/icon-192x192.png',
     badge: data.badge || '/icons/notification-badge.png',
     vibrate: [100, 50, 100],
@@ -177,11 +177,13 @@ self.addEventListener('push', (event) => {
       inspectionId: data.inspectionId || null,
       timestamp: Date.now(),
     },
-    actions: [
-      { action: 'open_pass', title: 'View Pass' },
-      { action: 'dismiss', title: 'Close' },
-    ],
-    tag: data.tag || 'setlla-inspection-alert',
+    actions: Array.isArray(data.actions) && data.actions.length > 0
+      ? data.actions
+      : [
+          { action: 'open', title: 'Open Setlla' },
+          { action: 'dismiss', title: 'Close' },
+        ],
+    tag: data.tag || 'setlla-alert',
     renotify: true,
   };
 
