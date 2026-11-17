@@ -449,10 +449,12 @@ export const JobApplicationDrawer: React.FC<JobApplicationDrawerProps> = ({
             )}
           </div>
 
-          {/* Optional Short Note */}
+          {/* Optional Short Note / Portfolio Link */}
           <div className="space-y-1.5 pt-2 border-t border-[#E5E7EB]">
             <label className="block text-xs font-medium text-[#70798C]">
-              Brief Note to Employer / Portfolio Link (Optional)
+              {job.requirePortfolio
+                ? 'Portfolio / Work Samples Link & Note (Requested by Employer)'
+                : 'Brief Note to Employer / Portfolio Link (Optional)'}
             </label>
             <input
               type="text"

@@ -752,6 +752,9 @@ export interface CreateJobListingParams {
   responsibilities: string[];
   requirements: string[];
   benefits?: string[];
+  requirePortfolio?: boolean;
+  companyWebsite?: string;
+  applicationDeadline?: string;
   category: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -793,6 +796,9 @@ export async function createJobListing(params: CreateJobListingParams): Promise<
     responsibilities: params.responsibilities.filter(Boolean),
     requirements: params.requirements.filter(Boolean),
     benefits: params.benefits?.filter(Boolean) || [],
+    requirePortfolio: Boolean(params.requirePortfolio),
+    companyWebsite: params.companyWebsite?.trim() || undefined,
+    applicationDeadline: params.applicationDeadline || undefined,
     category: params.category,
     contactEmail: params.contactEmail?.trim(),
     contactPhone: params.contactPhone?.trim(),

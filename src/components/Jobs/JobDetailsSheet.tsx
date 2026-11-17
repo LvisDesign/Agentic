@@ -171,7 +171,7 @@ export const JobDetailsSheet: React.FC<JobDetailsSheetProps> = ({
           {job.benefits && job.benefits.length > 0 && (
             <div className="space-y-3">
               <h4 className="font-display font-bold text-sm sm:text-base text-[#000004]">
-                Perks & Benefits
+                Perks &amp; Incentives
               </h4>
               <ul className="space-y-2.5">
                 {job.benefits.map((benefit, idx) => (
@@ -183,6 +183,35 @@ export const JobDetailsSheet: React.FC<JobDetailsSheetProps> = ({
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Optional Employer Extras (Portfolio Request, Company Website, Deadline) */}
+          {(job.companyWebsite || job.applicationDeadline || job.requirePortfolio) && (
+            <div className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E5E7EB] space-y-1.5 text-xs text-[#342A21]">
+              {job.requirePortfolio && (
+                <p className="font-semibold text-[#000004]">
+                  • Portfolio / Work Samples link requested with your application
+                </p>
+              )}
+              {job.applicationDeadline && (
+                <p>
+                  <span className="font-semibold">Application Deadline:</span> {job.applicationDeadline}
+                </p>
+              )}
+              {job.companyWebsite && (
+                <p>
+                  <span className="font-semibold">Company Website:</span>{' '}
+                  <a
+                    href={job.companyWebsite.startsWith('http') ? job.companyWebsite : `https://${job.companyWebsite}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-[#000004] font-semibold"
+                  >
+                    {job.companyWebsite}
+                  </a>
+                </p>
+              )}
             </div>
           )}
 

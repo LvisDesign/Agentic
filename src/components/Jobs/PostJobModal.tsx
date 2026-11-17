@@ -114,6 +114,9 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
   const [responsibilitiesText, setResponsibilitiesText] = useState('');
   const [requirementsText, setRequirementsText] = useState('');
   const [benefitsText, setBenefitsText] = useState('Competitive remuneration, career growth, verified partner employer');
+  const [requirePortfolio, setRequirePortfolio] = useState(false);
+  const [companyWebsite, setCompanyWebsite] = useState('');
+  const [applicationDeadline, setApplicationDeadline] = useState('');
   const [contactEmail, setContactEmail] = useState(currentUser.email || '');
   const [contactPhone, setContactPhone] = useState(currentUser.phone || '');
 
@@ -185,6 +188,9 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
         responsibilities: responsibilities.length > 0 ? responsibilities : ['Execute core responsibilities aligned with company targets.'],
         requirements: requirements.length > 0 ? requirements : ['Relevant qualifications and experience in this field.'],
         benefits,
+        requirePortfolio,
+        companyWebsite: companyWebsite.trim() || undefined,
+        applicationDeadline: applicationDeadline || undefined,
         category,
         contactEmail,
         contactPhone,
@@ -518,6 +524,96 @@ export const PostJobModal: React.FC<PostJobModalProps> = ({
                   placeholder="• B.Sc / HND in relevant field&#10;• Minimum 1-2 years experience&#10;• Strong communication and organizational skills"
                   className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] focus:outline-none focus:border-[#000004]"
                 />
+              </div>
+
+              {/* Optional Employer Extras: Incentives, Portfolio Request, Company Website & Deadline */}
+              <div className="pt-3 border-t border-[#E5E7EB] space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#70798C]">
+                    Optional Incentives &amp; Application Preferences
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#000004] mb-1">
+                    Perks, Benefits &amp; Incentives (Optional, one per line)
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {[
+                      'HMO / Health Insurance',
+                      'Transport Allowance',
+                      'Performance Bonus',
+                      'Paid Annual Leave',
+                      'Flexible Work Hours',
+                      'Training & Mentorship',
+                    ].map((perk) => (
+                      <button
+                        key={perk}
+                        type="button"
+                        onClick={() => {
+                          setBenefitsText((prev) => {
+                            const lines = prev.split('\n').map((l) => l.trim()).filter(Boolean);
+                            if (lines.includes(perk)) return prev;
+                            return lines.length > 0 ? `${lines.join('\n')}\n${perk}` : perk;
+                          });
+                        }}
+                        className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#FAF8F5] hover:bg-[#EFE3C6]/50 text-[#342A21] border border-[#E5E7EB] transition-colors cursor-pointer"
+                      >
+                        + {perk}
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    rows={2}
+                    value={benefitsText}
+                    onChange={(e) => setBenefitsText(e.target.value)}
+                    placeholder="• HMO / Health Insurance&#10;• Transport Allowance&#10;• Performance Bonus"
+                    className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] focus:outline-none focus:border-[#000004]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#000004] mb-1">
+                      Company Website / Portfolio URL (Optional)
+                    </label>
+                    <input
+                      type="url"
+                      value={companyWebsite}
+                      onChange={(e) => setCompanyWebsite(e.target.value)}
+                      placeholder="https://yourcompany.com"
+                      className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] focus:outline-none focus:border-[#000004]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#000004] mb-1">
+                      Application Deadline (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={applicationDeadline}
+                      onChange={(e) => setApplicationDeadline(e.target.value)}
+                      className="w-full px-3.5 py-2 text-xs sm:text-sm rounded-xl border border-[#E5E7EB] bg-[#FCF9F5] focus:outline-none focus:border-[#000004]"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-start gap-2.5 p-3 rounded-xl border border-[#E5E7EB] bg-[#FAF8F5] cursor-pointer hover:border-[#000004]/40 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={requirePortfolio}
+                    onChange={(e) => setRequirePortfolio(e.target.checked)}
+                    className="mt-0.5 rounded border-[#D1D5DB] text-[#000004] focus:ring-[#000004]"
+                  />
+                  <div>
+                    <span className="block text-xs font-bold text-[#000004]">
+                      Request Portfolio / Work Samples Link from Applicants
+                    </span>
+                    <span className="block text-[11px] text-[#70798C]">
+                      Highlights a portfolio URL field (GitHub, Behance, Drive, or website) when candidates apply.
+                    </span>
+                  </div>
+                </label>
               </div>
             </div>
           )}
