@@ -1,4 +1,7 @@
-import webpush from 'web-push';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const webpush = require('web-push');
 
 const DEFAULT_SUPABASE_URL = 'https://qxxheinizxyyrfcrijbs.supabase.co';
 const DEFAULT_SUPABASE_KEY =
@@ -21,10 +24,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'Method Not Allowed' });
   }
 
-  const vapidPublicKey =
-    process.env.VAPID_PUBLIC_KEY || process.env.VITE_VAPID_PUBLIC_KEY || '';
-  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || '';
-  const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:support@setlla.com';
+  const vapidPublicKey = (
+    process.env.VAPID_PUBLIC_KEY || process.env.VITE_VAPID_PUBLIC_KEY || ''
+  ).trim();
+  const vapidPrivateKey = (process.env.VAPID_PRIVATE_KEY || '').trim();
+  const vapidSubject = (process.env.VAPID_SUBJECT || 'mailto:support@setlla.com').trim();
 
   if (!vapidPublicKey || !vapidPrivateKey) {
     return res.status(200).json({
