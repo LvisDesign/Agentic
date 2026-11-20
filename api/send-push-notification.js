@@ -108,15 +108,24 @@ export default async function handler(req, res) {
     });
 
     const expiredEndpoints = [];
+    const failedReasons = [];
     const results = await Promise.allSettled(
       targets.map(async (row) => {
         try {
-          await webpush.sendNotification(row.subscription, payload);
+          await webpush.sendNotification(row.subscription, payload, {
+            urgency: 'high',
+            TTL: 86400,
+          });
           return true;
         } catch (err) {
           if (err && (err.statusCode === 410 || err.statusCode === 404)) {
             expiredEndpoints.push(row.endpoint);
           }
+          failedReasons.push({
+            userId: row.user_id,
+            statusCode: err?.statusCode || null,
+            message: err?.body || err?.message || 'Push error',
+          });
           throw err;
         }
       })
@@ -146,6 +155,7 @@ export default async function handler(req, res) {
       sent: sentCount,
       totalTargets: targets.length,
       cleanedExpired: expiredEndpoints.length,
+      failed: failedReasons.length > 0 ? failedReasons : undefined,
     });
   } catch (err) {
     console.error('[PushAPI Error]', err);
